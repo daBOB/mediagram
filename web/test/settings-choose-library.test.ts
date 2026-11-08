@@ -83,7 +83,7 @@ test("a channel without an index leaves the player on its library; one with an i
     follower = new CatalogFollower({
       db: before, catalog: { dir: null, origin: "channel", publishedAt: 100_000, refresh: "updated", reason: null },
       root: join(dir, "channel"), find: () => connection.ready().then((t) => (t ? findIndex(t) : "nothing-pinned" as const)),
-      server, facts, events: { catalogChanged: () => {} },
+      server, facts, events: { catalogChanged: () => {}, posters: () => {} },
       fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
     });
     const telegramFilePath = join(dir, "telegram.json");

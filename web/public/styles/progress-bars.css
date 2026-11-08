@@ -1,0 +1,14 @@
+/* The startup's catalog bar under the film leader (startup-progress.js),
+   and the server's artwork fetch (artwork-progress.js): a hairline along the
+   masthead's foot, its words hung just under it at the right. */
+.loading-bar { width: min(320px, 100%); height: 2px; }
+
+.artwork-progress { position: absolute; left: 0; right: 0; bottom: -1px; pointer-events: none; }
+.artwork-progress progress { display: block; width: 100%; height: 2px; }
+.artwork-progress p { position: absolute; top: 100%; right: var(--gutter); margin: 8px 0 0; padding: 4px 12px;
+  border-radius: 999px; background: color-mix(in srgb, var(--paper) 88%, transparent);
+  color: var(--ink-3); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.loading-bar, .artwork-progress progress { appearance: none; border: 0; background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.loading-bar::-webkit-progress-bar, .artwork-progress progress::-webkit-progress-bar { background: transparent; }
+.loading-bar::-webkit-progress-value, .artwork-progress progress::-webkit-progress-value { background: var(--accent); }
+.loading-bar::-moz-progress-bar, .artwork-progress progress::-moz-progress-bar { background: var(--accent); }

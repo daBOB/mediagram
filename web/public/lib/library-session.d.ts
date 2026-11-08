@@ -12,6 +12,14 @@ import type { Session } from "./together/session.js";
 /** What a `together` stream event carries; `session` is `null` once it is over. */
 export interface TogetherPayload { id: number; session: Session | null; serverNow: number }
 
+/** How far the first catalog read has got: its bytes, then the sorting into shelves. */
+export type StartupStep =
+  | { step: "download"; received: number; total: number }
+  | { step: "sort"; titles: number };
+
+/** How far the server's artwork fetch has got (`catalog-events.ts`). */
+export interface ArtworkProgress { step: string; done: number; total: number; elapsedMs: number }
+
 /** The stream events the server sends. Only `together` carries a payload the
  *  session needs; what else changed is asked for separately, over `fetchCatalog`. */
 export interface LibraryPortListeners {
@@ -19,6 +27,8 @@ export interface LibraryPortListeners {
   open(): void;
   state(): void;
   together(payload: TogetherPayload): void;
+  /** The server's artwork fetch; `null` once it is over. */
+  posters(progress: ArtworkProgress | null): void;
 }
 
 /** Watch together's share of the stream (`together-now.js`). */
@@ -35,7 +45,7 @@ export interface LibraryTogether {
 /** Everything the session needs from the browser, so it can be faked. */
 export interface LibraryPort {
   /** The catalog body, or a rejection with the same text a failed fetch has. */
-  fetchCatalog(): Promise<string>;
+  fetchCatalog(onBytes?: (received: number, total: number) => void): Promise<string>;
   /** Opens the update stream; the returned function closes it. */
   listen(handlers: LibraryPortListeners): () => void;
   visible(): boolean;
@@ -59,8 +69,8 @@ export interface LibrarySessionSnapshot {
 }
 
 export interface LibrarySession {
-  /** The first catalog read; rejects on failure. */
-  start(): Promise<boolean>;
+  /** The first catalog read; rejects on failure. A promise `onStep` returns is awaited. */
+  start(onStep?: (step: StartupStep) => void | Promise<void>): Promise<boolean>;
   current(): LibrarySessionSnapshot;
   reapply(): void;
   invalidate(): void;
@@ -82,4 +92,6 @@ export function createLibrarySession(deps: {
   state: LibrarySessionState;
   remoteState: () => void;
   together: LibraryTogether;
+  /** The server's artwork fetch as it goes; `null` when it is over or unknown. */
+  artwork?: (progress: ArtworkProgress | null) => void;
 }): LibrarySession;

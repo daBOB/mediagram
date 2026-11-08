@@ -117,7 +117,9 @@ export function negotiatedResponse(
   if (picked) {
     return withBody(picked.bytes, contentType, {
       headOnly: options.headOnly,
-      headers: { ...headers, "content-encoding": picked.encoding },
+      // A page counting the bytes it reads sees them decoded, so a bar needs
+      // this length rather than the compressed one `content-length` gives.
+      headers: { ...headers, "content-encoding": picked.encoding, "x-decoded-length": String(bytes.byteLength) },
     });
   }
   return withBody(bytes, contentType, { headOnly: options.headOnly, headers });

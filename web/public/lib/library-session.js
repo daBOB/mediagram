@@ -21,17 +21,14 @@ import { forKidsProfile, kidsLimitOf } from "./age-rating.js";
 import { hiddenSectionsOf, withoutHidden } from "./section-access.js";
 
 /**
- * @param {{ port: import("./library-session.js").LibraryPort,
- *   state: import("./library-session.js").LibrarySessionState,
- *   remoteState: () => void, together: import("./library-session.js").LibraryTogether }} deps
+ * @param {Parameters<typeof import("./library-session.js").createLibrarySession>[0]} deps
  * @returns {import("./library-session.js").LibrarySession}
  */
-export function createLibrarySession({ port, state, remoteState, together }) {
+export function createLibrarySession({ port, state, remoteState, together, artwork }) {
   /**
-   * The catalog exactly as the server last sent it, kept as text so a
-   * refresh can tell "the same again" from "something arrived" with one
-   * comparison — including a title that finished caching, whose only change
-   * is its offline badge.
+   * The catalog exactly as the server last sent it, kept as text so a refresh
+   * can tell "the same again" from "something arrived" with one comparison —
+   * including a title that finished caching, whose only change is its badge.
    */
   let catalogText = "";
   /** The catalog as the server last sent it, before any profile's filter. */
@@ -95,10 +92,11 @@ export function createLibrarySession({ port, state, remoteState, together }) {
    * Reads the catalog and rebuilds the committed data from it.
    * @returns {Promise<boolean>} Whether anything changed.
    */
-  async function loadCatalog() {
-    const text = await port.fetchCatalog();
+  async function loadCatalog(onStep) {
+    const text = await port.fetchCatalog(onStep && ((received, total) => void onStep({ step: "download", received, total })));
     if (text === catalogText) return false;
     const sets = JSON.parse(text);
+    await onStep?.({ step: "sort", titles: sets.length }); // awaited: words drawn before sorting holds the thread
     // A live refresh replaces a catalog already showing; start()'s first read has none to.
     applyCatalog(sets, catalogText !== "");
     catalogSets = sets;
@@ -142,10 +140,12 @@ export function createLibrarySession({ port, state, remoteState, together }) {
     if (stopStream) return;
     stopStream = port.listen({
       catalog: () => void refreshCatalog(),
-      open: () => { void refreshCatalog(); together.reopened(); },
+      // An artwork fetch that ended while closed told nobody; one still running says so again.
+      open: () => { artwork?.(null); void refreshCatalog(); together.reopened(); },
       // Another device's positions or marks, pulled by the server.
       state: () => remoteState(),
       together: (payload) => together.heard(payload),
+      posters: (progress) => artwork?.(progress),
     });
   }
   function closeStream() {
@@ -171,8 +171,8 @@ export function createLibrarySession({ port, state, remoteState, together }) {
 
   return {
     // The first catalog read; rejecting is left to the caller, whose startup
-    // shows it as the reason nothing loaded.
-    start: () => loadCatalog(),
+    // shows it as the reason nothing loaded. `onStep` hears how far it has got.
+    start: (onStep) => loadCatalog(onStep),
     current: () => ({ library, byId, visibleSets }),
     // Profile changed: re-filter the committed catalog, no fetch.
     reapply: () => applyCatalog(catalogSets),

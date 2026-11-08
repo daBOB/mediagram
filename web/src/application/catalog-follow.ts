@@ -9,7 +9,7 @@ import type { RunningServer } from "../server";
 import type { StartupFacts } from "../status/facts";
 import type { FoundIndex } from "../channel-index/find-newest-channel-index";
 import type { NoIndex } from "../channel-index/pick-newest-index";
-import type { PosterFetch } from "../channel-index/fetch-posters-for-index";
+import type { PosterFetch, PosterProgress } from "../channel-index/fetch-posters-for-index";
 import { oneAtATime, refreshFromChannel } from "../channel-index/refresh-from-channel";
 import type { OpenedCatalog } from "./open-catalog";
 import { failureMessage } from "../failure-message";
@@ -23,8 +23,8 @@ interface FollowOptions {
   facts: Pick<StartupFacts, "catalog">;
   held?: Pick<HeldSets, "replaceExpected" | "ids">;
   subtitles?: Pick<SubtitleBundles, "reconcile">;
-  events: Pick<CatalogEvents, "catalogChanged">;
-  fetchPosters: (index: string) => Promise<PosterFetch>;
+  events: Pick<CatalogEvents, "catalogChanged" | "posters">;
+  fetchPosters: (index: string, onProgress?: (progress: PosterProgress) => void) => Promise<PosterFetch>;
   posterCount: () => number;
   schedule?: (run: () => void, milliseconds: number) => () => void;
 }
@@ -161,10 +161,16 @@ export class CatalogFollower {
   }
 
   private async fetchArtwork(dir: string): Promise<void> {
-    const outcome = await this.options.fetchPosters(join(dir, "library.db"));
+    const { facts, events, posterCount } = this.options;
+    // Each step's own clock, so a page can say how long that step has left.
+    let step: string | null = null;
+    let since = 0;
+    const outcome = await this.options.fetchPosters(join(dir, "library.db"), (progress) => {
+      if (progress.step !== step) { step = progress.step; since = Date.now(); }
+      events.posters({ ...progress, elapsedMs: Date.now() - since });
+    }).finally(() => { if (step !== null) events.posters(null); });
     if (!outcome.ok) { console.warn(`posters: ${outcome.reason}`); return; }
     console.log(`posters: ${outcome.summary}`);
-    const { facts, events, posterCount } = this.options;
     facts.catalog = { ...facts.catalog, posters: posterCount() };
     events.catalogChanged(facts.catalog.publishedAt);
   }

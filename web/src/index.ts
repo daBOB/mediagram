@@ -400,7 +400,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       db, catalog, server, facts, events, held, subtitles,
       root: config.channelIndexDir,
       find: findViaConnection,
-      fetchPosters: (index) => io.fetchPosters(config.postersCommand, index),
+      fetchPosters: (index, onProgress) => io.fetchPosters(config.postersCommand, index, onProgress),
       posterCount: () => posters.count(),
     });
     resources.catalog = follower;

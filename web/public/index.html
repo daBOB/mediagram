@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="/styles/episode-sidebar.css" />
     <link rel="stylesheet" href="/styles/stats.css" />
     <link rel="stylesheet" href="/styles/film-leader.css" />
+    <link rel="stylesheet" href="/styles/progress-bars.css" />
     <!-- The deepest modules the first shelf's own render reaches, fetched
          alongside the shallower ones that import them rather than after: an
          `@import`-style chain of five whole round trips deep, flattened to
@@ -118,8 +119,8 @@
     </template>
 
     <main id="main" tabindex="-1">
-      <div class="loading-state" role="status">
-        <p>Loading your library…</p>
+      <div class="loading-state" id="loading-state" role="status">
+        <p id="loading-words">Loading your library…</p>
       </div>
     </main>
 

@@ -7,18 +7,34 @@
 /** @returns {import("./library-session.js").LibraryPort} */
 export function browserLibraryPort() {
   return {
-    async fetchCatalog() {
+    async fetchCatalog(onBytes) {
       const response = await fetch("/api/sets");
       if (!response.ok) throw new Error(`the catalog answered ${response.status}`);
-      return response.text();
+      if (!onBytes || !response.body) return response.text();
+      // Read in chunks only to count them, for the startup's bar. The bytes
+      // read are decoded ones, so the length is too (`compression.ts`).
+      const total = Number(response.headers.get("x-decoded-length") ?? response.headers.get("content-length")) || 0;
+      const reader = response.body.getReader();
+      const chunks = [];
+      let received = 0;
+      onBytes(0, total);
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.byteLength;
+        onBytes(received, total);
+      }
+      return new Blob(chunks).text();
     },
 
-    listen({ catalog, open, state, together }) {
+    listen({ catalog, open, state, together, posters }) {
       const events = new EventSource("/api/events");
       events.addEventListener("catalog", catalog);
       events.addEventListener("open", open);
       events.addEventListener("state", state);
       events.addEventListener("together", (event) => together(JSON.parse(event.data)));
+      events.addEventListener("posters", (event) => posters(JSON.parse(event.data)));
       return () => events.close();
     },
 

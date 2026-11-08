@@ -15,6 +15,7 @@
  */
 
 import type { Session } from "../public/lib/together/session.js";
+import type { PosterProgress } from "./channel-index/fetch-posters-for-index";
 
 /**
  * How often an idle stream says something. Proxies and some browsers close a
@@ -50,6 +51,11 @@ export class CatalogEvents {
   /** Tells every open page that the catalog it holds is out of date. */
   catalogChanged(publishedAt: number | null): void {
     this.send(`event: catalog\ndata: ${JSON.stringify({ publishedAt })}\n\n`);
+  }
+
+  /** Tells every open page how far the server's artwork fetch has got; `null` once it is over. */
+  posters(progress: (PosterProgress & { elapsedMs: number }) | null): void {
+    this.send(`event: posters\ndata: ${JSON.stringify(progress)}\n\n`);
   }
 
   /** Tells every open page that another device's positions or marks arrived. */

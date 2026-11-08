@@ -23,6 +23,12 @@ describe("choosing an encoding", () => {
     expect(new Uint8Array(brotliDecompressSync(response.body as unknown as Buffer))).toEqual(large(4000));
   });
 
+  test("a compressed body says how long it is once decoded, for a page counting what it reads", () => {
+    const response = negotiatedResponse({ acceptEncoding: "br", ifNoneMatch: null }, large(4000), "application/json");
+
+    expect(response.headers["x-decoded-length"]).toBe(String(large(4000).byteLength));
+  });
+
   test("gzip is used when only gzip is accepted", () => {
     const response = negotiatedResponse({ acceptEncoding: "gzip", ifNoneMatch: null }, large(4000), "application/json");
 

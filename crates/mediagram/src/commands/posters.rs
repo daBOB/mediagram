@@ -48,13 +48,24 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     // `TmdbClient` takes this same client rather than building its own.
     let http = mediagram_core::http::client()?;
     let api = cfg.tmdb_client(http.clone())?;
+    let mut lines = term::ProgressLines::from_env();
+    // One title at a time so the lookup can count: on a first run it is a
+    // request per title, and minutes long.
+    let looking = std::time::Instant::now();
+    let mut refs = Vec::new();
+    for (done, title) in titles.iter().enumerate() {
+        term::redraw(&term::count_line(
+            "looking up artwork",
+            done,
+            titles.len(),
+            looking.elapsed(),
+        ));
+        lines.report("lookup", done, titles.len());
+        refs.extend(resolve_posters(&api, std::slice::from_ref(title)).await);
+    }
+    lines.report("lookup", titles.len(), titles.len());
     // Both read the same cached details payload, so the second pass costs
     // no request.
-    term::redraw(&format!(
-        "looking up artwork for {} title(s)…",
-        titles.len()
-    ));
-    let mut refs = resolve_posters(&api, &titles).await;
     // The widest TMDB serves short of the original: this command fills the
     // web player's cover story, drawn desktop-wide.
     refs.extend(resolve_backdrops(&api, &titles, 1280).await);
@@ -84,8 +95,10 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
             refs.len(),
             started.elapsed(),
         ));
+        lines.report("download", done, refs.len());
     })
     .await?;
+    lines.report("download", refs.len(), refs.len());
     term::redraw("");
 
     // Counted by what is held now beyond what was, so a re-fetch that failed

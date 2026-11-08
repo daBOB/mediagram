@@ -74,7 +74,7 @@ test.each([
     } },
     facts: status,
     held: { replaceExpected: async (expected) => { replacements.push(expected); await held.replaceExpected(expected); }, ids: [] },
-    events: { catalogChanged(at) { changes.push(at!); events.catalogChanged(at); } },
+    events: { catalogChanged(at) { changes.push(at!); events.catalogChanged(at); }, posters: () => {} },
     fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
     schedule(run, milliseconds) {
       const timer = { run, milliseconds, cancelled: false }; retirements.push(timer);
@@ -126,7 +126,7 @@ test("a catalog swap reconciles held sets' subtitle bundles", async () => {
     root: join(root, "channel"), find: async () => snapshot("After", 200), server,
     facts: status, held: { replaceExpected: async () => {}, ids: ["01HELD"] },
     subtitles: { reconcile: async (_db, held) => { reconciled.push([...held.ids]); } },
-    events: { catalogChanged: () => {} },
+    events: { catalogChanged: () => {}, posters: () => {} },
     fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
   });
   await follower.refresh();
@@ -149,7 +149,7 @@ test("a reconcile failure does not hide a catalog already committed to the liste
     root: join(root, "channel"), find: async () => snapshot("After", 200), server,
     facts: status, held: { replaceExpected: async () => {}, ids: [] },
     subtitles: { reconcile: async () => { throw new Error("bundle fetch refused"); } },
-    events: { catalogChanged: () => {} },
+    events: { catalogChanged: () => {}, posters: () => {} },
     fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
   });
   await follower.refresh();
@@ -184,6 +184,33 @@ test("shutdown drains an artwork process already started and admits no more", as
   expect(starts).toBe(1);
 });
 
+test("the artwork fetch's progress reaches open pages, and its end clears it", async () => {
+  const db = library("Held");
+  databases.push(db);
+  const sent: unknown[] = [];
+  follower = new CatalogFollower({
+    db, catalog: { dir: root, origin: "channel", publishedAt: 100000, refresh: "unchanged", reason: null },
+    root, find: async () => { throw new Error("no refresh expected"); },
+    server: { replaceCatalog() { throw new Error("no swap expected"); } }, facts: facts(),
+    events: {
+      catalogChanged: () => {},
+      posters: (progress) => { sent.push(progress && { ...progress, elapsedMs: typeof progress.elapsedMs }); },
+    },
+    fetchPosters: async (_index, onProgress) => {
+      onProgress?.({ step: "lookup", done: 0, total: 2 });
+      onProgress?.({ step: "download", done: 1, total: 4 });
+      return { ok: true, summary: "art fetched" };
+    },
+    posterCount: () => 0,
+  });
+  await follower.refreshPosters(root);
+  expect(sent).toEqual([
+    { step: "lookup", done: 0, total: 2, elapsedMs: "number" },
+    { step: "download", done: 1, total: 4, elapsedMs: "number" },
+    null,
+  ]);
+});
+
 test("a tried channel is served only when it has an index, whatever that index's age", async () => {
   const warnings = spyOn(console, "warn").mockImplementation(() => {});
   restoreDiagnostics.push(() => warnings.mockRestore());
@@ -195,7 +222,7 @@ test("a tried channel is served only when it has an index, whatever that index's
   follower = new CatalogFollower({
     db: before, catalog: { dir: null, origin: "channel", publishedAt: 999_000, refresh: "updated", reason: null },
     root: join(root, "channel-a"), find: async () => { ownFinds++; return "nothing-pinned" as const; }, server,
-    facts: status, events: { catalogChanged: () => {} },
+    facts: status, events: { catalogChanged: () => {}, posters: () => {} },
     fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
   });
 

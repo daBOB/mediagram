@@ -15,10 +15,13 @@ export function fakeLibraryPort(initialText = "[]") {
   let streamOpens = 0;
 
   const port: LibraryPort = {
-    fetchCatalog() {
+    fetchCatalog(onBytes) {
       fetches++;
       const next = answers.shift();
-      return next ? next() : Promise.resolve(text);
+      const body = next ? next() : Promise.resolve(text);
+      if (!onBytes) return body;
+      // The whole body in one chunk, as a page on this machine sees it.
+      return body.then((read) => { onBytes(0, read.length); onBytes(read.length, read.length); return read; });
     },
     listen(handlers) {
       listeners = handlers;

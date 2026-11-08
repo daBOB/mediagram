@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.158.0 — The web player says what it is waiting for
+
+**Added** (user, 2026-11-08: "the fetching poster progressbar is still missing and while the loading libary on startup can we show more detail information ?")
+
+- **Artwork fetch progress on the web.** After a new index the server runs `mediagram posters`; open pages now see a hairline along the masthead's foot and a line under it: "Looking up titles · 212 of 640", then "Downloading artwork · … of … · about 3 min left", the same sentences as the phone and TV. `mediagram posters` prints `progress <step> <done> <total>` lines when `MEDIAGRAM_PROGRESS=lines` asks (at most four a second); the server forwards them as a `posters` event on `/api/events` and clears the bar when the run ends. An older `mediagram` ignores the variable and the fetch runs as before, without a bar.
+- **Startup steps.** "Loading your library…" now names the wait: "Asking the server for the catalog…", "Downloading the catalog · 9.1 of 22.6 MB" with a bar, "Sorting 28,040 titles into shelves…", then "Reading profiles and watch state…". Compressed responses carry `x-decoded-length` so the bar knows the size the page actually reads.
+- The terminal's own lookup line counts too: `looking up artwork 212/640 (33%) · eta …`.
+
 ## 0.157.0 — A curtain opens on the champions
 
 **Changed** (user, 2026-11-08: "the initial model quality is very low and its replaced by a higher quality. if its takes a bit more time to load then add a curtain to hide and then we reveal the champions")

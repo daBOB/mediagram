@@ -9,6 +9,54 @@
 //! work, and a percentage or an eta should read the same in both.
 
 use std::io::{IsTerminal, Write};
+use std::time::{Duration, Instant};
+
+/// Progress for a program reading stdout rather than a person: whole
+/// `progress <step> <done> <total>` lines, since a redraw is unreadable in a
+/// pipe. Only when `MEDIAGRAM_PROGRESS=lines` asks (the web player does), so
+/// a log or a script reading the summary line sees nothing new; an older
+/// build ignores the variable and its reader simply gets no progress.
+pub struct ProgressLines {
+    on: bool,
+    last: Option<Instant>,
+}
+
+/// A reader redraws a bar from these, so four a second is plenty.
+const PROGRESS_GAP: Duration = Duration::from_millis(250);
+
+impl ProgressLines {
+    pub fn from_env() -> Self {
+        Self::new(std::env::var("MEDIAGRAM_PROGRESS").is_ok_and(|v| v == "lines"))
+    }
+
+    fn new(on: bool) -> Self {
+        Self { on, last: None }
+    }
+
+    /// Prints the step's first and last line, and the ones between at most
+    /// every [`PROGRESS_GAP`].
+    pub fn report(&mut self, step: &str, done: usize, total: usize) {
+        if let Some(line) = self.line(step, done, total, Instant::now()) {
+            println!("{line}");
+        }
+    }
+
+    fn line(&mut self, step: &str, done: usize, total: usize, now: Instant) -> Option<String> {
+        if !self.on {
+            return None;
+        }
+        let edge = done == 0 || done >= total;
+        if !edge
+            && self
+                .last
+                .is_some_and(|last| now.duration_since(last) < PROGRESS_GAP)
+        {
+            return None;
+        }
+        self.last = Some(now);
+        Some(format!("progress {step} {done} {total}"))
+    }
+}
 
 /// Whether drawing would reach anybody.
 pub fn watching() -> bool {
@@ -82,6 +130,27 @@ mod tests {
         assert_eq!(human_duration(9), "9s");
         assert_eq!(human_duration(75), "1m15s");
         assert_eq!(human_duration(3725), "1h02m");
+    }
+
+    #[test]
+    fn progress_lines_keep_a_steps_edges_and_thin_out_the_middle() {
+        let start = Instant::now();
+        let ms = Duration::from_millis;
+        let mut lines = ProgressLines::new(true);
+        assert_eq!(
+            lines.line("lookup", 0, 10, start).as_deref(),
+            Some("progress lookup 0 10")
+        );
+        assert_eq!(lines.line("lookup", 1, 10, start + ms(100)), None);
+        assert_eq!(
+            lines.line("lookup", 2, 10, start + ms(300)).as_deref(),
+            Some("progress lookup 2 10")
+        );
+        assert_eq!(
+            lines.line("lookup", 10, 10, start + ms(310)).as_deref(),
+            Some("progress lookup 10 10")
+        );
+        assert_eq!(ProgressLines::new(false).line("lookup", 0, 10, start), None);
     }
 
     #[test]

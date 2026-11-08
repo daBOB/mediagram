@@ -317,3 +317,30 @@ test("start() rejects on a failed first read", async () => {
   const lib = createLibrarySession({ port: fake.port, state: fakeState(), remoteState: () => {}, together: fakeTogether().together });
   await expect(lib.start()).rejects.toThrow("offline");
 });
+
+test("the first read tells its steps: the bytes, then the sorting, before the shelves are built", async () => {
+  const { session: lib } = session();
+  const text = JSON.stringify([film("First")]);
+  const steps: unknown[] = [];
+  let builtBeforeSorting = true;
+  await lib.start(async (step) => {
+    steps.push(step);
+    if (step.step === "sort") builtBeforeSorting = lib.current().byId.has("First");
+  });
+  expect(steps).toEqual([
+    { step: "download", received: 0, total: text.length },
+    { step: "download", received: text.length, total: text.length },
+    { step: "sort", titles: 1 },
+  ]);
+  expect(builtBeforeSorting).toBe(false);
+  expect(lib.current().byId.has("First")).toBe(true);
+});
+
+test("the artwork fetch's progress reaches the page, and a reopened stream clears it", () => {
+  const seen: unknown[] = [];
+  const { fake } = session({ artwork: (progress) => { seen.push(progress); } });
+  const progress = { step: "download", done: 3, total: 9, elapsedMs: 1200 };
+  fake.fire("posters", progress);
+  fake.fire("open");
+  expect(seen).toEqual([progress, null]);
+});

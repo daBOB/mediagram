@@ -51,6 +51,8 @@ import { renderStats } from "./lib/catalog/stats-page.js";
 import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
+import { showArtworkProgress } from "./lib/artwork-progress.js";
+import { startupProgress } from "./lib/startup-progress.js";
 import { mountCastBar } from "./lib/cast/cast-bar.js";
 import { hiddenSectionsOf } from "./lib/section-access.js";
 import { heardTogether, inTogether, onLeaveTogether, refreshTogether, setTogetherOpener, takeJoin } from "./lib/together-now.js";
@@ -81,21 +83,19 @@ document.getElementById("skip-library")?.addEventListener("click", () => main.fo
 let library = groupDepartments([]);
 let byId = new Map();
 
-/**
- * The catalog this profile sees, kept current — fetch, diff, filter, the
- * update stream, and holding a redraw back while the player or a list
- * picker is open all live in `library-session.js`; see its module doc.
- */
+/** The catalog this profile sees, kept current: fetch, diff, filter, the update
+ *  stream, and the redraw held back while the player or a list picker is open
+ *  all live in `library-session.js`; see its module doc. */
 const librarySession = createLibrarySession({
   port: browserLibraryPort(),
   state,
-  // Another device's positions or marks, pulled by the server, on the same
-  // notification and deferred-redraw path as a local mutation.
+  // Another device's positions or marks, pulled by the server: redrawn as a local mutation is.
   remoteState: () => {
     void state.refreshState();
     void loadEditorsChoice();
   },
   together: { heard: heardTogether, reopened: () => void refreshTogether(), inSession: inTogether, onLeave: onLeaveTogether },
+  artwork: (progress) => showArtworkProgress(document.querySelector(".masthead"), progress),
 });
 
 // Counts and the colophon reach the page at once, even while a redraw waits;
@@ -653,16 +653,15 @@ window.addEventListener("hashchange", () => {
   turnPage(main, route, refining);
 });
 
+const startup = startupProgress();
 try {
-  // None of these depends on another: the link, the kids marks, the editor's
-  // choice and the catalog are all facts about the library itself, and the
-  // profile list is asked here only to learn who there is to choose from.
-  // Only choosing one waits on that list; everything else runs alongside it.
+  // None depends on another: link, kids marks, editor's choice and catalog are facts about the
+  // library, and the profile list only says who there is to choose. Only choosing waits on it.
   const [, , , , profilesLoaded] = await Promise.all([
     loadLink(),
     state.loadKids(),
     loadEditorsChoice(),
-    librarySession.start(),
+    librarySession.start(startup.catalog).then(startup.profiles),
     state.loadProfiles(),
   ]);
 

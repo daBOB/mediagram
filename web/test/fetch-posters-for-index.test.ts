@@ -29,6 +29,19 @@ describe("fetching posters for a snapshot", () => {
     expect((await Bun.file(log).text()).trim()).toBe("posters --index /snap/library.db");
   });
 
+  test("progress lines are handed on as they come and kept out of the summary", async () => {
+    const command = await fakeCommand(`echo "progress lookup 0 2"; echo "progress download 3 4"; echo "2 image(s) in x: 2 fetched, 0 already held"`);
+    const seen: unknown[] = [];
+    const outcome = await fetchPostersForIndex(command, "/snap/library.db", (progress) => seen.push(progress));
+    expect(seen).toEqual([{ step: "lookup", done: 0, total: 2 }, { step: "download", done: 3, total: 4 }]);
+    expect(outcome).toEqual({ ok: true, summary: "2 image(s) in x: 2 fetched, 0 already held" });
+  });
+
+  test("asks the command for progress lines", async () => {
+    const command = await fakeCommand(`echo "MEDIAGRAM_PROGRESS=$MEDIAGRAM_PROGRESS"`);
+    expect(await fetchPostersForIndex(command, "/snap/library.db")).toEqual({ ok: true, summary: "MEDIAGRAM_PROGRESS=lines" });
+  });
+
   test("a failing run says why, in its own words", async () => {
     const command = await fakeCommand(`echo "no TMDB key configured" >&2; exit 1`);
     expect(await fetchPostersForIndex(command, "/snap/library.db")).toEqual({
