@@ -59,6 +59,7 @@ internal val ShelfGames =
     listOf(
         ShelfGame("quiz", "Buzzer-Quiz", "1–8 players", R.drawable.ui_tv_game_poster_quiz, R.drawable.ui_tv_game_backdrop_quiz),
         ShelfGame("poster", "Poster-Raten", "1–8 players", R.drawable.ui_tv_game_poster_poster, R.drawable.ui_tv_game_backdrop_poster),
+        ShelfGame("kopfnuss", "Kopfnuss", "2–8 players", null, null),
         ShelfGame("race", "Heimlauf", "2–4 players", null, null),
         ShelfGame("mau_mau", "Mau-Mau", "2–8 players", R.drawable.ui_tv_game_poster_mau_mau, R.drawable.ui_tv_game_backdrop_mau_mau),
         ShelfGame("schwimmen", "Schwimmen", "2–8 players", R.drawable.ui_tv_game_poster_schwimmen, R.drawable.ui_tv_game_backdrop_schwimmen),

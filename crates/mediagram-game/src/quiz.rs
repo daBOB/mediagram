@@ -9,7 +9,6 @@ use std::collections::BTreeMap;
 
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
 
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, PhoneScreen, PlayerId, QuizResult, ServerTime, TvScene};
@@ -36,13 +35,7 @@ impl Quiz {
         let rounds = questions
             .into_iter()
             .take(cfg.rounds.max(1))
-            .map(|q| {
-                let mut options: Vec<String> = q.wrong.to_vec();
-                options.push(q.correct.clone());
-                options.shuffle(&mut rng);
-                let correct = options.iter().position(|o| *o == q.correct).unwrap_or(0) as u8;
-                Round { category: q.category, text: q.text, options, correct, image: q.image }
-            })
+            .map(|q| Round::shuffled(q, &mut rng))
             .collect();
         let mut quiz = Self {
             cfg,

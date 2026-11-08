@@ -170,3 +170,19 @@ fn factory_sees_the_settings() {
     assert_eq!(seen.lock().unwrap().as_ref(), Some(r.settings()));
     assert_eq!(r.settings().quiz_mode, QuizMode::Films);
 }
+
+#[test]
+fn kopfnuss_needs_two_players_and_no_kids_mode() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::Kopfnuss, QuizMode::Mixed, false);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::KOPFNUSS_TOO_FEW));
+    hello(&mut r, 2, "Ben", None);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
+    for (conn, name) in [(3, "Cem"), (4, "Dana"), (5, "Eli"), (6, "Fe"), (7, "Gil"), (8, "Hu")] {
+        hello(&mut r, conn, name, None);
+    }
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }), "a full room plays");
+    configure(&mut r, 1, GameKind::Kopfnuss, QuizMode::Mixed, true);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::KOPFNUSS_NOT_FOR_KIDS));
+}

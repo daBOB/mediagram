@@ -43,6 +43,12 @@ pub(crate) const DURAK_TOO_MANY: &str = "Durak geht mit höchstens 6 Spielern.";
 pub(crate) const BAUHERR_TOO_FEW: &str = "Bauherr braucht mindestens 2 Spieler.";
 pub(crate) const BAUHERR_TOO_MANY: &str = "Bauherr geht mit höchstens 4 Spielern.";
 
+/// Kopfnuss needs someone to send a trick to; any room size plays.
+const KOPFNUSS_MIN: u8 = 2;
+pub(crate) const KOPFNUSS_TOO_FEW: &str = "Kopfnuss braucht mindestens 2 Spieler.";
+/// Kopfnuss asks the general pack, which is not checked for children.
+pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kindermodus.";
+
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
 }
@@ -84,6 +90,8 @@ impl Room {
             GameKind::MauMau => (CARDS_MIN, CARDS_MAX, CARDS_TOO_FEW, CARDS_TOO_MANY),
             GameKind::Schwimmen => (CARDS_MIN, CARDS_MAX, SCHWIMMEN_TOO_FEW, SCHWIMMEN_TOO_MANY),
             GameKind::Durak => (DURAK_MIN, DURAK_MAX, DURAK_TOO_FEW, DURAK_TOO_MANY),
+            GameKind::Kopfnuss if s.kids_only => return Some(KOPFNUSS_NOT_FOR_KIDS),
+            GameKind::Kopfnuss => return (self.connected_count() < KOPFNUSS_MIN).then_some(KOPFNUSS_TOO_FEW),
         };
         let players = self.connected_count();
         (players < min).then_some(few).or((players > max).then_some(many))

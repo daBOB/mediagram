@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.160.0 — Kopfnuss, the quiz with tricks
+
+**Added** (user, 2026-11-08: a quiz party game where players vote the category and throw "spanners in their opponents' works", with less waiting than the genre's usual one question per round)
+
+- Kopfnuss, a new game in the lobby and on the TV games shelf for 2–8 players (not in kids mode). Seven rounds: every phone votes one of three categories, picks one of two tricks and a target; the majority's category wins, a tie goes to the last-placed player still playing. Three questions follow per round in the buzzer quiz's own engine and scoring, so a game asks about 25 questions instead of the genre's 15.
+- Four tricks the target's phone draws over its answer buttons, stacking up to three: Wechselbad (buttons swap places every 1.5 s), Schneckenpost (answers trickle in letter by letter), Spiegel (mirrored text), Kleber (hold an answer one second). A fourth trick on one phone, or one it already carries, bounces off, and the TV shows it.
+- Gipfelsturm finale: each phone runs the same question stream at its own pace, a right answer climbs a step, a wrong one shuts the next question for 2 s; the leaders start a few steps up. First to the top wins, then the TV shows a fun fact from `questions/fakten.json` (60 facts) and the podium in climbing order. A summit bonus (100 points per step, more where needed) makes the points follow the climb, so the winner always has the most.
+- Category "Eure Filme" draws its questions from the library. The night's question history is now shared with a running Kopfnuss, so a later game tonight does not repeat what it asked.
+- A tap opens the next pick step or climb question 400 ms later, and taps up to 150 ms early count, so a double tap cannot answer a screen nobody saw and a phone whose clock runs ahead is not ignored.
+- Plan and evidence: `plans/261108-1631-kopfnuss-quiz-party-game/` in the spieltisch-games worktree.
+
 ## 0.159.0 — Grand Allee's ten hotels as 3D models
 
 **Added** (user, 2026-11-08: "we need the types from the original", "u can use blender when creating the 3d models")

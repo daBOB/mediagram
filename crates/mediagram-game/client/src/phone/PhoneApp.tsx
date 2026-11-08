@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { useConnection, useServerNow, type Connection } from "../net";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useConnection, type Connection } from "../net";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PhoneView } from "../protocol/PhoneView";
 import type { ServerMsg } from "../protocol/ServerMsg";
-import { ANSWER_MARKS } from "../ui/answers";
 import { CardsDesk } from "./CardsDesk";
+import { ChoiceScreen } from "./ChoiceScreen";
 import { PhoneLobby } from "./PhoneLobby";
 import { PhoneSheet } from "./PhoneSheet";
 import { buzz, memory as store } from "./app-bridge";
@@ -179,75 +179,6 @@ function Screen({ view, conn }: { view: PhoneView; conn: Connection }) {
         </section>
       );
   }
-}
-
-type Choice = Extract<PhoneScreen, { kind: "choice" }>;
-
-function ChoiceScreen({ screen, conn }: { screen: Choice; conn: Connection }) {
-  const now = useServerNow(conn);
-  const [localPick, setLocalPick] = useState<number | null>(null);
-  const picked = screen.picked ?? localPick;
-  const open = now >= screen.opens_at;
-  // Without a closing time the choice waits for the player: no clock, no meter.
-  const timed = screen.closes_at !== null;
-  const closes = screen.closes_at ?? Infinity;
-  const closed = now >= closes;
-  const live = open && !closed && picked === null;
-
-  const pick = (index: number) => {
-    if (!live) return;
-    const at = conn.serverNow();
-    // An untimed choice never locks on the tap alone: a tap lost in a reconnect
-    // would leave the button dead with no clock to end the wait. The host
-    // ignores a repeat, and its next screen replaces this one.
-    if (timed) setLocalPick(index);
-    // no buzz on the tap itself: the host taking the pick buzzes ("accepted")
-    conn.send({ t: "action", action: { t: "choose", index, at } });
-  };
-
-  const onKey = (e: KeyboardEvent, index: number) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      pick(index);
-    }
-  };
-
-  const left = Math.max(0, closes - now);
-  const total = closes - screen.opens_at;
-
-  return (
-    <section className="screen choice">
-      <header className="choice-head">
-        <span>{screen.prompt}</span>
-        {timed && (
-          <span className="choice-clock" aria-live="polite">
-            {!open ? `Gleich … ${Math.ceil((screen.opens_at - now) / 1000)}` : picked !== null ? "Eingeloggt" : `${Math.ceil(left / 1000)} s`}
-          </span>
-        )}
-      </header>
-      {timed && (
-        <div className="meter" aria-hidden="true">
-          <div className="meter-fill" style={{ transform: `scaleX(${open ? left / total : 1})` }} />
-        </div>
-      )}
-      <div className={`keys${open ? " keys-open" : ""}`}>
-        {screen.options.map((o, i) => (
-          <button
-            key={i}
-            className={`key key-${o.color}${picked === i ? " key-picked" : ""}${picked !== null && picked !== i ? " key-dim" : ""}`}
-            aria-disabled={!live}
-            onPointerDown={() => pick(i)}
-            onKeyDown={(e) => onKey(e, i)}
-          >
-            <span className="key-mark" aria-hidden="true">
-              {ANSWER_MARKS[o.color]}
-            </span>
-            <span className="key-label">{o.label}</span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 function Centered({ title, text }: { title: string; text?: string | null }) {

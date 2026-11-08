@@ -34,6 +34,7 @@ impl PosterGame {
                 opens_at: started_at,
                 closes_at: Some(closes_at),
                 picked: self.claims.contains_key(&player).then_some(round.correct),
+                tricks: vec![],
             },
             Stage::Reveal { .. } => match self.winner {
                 Some((w, points)) if w == player => PhoneScreen::Outcome {

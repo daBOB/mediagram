@@ -1,5 +1,5 @@
 // End-to-end smoke test against a running host: one TV, two bots.
-// Usage: bun crates/mediagram-game/tools/smoke.mjs [ws://localhost:8080/ws] [--game quiz|poster|race]
+// Usage: bun crates/mediagram-game/tools/smoke.mjs [ws://localhost:8080/ws] [--game quiz|poster|race|kopfnuss]
 // A race game runs longer than the 5-minute deadline; it still exercises the turn flow.
 const args = process.argv.slice(2);
 const gi = args.indexOf("--game");
@@ -58,7 +58,8 @@ const settings = tv.last.view.scene.settings;
 console.log("tv badge:", settings.game, settings.quiz_mode, "kids_only:", settings.kids_only);
 a.send({ t: "action", action: { t: "start_game" } });
 
-const deadline = Date.now() + 300_000;
+// A Kopfnuss game (seven rounds and the climb) runs about five minutes.
+const deadline = Date.now() + 420_000;
 while (Date.now() < deadline) {
   await sleep(250);
   const s = tv.last?.view?.scene;

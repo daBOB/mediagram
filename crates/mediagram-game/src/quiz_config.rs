@@ -1,5 +1,8 @@
 //! Quiz inputs (question, timing, scoring) and the per-game state types.
 
+use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
+
 use crate::protocol::ServerTime;
 
 /// One multiple-choice question. `correct` is shuffled in among `wrong`.
@@ -51,6 +54,17 @@ pub(crate) struct Round {
     pub options: Vec<String>,
     pub correct: u8,
     pub image: Option<String>,
+}
+
+impl Round {
+    /// `q` with its answers shuffled; `correct` indexes the right one.
+    pub(crate) fn shuffled(q: Question, rng: &mut StdRng) -> Self {
+        let mut options: Vec<String> = q.wrong.to_vec();
+        options.push(q.correct.clone());
+        options.shuffle(rng);
+        let correct = options.iter().position(|o| *o == q.correct).unwrap_or(0) as u8;
+        Self { category: q.category, text: q.text, options, correct, image: q.image }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

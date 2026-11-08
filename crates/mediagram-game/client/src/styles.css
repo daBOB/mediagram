@@ -358,6 +358,8 @@ p {
 }
 
 .choice-clock {
+  flex-shrink: 0;
+  white-space: nowrap;
   font-family: var(--display);
   font-weight: 800;
   font-size: 1.3rem;
@@ -372,6 +374,8 @@ p {
   gap: 1rem 0.85rem;
   padding: 0.5rem 0 0.6rem;
   min-height: 18rem;
+  /* Kopfnuss pick screens can offer up to seven players as targets. */
+  grid-auto-rows: 1fr;
 }
 
 /* Fewer than four buttons fill the grid instead of leaving empty cells,
@@ -983,4 +987,48 @@ html[data-surface="tv"] {
   place-items: center;
   font-size: 2rem;
   color: #fff4e2;
+}
+
+/* ---------------------------------------------------------------- Kopfnuss tricks */
+
+.choice-tricks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice-trick {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--felt-deep);
+  color: var(--pink);
+  box-shadow: inset 0 0 0 2px var(--pink);
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.key-label-mirror {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+
+.keys-glued {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Kleber: the button fills from the bottom while it is held. */
+.key-holding::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgb(255 255 255 / 0.35);
+  transform-origin: bottom;
+  transform: scaleY(var(--hold, 0));
+  pointer-events: none;
 }
