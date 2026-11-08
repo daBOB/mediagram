@@ -26,7 +26,8 @@ export function KopfnussClimb({ stage, players, conn }: { stage: ClimbStage; pla
             <div key={c.player} className="kn-lane">
               <div className="kn-track">
                 <div className="kn-fill" style={{ height: share(c.step) }} />
-                <div className="kn-climber" style={{ bottom: share(c.step) }}>
+                {/* Centred on its step, except at the foot, where half of it would hang over the name. */}
+                <div className="kn-climber" style={{ bottom: share(c.step), translate: c.step === 0 ? "-50% 0" : undefined }}>
                   {p && <Token player={p} size="lg" />}
                 </div>
               </div>

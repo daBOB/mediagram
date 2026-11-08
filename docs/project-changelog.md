@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.160.1 — Kopfnuss on the TV box
+
+**Fixed** (first simulated game on the box, 2026-11-08: three scripted phones over Wi-Fi, two more that left mid-game)
+
+- The summit bonus lifted a player past the one below only because of the tie-break: of two players who left at step 0 with 0 points, one ended with 100. Now only a higher climb (or the win) lifts a player past the one below; an equal climb keeps equal points.
+- On the Gipfelsturm board an avatar at step 0 hung half below its lane over the player's name; it now sits inside the lane at the foot.
+- On the box (Skyworth HPR302, WebView 156) the whole game ran from the shelf to the podium: 6461 frames, 1.98 % janky, median 11 ms, 99th percentile 36 ms, 2 missed vsyncs, ceremony included.
+
 ## 0.160.0 — Kopfnuss, the quiz with tricks
 
 **Added** (user, 2026-11-08: a quiz party game where players vote the category and throw "spanners in their opponents' works", with less waiting than the genre's usual one question per round)

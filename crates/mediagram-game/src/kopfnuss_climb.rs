@@ -126,16 +126,22 @@ impl Climb {
         order.into_iter().map(|(&id, _)| id).collect()
     }
 
-    /// Summit bonus: `step_points` per step reached, and from the bottom of
-    /// `order` up, anyone not ahead of the player below them is lifted just
-    /// past them, so the podium's points always follow the climb.
+    /// Summit bonus: `step_points` per step reached. From the bottom of
+    /// `order` up, whoever climbed higher than the player below (or won) is
+    /// lifted past them, an equal climb at least level, so the podium's
+    /// points follow the climb and the winner always leads.
     pub(crate) fn award(&self, players: &mut [Player], order: &[PlayerId]) {
-        let mut below: Option<i32> = None;
+        let mut below: Option<(i32, u8)> = None;
         for id in order.iter().rev() {
             let (Some(seat), Some(p)) = (self.seats.get(id), players.iter_mut().find(|p| p.id == *id)) else { continue };
             let climbed = p.score + i32::from(seat.step) * self.step_points;
-            p.score = below.map_or(climbed, |b| climbed.max(b + self.step_points));
-            below = Some(p.score);
+            let ahead = self.winner == Some(*id);
+            p.score = match below {
+                Some((points, step)) if ahead || seat.step > step => climbed.max(points + self.step_points),
+                Some((points, _)) => climbed.max(points),
+                None => climbed,
+            };
+            below = Some((p.score, seat.step));
         }
     }
 

@@ -151,3 +151,18 @@ fn the_summit_bonus_makes_the_points_follow_the_climb() {
     assert!(score(1) > score(2) && score(2) > score(0), "{} {} {}", score(1), score(2), score(0));
     assert_eq!(score(0), 5000 + 5 * 100, "the bottom keeps quiz points plus its steps");
 }
+
+#[test]
+fn equal_climbs_keep_equal_points() {
+    // Two who left before climbing a step: neither earns a bonus over the other.
+    let mut players = seated(&[0, 0, 0]);
+    let mut c = climb(&players, 30);
+    for (p, step) in [(0, 0), (1, 0), (2, 10)] {
+        c.seats.get_mut(&p).unwrap().step = step;
+    }
+    c.winner = Some(2);
+    let order = c.standings();
+    c.award(&mut players, &order);
+    assert_eq!((players[0].score, players[1].score), (0, 0));
+    assert!(players[2].score > 0);
+}

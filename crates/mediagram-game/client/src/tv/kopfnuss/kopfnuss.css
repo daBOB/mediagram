@@ -100,8 +100,8 @@
 .kn-climber {
   position: absolute;
   left: 50%;
-  transform: translate(-50%, 50%);
-  transition: bottom 300ms ease-out;
+  translate: -50% 50%;
+  transition: bottom 300ms ease-out, translate 300ms ease-out;
 }
 
 .kn-lane-name {
