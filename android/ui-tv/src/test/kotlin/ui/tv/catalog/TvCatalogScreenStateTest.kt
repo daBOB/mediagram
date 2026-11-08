@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
@@ -25,6 +26,7 @@ import catalog.factsLine
 import catalog.resumeLine
 import catalog.shelvesOf
 import designsystem.COUNTDOWN_LEADER_TEST_TAG
+import designsystem.Overscan
 import designsystem.TvStyle
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -43,6 +45,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.common.RailItem
 import ui.tv.TvTheme
+import ui.tv.chrome.TvDepartmentsBarHeight
 import ui.tv.profile.TvChosenProfile
 import ui.tv.system.menuRestoreKey
 import uniffi.mediagram_core.FetchProgress
@@ -193,6 +196,17 @@ class TvCatalogScreenStateTest {
         show(ready(films(1)), fetching = true, fetchProgress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL))
         compose.onNodeWithText("Downloading artwork · 300 of 900 · about 2 min left").assertExists()
         compose.onNodeWithTag(TvPlateProgressFillTag, useUnmergedTree = true).assertExists()
+    }
+
+    /** The bar is opaque and drawn over the page's top, so a line placed there exists but nobody sees it. */
+    @Test
+    fun theFetchLineAndItsBarSitBelowTheTopBar() {
+        show(ready(films(1)), fetching = true, fetchProgress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL))
+        val barFoot = TvDepartmentsBarHeight + Overscan.vertical
+        val line = compose.onNodeWithText("Downloading artwork · 300 of 900 · about 2 min left").getBoundsInRoot()
+        val rule = compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).getBoundsInRoot()
+        assertTrue(line.top >= barFoot, "line top ${line.top} is under the bar, which ends at $barFoot")
+        assertTrue(rule.top >= barFoot, "bar top ${rule.top} is under the top bar, which ends at $barFoot")
     }
 
     @Test

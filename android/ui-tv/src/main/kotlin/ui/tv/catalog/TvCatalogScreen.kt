@@ -1,5 +1,7 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,9 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -28,14 +31,13 @@ import catalog.KeptKind
 import catalog.allSetsById
 import catalog.catalogTabOf
 import catalog.chromeCountsOf
+import catalog.fetchFraction
 import catalog.hasContent
 import catalog.libraryTallyLines
 import catalog.magazineHomeOf
 import catalog.mastheadTabsOf
-import catalog.fetchFraction
 import catalog.updateDisabledReason
 import designsystem.Spacing
-import uniffi.mediagram_core.FetchProgress
 import designsystem.TvType
 import ui.common.MenuActions
 import ui.common.RailItem
@@ -43,6 +45,7 @@ import ui.common.catalog.rememberDepartmentScrollStates
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvLibraryChrome
 import ui.tv.profile.TvChosenProfile
+import uniffi.mediagram_core.FetchProgress
 
 /**
  * The catalogue on a television: [TvLibraryChrome] — the rail and the
@@ -223,32 +226,9 @@ fun TvCatalogScreen(
         focus = nav.chromeFocus,
         modifier = Modifier.fillMaxSize(),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            val gutter = LocalTvPagePadding.current
-            // Words where the phone draws a bar: the same sentences its
-            // Update item gives as the reason it is waiting, so what is
-            // happening reads the same wherever a viewer meets it.
-            if (ready != null) {
-                updateDisabledReason(ready, fetching, fetchProgress)?.let {
-                    TvQuietLine(it, Modifier.padding(start = gutter.start, end = gutter.end))
-                }
-                fetchProgress?.takeIf { fetching }?.let(::fetchFraction)?.let { fraction ->
-                    TvProgressRule(fraction, Modifier.padding(start = gutter.start, end = gutter.end, top = Spacing.small))
-                }
-            }
-            // Above the shelf, not instead of it: the library below is the
-            // one that was on this device before the refresh was tried,
-            // and it is still every bit of it.
-            ready?.notice?.let { notice ->
-                Text(
-                    text = notice,
-                    style = TvType.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.fillMaxWidth().padding(start = gutter.start, end = gutter.end, top = Spacing.small, bottom = Spacing.small),
-                )
-            }
+        Box(modifier = Modifier.fillMaxSize()) {
             CompositionLocalProvider(LocalTakesArrivalFocus provides nav.takesArrivalFocus) {
-                Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize()) {
                     // One composition per tab, not one reused across them:
                     // every shelf draws through the same wall, which would
                     // otherwise carry the last shelf's scroll over and
@@ -283,9 +263,47 @@ fun TvCatalogScreen(
                     }
                 }
             }
+            if (ready != null) TvCatalogStatus(ready, fetching, fetchProgress)
         }
     }
 }
+
+/**
+ * What a channel read or an artwork fetch is doing, and why the last refresh
+ * failed, laid over the page from the bar's foot down. The bar is opaque and
+ * drawn over the page's top, where these once sat unseen. The words are the
+ * ones the Update item waits with, and the rule is the web's hairline along
+ * its masthead's foot, so what is happening reads the same everywhere.
+ */
+@Composable
+private fun TvCatalogStatus(
+    ready: CatalogUiState.Ready,
+    fetching: Boolean,
+    fetchProgress: FetchProgress?,
+) {
+    val words = updateDisabledReason(ready, fetching, fetchProgress)
+    val fraction = fetchProgress?.takeIf { fetching }?.let(::fetchFraction)
+    if (words == null && fraction == null && ready.notice == null) return
+    val gutter = LocalTvPagePadding.current
+    // A pill, because the page under it can be Home's cover picture.
+    val pill =
+        Modifier
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = PILL_ALPHA), RoundedCornerShape(percent = 50))
+            .padding(horizontal = Spacing.small, vertical = 2.dp)
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = gutter.top, start = gutter.start, end = gutter.end),
+        verticalArrangement = Arrangement.spacedBy(Spacing.small),
+    ) {
+        fraction?.let { TvProgressRule(it) }
+        words?.let { TvQuietLine(it, pill) }
+        // Above the shelf, not instead of it: the library below is the one
+        // that was on this device before the refresh was tried, and it is
+        // still every bit of it.
+        ready.notice?.let { Text(text = it, style = TvType.bodySmall, color = MaterialTheme.colorScheme.error, modifier = pill) }
+    }
+}
+
+private const val PILL_ALPHA = 0.85f
 
 /** [TvCatalogScreen]'s own default: every previewing caller of this composable that has no rail rows to wire yet passes nothing, and the rail's Settings/System rows harmlessly do nothing rather than crashing on a missing [MenuActions]. */
 private val NoopMenuActions =
