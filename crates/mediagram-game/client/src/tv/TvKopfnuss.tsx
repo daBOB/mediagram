@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useServerNow, type Connection } from "../net";
 import type { KopfnussScene } from "../protocol/KopfnussScene";
 import type { KopfnussStage } from "../protocol/KopfnussStage";
@@ -6,14 +7,42 @@ import { ANSWER_COLORS, ANSWER_MARKS } from "../ui/answers";
 import { Token } from "../ui/Token";
 import { TRICK_NAMES } from "../ui/tricks";
 import { KopfnussClimb, KopfnussFact } from "./kopfnuss/KopfnussClimb";
+import { KopfnussSound } from "./kopfnuss/kopfnuss-sound";
 import { TvFinal } from "./TvFinal";
 import { TvQuiz } from "./TvQuiz";
 import "./kopfnuss/kopfnuss.css";
 
 type Props = { scene: KopfnussScene; players: PlayerInfo[]; conn: Connection };
 
+/** Plays the game's sounds for as long as it is on the TV; silent if Web Audio fails. */
+function useKopfnussSound(scene: KopfnussScene, conn: Connection) {
+  const latest = useRef(scene);
+  latest.current = scene;
+  useEffect(() => {
+    let sound: KopfnussSound | null = null;
+    try {
+      sound = new KopfnussSound();
+    } catch {
+      return;
+    }
+    // the file sounds may fail to load; the synthesised ones still play
+    sound.load().catch(() => {});
+    let raf = 0;
+    const loop = () => {
+      sound?.update(latest.current, conn.serverNow());
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      sound?.dispose();
+    };
+  }, [conn]);
+}
+
 /** Kopfnuss on the TV: the vote, the tricks landing, the questions, the climb. */
 export function TvKopfnuss({ scene, players, conn }: Props) {
+  useKopfnussSound(scene, conn);
   const { stage } = scene;
   const round = `Runde ${scene.round} von ${scene.rounds}`;
   switch (stage.stage) {
