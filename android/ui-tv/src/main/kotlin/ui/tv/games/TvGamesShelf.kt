@@ -65,6 +65,7 @@ internal val ShelfGames =
         ShelfGame("schwimmen", "Schwimmen", "2–8 players", R.drawable.ui_tv_game_poster_schwimmen, R.drawable.ui_tv_game_backdrop_schwimmen),
         ShelfGame("durak", "Durak", "2–6 players", R.drawable.ui_tv_game_poster_durak, R.drawable.ui_tv_game_backdrop_durak),
         ShelfGame("bauherr", "Bauherr", "2–4 players", null, R.drawable.ui_tv_game_backdrop_bauherr),
+        ShelfGame("grand_allee", "Grand Allee", "2–8 players", null, null),
     )
 
 /**

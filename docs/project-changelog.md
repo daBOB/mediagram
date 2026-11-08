@@ -5,30 +5,55 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## 0.160.2 — Gipfelsturm climbs a mountain
+## 0.163.0 — Kopfnuss, the quiz with tricks
 
-**Changed** (user, 2026-11-08: "gipfelsturm change it to a climbing mountain")
-
-- The Kopfnuss finale on the TV is a mountain instead of lanes: a back range, the peak with its shaded side and snowcap, a switchback trail with a numbered station per step and a flag on the summit. Every player stands on their station and walks up the trail as they climb; players on one station stand side by side. The range and the ground run edge to edge across the TV (user: "make the mountain range go edge to edge"). Drawn as one light SVG, no 3D and no filters, so it stays cheap on the box.
-
-## 0.160.1 — Kopfnuss on the TV box
-
-**Fixed** (first simulated game on the box, 2026-11-08: three scripted phones over Wi-Fi, two more that left mid-game)
-
-- The summit bonus lifted a player past the one below only because of the tie-break: of two players who left at step 0 with 0 points, one ended with 100. Now only a higher climb (or the win) lifts a player past the one below; an equal climb keeps equal points.
-- On the Gipfelsturm board an avatar at step 0 hung half below its lane over the player's name; it now sits inside the lane at the foot.
-- On the box (Skyworth HPR302, WebView 156) the whole game ran from the shelf to the podium: 6461 frames, 1.98 % janky, median 11 ms, 99th percentile 36 ms, 2 missed vsyncs, ceremony included.
-
-## 0.160.0 — Kopfnuss, the quiz with tricks
-
-**Added** (user, 2026-11-08: a quiz party game where players vote the category and throw "spanners in their opponents' works", with less waiting than the genre's usual one question per round)
+**Added** (user, 2026-11-08: a quiz party game where players vote the category and throw "spanners in their opponents' works", with less waiting than the genre's usual one question per round; built on `feat/kopfnuss` as 0.160.0–0.160.2, renumbered here because those numbers collided with Grand Allee's)
 
 - Kopfnuss, a new game in the lobby and on the TV games shelf for 2–8 players (not in kids mode). Seven rounds: every phone votes one of three categories, picks one of two tricks and a target; the majority's category wins, a tie goes to the last-placed player still playing. Three questions follow per round in the buzzer quiz's own engine and scoring, so a game asks about 25 questions instead of the genre's 15.
 - Four tricks the target's phone draws over its answer buttons, stacking up to three: Wechselbad (buttons swap places every 1.5 s), Schneckenpost (answers trickle in letter by letter), Spiegel (mirrored text), Kleber (hold an answer one second). A fourth trick on one phone, or one it already carries, bounces off, and the TV shows it.
-- Gipfelsturm finale: each phone runs the same question stream at its own pace, a right answer climbs a step, a wrong one shuts the next question for 2 s; the leaders start a few steps up. First to the top wins, then the TV shows a fun fact from `questions/fakten.json` (60 facts) and the podium in climbing order. A summit bonus (100 points per step, more where needed) makes the points follow the climb, so the winner always has the most.
-- Category "Eure Filme" draws its questions from the library. The night's question history is now shared with a running Kopfnuss, so a later game tonight does not repeat what it asked.
+- Gipfelsturm finale: each phone runs the same question stream at its own pace, a right answer climbs a step, a wrong one shuts the next question for 2 s; the leaders start a few steps up. The TV shows a mountain running edge to edge (user: "change it to a climbing mountain", "make the mountain range go edge to edge"): a switchback trail with a station per step, each player standing on theirs, a flag on the summit. First to the top wins, then a fun fact from `questions/fakten.json` (60 facts) and the podium in climbing order. A summit bonus (100 points per step, more where a higher climb needs it) makes the points follow the climb.
+- Category "Eure Filme" draws its questions from the library. The night's question history is shared with a running Kopfnuss, so a later game tonight does not repeat what it asked.
 - A tap opens the next pick step or climb question 400 ms later, and taps up to 150 ms early count, so a double tap cannot answer a screen nobody saw and a phone whose clock runs ahead is not ignored.
+- On the box (Skyworth HPR302, WebView 156) three simulated games ran from the shelf to the podium. Janky frames per stage: rounds 1–2 %, climb 3–9 %, the shared 3D ceremony about 37 %.
 - Plan and evidence: `plans/261108-1631-kopfnuss-quiz-party-game/` in the spieltisch-games worktree.
+
+## 0.162.1 — Grand Allee's early hotel stages without dark patches
+
+**Fixed** (found in the TV scene's review screenshots)
+
+- A hotel's early stages showed black ground where its later stages would stand: a black path and west wall at Riad Atlas stage 1, black patches on Savanne at stages 1–2. Each stage was baked with the later stages already present, so it carried their shadow. `bake.py` now bakes each stage with only that stage and the earlier ones present. All ten hotels are re-baked, with zero visible overlaps and unchanged triangle counts. Before/after renders are in `plans/261108-0455-grand-allee/reports/hotels-stage-bake/`.
+
+## 0.162.0 — Grand Allee on the TV, and a town on the board
+
+**Added** (user, 2026-11-08: "start phase 4"; for the town: "Fill it with a small town")
+
+- The TV draws Grand Allee in three.js (`client/src/tv/grand-allee/`), replacing the debug board. It shows the board and dice, the hotels with their built stages in the owner's colour (a new stage rises), owner frames round bought plots, entrances as gates in the owner's colour, and avatar pawns hopping field by field (counting the occupied fields the engine skips).
+- The dice land on the thrown face. Coins fly from the payer to the owner's hotel, and every cash change flashes on the player's tag.
+- The camera looks 55° down over the whole board, leans towards the mover, and leans in closer on the north road behind the tall park hotels.
+- The HUD is drawn in the canvas: round, banner, players' cash and hotels, question and auction countdowns, sealed auction answers. Sound uses the existing race sounds.
+- A TV that pauses or reconnects picks up the current state instead of replaying what it missed. The board frees its GPU memory when rebuilt.
+- 26–51 draw calls and 10–32 k triangles per frame in the review scenes. `tools/grand-allee-preview/` renders preset scenes to 1920×1080 for review.
+- The board's town side has a small town of our own design: terraced townhouses and cottages (≤ 7.4 m, so they hide no road or hotel from the TV), a market square with stalls round a fountain, and front gardens. The board is now 8 602 triangles with a third 1024² atlas, 1.38 MB.
+- Tests pin the shipped models: unlit materials, one `stage_n` per rule stage, the dice face names, and the atlas budgets.
+
+## 0.161.0 — Grand Allee's board and dice
+
+**Added** (user, 2026-11-08: "remember this is the board layout", then "Yes, build this one")
+
+- The board is a winding road of 40 six-metre fields through the town, not an oval. Hotels sit in its bends, a river runs under the road by the Bank and the Rathaus and through a pond in the park, and the sea lies along the north. It is our own path; the classic board's photo gave the qualities, not the shape. `tools/grand-allee-models/board_path.py` is the one source of the geometry. It checks that no hotel touches the road, the water or another hotel, and writes `layout.json` for the TV.
+- `board.glb`: fields with colour inlays and icons per kind ("Bank" and "Rathaus" lettered), kerbs, plot edging, bridges at fields 1 and 21, our own Bank and Rathaus buildings, 70 trees. Light is baked in the hotels' evening look, and the GLB is unlit. 6 476 triangles, a 2048 × 1536 ground atlas and a 1024² parts atlas, 1.06 MB.
+- `die-number.glb` (ivory, pips) and `die-permit.glb` (oak: three ticks, cross, gift, double), 188 triangles each, with `face_*` empties so the TV lands them on the thrown value.
+- No visible coplanar overlaps on the board or the dice. The TV does not show the board yet; the TV scene is next.
+
+## 0.160.0 — Grand Allee plays live in the room
+
+**Added** (user, 2026-11-08: "start phase 4")
+
+- `GameKind::GrandAllee`: Grand Allee is in the lobby for 2–8 players and plays from the phones. Each turn: roll (with the leisure wing offered first), walk, Rathaus offer, the guest pays, then the field's action (buy or force-buy a plot, permit die on a Baustelle, Freier Eingang, Gratis bauen). A 6 rolls again; the game ends at the round limit or with one player left, ranked by net worth.
+- Every phone ask has a 20 s clock. On timeout, or 1.5 s after a player's phone drops, the house bot decides for them.
+- Debts are settled by auction: sealed bids on every other phone at once for 15 s, ties to the bidder nearest after the seller, the bank pays its share when nobody bids. Bids are fixed steps (10–100 % of the value) until the phone gets its own controls.
+- The TV shows a plain debug board (`TvGrandAllee.tsx`) until the 3D board lands. The Android TV games shelf lists the game.
+- The live game and the simulator share one engine (`offers.rs`, `money.rs`). The simulator's output over 300 games is unchanged.
 
 ## 0.159.0 — Grand Allee's ten hotels as 3D models
 

@@ -21,6 +21,8 @@ pub enum GameKind {
     Bauherr,
     /// Kopfnuss, the quiz where players play tricks on each other's phones.
     Kopfnuss,
+    /// Grand Allee, the hotel game for two to eight.
+    GrandAllee,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

@@ -1,11 +1,16 @@
 //! Building in Grand Allee: the permit die, what named stages cost under it,
 //! the leisure wing that needs no permit, and placing entrances.
 
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+
 use super::board::HOTELS;
 use super::rules::Table;
 
 /// The permit die: three in six approve, one each rejects, waives or doubles.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export, rename = "GrandAlleePermit")]
 pub enum Permit {
     Approved,
     Rejected,

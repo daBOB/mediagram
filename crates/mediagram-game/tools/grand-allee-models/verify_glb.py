@@ -3,7 +3,7 @@ is in the atlas), the `owner_tint` material multiplied by an owner colour, no
 extra view transform (AgX is already in the atlas).
 
 blender -b --factory-startup --python-exit-code 1 -P verify_glb.py -- \
-    --glb <hotel>.glb --out <png> [--owner "#ef476f"] [--plot 20,16]"""
+    --glb <hotel>.glb --out <png> [--owner "#ef476f"] [--plot 20,16] [--stages n]"""
 
 import argparse
 import os
@@ -21,11 +21,15 @@ ap.add_argument("--glb", required=True)
 ap.add_argument("--out", required=True)
 ap.add_argument("--owner", default="#ef476f")
 ap.add_argument("--plot", default="20,16")
+ap.add_argument("--stages", type=int, default=0, help="show stages 1..n only (0: all)")
 args = ap.parse_args(argv)
 w, d = (float(v) for v in args.plot.split(","))
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=args.glb)
+for o in bpy.data.objects:  # stage_<n>_body / stage_<n>_tint beyond the stages asked for
+    if args.stages and o.type == "MESH" and o.name.startswith("stage_") and int(o.name.split("_")[1]) > args.stages:
+        o.hide_render = True
 tint = bpy.data.materials.get("owner_tint")
 if tint:  # the TV's owner tint: atlas colour × owner colour
     nt = tint.node_tree

@@ -48,6 +48,11 @@ const KOPFNUSS_MIN: u8 = 2;
 pub(crate) const KOPFNUSS_TOO_FEW: &str = "Kopfnuss braucht mindestens 2 Spieler.";
 /// Kopfnuss asks the general pack, which is not checked for children.
 pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kindermodus.";
+/// Grand Allee's round limit scales with the table, from two to eight.
+const GRAND_ALLEE_MIN: u8 = 2;
+const GRAND_ALLEE_MAX: u8 = 8;
+pub(crate) const GRAND_ALLEE_TOO_FEW: &str = "Grand Allee braucht mindestens 2 Spieler.";
+pub(crate) const GRAND_ALLEE_TOO_MANY: &str = "Grand Allee geht mit höchstens 8 Spielern.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
@@ -87,6 +92,7 @@ impl Room {
             }
             GameKind::Race => (BOARD_MIN, BOARD_MAX, RACE_TOO_FEW, RACE_TOO_MANY),
             GameKind::Bauherr => (BOARD_MIN, BOARD_MAX, BAUHERR_TOO_FEW, BAUHERR_TOO_MANY),
+            GameKind::GrandAllee => (GRAND_ALLEE_MIN, GRAND_ALLEE_MAX, GRAND_ALLEE_TOO_FEW, GRAND_ALLEE_TOO_MANY),
             GameKind::MauMau => (CARDS_MIN, CARDS_MAX, CARDS_TOO_FEW, CARDS_TOO_MANY),
             GameKind::Schwimmen => (CARDS_MIN, CARDS_MAX, SCHWIMMEN_TOO_FEW, SCHWIMMEN_TOO_MANY),
             GameKind::Durak => (DURAK_MIN, DURAK_MAX, DURAK_TOO_FEW, DURAK_TOO_MANY),

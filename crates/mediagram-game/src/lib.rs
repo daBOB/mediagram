@@ -32,6 +32,7 @@ mod protocol_bauherr;
 mod protocol_choice;
 mod protocol_client;
 mod protocol_kopfnuss;
+mod protocol_grand_allee;
 mod protocol_poster;
 mod protocol_quiz;
 mod protocol_race;
