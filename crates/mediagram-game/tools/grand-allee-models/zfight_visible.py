@@ -2,14 +2,15 @@
 see. The board camera always looks down, so faces pointing down (undersides,
 soffits, bottoms on the ground) can never show or flicker and are skipped.
 blender -b <hotel>.blend -P zfight_visible.py   (prints ZF lines and a count)
-Works on a built file (names the parts) or a baked one (names the stage meshes)."""
+Works on a built file (names the parts) or a baked one (names the stage meshes);
+also on the baked board (`board_*` meshes) and dice (`die_*`)."""
 import bpy
 from mathutils.bvhtree import BVHTree
 
 tris, owner = [], []
 verts = []
 for o in bpy.data.objects:
-    in_stage = o.name.startswith("stage_") or (o.parent is not None and o.parent.name.startswith("stage_"))
+    in_stage = o.name.startswith(("stage_", "board_", "die_")) or (o.parent is not None and o.parent.name.startswith("stage_"))
     if o.type != "MESH" or not in_stage:
         continue
     mw = o.matrix_world

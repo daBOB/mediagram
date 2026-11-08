@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.161.0 — Grand Allee's board and dice
+
+**Added** (user, 2026-11-08: "remember this is the board layout", then "Yes, build this one")
+
+- The board is a winding road of 40 six-metre fields through the town, not an oval. Hotels sit in its bends, a river runs under the road by the Bank and the Rathaus and through a pond in the park, and the sea lies along the north. It is our own path; the classic board's photo gave the qualities, not the shape. `tools/grand-allee-models/board_path.py` is the one source of the geometry. It checks that no hotel touches the road, the water or another hotel, and writes `layout.json` for the TV.
+- `board.glb`: fields with colour inlays and icons per kind ("Bank" and "Rathaus" lettered), kerbs, plot edging, bridges at fields 1 and 21, our own Bank and Rathaus buildings, 70 trees. Light is baked in the hotels' evening look, and the GLB is unlit. 6 476 triangles, a 2048 × 1536 ground atlas and a 1024² parts atlas, 1.06 MB.
+- `die-number.glb` (ivory, pips) and `die-permit.glb` (oak: three ticks, cross, gift, double), 188 triangles each, with `face_*` empties so the TV lands them on the thrown value.
+- No visible coplanar overlaps on the board or the dice. The TV does not show the board yet; the TV scene is next.
+
 ## 0.160.0 — Grand Allee plays live in the room
 
 **Added** (user, 2026-11-08: "start phase 4")

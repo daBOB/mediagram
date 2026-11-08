@@ -133,4 +133,5 @@ def main():
                                    "tris": sum(tris.values()), "meshes": tris}))
 
 
-main()
+if __name__ == "__main__":
+    main()
