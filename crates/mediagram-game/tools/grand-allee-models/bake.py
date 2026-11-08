@@ -6,7 +6,8 @@ blender -b --factory-startup --python-exit-code 1 -P bake.py -- \
 The hotel is built in the same lit scene as the previews (`build.make`) but
 with a white owner colour, so its `tint_*` parts bake as lit white for the TV
 to multiply by the owner's colour. One UV atlas is packed over all its parts,
-the golden-hour light (glowing windows included) is baked into it and saved
+the golden-hour light (glowing windows included) is baked into it stage by
+stage (each with only the stages up to it present) and saved
 through the scene's AgX view as sRGB, so the TV shows what the previews show.
 Every part then gets an unlit material (`hotel`, or `owner_tint` for the
 tinted parts), the parts are joined per stage into `stage_<n>_body` and
@@ -48,8 +49,14 @@ def pack_atlas(objs):
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
-def bake_light(objs, res, samples):
-    """Cycles' combined pass (lit colour + emission) into one float image."""
+def bake_light(objs, res, samples, stages=None):
+    """Cycles' combined pass (lit colour + emission) into one float image.
+
+    `stages`: the parts per stage, in build order. Each stage is then baked with
+    only itself and the stages before it present: the TV shows a hotel stage by
+    stage, so an early stage must not carry the shadow and occlusion of later
+    ones (a black path where a later wing will stand). Ground a later stage
+    covers is hidden under it by then anyway."""
     img = bpy.data.images.new("atlas", res, res, alpha=False, float_buffer=True)
     added = []
     for mat in {s.material for o in objs for s in o.material_slots if s.material}:
@@ -60,11 +67,18 @@ def bake_light(objs, res, samples):
     sc = bpy.context.scene
     sc.cycles.samples = samples
     sc.render.bake.margin = 4
-    sc.render.bake.use_clear = True
-    select(objs, objs[0])
-    result = bpy.ops.object.bake(type="COMBINED")
-    if result != {"FINISHED"}:
-        raise RuntimeError(f"bake failed: {result}")
+    groups = [g for g in (stages or [objs]) if g]
+    for i, group in enumerate(groups):
+        later = [o for g in groups[i + 1:] for o in g]
+        for o in later:
+            o.hide_render = True  # out of the bake's scene: no shadow, no occlusion
+        sc.render.bake.use_clear = i == 0  # later stages add their islands to the same atlas
+        select(group, group[0])
+        result = bpy.ops.object.bake(type="COMBINED")
+        for o in later:
+            o.hide_render = False
+        if result != {"FINISHED"}:
+            raise RuntimeError(f"bake failed: {result}")
     for mat, node in added:
         mat.node_tree.nodes.remove(node)
     return img
@@ -110,7 +124,7 @@ def main():
     stages = build.make(args.hotel, WHITE, args.samples)
     parts = [c for s in stages for c in s.children if c.type == "MESH"]
     pack_atlas(parts)
-    baked = bake_light(parts, args.res, args.samples)
+    baked = bake_light(parts, args.res, args.samples, [[c for c in s.children if c.type == "MESH"] for s in stages])
     atlas_path = os.path.join(args.out, f"{args.hotel}-atlas.png")
     sc = bpy.context.scene
     sc.render.image_settings.file_format, sc.render.image_settings.color_mode = "PNG", "RGB"

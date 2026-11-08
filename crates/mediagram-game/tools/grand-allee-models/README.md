@@ -14,8 +14,8 @@ Design: spieltisch `design/grand-allee-design.md`; plan:
 | `<hotel>.py` | One builder per hotel: `build(owner_hex)` returning the `stage_1..n` empties (stage counts as in `grand_allee/board.rs`, leisure wing last) |
 | `<hotel>_kit.py` | That hotel's own shapes, materials and constants (`PLOT`, `STOREY`); Kirschblüte's few live in its builder |
 | `build.py` | Builds a hotel in the golden-hour preview scene and renders its stages and a close-up (`--no-render` only saves the `.blend`) |
-| `bake.py` | Bakes the lit colour into one atlas per hotel and exports `<hotel>.glb` for the TV |
-| `verify_glb.py` | Renders an exported GLB the way the TV draws it (unlit, owner tint multiplied) |
+| `bake.py` | Bakes the lit colour into one atlas per hotel, stage by stage (each with only the stages up to it present, so an early stage carries no later stage's shadow), and exports `<hotel>.glb` for the TV |
+| `verify_glb.py` | Renders an exported GLB the way the TV draws it (unlit, owner tint multiplied; `--stages n` shows stages 1..n only) |
 | `zfight_visible.py` | Lists coplanar overlaps the TV camera could see (faces pointing down are never visible) |
 | `check-overlaps.sh` | `zfight_visible` over every hotel, part by part, in ~15 s |
 | `bake-all.sh` | Bake, export, TV render, asset check and overlap count for every hotel |

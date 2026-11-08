@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.162.1 — Grand Allee's early hotel stages without dark patches
+
+**Fixed** (found in the TV scene's review screenshots)
+
+- A hotel's early stages showed black ground where its later stages would stand: a black path and west wall at Riad Atlas stage 1, black patches on Savanne at stages 1–2. Each stage was baked with the later stages already present, so it carried their shadow. `bake.py` now bakes each stage with only that stage and the earlier ones present. All ten hotels are re-baked, with zero visible overlaps and unchanged triangle counts. Before/after renders are in `plans/261108-0455-grand-allee/reports/hotels-stage-bake/`.
+
 ## 0.162.0 — Grand Allee on the TV, and a town on the board
 
 **Added** (user, 2026-11-08: "start phase 4"; for the town: "Fill it with a small town")
