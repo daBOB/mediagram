@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.158.0 — Grand Allee's rules engine and simulator
+
+**Added** (user, 2026-11-08: "Bauherr is just a proof of concept state … no rules defined"; game renamed Grand Allee)
+
+- `crates/mediagram-game/src/grand_allee/`: the rebuilt hotel game's rules as a pure engine for 2–8 players — a 40-field oval boulevard with ten own hotels on both sides of the road, the permit die, forced purchase of unbuilt plots at half price, debt auctions of whole properties, Rathaus entrances on passing, a 6 rolls again, the Bank stopping with two players left, round limit scored by net worth. Design: spieltisch `design/grand-allee-design.md`.
+- `grand-allee-sim`: plays thousands of bot games (three styles) at the live game's timings and prints the design's acceptance metrics. It tuned the numbers: rates halved, 280 shared turns (35 rounds at 8 players), 37–40 min at 4–8 players. Report: `plans/261108-0455-grand-allee/reports/`.
+- The live room still plays Bauherr until the TV and phones are rebuilt on the new engine.
+
 ## 0.157.0 — A curtain opens on the champions
 
 **Changed** (user, 2026-11-08: "the initial model quality is very low and its replaced by a higher quality. if its takes a bit more time to load then add a curtain to hide and then we reveal the champions")

@@ -16,6 +16,7 @@ mod factory;
 mod film_questions;
 pub mod game;
 pub mod general;
+pub mod grand_allee;
 pub mod host;
 pub mod lan;
 pub mod protocol;

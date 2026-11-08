@@ -26,6 +26,10 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 name = "game-night-dev"
 path = "src/bin/game-night-dev.rs"
 
+[[bin]]
+name = "grand-allee-sim"
+path = "src/bin/grand-allee-sim.rs"
+
 [dev-dependencies]
 tempfile.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
