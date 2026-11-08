@@ -13,7 +13,7 @@ net worth, Bank stops paying with two players left.
 |---|---|---|
 | 01 | Rules and board design | done (spieltisch `design/grand-allee-design.md`) |
 | 02 | [Rules engine and simulation](phase-02-rules-engine-and-simulation.md) | done: engine + 11 tests, simulator, tuned (rates halved, 280 shared turns); 8-player wait open for the test night |
-| 03 | 3D models (hotels with stages, pawns, dice) in Blender/Meshy, box budgets | open |
+| 03 | [3D models](phase-03-3d-models.md) — hotels with stages, dice, in Blender | done: ten themed hotels, baked GLBs in `client/public/grand-allee/` |
 | 04 | TV board and animation on the final layout | open |
 | 05 | Phone controls (hotel cards, money, choices) | open |
 | 06 | Onboarding intro, test night with people, re-timing | open |

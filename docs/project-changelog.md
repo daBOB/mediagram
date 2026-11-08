@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.159.0 — Grand Allee's ten hotels as 3D models
+
+**Added** (user, 2026-11-08: "we need the types from the original", "u can use blender when creating the 3d models")
+
+- Ten world-themed hotels with our own names and designs — Lagune (South Seas), Kirschblüte (Japan), Fjordhus (Scandinavia), Hacienda Sol (Mexico), Riad Atlas (Morocco), Alpenrose (Alps), Maharadscha (India), Skyline (New York art deco, 40 m), Savanne (safari lodge), Belle Époque (Paris) — replace Bauherr's hotel names in the Grand Allee engine. None is a hotel of the classic board game.
+- `crates/mediagram-game/tools/grand-allee-models/`: every hotel as a headless Blender 5.2 builder script, built stage by stage in the "Abendsonne" look (golden hour, matte, CC0 textures, owner colour on `tint_*` parts). `bake.py` bakes the light into one atlas per hotel and exports `client/public/grand-allee/<hotel>.glb` (unlit; a body and an owner-tint mesh per stage): about 28 k triangles and 4.2 MB for all ten.
+- Checks that come with them: a TV-view render of every GLB, a count of the coplanar overlaps the board camera could see (211 in the first bake, 0 now), and a fingerprint of every part to prove a refactor changed no model. The game does not load the hotels yet (the TV board is the next phase).
+
 ## 0.158.0 — Grand Allee's rules engine and simulator
 
 **Added** (user, 2026-11-08: "Bauherr is just a proof of concept state … no rules defined"; game renamed Grand Allee)
