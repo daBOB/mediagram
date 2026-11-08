@@ -444,16 +444,15 @@ cd android && ./gradlew installDebug   # set ANDROID_SERIAL when several devices
 Rebuild the core after any Rust change. A stale native library still builds,
 but the app crashes at launch.
 
-### Releasing to the televisions
+### Releasing to the devices
 
     scripts/release-android.sh
 
 builds the release APK (minified, arm64 + armv7), checks it is signed with
-this machine's release key, and sends it to the library channel pinned as `#mlib-app`. Every television running a
-release build downloads it on its own and installs it the next time the app
-goes to the background. Phones and tablets are updated by `adb` (Google Play
-Protect blocks an app updating itself there), and debug and benchmark builds
-never update themselves.
+this machine's release key, and sends it to the library channel pinned as `#mlib-app`. Every television, phone
+and tablet running a release build downloads it on its own and installs it the
+next time the app goes to the background. Debug and benchmark builds never
+update themselves.
 
 Two one-time steps stay behind:
 
@@ -462,9 +461,13 @@ Two one-time steps stay behind:
   and `~/.gradle/gradle.properties` carries the four `mediagram.signing.*` lines:
   `storeFile`, `storePassword`, `keyAlias=androiddebugkey` and `keyPassword`.
   Never commit either, and back the keystore up off this machine.
-- **Each television, once**, after installing the release build by `adb`:
-  `adb -s <tv> shell appops set com.mediagram.android REQUEST_INSTALL_PACKAGES allow`.
+- **Each device, once**, after installing the release build by `adb`:
+  `adb -s <device> shell appops set com.mediagram.android REQUEST_INSTALL_PACKAGES allow`.
   Without it Android asks for confirmation instead of installing.
+- **Each phone or tablet with Google Play, once:** Play Store → Play Protect →
+  settings → turn off "Scan apps with Play Protect". Play Protect otherwise
+  blocks the update ("hasn't seen an app from this developer"), even after
+  "Install anyway".
 
 ## Configuration
 

@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.159.0 — Phones and tablets update from the channel too
+
+**Changed** (user, 2026-11-08: "no i wanted to update through the channel"; chose turning off Play Protect's app scan over registering with Google or staying on adb)
+
+- **Every release build updates itself**, not only on televisions: `UpdateModule` no longer asks `isTelevision`. A phone or tablet with Google Play needs "Scan apps with Play Protect" off once, because Play Protect blocks an app-driven update from a key it has never seen (spike 2026-10-02, even after "Install anyway"). Each device still takes this release once by adb (an older build has the television check compiled in) and allows "install unknown apps" for Mediagram, by `appops` or on the screen Android shows at the first update.
+
 ## 0.158.0 — The web player says what it is waiting for
 
 **Added** (user, 2026-11-08: "the fetching poster progressbar is still missing and while the loading libary on startup can we show more detail information ?")

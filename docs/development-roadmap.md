@@ -337,8 +337,9 @@ each reached the box with no cable and no prompt, kept its sign-in, and
 0.95.2 waited out a title playing in the background before installing.
 Release with `scripts/release-android.sh` from the machine holding the key.
 Each television needs the release build installed once by adb plus the
-`REQUEST_INSTALL_PACKAGES` grant. Phones and tablets stay on adb installs
-(Play Protect blocks app-driven updates from our key). Results:
+`REQUEST_INSTALL_PACKAGES` grant. Since 0.159.0 phones and tablets update
+the same way, once "Scan apps with Play Protect" is off on them (Play Protect
+blocks app-driven updates from our key). Results:
 `plans/261002-0213-android-self-update/reports/device-acceptance-results.md`.
 
 ## Viewing stats and achievements

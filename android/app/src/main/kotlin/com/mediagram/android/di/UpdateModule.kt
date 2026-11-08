@@ -10,7 +10,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import data.isTelevision
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import player.PlayerHandle
@@ -23,10 +22,10 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object UpdateModule {
     /**
-     * A release build on a television: `self_update` is true only in the
-     * release build type (`app/build.gradle.kts`), and phones and tablets
-     * never update themselves — Google Play Protect blocks an app-driven
-     * update from a signing key it has never seen.
+     * Every release build, on any device: `self_update` is true only in the
+     * release build type (`app/build.gradle.kts`). On a phone or tablet with
+     * Google Play Protect, "Scan apps with Play Protect" must be off, or it
+     * blocks an app-driven update from a signing key it has never seen.
      */
     @Provides
     @Singleton
@@ -38,7 +37,7 @@ object UpdateModule {
         @Suppress("DEPRECATION")
         val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
         return UpdateConfig(
-            enabled = context.resources.getBoolean(R.bool.self_update) && isTelevision(context),
+            enabled = context.resources.getBoolean(R.bool.self_update),
             installedVersionCode = code,
             updatesDir = File(context.cacheDir, "updates"),
         )

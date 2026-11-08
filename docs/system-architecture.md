@@ -367,7 +367,7 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:playback` | `MlibDataSource`, `CacheProvider`, `PlayerFactory` |
 | `core:ffmpeg` | Media3's FFmpeg audio decoder, vendored, for DTS and TrueHD |
 | `core:model` | `MediaSet` and `Kind`, shared by every surface |
-| `core:update` | self-update from the channel's pinned `#mlib-app` release (release builds on televisions only) |
+| `core:update` | self-update from the channel's pinned `#mlib-app` release (every release build; phones and tablets need Play Protect's app scan off) |
 | `core:designsystem` | theme and spacing |
 | `core:testing` | `FakeCore`, the one fake of the generated core's `CoreInterface`, and the contract suite run against it and against the real core |
 | `feature:{catalog,player,setup,stats,system}` | view models and UI state, surface-independent |
