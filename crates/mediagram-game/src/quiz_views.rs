@@ -42,6 +42,7 @@ impl Quiz {
                     opens_at,
                     closes_at: Some(closes_at),
                     picked: self.answers.get(&player).map(|a| a.choice),
+                    tricks: vec![],
                 }
             }
             Stage::Reveal { .. } => {

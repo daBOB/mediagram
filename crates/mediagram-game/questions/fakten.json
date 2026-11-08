@@ -1,0 +1,73 @@
+[
+  {"category": "Geografie", "text": "Russland erstreckt sich über elf Zeitzonen."},
+  {"category": "Geografie", "text": "Der Bodensee grenzt an drei Länder: Deutschland, Österreich und die Schweiz."},
+  {"category": "Geografie", "text": "Australien ist der einzige Kontinent, den ein einziger Staat ganz einnimmt."},
+  {"category": "Geografie", "text": "Das Challengertief im Marianengraben liegt fast 11 Kilometer unter dem Meeresspiegel."},
+  {"category": "Geografie", "text": "Berlin hat mehr Brücken als Venedig."},
+
+  {"category": "Natur & Tiere", "text": "Oktopusse haben drei Herzen und blaues Blut."},
+  {"category": "Natur & Tiere", "text": "Flamingos sind rosa, weil sie Farbstoffe aus Krebstierchen und Algen fressen."},
+  {"category": "Natur & Tiere", "text": "Seesterne haben kein Gehirn."},
+  {"category": "Natur & Tiere", "text": "Wombats hinterlassen würfelförmigen Kot."},
+  {"category": "Natur & Tiere", "text": "Eine Schnecke kann ihr Haus nicht verlassen – es wächst ein Leben lang mit ihr mit."},
+
+  {"category": "Geschichte", "text": "Kleopatra lebte zeitlich näher an der Mondlandung als am Bau der Cheops-Pyramide."},
+  {"category": "Geschichte", "text": "Die Berliner Mauer stand 28 Jahre lang, von 1961 bis 1989."},
+  {"category": "Geschichte", "text": "Gutenbergs berühmte 42-zeilige Bibel entstand um 1455 in Mainz."},
+  {"category": "Geschichte", "text": "Napoleon war mit etwa 1,69 Metern für seine Zeit durchschnittlich groß."},
+  {"category": "Geschichte", "text": "Die ersten Olympischen Spiele der Neuzeit fanden 1896 in Athen statt."},
+
+  {"category": "Wissenschaft & Technik", "text": "Das Licht der Sonne braucht gut acht Minuten bis zur Erde."},
+  {"category": "Wissenschaft & Technik", "text": "Ein Tag auf der Venus dauert länger als ein Venusjahr."},
+  {"category": "Wissenschaft & Technik", "text": "Diamant und Graphit bestehen beide nur aus Kohlenstoff."},
+  {"category": "Wissenschaft & Technik", "text": "Die erste SMS wurde 1992 verschickt und lautete „Merry Christmas“."},
+  {"category": "Wissenschaft & Technik", "text": "Wasser dehnt sich beim Gefrieren aus – deshalb schwimmt Eis."},
+
+  {"category": "Sport", "text": "Ein Golfball hat meist zwischen 300 und 500 kleine Dellen."},
+  {"category": "Sport", "text": "Ein Marathon ist genau 42,195 Kilometer lang."},
+  {"category": "Sport", "text": "In 90 Minuten Fußball ist der Ball oft nur knapp eine Stunde im Spiel."},
+  {"category": "Sport", "text": "Ein Tischtennisball wiegt nur 2,7 Gramm."},
+  {"category": "Sport", "text": "Die Tour de France wurde 1903 zum ersten Mal gefahren."},
+
+  {"category": "Musik", "text": "Ein Klavier hat in der Regel 88 Tasten."},
+  {"category": "Musik", "text": "Beethoven komponierte seine 9. Sinfonie, als er fast völlig taub war."},
+  {"category": "Musik", "text": "Die Melodie von „Happy Birthday“ stammt aus einem Kinderlied von 1893."},
+  {"category": "Musik", "text": "Mozart schrieb seine ersten Stücke mit etwa fünf Jahren."},
+  {"category": "Musik", "text": "Der Kammerton a schwingt 440-mal pro Sekunde."},
+
+  {"category": "Kunst & Literatur", "text": "Die Mona Lisa hat keine sichtbaren Augenbrauen."},
+  {"category": "Kunst & Literatur", "text": "Vincent van Gogh verkaufte zu Lebzeiten nur sehr wenige Bilder."},
+  {"category": "Kunst & Literatur", "text": "Goethe arbeitete rund 60 Jahre lang an seinem „Faust“."},
+  {"category": "Kunst & Literatur", "text": "Die Brüder Grimm sammelten nicht nur Märchen, sie begannen auch das Deutsche Wörterbuch."},
+  {"category": "Kunst & Literatur", "text": "„Der kleine Prinz“ gehört zu den meistübersetzten Büchern der Welt."},
+
+  {"category": "Essen & Trinken", "text": "Honig verdirbt bei richtiger Lagerung praktisch nie."},
+  {"category": "Essen & Trinken", "text": "Erdnüsse sind botanisch keine Nüsse, sondern Hülsenfrüchte."},
+  {"category": "Essen & Trinken", "text": "Bei der Erdbeere sind die kleinen Kerne außen die eigentlichen Früchte."},
+  {"category": "Essen & Trinken", "text": "Die Kartoffel kam im 16. Jahrhundert aus Südamerika nach Europa."},
+  {"category": "Essen & Trinken", "text": "Paprika enthält oft mehr Vitamin C als eine Zitrone."},
+
+  {"category": "Sprache", "text": "„Schadenfreude“ hat es als Lehnwort bis ins Englische geschafft."},
+  {"category": "Sprache", "text": "Die „Hängematte“ geht auf ein Wort der Taíno aus der Karibik zurück: hamaca."},
+  {"category": "Sprache", "text": "Das große ẞ gehört erst seit 2017 offiziell zur deutschen Rechtschreibung."},
+  {"category": "Sprache", "text": "Das längste Wort im Duden ist „Kraftfahrzeug-Haftpflichtversicherung“."},
+  {"category": "Sprache", "text": "Das Wort „Tollpatsch“ kommt aus dem Ungarischen."},
+
+  {"category": "Film & Fernsehen", "text": "Der erste „Tatort“ lief 1970 und hieß „Taxi nach Leipzig“."},
+  {"category": "Film & Fernsehen", "text": "Die Sendung mit der Maus läuft seit 1971."},
+  {"category": "Film & Fernsehen", "text": "„Schneewittchen und die sieben Zwerge“ von 1937 war Disneys erster abendfüllender Zeichentrickfilm."},
+  {"category": "Film & Fernsehen", "text": "Die Oscar-Statuette ist rund 34 Zentimeter groß."},
+  {"category": "Film & Fernsehen", "text": "„Dinner for One“ läuft in Deutschland seit 1972 jedes Jahr an Silvester."},
+
+  {"category": "Kinderwissen", "text": "Giraffen haben genauso viele Halswirbel wie Menschen: sieben."},
+  {"category": "Kinderwissen", "text": "Schmetterlinge schmecken mit ihren Füßen."},
+  {"category": "Kinderwissen", "text": "Ein Elefant kann nicht springen."},
+  {"category": "Kinderwissen", "text": "Pinguine leben fast nur auf der Südhalbkugel."},
+  {"category": "Kinderwissen", "text": "Kaum ein Tausendfüßer hat wirklich tausend Beine."},
+
+  {"category": "Alltag", "text": "Die Rillen am Münzrand sollten früher verhindern, dass jemand Edelmetall abfeilt."},
+  {"category": "Alltag", "text": "Die kleinen Erhebungen auf den Tasten F und J helfen, die Finger ohne Hinsehen aufzulegen."},
+  {"category": "Alltag", "text": "Das Loch in vielen Kugelschreiberkappen soll verhindern, dass man an einer verschluckten Kappe erstickt."},
+  {"category": "Alltag", "text": "Menschen blinzeln etwa 15- bis 20-mal pro Minute."},
+  {"category": "Alltag", "text": "Der erste Strichcode an einer Supermarktkasse wurde 1974 gescannt – auf einer Packung Kaugummi."}
+]

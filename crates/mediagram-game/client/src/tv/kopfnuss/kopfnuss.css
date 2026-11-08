@@ -1,0 +1,165 @@
+/* Kopfnuss on the TV. The vote and the questions reuse the buzzer quiz's
+   layout (`.tv-quiz`, `.qcard`, `.tv-answers`, `.tv-table`); only what the
+   quiz has no counterpart for lives here. */
+
+.kn-vote .tv-answers {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.kn-votes {
+  margin-left: auto;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.6rem;
+}
+
+.kn-hits {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 1.6rem;
+}
+
+.kn-hits li {
+  animation: kn-land 400ms ease-out both;
+}
+
+.kn-hits li.is-bounced {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+@keyframes kn-land {
+  from { opacity: 0; transform: translateX(-1.5rem); }
+  to { opacity: 1; transform: none; }
+}
+
+.kn-seat-tricks {
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 2px var(--pink);
+  color: var(--pink);
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------ Gipfelsturm */
+
+.kn-climb {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1.6rem;
+}
+
+.kn-mountain {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+/* The drawing keeps its 16:9 shape; climbers are placed in its percentages. */
+.kn-stage {
+  position: relative;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.kn-mountain-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+
+.kn-range { fill: var(--felt-deep); }
+.kn-rock { fill: var(--card-edge); }
+.kn-shade { fill: rgb(12 42 34 / 0.14); }
+.kn-snow { fill: var(--card); }
+.kn-ground { fill: var(--felt-deep); }
+
+.kn-trail {
+  fill: none;
+  stroke: rgb(12 42 34 / 0.38);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16 12;
+}
+
+.kn-station circle {
+  fill: var(--card);
+  stroke: rgb(12 42 34 / 0.45);
+  stroke-width: 3;
+}
+
+.kn-station text {
+  fill: var(--ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  text-anchor: middle;
+}
+
+.kn-pole {
+  stroke: var(--ink);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.kn-flag { fill: var(--yellow); }
+
+/* A climber stands on its spot: the avatar above, the name on the trail. */
+.kn-climber {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  translate: -50% calc(-100% + 0.9rem);
+  transition: left 500ms ease-out, top 500ms ease-out;
+}
+
+.kn-climber-name {
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--card);
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ Fact */
+
+.kn-fact {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1.6rem;
+  text-align: center;
+}
+
+.kn-fact-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 3rem;
+}
+
+.kn-fact .qcard {
+  max-width: 60rem;
+}
+
+.kn-fact-kicker {
+  margin: 0 0 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
