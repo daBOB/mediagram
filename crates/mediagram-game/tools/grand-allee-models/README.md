@@ -31,6 +31,7 @@ Design: spieltisch `design/grand-allee-design.md`; plan:
 | `board_bake.py` | Bakes the board (ground: orthographic top-down render, 2048 × 1536; 3D parts: 1024² atlas) and exports `board.glb` (`board_ground`, `board_parts`, `board_town` with its own 1024² atlas, unlit) |
 | `dice.py` | The ivory number die and the oak permit die: rounded cubes painted by a selected-to-active bake, 256² atlases, `die-number.glb` / `die-permit.glb` with `face_*` empties at the face centres |
 | `board_review.py` | Renders the exported board with all hotels, close-ups and the dice the way the TV draws them; checks every GLB is unlit and counts triangles |
+| `glb-to-ktx2.mjs` | Turns the exported GLBs' WebP atlases into KTX2 (`KHR_texture_basisu`: Basis ETC1S, sRGB, mipmaps, RGB only), which the TV transcodes in a worker to GPU-compressed ETC1; the dice stay WebP. Bun, with the client's packages and `toktx` (KTX-Software 4.x) |
 | `fingerprint.py`, `fingerprint-all.sh` | A hash of every part's name, material and vertices per stage: identical before and after a refactor means the models did not change (no re-bake needed) |
 
 ## Run
@@ -43,10 +44,14 @@ blender -b --factory-startup --python-exit-code 1 -P board_bake.py -- --out /tmp
 blender -b --factory-startup --python-exit-code 1 -P dice.py -- --out /tmp/board
 blender -b /tmp/board/board-baked.blend -P zfight_visible.py   # also die-number-baked, die-permit-baked: must print 0
 blender -b --factory-startup --python-exit-code 1 -P board_review.py -- --glbs /tmp/board --out /tmp/board/review
-cp /tmp/board/{board,die-number,die-permit}.glb ../../client/public/grand-allee/
+cp /tmp/board/die-{number,permit}.glb ../../client/public/grand-allee/
 bash bake-all.sh /tmp/baked                   # ~50 min on the CPU; GLBs, atlases, TV renders, QA
-cp /tmp/baked/*.glb ../../client/public/grand-allee/   # what the game ships
+# what the game ships: the hotels and the board with KTX2 atlases (~1 min; bun install in client/ first)
+PATH=~/.local/opt/ktx/bin:$PATH LD_LIBRARY_PATH=~/.local/opt/ktx/lib bun glb-to-ktx2.mjs ../../client/public/grand-allee /tmp/board/board.glb /tmp/baked/*.glb
 ```
+
+`toktx` here is KTX-Software 4.4.2 unpacked in `~/.local/opt/ktx` (its `lib/` beside `bin/`); with it on the system path the two
+variables are not needed.
 
 ## Rules the models keep
 
@@ -67,6 +72,11 @@ cp /tmp/baked/*.glb ../../client/public/grand-allee/   # what the game ships
   one atlas per hotel, 1024² for the outer plots and 2048² for the wide park
   plots. The board ≤ 15 000 triangles, a 2048 × 1536 ground atlas and two 1024²
   atlases (parts, town); each die ≤ 1 500 triangles and 256².
+- **KTX2 on the TV**: the hotel and board atlases ship as Basis ETC1S, which
+  the box keeps as ETC1, half a byte per texel: all fourteen with mipmaps take
+  ~19 MB of GPU memory, against ~151 MB as RGBA from WebP (the dice's two
+  256² WebP add 0.7 MB). Quality 255: the field names, icons and facades show
+  no smearing next to the WebP in the preview (`tools/grand-allee-preview`).
 - **Own designs**: the hotels are themed on places around the world with our
   own names and architecture; none is a hotel of the classic board game.
 

@@ -59,6 +59,12 @@ Renders in `reports/board-layout/`.
    layout out, so the photo gives the qualities (winding road, water, hotels
    in the bends), not the shape. Fields are 6 m long so the four park hotels
    fit inside the loop at 70 %.
+8. **Plots follow the road, the road is curved** (user, seeing 0.162.1 on the
+   box, relayed by another session: "Each hotel has a plot of land that
+   adapts to the course of the route", "make the players road curved"): each
+   plot's land runs from the road's edge along its frontage back to the
+   hotel; neighbours share their boundary; fields are drawn along the curve.
+   `board_land.py`; plan in `reports/board-layout/curved-road-and-plot-land-plan.jpg`.
 
 Open: the tall park hotels in the north row (Skyline, Maharadscha) hide parts
 of the north road at 55°; the 4c camera leans in when a pawn walks there.
@@ -68,7 +74,9 @@ of the north road at 55°; the 4c camera leans in when a pawn walks there.
 - [x] 4a game in the room (0.160.0)
 - [x] 4b board and dice (0.161.0)
 - [x] 4c TV scene (0.162.0)
-- [ ] 4d box run — first: KTX2 for the hotel and board atlases (six 1024² and
+- [x] 4d box run (0.164.0; `plans/reports/box-run-261109-0030-grand-allee-ktx2-and-box-run-report.md`) — `spieltisch-games` is fast-forwarded to `main` 411a7a53
+  (0.163.0 on the channel: this branch + Kopfnuss + main's 0.158.0–0.159.1);
+  the next release from here is 0.164.0, box test builds say 0.163.1. First: KTX2 for the hotel and board atlases (six 1024² and
   four 2048² WebP atlases are ~117 MB on the GPU with mipmaps and decode on the
   box's main thread; Bauherr ships KTX2)
 - [ ] 4e retire Bauherr — move the helpers Grand Allee borrows (`name`,

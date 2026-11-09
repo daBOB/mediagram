@@ -24,7 +24,8 @@ import parts as p
 from board_kit import BANK, FIELD_KINDS, KERB_W, SUN, SUN_UP, TV_PITCH
 from lagune_kit import ring
 
-MARKET = (43.0, -33.0, 13.0, 9.0)  # centre x, y; width, depth
+MARKET = (13.0, 9.0)  # width, depth; it takes the first clear spot of MARKET_AT, in the south-east corner
+MARKET_AT = [(x, y) for x in (44.0, 47.0, 50.0, 53.0, 56.0) for y in (-33.0, -36.0, -30.0, -39.0)]
 TINTS = ("#f1e6cf", "#f3d9a6", "#e9c3a6", "#dfe0d2")  # plaster: cream, ochre, apricot, pale stone
 CANVAS = ("#b8503c", "#4f7d5a", "#3f6e9e")
 ROW_STEP = 7.6
@@ -42,7 +43,7 @@ def blocked(L, P, margin):
     the town side, off the board, on a plot or by the Bank or Rathaus."""
     bad = (L.road(P) < bp.ROAD / 2 + KERB_W + margin) | (L.water(P) < BANK + margin) | L.inside(P)
     bad |= (P[:, 1] > -3.5) | (np.abs(P[:, 0]) > 63.6) | (P[:, 1] < -47.8)
-    return bad | L.in_boxes(P, L.plot_boxes(margin) + [(a - margin, b - margin, c + margin, d + margin) for a, b, c, d in L.buildings])
+    return bad | L.in_land(P, margin) | L.in_boxes(P, [(a - margin, b - margin, c + margin, d + margin) for a, b, c, d in L.buildings])
 
 
 def hides(L, box, height, special):
@@ -65,9 +66,10 @@ def lots(L, seed=5):
     """(houses, market box): each house (box, eave, rise, tint, slate roof, chimney), in rows west to east."""
     rng = random.Random(seed)
     special = np.array([(f["x"], f["y"]) for f in L.fields if FIELD_KINDS[f["id"]] != "."])
-    cx, cy, mw, md = MARKET
-    market = (cx - mw / 2, cy - md / 2, cx + mw / 2, cy + md / 2)
-    assert not blocked(L, grid(market), 1.0).any() and not hides(L, market, 3.0, special), "market square not clear"
+    mw, md = MARKET
+    market = next((b for b in ((x - mw / 2, y - md / 2, x + mw / 2, y + md / 2) for x, y in MARKET_AT)
+                   if not blocked(L, grid(b), 1.0).any() and not hides(L, b, 3.0, special)), None)
+    assert market, "no clear spot for the market square"
     taken, houses = [market], []
     for y0 in np.arange(-47.4, -8.0, ROW_STEP):
         x = -63.4

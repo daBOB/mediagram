@@ -77,7 +77,7 @@ export async function startGrandAllee(container: HTMLElement, live: Live, now: (
         return { name: p?.name ?? "?", color: p?.color ?? "#999999", head, figure };
       })),
       Promise.all(["700", "800"].map((w) => document.fonts.load(`${w} 30px ${HUD_FONT}`))).catch(() => {}),
-      loadAssets(),
+      loadAssets(renderer),
     ]);
     mark("assets");
     const r = renderer, board = assets.board, scene = new THREE.Scene();

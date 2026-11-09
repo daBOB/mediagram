@@ -88,11 +88,25 @@ class Layout:
         assert not bad, bad
         self.fields, self.plots = self.data["fields"], self.data["plots"]
         self.centre = bp.Path().pts[::4]
-        self.outer = [f["corners"][0] for f in self.fields]  # the road's edge outside the loop (left of travel)
-        self.inner = [f["corners"][1] for f in self.fields]
+        # the road's curved edges, 6 points a field (a field's 7th is the next one's 1st): outside the loop (left of travel), inside
+        self.outer = [q for f in self.fields for q in f["outline"][:6]]
+        self.inner = [q for f in self.fields for q in f["outline"][:6:-1][:6]]
         self.buildings = [world_box(BANK_AT, BANK_BOX), world_box(RATHAUS_AT, RATHAUS_BOX)]
         rs = open(os.path.join(HERE, "..", "..", "src", "grand_allee", "board.rs")).read()
         assert f'b"{FIELD_KINDS}"' in rs, "field kinds differ from grand_allee/board.rs"
+
+    def edge(self, line, a, b):
+        """A road edge from the start of field a to the start of field b, round past field 39 if b <= a."""
+        k, n = len(line) // len(self.fields), len(self.fields)
+        return [line[i % len(line)] for i in range(a * k, (b if b > a else b + n) * k + 1)]
+
+    def in_land(self, P, margin=0.0):
+        """Points on a plot's land (board_path's `land`: from the road's edge back past the hotel), or within `margin` of it."""
+        P = np.asarray(P, float).reshape(-1, 2)
+        hit = np.zeros(len(P), bool)
+        for p in self.plots:
+            hit |= inside_poly(P, p["land"]) | (to_line(P, p["land"], closed=True) < margin)
+        return hit
 
     def road(self, P):
         return to_line(P, self.centre, closed=True)
@@ -104,6 +118,7 @@ class Layout:
         return np.minimum(river, np.hypot(P[:, 0] - bp.POND[0], P[:, 1] - bp.POND[1]) - bp.POND[2])
 
     def plot_boxes(self, margin=0.0):
+        """The hotels' footprints (what a hotel covers; its land reaches further, to the road)."""
         return [(p["x"] - p["w"] / 2 - margin, p["y"] - p["d"] / 2 - margin, p["x"] + p["w"] / 2 + margin,
                  p["y"] + p["d"] / 2 + margin) for p in self.plots]
 
@@ -116,10 +131,15 @@ class Layout:
         return hit
 
     def inside(self, P):
-        """Inside the road's loop (the Kurpark), by the even-odd rule."""
-        P = np.asarray(P, float).reshape(-1, 2)
-        pts = np.asarray(self.centre)
-        a, b = pts, np.roll(pts, -1, axis=0)
-        x, y = P[:, 0:1], P[:, 1:2]
-        cross = ((a[:, 1] > y) != (b[:, 1] > y)) & (x < (b[:, 0] - a[:, 0]) * (y - a[:, 1]) / (b[:, 1] - a[:, 1] + 1e-12) + a[:, 0])
-        return cross.sum(1) % 2 == 1
+        """Inside the road's loop (the Kurpark)."""
+        return inside_poly(P, self.centre)
+
+
+def inside_poly(P, poly):
+    """Points inside a polygon, by the even-odd rule."""
+    P = np.asarray(P, float).reshape(-1, 2)
+    pts = np.asarray(poly)
+    a, b = pts, np.roll(pts, -1, axis=0)
+    x, y = P[:, 0:1], P[:, 1:2]
+    cross = ((a[:, 1] > y) != (b[:, 1] > y)) & (x < (b[:, 0] - a[:, 0]) * (y - a[:, 1]) / (b[:, 1] - a[:, 1] + 1e-12) + a[:, 0])
+    return cross.sum(1) % 2 == 1

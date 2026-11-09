@@ -40,7 +40,7 @@ def spots(L, paths, avoid=(), seed=7, spacing=4.0):
         ok &= L.road(C) > bp.ROAD / 2 + KERB_W + r + 0.2
         ok &= L.water(C) > BANK + 0.6 * r
         ok &= C[:, 1] < bp.SEA_Y - BEACH - 0.5
-        ok &= ~L.in_boxes(C, L.plot_boxes(1.0) + [(x0 - 1, y0 - 1, x1 + 1, y1 + 1) for x0, y0, x1, y1 in L.buildings]
+        ok &= ~L.in_land(C, 1.0) & ~L.in_boxes(C, [(x0 - 1, y0 - 1, x1 + 1, y1 + 1) for x0, y0, x1, y1 in L.buildings]
                           + [(x0 - 1.8, y0 - 1.8, x1 + 1.8, y1 + 1.8) for x0, y0, x1, y1 in avoid])
         for line in paths:
             ok &= to_line(C, line) > PATH_W / 2 + 0.5

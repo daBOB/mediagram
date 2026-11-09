@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.164.0 — Grand Allee's curved road and plots, light on the TV box
+
+**Changed** (user, after seeing Grand Allee on the box: "Each hotel has a plot of land that adapts to the course of the route", "make the players road curved")
+
+- The road is one smooth curve: every field is drawn along it (`board_land.field_outline`), not as a straight quad. Pawns, the camera and coins follow the road's curved middle.
+- Each hotel's land runs from the road's kerb along its frontage fields back past the hotel, so it touches the road and follows every bend. Neighbouring plots share their dividing line. On the board it is a striped lawn with edging; on the TV the owner's frame runs along it. `board_path.py` checks that every hotel stands on its land and that no land overlaps another, the road or the water.
+- The board is re-baked to match: curved kerbs, inlays and bridge parapets; trees, houses and the market moved off the land. 10 598 triangles.
+
+**Performance**
+
+- The hotel and board atlases ship as Basis ETC1S KTX2 (`tools/grand-allee-models/glb-to-ktx2.mjs`, toktx 4.4.2), transcoded in a worker like Bauherr's. GPU memory for the 14 atlases drops from about 151 MB to about 19 MB. A test fails if a WebP atlas slips back in.
+- On the Skyworth box (0.163.1 test build): 2.6–3.6 s from starting the game to the board, and 58.6 fps over a whole 29-minute bot game on a 59 Hz display (0.41 % of frames over 25 ms). App GPU memory stays flat at about 196 MiB.
+
+**Fixed**
+
+- The TV's games shelf holds more games than fit on one screen. It now scrolls like the film rows. Before, the ninth card (Grand Allee) was squeezed into a tall black panel over Durak and Bauherr, and the remote could not reach it.
+
 ## 0.163.0 — Kopfnuss, the quiz with tricks
 
 **Added** (user, 2026-11-08: a quiz party game where players vote the category and throw "spanners in their opponents' works", with less waiting than the genre's usual one question per round; built on `feat/kopfnuss` as 0.160.0–0.160.2, renumbered here because those numbers collided with Grand Allee's)
