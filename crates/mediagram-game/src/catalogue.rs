@@ -27,6 +27,7 @@ pub(crate) const CATALOGUE: &[GameEntry] = &[
     entry(GameKind::Quiz),
     entry(GameKind::Poster),
     entry(GameKind::Kopfnuss),
+    entry(GameKind::Dreifelder),
     entry(GameKind::Race),
     entry(GameKind::GrandAllee),
     entry(GameKind::MauMau),
@@ -41,6 +42,8 @@ pub(crate) const fn entry(kind: GameKind) -> GameEntry {
         GameKind::Poster => ("Poster-Raten", 1, ROOM_CAP),
         // Kopfnuss needs someone to send a trick to; any room size plays.
         GameKind::Kopfnuss => ("Kopfnuss", 2, ROOM_CAP),
+        // Dreifelder needs someone to outlast.
+        GameKind::Dreifelder => ("Dreifelder", 2, ROOM_CAP),
         // The race board has four corners.
         GameKind::Race => ("Heimlauf", 2, 4),
         // Grand Allee's round limit scales with the table, from two to eight.

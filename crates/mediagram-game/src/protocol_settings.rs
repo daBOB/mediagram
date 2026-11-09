@@ -21,6 +21,8 @@ pub enum GameKind {
     Kopfnuss,
     /// Grand Allee, the hotel game for two to eight.
     GrandAllee,
+    /// Dreifelder: pick one of three fields, a wrong pick is out, last one standing wins.
+    Dreifelder,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

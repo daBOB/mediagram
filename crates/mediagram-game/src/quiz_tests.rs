@@ -108,3 +108,30 @@ fn options_contain_the_correct_answer_once() {
         assert_eq!(r.options.iter().filter(|o| **o == q.correct).count(), 1);
     }
 }
+
+#[test]
+fn three_fields_keep_the_correct_answer_and_two_random_wrong_ones() {
+    use crate::quiz_config::Round;
+    let mut rng = StdRng::seed_from_u64(3);
+    let mut dropped = std::collections::HashSet::new();
+    for q in general_pack() {
+        let r = Round::shuffled(q.clone(), &mut rng, 3);
+        assert_eq!(r.options.len(), 3);
+        assert_eq!(r.options[usize::from(r.correct)], q.correct);
+        assert!(r.options.iter().filter(|o| **o != q.correct).all(|o| q.wrong.contains(o)));
+        dropped.insert(q.wrong.iter().position(|w| !r.options.contains(w)));
+    }
+    assert!(dropped.len() > 1, "always the same wrong answer left out: {dropped:?}");
+}
+
+#[test]
+fn three_fields_put_the_right_answer_in_every_field_about_equally() {
+    use crate::quiz_config::Round;
+    let mut rng = StdRng::seed_from_u64(11);
+    let q = general_pack().remove(0);
+    let mut fields = [0u32; 3];
+    for _ in 0..3000 {
+        fields[usize::from(Round::shuffled(q.clone(), &mut rng, 3).correct)] += 1;
+    }
+    assert!(fields.iter().all(|&n| (900..=1100).contains(&n)), "right answer per field: {fields:?}");
+}

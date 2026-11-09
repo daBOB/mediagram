@@ -22,6 +22,8 @@ impl Default for Readiness {
 pub(crate) const NOT_ENOUGH_POSTERS: &str = "Nicht genug Poster für dieses Spiel.";
 /// Kopfnuss asks the general pack, which is not checked for children.
 pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kindermodus.";
+/// Dreifelder asks the general pack too, which is not checked for children.
+pub(crate) const DREIFELDER_NOT_FOR_KIDS: &str = "Dreifelder gibt es nicht im Kindermodus.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
@@ -62,6 +64,7 @@ impl Room {
                 return (!ready).then(|| NOT_ENOUGH_POSTERS.into());
             }
             GameKind::Kopfnuss if s.kids_only => return Some(KOPFNUSS_NOT_FOR_KIDS.into()),
+            GameKind::Dreifelder if s.kids_only => return Some(DREIFELDER_NOT_FOR_KIDS.into()),
             _ => {}
         }
         let GameEntry { name, min, max, .. } = entry(s.game);

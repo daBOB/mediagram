@@ -6,6 +6,10 @@
 pub mod avatars;
 mod cards;
 mod catalogue;
+mod dreifelder;
+mod dreifelder_config;
+mod dreifelder_rules;
+mod dreifelder_views;
 mod factory;
 mod film_questions;
 mod kopfnuss;
@@ -23,6 +27,7 @@ pub mod lan;
 pub mod protocol;
 mod protocol_cards;
 mod protocol_choice;
+mod protocol_dreifelder;
 mod protocol_client;
 mod protocol_kopfnuss;
 mod protocol_grand_allee;

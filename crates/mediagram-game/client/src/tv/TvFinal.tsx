@@ -5,6 +5,12 @@ import { Token } from "../ui/Token";
 import type { CeremonyHandle } from "./ceremony/ceremony-stage";
 import "./ceremony/ceremony.css";
 
+/** `players` in a game's finishing `order`; anyone not in it is left out. */
+export const byFinish = (players: PlayerInfo[], order: number[]) => {
+  const place = new Map(order.map((id, i) => [id, i]));
+  return players.filter((p) => place.has(p.id)).sort((a, b) => place.get(a.id)! - place.get(b.id)!);
+};
+
 /**
  * The awards ceremony every game ends on: title above, the top three on a
  * podium as a WebGL band (three.js loads with this screen only; no HTML over

@@ -3,9 +3,11 @@ import type { AvatarSlot } from "./AvatarSlot";
 import type { BidRange } from "./BidRange";
 import type { CardDesk } from "./CardDesk";
 import type { ChoiceOption } from "./ChoiceOption";
+import type { ChoiceStatus } from "./ChoiceStatus";
 import type { GameEntry } from "./GameEntry";
 import type { HotelCard } from "./HotelCard";
 import type { LobbySettings } from "./LobbySettings";
+import type { OutcomeKey } from "./OutcomeKey";
 import type { SheetLine } from "./SheetLine";
 import type { Tone } from "./Tone";
 import type { Trick } from "./Trick";
@@ -26,7 +28,15 @@ games: Array<GameEntry>, } | { "kind": "wait", title: string, text: string | nul
 /**
  * Kopfnuss nuisances drawn over the buttons; empty in every other game.
  */
-tricks: Array<Trick>, } | { "kind": "sheet", lines: Array<SheetLine>, hotels: Array<HotelCard>, prompt: string | null, options: Array<ChoiceOption>, opens_at: number, 
+tricks: Array<Trick>, 
+/**
+ * Numbers on the buttons (1, 2, 3 …), matching numbered fields on the TV.
+ */
+numbered: boolean, 
+/**
+ * A line under the clock; when the player is `out`, the buttons fade.
+ */
+status: ChoiceStatus | null, } | { "kind": "sheet", lines: Array<SheetLine>, hotels: Array<HotelCard>, prompt: string | null, options: Array<ChoiceOption>, opens_at: number, 
 /**
  * The decision's clock; None while this phone has nothing to decide.
  */
@@ -34,4 +44,12 @@ closes_at: number | null,
 /**
  * A sealed bid to set instead of options.
  */
-bid: BidRange | null, } | { "kind": "outcome", title: string, text: string | null, tone: Tone, points: number, } | { "kind": "cards", desk: CardDesk, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };
+bid: BidRange | null, } | { "kind": "outcome", title: string, text: string | null, tone: Tone, points: number, 
+/**
+ * Answers drawn as small keys, e.g. the player's pick and the right one.
+ */
+keys: Array<OutcomeKey>, 
+/**
+ * The running score under the result; off where a game scores only at the end.
+ */
+show_score: boolean, } | { "kind": "cards", desk: CardDesk, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };

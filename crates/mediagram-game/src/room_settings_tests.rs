@@ -35,6 +35,7 @@ fn each_game_starts_within_its_seat_range() {
         (GameKind::Schwimmen, 2, 8, "Schwimmen braucht mindestens 2 Spieler.", None),
         (GameKind::Durak, 2, 6, "Durak braucht mindestens 2 Spieler.", Some("Durak geht mit höchstens 6 Spielern.")),
         (GameKind::Kopfnuss, 2, 8, "Kopfnuss braucht mindestens 2 Spieler.", None),
+        (GameKind::Dreifelder, 2, 8, "Dreifelder braucht mindestens 2 Spieler.", None),
     ];
     for (game, min, max, too_few, too_many) in table {
         let mut r = room(8);
@@ -151,4 +152,16 @@ fn kopfnuss_is_not_for_kids_mode() {
     hello(&mut r, 2, "Ben", None);
     configure(&mut r, 1, GameKind::Kopfnuss, QuizMode::Mixed, true);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::KOPFNUSS_NOT_FOR_KIDS));
+}
+
+#[test]
+fn dreifelder_needs_two_players_and_no_kids_mode() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::Dreifelder, QuizMode::Mixed, false);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == "Dreifelder braucht mindestens 2 Spieler."));
+    hello(&mut r, 2, "Ben", None);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
+    configure(&mut r, 1, GameKind::Dreifelder, QuizMode::Mixed, true);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::DREIFELDER_NOT_FOR_KIDS));
 }

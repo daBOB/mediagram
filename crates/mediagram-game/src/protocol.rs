@@ -22,7 +22,8 @@ pub use crate::protocol_grand_allee::{
     GrandAlleeAuction, GrandAlleeBoard, GrandAlleeEntrance, GrandAlleeEstate, GrandAlleeFieldKind, GrandAlleeHotel, GrandAlleeMark,
     GrandAlleePermit, GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn,
 };
-pub use crate::protocol_choice::{AnswerColor, BidRange, ChoiceOption, HotelCard, SheetLine, Tone};
+pub use crate::protocol_dreifelder::{DreifelderScene, DreifelderStage, FieldPick, OutPlayer};
+pub use crate::protocol_choice::{AnswerColor, BidRange, ChoiceOption, ChoiceStatus, HotelCard, OutcomeKey, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
@@ -112,6 +113,10 @@ pub enum PhoneScreen {
         picked: Option<u8>,
         /// Kopfnuss nuisances drawn over the buttons; empty in every other game.
         tricks: Vec<Trick>,
+        /// Numbers on the buttons (1, 2, 3 …), matching numbered fields on the TV.
+        numbered: bool,
+        /// A line under the clock; when the player is `out`, the buttons fade.
+        status: Option<ChoiceStatus>,
     },
     /// A status sheet for money games: header lines (cash, holdings), a prompt
     /// and options answered with `Action::Choose` (a bid with `Action::Bid`). Without options it only
@@ -132,6 +137,10 @@ pub enum PhoneScreen {
         text: Option<String>,
         tone: Tone,
         points: i32,
+        /// Answers drawn as small keys, e.g. the player's pick and the right one.
+        keys: Vec<OutcomeKey>,
+        /// The running score under the result; off where a game scores only at the end.
+        show_score: bool,
     },
     /// A card table: own hand, buttons and what is on the table.
     Cards {
@@ -176,4 +185,5 @@ pub enum TvScene {
     Cards { scene: CardsScene },
     Kopfnuss { scene: KopfnussScene },
     GrandAllee { scene: GrandAlleeScene },
+    Dreifelder { scene: DreifelderScene },
 }

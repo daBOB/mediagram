@@ -5,6 +5,7 @@ import type { PhoneView } from "../protocol/PhoneView";
 import type { ServerMsg } from "../protocol/ServerMsg";
 import { CardsDesk } from "./CardsDesk";
 import { ChoiceScreen } from "./ChoiceScreen";
+import { OutcomeScreen } from "./OutcomeScreen";
 import { PhoneLobby } from "./PhoneLobby";
 import { PhoneSheet } from "./PhoneSheet";
 import { buzz, memory as store } from "./app-bridge";
@@ -152,14 +153,7 @@ function Screen({ view, conn }: { view: PhoneView; conn: Connection }) {
     case "sheet":
       return <PhoneSheet screen={screen} conn={conn} />;
     case "outcome":
-      return (
-        <section className={`screen outcome tone-${screen.tone}`}>
-          <h1 className="screen-title">{screen.title}</h1>
-          {screen.points > 0 && <p className="points">+{screen.points}</p>}
-          {screen.text && <p className="screen-text">{screen.text}</p>}
-          <p className="hint">Stand: {me.score} Punkte</p>
-        </section>
-      );
+      return <OutcomeScreen screen={screen} score={me.score} />;
     case "final":
       return (
         <section className="screen final">

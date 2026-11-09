@@ -70,6 +70,8 @@ impl RaceGame {
                 closes_at: None,
                 picked: None,
                 tricks: vec![],
+                numbered: false,
+                status: None,
             },
             Stage::Rolled { at, .. } if view.now < self.lands_at(*at) => wait("Der Würfel rollt …".into(), None),
             Stage::Rolled { value, at, moves, tries } => match moves.len() {
@@ -88,6 +90,8 @@ impl RaceGame {
                     closes_at: None,
                     picked: None,
                     tricks: vec![],
+                    numbered: false,
+                    status: None,
                 },
             },
             Stage::Moving { mv, .. } => match mv.captures {
