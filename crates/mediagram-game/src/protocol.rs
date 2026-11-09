@@ -15,10 +15,6 @@ pub use crate::cards::{Card, Rank, Suit};
 pub use crate::protocol_cards::{
     ButtonNeeds, CardDesk, CardsBanner, CardsEvent, CardsEventKind, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard,
 };
-pub use crate::protocol_bauherr::{
-    BauherrBoard, BauherrEntrance, BauherrEstate, BauherrLevel, BauherrMark, BauherrPermit, BauherrPlot, BauherrScene,
-    BauherrSeat, BauherrTile, BauherrTileKind, BauherrTurn,
-};
 pub use crate::protocol_client::{Action, ClientMsg, Role};
 pub use crate::protocol_kopfnuss::{Climber, KopfnussScene, KopfnussStage, Trick, TrickHit, TrickLoad};
 pub use crate::protocol_grand_allee::{
@@ -169,7 +165,6 @@ pub enum TvScene {
     Poster { scene: PosterScene },
     Race { scene: RaceScene },
     Cards { scene: CardsScene },
-    Bauherr { scene: BauherrScene },
     Kopfnuss { scene: KopfnussScene },
     GrandAllee { scene: GrandAlleeScene },
 }

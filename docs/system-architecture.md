@@ -950,7 +950,7 @@ AirPlay code.
 ### Game night
 
 The TV box hosts party games for phones on the same network: a buzzer quiz, a
-poster-guessing game, two board games (Heimlauf, Bauherr) and three card games
+poster-guessing game, two board games (Heimlauf, Grand Allee) and three card games
 (Mau-Mau, Schwimmen, Durak). It is a feature of the TV app only, and it is the one
 place the app serves something rather than only fetching.
 
@@ -1113,37 +1113,37 @@ table (`tv/cards/`) reuses Heimlauf's lacquered table, music and settings; the
 note and seat text is pre-drawn (`cards-texts.ts`), so no texture is made
 mid-game. Rules and decisions per game: `plans/261107-0207-card-games-and-bauherr/`.
 
-**Bauherr, the hotel game.** An own game with Hotel's mechanics only (plots,
-a permit die, entrances, guests paying per night) — own name, hotels, board and
-prices. 2–4 players, currency Taler. The board is data (`bauherr_board.rs`): a
-36-field ring with Bank, Rathaus, Bauplatz, Baustelle and Freier Eingang fields
-and 8 hotel plots, each bordering its own fields; the scene carries it, so the
-TV has one source of truth. The permit die decides a build (genehmigt ×3,
-abgelehnt, gratis = first chosen stage free, doppelt = every chosen stage
-double); guests roll for nights and pay nights × the hotel's current rate; a
-player who cannot pay is sold out to the bank at half price, top stages first,
-and goes out if that is not enough. The game ends on a round limit
-(`TURN_BUDGET` 180 turns shared by the players, tuned to ~50 min at human pace)
-or when one player is left; net worth (cash + land + stage costs) is the score.
-A follow-up question that a tap opens (the Rathaus menu repeats until *Fertig*)
-opens 400 ms later on the host, so a double tap cannot answer it. The phone uses
+**Grand Allee, the hotel game.** An own game in the hotel-building family
+(plots, a permit die, entrances, guests paying per night): own name, ten hotels,
+board and prices. 2–8 players, currency Taler. `src/grand_allee/` holds the rules
+as plain data and pure table operations (`board.rs`: a ring of 40 fields with ten
+hotels; `rules.rs`, `building.rs`, `debts.rs`, `money.rs`, `offers.rs`), a bot
+simulator that tuned the numbers (`play.rs`, `bots.rs`, `actions.rs`), and the
+live game on the `Game` trait (`live*.rs`). A game lasts 280 turns shared by the
+players (30 to 120 rounds) or until one player is left; net worth is the score.
+Every decision has a 20 s clock, after which the house bot decides, as it does at
+once for an absent player and for the rest of a turn whose clock ran out. A player
+who cannot pay sells whole properties in a sealed debt auction that opens on every
+other phone at once; the bank buys what nobody bids on. A question that a tap opens
+opens 400 ms later, so a double tap cannot answer it. The phone uses
 `PhoneScreen::Sheet`, a generic money sheet (lines, prompt, options answered by
-`Action::Choose`) meant for later money games too.
+`Action::Choose`).
 
-The TV board (`client/src/tv/bauherr/`, `TvBauherr.tsx`) is three.js drawing a
-town painted offline: `tools/bauherr-bake/` builds the winding 36-field road, the
-eight hotels stage by stage and their landscapes in headless Chrome and writes
-`client/public/bauherr/` (`world.json` + `world.bin` + images, Poly Haven CC0, see
-`SOURCES.md`), so the box decodes images instead of painting at load. The big images
-are Basis ETC1S KTX2 with mipmaps, transcoded in a worker (`public/bauherr/basis/`),
-and the scene and its shaders are built while they arrive (`bauherr-assets.ts`); the
-start is about 4 s on the box. The camera (`bauherr-camera.ts`) leans toward the pawn
-whose turn it is and eases back to the overview. A hotel's
-stages lie one after another in its mesh, so building a stage moves a draw range
-(it rises in a scaffold). Owner colours (awnings, flags, signs, property lines,
-canopies) are baked white and tinted on the TV, so one bake serves every player.
-`bauherr-layout.ts` is the one map from the rules' fields and hotels to positions;
-the bake and the TV both read it, and a test checks it against `bauherr_board.rs`.
+The TV board (`client/src/tv/grand-allee/`, `TvGrandAllee.tsx`) is three.js
+drawing models built and baked headless in Blender by `tools/grand-allee-models/`
+(see its README): `board.glb` (a winding road along a river and the sea, the Bank,
+the Rathaus and a small town) and one GLB per hotel whose stages are
+`stage_<n>_body` and `stage_<n>_tint` meshes. The evening light is baked into the
+atlases and the materials are unlit; owner colours are the tint meshes, baked white
+and multiplied on the TV, so one bake serves every player. `board_path.py` writes
+`public/grand-allee/layout.json`, the one map from the rules' fields and hotels to
+positions: the curve the pawns walk, each field's outline and each plot's land.
+The hotel and board atlases are Basis ETC1S KTX2 with mipmaps, transcoded in a
+worker (`public/basis/`, three's transcoder), about 19 MB of GPU memory for all
+fourteen. Pawns are the players' avatars as sprites; the HUD is drawn into the
+canvas. On the Skyworth box the board is up 2.6–3.6 s after the start and a whole
+bot game runs at 58.6 fps. Plans and box measurements:
+`plans/261108-0455-grand-allee/`.
 
 **Every player has an avatar.** The host owns the catalogue of 22
 (`avatars.rs`; ids are the folder names under `assets/game-night/avatars/`)

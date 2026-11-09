@@ -3,8 +3,7 @@
 // face_* empties, the atlas budgets in that tool's README, and the hotels' and board's atlases as KTX2 the box transcodes to ETC1.
 import { expect, test } from "bun:test";
 import * as THREE from "three";
-import { FACE_UP } from "../src/tv/bauherr/bauherr-dice";
-import { faceTurn, faceValue } from "../src/tv/grand-allee/grand-allee-dice";
+import { FACE_UP, faceTurn, faceValue } from "../src/tv/grand-allee/grand-allee-dice";
 import { boardData, testBoard } from "./grand-allee-fixture";
 
 interface Gltf {

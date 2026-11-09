@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 
-use crate::bauherr::{BauherrConfig, BauherrGame};
 use crate::game::{Game, GameFactory};
 use crate::kopfnuss::KopfnussGame;
 use crate::kopfnuss_config::KopfnussConfig;
@@ -56,9 +55,6 @@ pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless:
         }
         if settings.game == GameKind::Durak {
             return Box::new(DurakGame::new(DurakConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
-        }
-        if settings.game == GameKind::Bauherr {
-            return Box::new(BauherrGame::new(BauherrConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
         }
         if settings.game == GameKind::GrandAllee {
             return Box::new(GrandAlleeGame::new(GrandAlleeConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;

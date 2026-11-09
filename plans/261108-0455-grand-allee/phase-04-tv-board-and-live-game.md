@@ -79,6 +79,8 @@ of the north road at 55°; the 4c camera leans in when a pawn walks there.
   the next release from here is 0.164.0, box test builds say 0.163.1. First: KTX2 for the hotel and board atlases (six 1024² and
   four 2048² WebP atlases are ~117 MB on the GPU with mipmaps and decode on the
   box's main thread; Bauherr ships KTX2)
-- [ ] 4e retire Bauherr — move the helpers Grand Allee borrows (`name`,
-  `taler`, `grouped` in Rust; glide, HUD font, dice helpers and the `/bauherr/`
-  die images in the client) to shared places first
+- [x] 4e retire Bauherr (0.165.0) — the borrowed helpers moved into Grand Allee
+  first (`grand_allee/live_text.rs`; glide, timing log, blobs, answer colours on
+  the TV; the transcoder to `public/basis/`); the painted stand-in dice went
+  with Bauherr, the Blender dice are required. The HUD font is Heimlauf's
+  (`race-hud.ts`), not Bauherr's, and stays.

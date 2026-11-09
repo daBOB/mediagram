@@ -3,7 +3,7 @@
 use super::board::FIELDS;
 use super::live::{GrandAlleeGame, Stage, Step};
 use super::live_asks::Ask;
-use crate::bauherr::name;
+use super::live_text::name;
 use crate::game::GameCtx;
 use crate::protocol::ServerTime;
 use crate::room_seats::Player;

@@ -5,7 +5,7 @@
 use super::board::{field, Field, HOTELS};
 use super::live::{GrandAlleeGame, HOUSE};
 use super::rules::Permit;
-use crate::bauherr::taler;
+use super::live_text::taler;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Opt {

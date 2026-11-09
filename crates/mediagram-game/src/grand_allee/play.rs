@@ -10,7 +10,7 @@ use super::bots::{Bot, Style, STYLES};
 use super::rules::{Rules, Table};
 
 /// Seconds per beat: the die (flight 1.15 s + shown 0.9 s), a hop and a note
-/// from Bauherr's live timings; a tap (roll, extra turn), a real decision and
+/// from the live game's timings; a tap (roll, extra turn), a real decision and
 /// a sealed auction assumed until the test night measures them.
 pub struct Pace {
     pub die: f64,

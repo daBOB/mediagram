@@ -4,7 +4,7 @@ use super::board::HOTELS;
 use super::live::{GrandAlleeGame, Stage};
 use super::live_asks::Opt;
 use super::rules::{permit_for, Permit};
-use crate::bauherr::taler;
+use super::live_text::taler;
 use crate::game::GameCtx;
 use crate::protocol::ServerTime;
 

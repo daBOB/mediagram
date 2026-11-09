@@ -8,7 +8,7 @@ use super::board::HOTELS;
 use super::live::{Bid, GrandAlleeGame, Stage};
 use super::live_asks::Opt;
 use super::rules::Permit;
-use crate::bauherr::{grouped, name, taler};
+use super::live_text::{grouped, name, taler};
 use crate::game::ViewCtx;
 use crate::protocol::{AnswerColor, ChoiceOption, PhoneScreen, PlayerId, SheetLine};
 

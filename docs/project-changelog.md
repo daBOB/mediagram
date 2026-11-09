@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.165.0 — Bauherr retired: Grand Allee is the hotel game
+
+**Removed** (user's decision when Grand Allee was planned: it replaces Bauherr rather than standing beside it)
+
+- Bauherr is gone from the lobby, the phones and the TV games shelf. `GameKind::Bauherr`, its rules, turn flow and views, its wire types, the TV board (`client/src/tv/bauherr/`), its baked town (`client/public/bauherr/`, 8.8 MB) and its headless-Chrome bake (`tools/bauherr-bake/`) are deleted.
+
+**Changed**
+
+- What Grand Allee borrowed from Bauherr now lives with it: the name and Taler formatting on the host (`grand_allee/live_text.rs`, now tested), and on the TV the camera's glide, the start and frame timing log (marks and beacon now named `grand-allee`), the shadow blobs and the answer colours. The Basis transcoder moved to `public/basis/`.
+- The dice are always the Blender models; the painted Bauherr dice that stood in before the models existed are gone.
+
 ## 0.164.0 — Grand Allee's curved road and plots, light on the TV box
 
 **Changed** (user, after seeing Grand Allee on the box: "Each hotel has a plot of land that adapts to the course of the route", "make the players road curved")

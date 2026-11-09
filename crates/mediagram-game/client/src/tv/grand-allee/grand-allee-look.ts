@@ -1,6 +1,7 @@
 // What the Grand Allee board looks like on the TV beyond the layout itself: the camera, sizes, colours and the times of the
 // TV's own animations. The server's clocks (dice flight and show, hops, questions, auctions) come with the scene; these are the TV's.
 
+import type { AnswerColor } from "../../protocol/AnswerColor";
 import type { GrandAlleeFieldKind } from "../../protocol/GrandAlleeFieldKind";
 
 /** The overview (user, 2026-11-08): 55 degrees down from the south onto three's ground point `at` [x, z], `dist` metres away. */
@@ -27,6 +28,8 @@ export const KIND_COLORS: Record<GrandAlleeFieldKind, string> = {
   bank: "#e9c46a", rathaus: "#e76f51", plot: "#bfb7a8", site: "#8d99ae", free_entrance: "#90be6d", free_build: "#4ea8de", allee: "#d8d2c4",
 };
 export const GROUND = { grass: "#6d8f45", water: "#3b7fb8", road: "#6f665b", edge: "#5a4330", side: "#46331f", table: "#22170f", free: "#9a9184" };
+/** The answer buttons' colours, on the rings and badges of the fields a question offers. */
+export const MARK_COLORS: Record<AnswerColor, string> = { blue: "#2c6bed", orange: "#f2862e", yellow: "#f6c731", pink: "#e5487f" };
 /** Behind the board: the page's own background. */
 export const SKY = "#1a110b";
 /** Towards the sun the hotels were baked under, low from the left front: it shades the small pieces and casts the blobs. */

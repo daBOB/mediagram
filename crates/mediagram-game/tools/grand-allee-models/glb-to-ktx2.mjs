@@ -1,5 +1,5 @@
-// Turns the baked GLBs' WebP atlases into KTX2 (KHR_texture_basisu: Basis ETC1S, sRGB, mipmaps, no alpha), Bauherr's toktx
-// settings (tools/bauherr-bake/bake.mjs) but for the quality. The TV box transcodes them in a worker straight to GPU-compressed
+// Turns the baked GLBs' WebP atlases into KTX2 (KHR_texture_basisu: Basis ETC1S, sRGB, mipmaps, no alpha) at quality
+// 255. The TV box transcodes them in a worker straight to GPU-compressed
 // ETC1 (half a byte per texel, an eighth of RGBA), instead of decoding WebP, uploading it as RGBA and building mipmaps.
 // Usage: bun glb-to-ktx2.mjs <out-dir> <in.glb> ...   (writes <out-dir>/<same name>.glb; the dice stay WebP: 256² is tiny)
 // Needs bun install in client/ and toktx from KTX-Software 4.x on PATH (or TOKTX=/path/to/toktx); KTX_QLEVEL to try others.

@@ -5,7 +5,7 @@ import * as THREE from "three";
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
 import { avatarHeadUrl } from "../../ui/Token";
-import { FrameLog, mark, reportStart } from "../bauherr/bauherr-timing";
+import { FrameLog, mark, reportStart } from "./grand-allee-timing";
 import { HUD_FONT } from "../race/race-hud";
 import { RaceSound } from "../race/race-sound";
 import { imageOrNull } from "../race/race-world";
@@ -86,7 +86,7 @@ export async function startGrandAllee(container: HTMLElement, live: Live, now: (
     buildBoard(scene, board, first.scene.board.fields, assets.boardModel);
     const hotels = assets.hotels.map((root, i) => buildHotel(scene, root, board.plots[i], first.scene.board.hotels[i]?.stages.length ?? 0));
     const grounds = new Grounds(scene, board), pieces = new Pieces(scene, r, looks);
-    const dice = new Dice(scene, board, assets.dice, assets.ivory, assets.oak), hud = new GrandAlleeHud(r, looks);
+    const dice = new Dice(scene, board, assets.dice), hud = new GrandAlleeHud(r, looks);
     const motion = new GrandAlleeMotion(board, hotels, grounds, pieces, dice);
     r.info.autoReset = false; // the board and the HUD are two renders of one frame
 

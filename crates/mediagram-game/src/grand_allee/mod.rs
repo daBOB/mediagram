@@ -12,6 +12,7 @@ mod live_asks;
 mod live_choose;
 mod live_debts;
 mod live_turn;
+mod live_text;
 mod live_tv;
 mod live_views;
 mod money;

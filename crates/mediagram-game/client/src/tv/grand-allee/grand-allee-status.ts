@@ -2,9 +2,9 @@
 
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
-import { taler } from "../bauherr/bauherr-status";
 
 const PERMIT_WORD = { approved: "Genehmigt!", rejected: "Abgelehnt!", free: "Gratis!", double: "Doppelt!" } as const;
+export const taler = (n: number, short = false) => `${n.toLocaleString("de-DE")} ${short ? "T" : "Taler"}`;
 export const nights = (n: number) => `${n} ${n === 1 ? "Nacht" : "Nächte"}`;
 
 /** Whom the banner is about: the mover, the seller at an auction, the winner at the end. */

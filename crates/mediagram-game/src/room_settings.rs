@@ -19,8 +19,7 @@ impl Default for Readiness {
 }
 
 pub(crate) const NOT_ENOUGH_POSTERS: &str = "Nicht genug Poster für dieses Spiel.";
-/// The board games seat two to four: the race board has four corners, and
-/// Bauherr's round limit is tuned for that many.
+/// The race board seats two to four: it has four corners.
 const BOARD_MIN: u8 = 2;
 const BOARD_MAX: u8 = 4;
 pub(crate) const RACE_TOO_FEW: &str = "Heimlauf braucht mindestens 2 Spieler.";
@@ -40,8 +39,6 @@ const DURAK_MAX: u8 = 6;
 pub(crate) const DURAK_TOO_FEW: &str = "Durak braucht mindestens 2 Spieler.";
 pub(crate) const DURAK_TOO_MANY: &str = "Durak geht mit höchstens 6 Spielern.";
 
-pub(crate) const BAUHERR_TOO_FEW: &str = "Bauherr braucht mindestens 2 Spieler.";
-pub(crate) const BAUHERR_TOO_MANY: &str = "Bauherr geht mit höchstens 4 Spielern.";
 
 /// Kopfnuss needs someone to send a trick to; any room size plays.
 const KOPFNUSS_MIN: u8 = 2;
@@ -91,7 +88,6 @@ impl Room {
                 return (!ready).then_some(NOT_ENOUGH_POSTERS);
             }
             GameKind::Race => (BOARD_MIN, BOARD_MAX, RACE_TOO_FEW, RACE_TOO_MANY),
-            GameKind::Bauherr => (BOARD_MIN, BOARD_MAX, BAUHERR_TOO_FEW, BAUHERR_TOO_MANY),
             GameKind::GrandAllee => (GRAND_ALLEE_MIN, GRAND_ALLEE_MAX, GRAND_ALLEE_TOO_FEW, GRAND_ALLEE_TOO_MANY),
             GameKind::MauMau => (CARDS_MIN, CARDS_MAX, CARDS_TOO_FEW, CARDS_TOO_MANY),
             GameKind::Schwimmen => (CARDS_MIN, CARDS_MAX, SCHWIMMEN_TOO_FEW, SCHWIMMEN_TOO_MANY),

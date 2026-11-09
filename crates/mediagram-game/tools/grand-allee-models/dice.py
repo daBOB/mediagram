@@ -1,6 +1,6 @@
 """Grand Allee's two dice for the TV: an ivory number die with dark pips and an
 oak permit die with burnt-in signs (tick: approved, cross: rejected, a parcel:
-free, x2: double), as Bauherr painted them (tools/bauherr-bake/page/dice-faces.mjs).
+free, x2: double).
 
 blender -b --factory-startup --python-exit-code 1 -P dice.py -- --out <dir>
 
@@ -8,10 +8,10 @@ Each is a rounded cube; its faces are painted by a selected-to-active bake from
 flat decals on a copy, at 1024^2, scaled to a 256^2 atlas (that is the
 anti-aliasing). Light is an even sky, no sun: a die tumbles, and a baked sun
 would end up lighting a face that lands on top from below. Saved with the
-Standard view, so the colours are Bauherr's; the GLB is unlit.
+Standard view, so the colours are as picked; the GLB is unlit.
 
-Faces, as Bauherr's dice (client/src/tv/bauherr/bauherr-dice.ts NUMBER_FACES,
-FACE_UP): value 1 on glTF +x, 6 -x, 2 +y, 5 -y, 3 +z, 4 -z (Blender: 1 +X,
+Faces (the TV turns them up by FACE_UP in
+client/src/tv/grand-allee/grand-allee-dice.ts): value 1 on glTF +x, 6 -x, 2 +y, 5 -y, 3 +z, 4 -z (Blender: 1 +X,
 6 -X, 2 +Z, 5 -Z, 3 -Y, 4 +Y). The permit die shows on each face the permit
 of that value (grand_allee/building.rs permit_for). Every drawing is upright
 for the TV once FACE_UP has turned its face to the top. Empties at the face
@@ -33,13 +33,13 @@ import board_ink as ink  # noqa: E402
 import materials as m  # noqa: E402
 import parts as p  # noqa: E402
 
-SIZE, ROUND = 1.2, 0.11  # Bauherr's DIE_SIZE and corner radius
+SIZE, ROUND = 1.2, 0.11  # edge and corner radius, metres (the TV scales the die)
 FACES = {1: ((1, 0, 0), (0, 1, 0)), 6: ((-1, 0, 0), (0, 1, 0)), 2: ((0, 0, 1), (0, 1, 0)),
          5: ((0, 0, -1), (0, -1, 0)), 3: ((0, -1, 0), (0, 0, 1)), 4: ((0, 1, 0), (0, 0, -1))}  # value: outward normal, drawing's up
 PERMIT = {1: "approved", 2: "approved", 3: "approved", 4: "rejected", 5: "free", 6: "double"}
 SIGN = {"approved": ("ok", "#1f4a2a"), "rejected": ("no", "#7a1f17"), "free": ("gift", "#4a2a12"), "double": (None, "#3a2414")}
 PIPS = {1: [(64, 64)], 2: [(36, 36), (92, 92)], 3: [(34, 34), (64, 64), (94, 94)], 4: [(36, 36), (92, 36), (36, 92), (92, 92)],
-        5: [(34, 34), (94, 34), (64, 64), (34, 94), (94, 94)], 6: [(36, 30), (92, 30), (36, 64), (92, 64), (36, 98), (92, 98)]}  # Bauherr's, 128 px faces
+        5: [(34, 34), (94, 34), (64, 64), (34, 94), (94, 94)], 6: [(36, 30), (92, 30), (36, 64), (92, 64), (36, 98), (92, 98)]}  # 128 px faces
 
 
 def rounded(name, material):
@@ -64,7 +64,7 @@ def on_face(value, lift):
 def decals(kind):
     out = []
     for value in FACES:
-        if kind == "number":  # Bauherr's drilled pip: a soft rim, the dark pip, a darker core
+        if kind == "number":  # a drilled pip: a soft rim, the dark pip, a darker core
             for k, (r, col) in enumerate(((0.112, "#8a7f6e"), (0.1, "#26241f"), (0.066, "#0d0d0f"))):
                 pips = [d for x, y in PIPS[value] for d in ink.disc((x - 64) / 128 * SIZE, (64 - y) / 128 * SIZE, r, 24)]
                 out.append(ink.flat(f"pip_{value}_{k}", pips, on_face(value, 0.002 * (k + 1)), m.plain(f"pip_{k}", col)))

@@ -17,8 +17,6 @@ pub enum GameKind {
     Schwimmen,
     /// Durak (throw-in) on the card table.
     Durak,
-    /// Bauherr, the hotel-building board game.
-    Bauherr,
     /// Kopfnuss, the quiz where players play tricks on each other's phones.
     Kopfnuss,
     /// Grand Allee, the hotel game for two to eight.

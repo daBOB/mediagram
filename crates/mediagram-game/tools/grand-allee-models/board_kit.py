@@ -12,7 +12,7 @@ import board_path as bp
 HERE = os.path.dirname(os.path.abspath(__file__))
 # B Bank, R Rathaus, P Grundstück, S Baustelle, E Freier Eingang, G Gratis bauen, . Allee (checked against board.rs)
 FIELD_KINDS = "B.GEP.S..P.SP.S.P.S.R.GEP.S..P.SP.S.P.S."
-# Field tints of Bauherr's road (tools/bauherr-bake/page/ground.mjs); Gratis bauen is new and keeps board_layout's blue
+# Field tints of the road; Gratis bauen keeps board_layout's blue
 KINDS = {"B": "#d9ad55", "R": "#8d9fbf", "P": "#8bb174", "S": "#d9824a", "E": "#b48ac0", "G": "#4ea8de"}
 ICONS = {"B": "bank", "R": "rathaus", "P": "plot", "S": "crane", "E": "door", "G": "gift"}
 TEXT = {"B": "Bank", "R": "Rathaus"}
