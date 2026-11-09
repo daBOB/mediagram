@@ -3,8 +3,8 @@
 //! A turn: swap one hand card with one middle card, swap all three, pass, or
 //! knock (everyone else then has one more turn before the reveal). If every
 //! player passes in a row the middle is replaced from the deck. A hand worth 31
-//! ends the round at once. A player who is gone plays by themselves after
-//! `auto_ms`. Lives and the reveal are in `schwimmen_round`.
+//! ends the round at once. The house plays for a player who is gone. Lives
+//! and the reveal are in `schwimmen_round`.
 
 use rand::SeedableRng;
 use rand::rngs::StdRng;
@@ -163,9 +163,7 @@ impl Game for SchwimmenGame {
                 self.deal(ctx.now);
             }
             Stage::Turn { since } => {
-                let gone = ctx.players.iter().find(|p| p.id == self.player_at(self.turn)).filter(|p| !p.connected());
-                let Some(left) = gone.map(|p| p.left_at.unwrap_or(0.0)) else { return };
-                if ctx.now < left.max(since) + self.cfg.auto_ms {
+                if !ctx.house_at(self.player_at(self.turn), since).is_some_and(|at| ctx.now >= at) {
                     return;
                 }
                 let hand = &self.hands[self.turn];

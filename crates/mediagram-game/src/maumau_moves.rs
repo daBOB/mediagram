@@ -6,7 +6,6 @@ use crate::game::GameCtx;
 use crate::maumau::{MauMauGame, Stage};
 use crate::maumau_rules::{SEVEN_DRAWS, ranking, sort_hand};
 use crate::protocol::{CardsBanner, CardsEvent, CardsEventKind, PlayerId, ServerTime};
-use crate::room_seats::Player;
 
 const MAU: &str = " ruft Mau!";
 const PENALTY_START: &str = " vergisst Mau";
@@ -142,12 +141,6 @@ impl MauMauGame {
             None => self.say(now, player, wish),
         }
         self.advance(now, 1);
-    }
-
-    /// When the player whose turn it is dropped out, if they are gone.
-    pub(crate) fn absent_since(&self, players: &[Player]) -> Option<ServerTime> {
-        let p = players.iter().find(|p| p.id == self.player_at(self.turn))?;
-        (!p.connected()).then(|| p.left_at.unwrap_or(0.0))
     }
 
     pub(crate) fn index_of(&self, card: Card) -> usize {

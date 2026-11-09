@@ -15,8 +15,6 @@ pub struct RaceConfig {
     pub lead_ms: f64,
     /// Extra time for a captured piece to fly home.
     pub capture_ms: f64,
-    /// An absent player's roll or pick happens after this.
-    pub auto_ms: f64,
     /// A pick may arrive this long before the die lands by the host's clock:
     /// the phone opens its buttons at its own estimate of that moment.
     pub early_ms: f64,
@@ -34,7 +32,6 @@ impl Default for RaceConfig {
             hop_ms: 280.0,
             lead_ms: 200.0,
             capture_ms: 700.0,
-            auto_ms: 1500.0,
             early_ms: 300.0,
             seed: None,
             rolls: Vec::new(),

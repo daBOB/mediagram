@@ -3,8 +3,8 @@
 //! A turn: play a card that fits, or draw one (and play it if it fits). A seven
 //! makes the next player draw two unless they add a seven, an eight skips the
 //! next player, a jack wishes a suit. With the second-to-last card the player
-//! says "Mau!" while playing it, else one penalty card is dealt. A player who
-//! is gone plays by themselves after `auto_ms`.
+//! says "Mau!" while playing it, else one penalty card is dealt. The house
+//! plays for a player who is gone.
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -20,8 +20,6 @@ use crate::room_seats::Player;
 
 #[derive(Debug, Clone)]
 pub struct MauMauConfig {
-    /// An absent player's move happens after this.
-    pub auto_ms: f64,
     /// How long the banner keeps naming the last happening.
     pub banner_ms: f64,
     pub seed: Option<u64>,
@@ -29,7 +27,7 @@ pub struct MauMauConfig {
 
 impl Default for MauMauConfig {
     fn default() -> Self {
-        Self { auto_ms: 1500.0, banner_ms: 2600.0, seed: None }
+        Self { banner_ms: 2600.0, seed: None }
     }
 }
 
@@ -146,8 +144,8 @@ impl Game for MauMauGame {
     }
 
     fn on_tick(&mut self, ctx: &mut GameCtx) {
-        let (Some(left), Some(since)) = (self.absent_since(ctx.players), self.since()) else { return };
-        if ctx.now < left.max(since) + self.cfg.auto_ms {
+        let Some(since) = self.since() else { return };
+        if !ctx.house_at(self.player_at(self.turn), since).is_some_and(|at| ctx.now >= at) {
             return;
         }
         match self.stage.clone() {

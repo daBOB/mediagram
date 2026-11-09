@@ -1,6 +1,6 @@
 //! What the phones and the TV show for each Kopfnuss stage.
 
-use crate::game::ViewCtx;
+use crate::game::{ViewCtx, name};
 use crate::kopfnuss::{KopfnussGame, Stage};
 use crate::kopfnuss_picks::Step;
 use crate::protocol::{
@@ -11,10 +11,6 @@ use crate::room_seats::Player;
 /// Buttons in the answer colors, repeating them past four.
 fn buttons(labels: impl IntoIterator<Item = String>) -> Vec<ChoiceOption> {
     labels.into_iter().zip(AnswerColor::ALL.iter().cycle()).map(|(label, &color)| ChoiceOption { label, color }).collect()
-}
-
-fn name(players: &[Player], id: PlayerId) -> String {
-    players.iter().find(|p| p.id == id).map_or_else(|| "?".into(), |p| p.name.clone())
 }
 
 impl KopfnussGame {
@@ -32,7 +28,7 @@ impl KopfnussGame {
                     ),
                     Step::Target => (
                         format!("{} – für wen?", sheet.trick.map_or("Trick", |t| t.name())),
-                        buttons(sheet.targets.iter().map(|&t| name(view.players, t))),
+                        buttons(sheet.targets.iter().map(|&t| name(view.players, t).to_string())),
                     ),
                     Step::Done => {
                         return PhoneScreen::Wait { title: "Erledigt!".into(), text: Some("Gleich wird ausgezählt …".into()) };
@@ -76,7 +72,7 @@ impl KopfnussGame {
                 let title = if winner == Some(player) {
                     "Du hast den Gipfel erreicht!".to_string()
                 } else {
-                    format!("{} hat den Gipfel erreicht", winner.map_or_else(String::new, |w| name(view.players, w)))
+                    format!("{} hat den Gipfel erreicht", winner.map_or("", |w| name(view.players, w)))
                 };
                 PhoneScreen::Wait { title, text: Some(self.fact.clone()) }
             }

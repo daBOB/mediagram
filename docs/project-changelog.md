@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.168.0 — One grace for the house at every table
+
+**Changed** (no visible change; from an architecture review)
+
+- When the house decides for an absent player is one rule for every game, `GameCtx::house_at`: the grace (1.5 s, `HOUSE_GRACE_MS`) after the later of the player leaving and the question opening. Durak, Mau-Mau, Schwimmen, Heimlauf and Grand Allee each had their own copy; Grand Allee keeps its 20 s clock and its idle rule on top.
+- `auto_ms` is gone from the five game configs.
+- One `game::name` looks up a player's name ("Jemand" for one not seated) instead of five copies; Kopfnuss's "?" becomes "Jemand", which no game shows.
+
 ## 0.167.0 — Grand Allee: the host states what the clients worked out
 
 **Changed** (no visible change; from an architecture review)

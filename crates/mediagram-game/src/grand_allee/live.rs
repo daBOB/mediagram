@@ -31,8 +31,6 @@ pub struct GrandAlleeConfig {
     pub lead_ms: f64,
     /// How long the outcome of a move or an auction stays up.
     pub note_ms: f64,
-    /// An absent player's decision happens after this.
-    pub auto_ms: f64,
     /// A pick may arrive this long before its prompt opened by the host's clock.
     pub early_ms: f64,
     /// A question that follows straight from a tap opens this long after it,
@@ -55,7 +53,6 @@ impl Default for GrandAlleeConfig {
             hop_ms: 280.0,
             lead_ms: 200.0,
             note_ms: 1400.0,
-            auto_ms: 1500.0,
             early_ms: 150.0,
             chain_ms: 400.0,
             ask_ms: 20_000.0,

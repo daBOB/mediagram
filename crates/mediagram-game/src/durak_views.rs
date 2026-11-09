@@ -3,17 +3,13 @@
 use crate::cards::Card;
 use crate::durak::{DurakGame, Stage};
 use crate::durak_rules::{beats, can_throw};
-use crate::game::ViewCtx;
+use crate::game::{ViewCtx, name};
 use crate::protocol::{
     ButtonNeeds, CardDesk, CardsBanner, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard, PhoneScreen, PlayerId, TvScene,
 };
 
 fn button(id: &str, label: &str, needs: ButtonNeeds, primary: bool) -> DeskButton {
     DeskButton { id: id.into(), label: label.into(), needs, primary, suit: None }
-}
-
-fn name(view: &ViewCtx, id: PlayerId) -> String {
-    view.players.iter().find(|p| p.id == id).map_or_else(|| "Jemand".into(), |p| p.name.clone())
 }
 
 impl DurakGame {
@@ -32,7 +28,7 @@ impl DurakGame {
         let hand = &self.hands[me];
         let table = self.table();
         let trump = self.trump_suit();
-        let who = |seat: usize| name(view, self.player_at(seat));
+        let who = |seat: usize| name(view.players, self.player_at(seat));
         let mine = self.actor() == Some(me);
         let (prompt, enabled, buttons): (String, Vec<bool>, Vec<DeskButton>) = match (&self.stage, mine) {
             (Stage::Attack { .. }, true) => ("Du greifst an – spiele eine Karte".into(), vec![true; hand.len()], vec![button("play", "Ausspielen", ButtonNeeds::OneHand, true)]),
@@ -72,7 +68,7 @@ impl DurakGame {
 
     fn settle_text(&self, view: &ViewCtx) -> String {
         match self.stage {
-            Stage::Settle { taken: true, .. } => format!("{} nimmt die Karten auf", name(view, self.player_at(self.defender()))),
+            Stage::Settle { taken: true, .. } => format!("{} nimmt die Karten auf", name(view.players, self.player_at(self.defender()))),
             _ => "Bito – alles geschlagen".into(),
         }
     }

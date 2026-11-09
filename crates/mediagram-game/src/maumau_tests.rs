@@ -267,7 +267,7 @@ fn an_absent_player_plays_a_plain_card_says_mau_and_wishes_their_longest_suit() 
     p[0].conn = None;
     p[0].left_at = Some(100.0);
     tick(&mut g, &mut p, 1000.0);
-    assert_eq!(g.turn, 0, "waits auto_ms after leaving");
+    assert_eq!(g.turn, 0, "waits the grace after leaving");
     tick(&mut g, &mut p, 1700.0);
     assert_eq!((g.turn, g.hands[0].len()), (1, 1), "the king, not the eight, with Mau");
     p[1].conn = None;

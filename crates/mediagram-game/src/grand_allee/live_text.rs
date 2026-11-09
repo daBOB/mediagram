@@ -1,11 +1,4 @@
-//! How the live game writes a player's name and a sum of money.
-
-use crate::protocol::PlayerId;
-use crate::room_seats::Player;
-
-pub(crate) fn name(players: &[Player], id: PlayerId) -> String {
-    players.iter().find(|p| p.id == id).map_or_else(|| "Jemand".into(), |p| p.name.clone())
-}
+//! How the live game writes a sum of money.
 
 /// 12000 as "12.000".
 pub(crate) fn grouped(n: i32) -> String {

@@ -1107,7 +1107,7 @@ events with server times). Where the rules would let the table read a hand — a
 Durak player asked to throw in only when a rank fits, a Mau-Mau turn pausing
 only when the drawn card fits — every player gets the same prompt with the
 button disabled instead (user decision 2026-11-07: hidden information beats
-pace). Absent players play themselves after `auto_ms`, like Heimlauf. The TV
+pace). The house plays for absent players after the grace, like Heimlauf. The TV
 table (`tv/cards/`) reuses Heimlauf's lacquered table, music and settings; the
 52 faces and the back are one canvas atlas drawn at load, and every banner,
 note and seat text is pre-drawn (`cards-texts.ts`), so no texture is made

@@ -3,14 +3,13 @@
 use super::board::FIELDS;
 use super::live::{GrandAlleeGame, Stage, Step};
 use super::live_asks::Ask;
-use super::live_text::name;
-use crate::game::GameCtx;
+use crate::game::{GameCtx, name};
 use crate::protocol::ServerTime;
 use crate::room_seats::Player;
 
 impl GrandAlleeGame {
     pub(crate) fn who(&self, players: &[Player], seat: usize) -> String {
-        name(players, self.ids[seat])
+        name(players, self.ids[seat]).into()
     }
 
     pub(crate) fn ask(&mut self, now: ServerTime, ask: Ask) {
@@ -18,26 +17,22 @@ impl GrandAlleeGame {
     }
 
     /// When the house decides an ask opened at `since`: when its clock runs
-    /// out, or `auto_ms` after an absent mover left. Once a clock ran out this
+    /// out, or the grace after an absent mover left. Once a clock ran out this
     /// turn the house goes on at once, so a phone left on the table costs one
     /// clock per turn, not one per follow-up question.
-    pub(crate) fn house_at(&self, players: &[Player], since: ServerTime) -> ServerTime {
+    pub(crate) fn house_at(&self, ctx: &GameCtx, since: ServerTime) -> ServerTime {
         if self.idle {
             return since;
         }
         let clock = since + self.cfg.ask_ms;
-        let p = players.iter().find(|p| p.id == self.ids[self.turn]);
-        match p.filter(|p| !p.connected()) {
-            Some(p) => clock.min(p.left_at.unwrap_or(0.0).max(since) + self.cfg.auto_ms),
-            None => clock,
-        }
+        clock.min(ctx.house_at(self.ids[self.turn], since).unwrap_or(clock))
     }
 
     pub(crate) fn tick(&mut self, ctx: &mut GameCtx) {
         let now = ctx.now;
         let landed = |at: ServerTime| now >= at + self.cfg.roll_ms + self.cfg.show_ms;
         match self.stage.clone() {
-            Stage::Ask { ask, since } if now >= self.house_at(ctx.players, since) => {
+            Stage::Ask { ask, since } if now >= self.house_at(ctx, since) => {
                 let pick = self.auto_index(&ask);
                 self.idle = true;
                 self.choose(ctx, ask.opts[pick]);

@@ -368,7 +368,7 @@ fn an_absent_player_knocks_at_27_swaps_for_the_best_hand_or_passes() {
     p[0].conn = None;
     p[0].left_at = Some(100.0);
     tick(&mut g, &mut p, 1000.0);
-    assert_eq!(g.turn, 0, "waits auto_ms after leaving");
+    assert_eq!(g.turn, 0, "waits the grace after leaving");
     tick(&mut g, &mut p, 1700.0);
     assert_eq!(g.knocker, Some(0), "27 is enough to knock");
     p[1].conn = None;

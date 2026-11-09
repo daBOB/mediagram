@@ -1,15 +1,11 @@
 //! What the phones and the TV show during the race game.
 
-use crate::game::ViewCtx;
+use crate::game::{ViewCtx, name};
 use crate::protocol::{
     AnswerColor, ChoiceOption, PhoneScreen, PlayerId, RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage, TvScene,
 };
 use crate::race::{RaceGame, Stage};
 use crate::race_rules::{Move, PIECES, TRACK, standings};
-
-fn name(view: &ViewCtx, id: PlayerId) -> String {
-    view.players.iter().find(|p| p.id == id).map_or_else(|| "Jemand".into(), |p| p.name.clone())
-}
 
 impl RaceGame {
     fn seat_of(&self, player: PlayerId) -> Option<usize> {
@@ -24,7 +20,7 @@ impl RaceGame {
             .iter()
             .map(|m| match (m.from, m.captures) {
                 (None, None) => "Neue Figur raus".into(),
-                (_, Some((seat, _))) => format!("{} rauswerfen", name(view, self.player_at(seat))),
+                (_, Some((seat, _))) => format!("{} rauswerfen", name(view.players, self.player_at(seat))),
                 (Some(from), None) if from >= TRACK => "Im Ziel vorrücken".into(),
                 (Some(_), None) if m.to >= TRACK => "Ins Ziel".into(),
                 (Some(from), None) => {
@@ -55,7 +51,7 @@ impl RaceGame {
                 can_restart: view.leader == Some(player),
             };
         }
-        let mover = name(view, self.player_at(self.turn));
+        let mover = name(view.players, self.player_at(self.turn));
         if me != self.turn {
             // A wait screen, not an outcome: the outcome screen adds a points line, and this game has no points.
             if let Stage::Moving { mv: Move { captures: Some((victim, _)), .. }, .. } = self.stage
@@ -95,7 +91,7 @@ impl RaceGame {
                 },
             },
             Stage::Moving { mv, .. } => match mv.captures {
-                Some((victim, _)) => wait("Erwischt!".into(), Some(format!("Du wirfst {} raus.", name(view, self.player_at(victim))))),
+                Some((victim, _)) => wait("Erwischt!".into(), Some(format!("Du wirfst {} raus.", name(view.players, self.player_at(victim))))),
                 None => wait("Deine Figur läuft".into(), None),
             },
             Stage::Final { .. } => unreachable!("handled above"),

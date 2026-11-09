@@ -1,7 +1,7 @@
 //! What the phones and the TV show during Mau-Mau.
 
 use crate::cards::Suit;
-use crate::game::ViewCtx;
+use crate::game::{ViewCtx, name};
 use crate::maumau::{MauMauGame, Stage};
 use crate::maumau_rules::playable;
 use crate::protocol::{
@@ -18,10 +18,6 @@ pub(crate) fn wish_id(suit: Suit) -> String {
 
 pub(crate) fn button(id: &str, label: &str, needs: ButtonNeeds, primary: bool) -> DeskButton {
     DeskButton { id: id.into(), label: label.into(), needs, primary, suit: None }
-}
-
-pub(crate) fn name(view: &ViewCtx, id: PlayerId) -> String {
-    view.players.iter().find(|p| p.id == id).map_or_else(|| "Jemand".into(), |p| p.name.clone())
 }
 
 impl MauMauGame {
@@ -41,7 +37,7 @@ impl MauMauGame {
         let top = self.top();
         let hand = &self.hands[me];
         let (prompt, enabled, buttons): (String, Vec<bool>, Vec<DeskButton>) = match (&self.stage, mine) {
-            (_, false) => (format!("{} ist dran", name(view, self.player_at(self.turn))), vec![false; hand.len()], vec![]),
+            (_, false) => (format!("{} ist dran", name(view.players, self.player_at(self.turn))), vec![false; hand.len()], vec![]),
             (Stage::Turn { .. }, true) => {
                 let draw = if self.owed > 0 { format!("{} Karten ziehen", self.owed) } else { "Karte ziehen".into() };
                 let prompt = if self.owed > 0 { format!("Lege eine 7 oder zieh {}", self.owed) } else { "Du bist dran".into() };

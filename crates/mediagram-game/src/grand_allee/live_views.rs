@@ -8,8 +8,8 @@ use super::board::HOTELS;
 use super::live::{Bid, GrandAlleeGame, Stage};
 use super::live_asks::Opt;
 use super::rules::Permit;
-use super::live_text::{grouped, name, taler};
-use crate::game::ViewCtx;
+use super::live_text::{grouped, taler};
+use crate::game::{ViewCtx, name};
 use super::live_debts::BID_STEP;
 use crate::protocol::{AnswerColor, BidRange, ChoiceOption, HotelCard, PhoneScreen, PlayerId, ServerTime, SheetLine};
 
@@ -42,7 +42,7 @@ impl GrandAlleeGame {
             Opt::Leisure(h) => format!("{}: Freizeitflügel · {cost}", hotel(h)),
             Opt::Buy(h) => format!("{} kaufen · {cost}", hotel(h)),
             Opt::Force(h) => {
-                let owner = t.estate(h).owner.map_or_else(String::new, |o| name(view.players, self.ids[o]));
+                let owner = t.estate(h).owner.map_or("", |o| name(view.players, self.ids[o]));
                 format!("{} von {owner} übernehmen · {cost}", hotel(h))
             }
             Opt::Build { hotel: h, count } => {
@@ -101,7 +101,7 @@ impl GrandAlleeGame {
             Stage::Walking { .. } => sub("läufst …", "läuft …"),
             Stage::Guest { at, .. } if !landed(*at) => "Wie viele Nächte? Der Würfel rollt …".into(),
             Stage::Guest { owner, hotel: h, nights, amount, .. } => {
-                let host = if *owner == me { "dir".to_string() } else { name(view.players, self.ids[*owner]) };
+                let host = if *owner == me { "dir" } else { name(view.players, self.ids[*owner]) };
                 let stay = format!("{} für {nights} {} im {}.", taler(*amount), if *nights == 1 { "Nacht" } else { "Nächte" }, hotel(*h));
                 sub(&format!("zahlst {host} {stay}"), &format!("zahlt {host} {stay}"))
             }
@@ -115,7 +115,7 @@ impl GrandAlleeGame {
             .into(),
             Stage::Auction(a) => sub(&format!("versteigerst {} …", hotel(a.hotel)), &format!("versteigert {} …", hotel(a.hotel))),
             Stage::Sold { hotel: h, winner: Some(w), price, .. } => {
-                format!("{} ersteigert {} für {}.", if *w == me { "Du".into() } else { name(view.players, self.ids[*w]) }, hotel(*h), taler(*price))
+                format!("{} ersteigert {} für {}.", if *w == me { "Du" } else { name(view.players, self.ids[*w]) }, hotel(*h), taler(*price))
             }
             Stage::Sold { hotel: h, price, .. } => format!("Kein Gebot: Die Bank kauft {} für {}.", hotel(*h), taler(*price)),
             Stage::Note { text, .. } => text.clone(),

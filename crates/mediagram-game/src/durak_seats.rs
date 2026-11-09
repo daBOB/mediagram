@@ -4,7 +4,6 @@
 use crate::cards::{Card, Suit};
 use crate::durak::{DurakGame, Stage};
 use crate::protocol::{CardsBanner, CardsEvent, CardsEventKind, PlayerId, ServerTime};
-use crate::room_seats::Player;
 
 impl DurakGame {
     pub(crate) fn trump_suit(&self) -> Suit {
@@ -65,11 +64,5 @@ impl DurakGame {
 
     pub(crate) fn say(&mut self, now: ServerTime, player: PlayerId, text: impl Into<String>) {
         self.banner = Some((CardsBanner { player, text: text.into() }, now));
-    }
-
-    /// When `seat` dropped out, if they are gone.
-    pub(crate) fn absent_since(&self, players: &[Player], seat: usize) -> Option<ServerTime> {
-        let p = players.iter().find(|p| p.id == self.player_at(seat))?;
-        (!p.connected()).then(|| p.left_at.unwrap_or(0.0))
     }
 }
