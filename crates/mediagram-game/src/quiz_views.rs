@@ -6,7 +6,7 @@ use crate::protocol::{
     QuizStage, Tone, TvScene,
 };
 use crate::quiz::Quiz;
-use crate::quiz_config::Stage;
+use crate::quiz_config::{Round, Stage};
 use crate::room_seats::Player;
 
 /// Competition ranking: equal scores share a place.
@@ -16,17 +16,29 @@ pub(crate) fn rank_of(players: &[Player], id: PlayerId) -> (u8, i32) {
     (better as u8 + 1, score)
 }
 
-impl Quiz {
-    fn question_view(&self) -> QuizQuestionView {
-        let r = self.round();
+/// The final screen of a game that places players by `order`, not by points.
+pub(crate) fn final_by_order(order: &[PlayerId], view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+    let rank = order.iter().position(|&p| p == player).map_or(order.len() + 1, |i| i + 1);
+    PhoneScreen::Final {
+        rank: rank as u8,
+        of: view.players.len() as u8,
+        score: view.players.iter().find(|p| p.id == player).map_or(0, |p| p.score),
+        can_restart: view.leader == Some(player),
+    }
+}
+
+impl Round {
+    pub(crate) fn view(&self) -> QuizQuestionView {
         QuizQuestionView {
-            category: r.category.clone(),
-            text: r.text.clone(),
-            options: r.options.clone(),
-            image: r.image.clone(),
+            category: self.category.clone(),
+            text: self.text.clone(),
+            options: self.options.clone(),
+            image: self.image.clone(),
         }
     }
+}
 
+impl Quiz {
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
         match self.stage {
             Stage::Intro { opens_at, closes_at } | Stage::Open { opens_at, closes_at } => {
@@ -86,16 +98,16 @@ impl Quiz {
     pub(crate) fn tv_view(&self) -> TvScene {
         let stage = match self.stage {
             Stage::Intro { opens_at, closes_at } => {
-                QuizStage::Intro { question: self.question_view(), opens_at, closes_at }
+                QuizStage::Intro { question: self.round().view(), opens_at, closes_at }
             }
             Stage::Open { opens_at, closes_at } => QuizStage::Open {
-                question: self.question_view(),
+                question: self.round().view(),
                 opens_at,
                 closes_at,
                 answered: self.answers.keys().copied().collect(),
             },
             Stage::Reveal { ends_at } => QuizStage::Reveal {
-                question: self.question_view(),
+                question: self.round().view(),
                 correct: self.round().correct,
                 results: self.results.clone(),
                 ends_at,

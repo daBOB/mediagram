@@ -6,6 +6,7 @@ use crate::kopfnuss_picks::Step;
 use crate::protocol::{
     AnswerColor, ChoiceOption, KopfnussScene, KopfnussStage, PhoneScreen, PlayerId, TrickLoad, TvScene,
 };
+use crate::quiz_views::final_by_order;
 use crate::room_seats::Player;
 
 /// Buttons in the answer colors, repeating them past four.
@@ -80,15 +81,7 @@ impl KopfnussGame {
                 };
                 PhoneScreen::Wait { title, text: Some(self.fact.clone()) }
             }
-            Stage::Final => {
-                let rank = self.order.iter().position(|&p| p == player).map_or(self.order.len() + 1, |i| i + 1);
-                PhoneScreen::Final {
-                    rank: rank as u8,
-                    of: view.players.len() as u8,
-                    score: view.players.iter().find(|p| p.id == player).map_or(0, |p| p.score),
-                    can_restart: view.leader == Some(player),
-                }
-            }
+            Stage::Final => final_by_order(&self.order, view, player),
         }
     }
 

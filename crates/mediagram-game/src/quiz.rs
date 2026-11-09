@@ -11,7 +11,7 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, PhoneScreen, PlayerId, QuizResult, ServerTime, TvScene};
+use crate::protocol::{Action, AnswerColor, PhoneScreen, PlayerId, QuizResult, ServerTime, TvScene};
 use crate::quiz_config::{Answer, Question, QuizConfig, Round, Stage};
 
 pub struct Quiz {
@@ -35,7 +35,7 @@ impl Quiz {
         let rounds = questions
             .into_iter()
             .take(cfg.rounds.max(1))
-            .map(|q| Round::shuffled(q, &mut rng))
+            .map(|q| Round::shuffled(q, &mut rng, AnswerColor::ALL.len()))
             .collect();
         let mut quiz = Self {
             cfg,
@@ -69,9 +69,7 @@ impl Quiz {
         if answer.choice != self.round().correct {
             return 0;
         }
-        let elapsed = (answer.at - opens_at).clamp(0.0, self.cfg.answer_ms);
-        let span = f64::from(self.cfg.max_points - self.cfg.min_points);
-        self.cfg.max_points - (span * elapsed / self.cfg.answer_ms).round() as i32
+        self.cfg.speed_points(opens_at, answer.at)
     }
 
     fn reveal(&mut self, ctx: &mut GameCtx, opens_at: ServerTime) {
@@ -119,9 +117,7 @@ impl Game for Quiz {
         if usize::from(index) >= self.round().options.len() {
             return Err(ActionError::NotAllowed("Diese Antwort gibt es nicht."));
         }
-        let hi = now.max(opens_at);
-        let lo = (now - self.cfg.max_claim_lag_ms).max(opens_at).min(hi);
-        let at = if at.is_finite() { at.clamp(lo, hi) } else { hi };
+        let at = self.cfg.claim_time(now, opens_at, at);
         self.answers.insert(player, Answer { choice: index, at });
         Ok(())
     }

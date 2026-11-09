@@ -184,3 +184,15 @@ fn kopfnuss_needs_two_players_and_no_kids_mode() {
     configure(&mut r, 1, GameKind::Kopfnuss, QuizMode::Mixed, true);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::KOPFNUSS_NOT_FOR_KIDS));
 }
+
+#[test]
+fn dreifelder_needs_two_players_and_no_kids_mode() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::Dreifelder, QuizMode::Mixed, false);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::DREIFELDER_TOO_FEW));
+    hello(&mut r, 2, "Ben", None);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
+    configure(&mut r, 1, GameKind::Dreifelder, QuizMode::Mixed, true);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::DREIFELDER_NOT_FOR_KIDS));
+}

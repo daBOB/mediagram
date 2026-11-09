@@ -21,6 +21,7 @@ pub use crate::protocol_grand_allee::{
     GrandAlleeAuction, GrandAlleeBoard, GrandAlleeEntrance, GrandAlleeEstate, GrandAlleeFieldKind, GrandAlleeHotel, GrandAlleeMark,
     GrandAlleePermit, GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn,
 };
+pub use crate::protocol_dreifelder::{DreifelderScene, DreifelderStage, FieldPick, OutPlayer};
 pub use crate::protocol_choice::{AnswerColor, ChoiceOption, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
@@ -167,4 +168,5 @@ pub enum TvScene {
     Cards { scene: CardsScene },
     Kopfnuss { scene: KopfnussScene },
     GrandAllee { scene: GrandAlleeScene },
+    Dreifelder { scene: DreifelderScene },
 }

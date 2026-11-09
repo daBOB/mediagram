@@ -10,6 +10,7 @@ export const QUIZ_MODES: { mode: QuizMode; label: string }[] = [
 export const GAME_NAMES = {
   poster: "Poster-Raten",
   kopfnuss: "Kopfnuss",
+  dreifelder: "Dreifelder",
   race: "Heimlauf",
   grand_allee: "Grand Allee",
   mau_mau: "Mau-Mau",
@@ -18,7 +19,7 @@ export const GAME_NAMES = {
 } as const;
 
 /** Players each game seats; mirrors the host's gate in `room_settings.rs`. */
-const SEATS = { kopfnuss: "2–8", race: "2–4", grand_allee: "2–8", mau_mau: "2–8", schwimmen: "2–8", durak: "2–6" } as const;
+const SEATS = { kopfnuss: "2–8", dreifelder: "2–8", race: "2–4", grand_allee: "2–8", mau_mau: "2–8", schwimmen: "2–8", durak: "2–6" } as const;
 
 export const gameBadge = (s: LobbySettings) =>
   s.game === "quiz"

@@ -45,6 +45,11 @@ const KOPFNUSS_MIN: u8 = 2;
 pub(crate) const KOPFNUSS_TOO_FEW: &str = "Kopfnuss braucht mindestens 2 Spieler.";
 /// Kopfnuss asks the general pack, which is not checked for children.
 pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kindermodus.";
+/// Dreifelder needs someone to outlast; the room seats at most eight.
+const DREIFELDER_MIN: u8 = 2;
+pub(crate) const DREIFELDER_TOO_FEW: &str = "Dreifelder braucht mindestens 2 Spieler.";
+/// Dreifelder asks the general pack too, which is not checked for children.
+pub(crate) const DREIFELDER_NOT_FOR_KIDS: &str = "Dreifelder gibt es nicht im Kindermodus.";
 /// Grand Allee's round limit scales with the table, from two to eight.
 const GRAND_ALLEE_MIN: u8 = 2;
 const GRAND_ALLEE_MAX: u8 = 8;
@@ -94,6 +99,8 @@ impl Room {
             GameKind::Durak => (DURAK_MIN, DURAK_MAX, DURAK_TOO_FEW, DURAK_TOO_MANY),
             GameKind::Kopfnuss if s.kids_only => return Some(KOPFNUSS_NOT_FOR_KIDS),
             GameKind::Kopfnuss => return (self.connected_count() < KOPFNUSS_MIN).then_some(KOPFNUSS_TOO_FEW),
+            GameKind::Dreifelder if s.kids_only => return Some(DREIFELDER_NOT_FOR_KIDS),
+            GameKind::Dreifelder => return (self.connected_count() < DREIFELDER_MIN).then_some(DREIFELDER_TOO_FEW),
         };
         let players = self.connected_count();
         (players < min).then_some(few).or((players > max).then_some(many))

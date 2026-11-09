@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.166.0 — Dreifelder, the three-field elimination quiz
+
+**Added**
+
+- Dreifelder, a new game for two to eight beside Kopfnuss. Every question has three fields; a wrong pick, or none, puts a player out, unless everyone still in got it wrong. The last one in wins; after 12 questions the fastest right answers decide among those left. Twelve questions a game: nine general and three about the household's films (all general when the library has none), never repeated tonight, sharing Kopfnuss's question history.
+- Players who are out keep guessing on their phone ("Du bist raus – rate mit"). Their guesses score nothing and never hold a round up, but they rank players who went out in the same round. Final scores follow the placing, 100 per player beaten, and the game ends on the shared awards ceremony.
+- A player who leaves without a pick is out at the next reveal, even when everyone still in got it wrong; if nobody still in is connected, the game ends there. Not offered in kids mode.
+- TV: the question over three coloured, numbered fields; at the reveal every pawn stands in the field it picked (players already out faded beside them), the right field lights, and the line under the question says who is out or that everyone stays. A row at the bottom collects who is out.
+- Phones: three answer keys fill the grid, the third across the bottom (Kopfnuss's three-category vote now does the same).
+- `tools/smoke.mjs --game dreifelder`: four bots that look the answers up play a scripted game through a leaver, an all-wrong round and the 12-question cap, and check the finishing order.
+
+**Changed**
+
+- The quiz's tap clamp and speed points are shared (`QuizConfig::claim_time`, `speed_points`), as are the question view and the by-placing final screen; the buzzer quiz and Kopfnuss behave as before.
+
 ## 0.165.0 — Bauherr retired: Grand Allee is the hotel game
 
 **Removed** (user's decision when Grand Allee was planned: it replaces Bauherr rather than standing beside it)

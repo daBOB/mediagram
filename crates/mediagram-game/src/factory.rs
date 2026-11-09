@@ -7,6 +7,8 @@ use std::sync::{Arc, Mutex};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 
+use crate::dreifelder::DreifelderGame;
+use crate::dreifelder_config::{DreifelderConfig, dreifelder_questions};
 use crate::game::{Game, GameFactory};
 use crate::kopfnuss::KopfnussGame;
 use crate::kopfnuss_config::KopfnussConfig;
@@ -29,7 +31,7 @@ use crate::titles::TitlePool;
 /// The lobby blocks starting a game its pool cannot supply, so neither arm
 /// is built without enough titles.
 pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless: Option<PosterLookup>) -> GameFactory {
-    // Shared with a running Kopfnuss, which marks questions as it asks them.
+    // Shared with a running Kopfnuss, which marks questions as it asks them, and with Dreifelder.
     let used = Arc::new(Mutex::new(HashSet::new()));
     Box::new(move |ctx, settings| {
         // A poisoned lock still holds a usable history; losing it only risks a repeat.
@@ -42,6 +44,16 @@ pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless:
             drop(history);
             let supply = QuestionSupply::new(general.clone(), films, used.clone(), cfg.questions_needed());
             return Box::new(KopfnussGame::new(cfg, supply, ctx.players, ctx.now)) as Box<dyn Game>;
+        }
+        if settings.game == GameKind::Dreifelder {
+            let cfg = DreifelderConfig::default();
+            let mut rng = StdRng::from_os_rng();
+            let films = film_questions(&pool, &pool.eligible(false), &mut rng, cfg.films, &mut history);
+            drop(history);
+            let needed = cfg.quiz.rounds.saturating_sub(films.len());
+            let mut supply = QuestionSupply::new(general.clone(), films, used.clone(), needed);
+            let questions = dreifelder_questions(&mut supply, &cfg, &mut rng);
+            return Box::new(DreifelderGame::new(cfg, questions, ctx.players, ctx.now)) as Box<dyn Game>;
         }
         let used = &mut *history;
         if settings.game == GameKind::Race {

@@ -389,6 +389,11 @@ p {
   grid-row: 1 / -1;
 }
 
+/* Three: the third spans the bottom row (Dreifelder's fields, Kopfnuss's vote). */
+.key:nth-child(3):last-child {
+  grid-column: 1 / -1;
+}
+
 .key {
   position: relative;
   display: flex;
