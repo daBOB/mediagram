@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.167.0 — Dreifelder's phone carries the TV's field numbers
+
+**Changed**
+
+- Dreifelder's answer buttons are numbered 1–3 like the fields on the TV, with the shape in the corner. A line under the clock says whether you are still in and how many are left; once you are out the buttons fade, and the line says your right guesses still count for your place (they rank players who went out in the same round).
+- Dreifelder's reveal shows the right field as a small numbered key, and your own wrong pick struck through above it. Out players get a dark card. The "Stand: 0 Punkte" line is gone from Dreifelder, which only scores at the end.
+
+**Added**
+
+- Generic phone screens: `Choice` takes `numbered` and a `status` line, `Outcome` takes `keys` and `show_score`, and `Tone` gains `muted`. Every other game sends the defaults and looks as before.
+
 ## 0.166.0 — Dreifelder, the three-field elimination quiz
 
 **Added**

@@ -172,6 +172,8 @@ impl Climb {
             closes_at: None,
             picked: None,
             tricks: vec![],
+            numbered: false,
+            status: None,
         }
     }
 }

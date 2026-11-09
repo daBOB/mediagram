@@ -46,6 +46,8 @@ impl KopfnussGame {
                     closes_at: Some(closes_at),
                     picked: None,
                     tricks: vec![],
+                    numbered: false,
+                    status: None,
                 }
             }
             Stage::Resolve { .. } => PhoneScreen::Wait {
@@ -55,14 +57,18 @@ impl KopfnussGame {
             Stage::Question => {
                 let Some(quiz) = &self.quiz else { return PhoneScreen::Wait { title: String::new(), text: None } };
                 match quiz.phone_view(view, player) {
-                    PhoneScreen::Choice { prompt, options, opens_at, closes_at, picked, .. } => PhoneScreen::Choice {
-                        prompt,
-                        options,
-                        opens_at,
-                        closes_at,
-                        picked,
-                        tricks: self.tricks.get(&player).cloned().unwrap_or_default(),
-                    },
+                    PhoneScreen::Choice { prompt, options, opens_at, closes_at, picked, numbered, status, .. } => {
+                        PhoneScreen::Choice {
+                            prompt,
+                            options,
+                            opens_at,
+                            closes_at,
+                            picked,
+                            tricks: self.tricks.get(&player).cloned().unwrap_or_default(),
+                            numbered,
+                            status,
+                        }
+                    }
                     // The contained quiz's own final screen is never Kopfnuss's.
                     PhoneScreen::Final { .. } => PhoneScreen::Wait { title: "Nächste Runde".into(), text: None },
                     other => other,

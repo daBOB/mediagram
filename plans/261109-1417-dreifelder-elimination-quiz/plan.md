@@ -70,6 +70,7 @@ Searched all plan files for `deck`, `Quiz per round`, `general + films`, `off li
 Built test-first on feat/kopfnuss after fast-forwarding to spieltisch-games 0.165.0; version 0.166.0.
 
 - Tests: `cargo test -p mediagram-game` 345 pass, 30 of them new (rules 11, game 10, views 4, config 2, quiz 2, settings 1); `bun test` 103 pass; `bun run build` clean; clippy clean.
+- Controller layout B (2026-11-09, 0.167.0): the user chose B of three rendered mockups (`reports/controller-mockup-*.jpg`): numbered buttons, a still-in/out status line, faded buttons and a dark reveal card for out players, the right field as a small key with a wrong pick struck through, no "Stand" line. Live screenshots replace phone-1 to phone-4 in `evidence/`, plus `phone-1b-alive-picked` and `phone-2b-reveal-right`.
 - Live: `tools/smoke.mjs --game dreifelder` PASS on the host (leaver, all-wrong round, cap) before and after the review fixes; a 5-player run with a browser phone ranked same-round drop-outs by ghost guesses. Screenshots in `evidence/` (TV 1080p, phone 390 px, plus the Kopfnuss vote now that three keys fill the grid).
 - Code review (code-reviewer agent) found, all fixed test-first:
   - High: with three fields the right answer sat in field 1 half the time (`Round::shuffled` dropped the first wrong answer after shuffling). Now reshuffles after dropping; test checks the spread over 3000 draws. Four-option path untouched.
@@ -80,4 +81,4 @@ Built test-first on feat/kopfnuss after fast-forwarding to spieltisch-games 0.16
 
 Open:
 - TV box and tablet run, jank vs Kopfnuss rounds: left to the release session (user, 2026-11-09).
-- Release: message `mediagram-spieltisch-16` with the commit and version.
+- Release of 47ef3b8c (0.166.0): no release session is running; `mediagram-spieltisch-16` is not one any more (2026-11-09). The user picks who releases it.

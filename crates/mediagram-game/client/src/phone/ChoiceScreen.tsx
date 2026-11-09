@@ -5,6 +5,7 @@ import type { Trick } from "../protocol/Trick";
 import { ANSWER_MARKS } from "../ui/answers";
 import { TRICK_NAMES } from "../ui/tricks";
 import { HOLD_MS, holdDone, revealed, slotOrder } from "./choice-tricks";
+import "./numbered-keys.css";
 
 type Choice = Extract<PhoneScreen, { kind: "choice" }>;
 
@@ -76,7 +77,7 @@ export function ChoiceScreen({ screen, conn }: { screen: Choice; conn: Connectio
   const order = has("wechselbad") && open && picked === null ? slotOrder(n, screen.opens_at, now) : [...Array(n).keys()];
 
   return (
-    <section className="screen choice">
+    <section className={`screen choice${screen.status?.out ? " choice-out" : ""}`}>
       <header className="choice-head">
         <span>{screen.prompt}</span>
         {timed && (
@@ -99,6 +100,7 @@ export function ChoiceScreen({ screen, conn }: { screen: Choice; conn: Connectio
           <div className="meter-fill" style={{ transform: `scaleX(${open ? left / total : 1})` }} />
         </div>
       )}
+      {screen.status && <p className="choice-status">{screen.status.text}</p>}
       {/* Kleber: a 1 s hold must not open the browser's long-press menu instead. */}
       <div className={`keys${open ? " keys-open" : ""}${glued ? " keys-glued" : ""}`} onContextMenu={glued ? (e) => e.preventDefault() : undefined}>
         {order.map((i) => {
@@ -111,14 +113,19 @@ export function ChoiceScreen({ screen, conn }: { screen: Choice; conn: Connectio
               className={`key key-${o.color}${picked === i ? " key-picked" : ""}${picked !== null && picked !== i ? " key-dim" : ""}${held > 0 ? " key-holding" : ""}`}
               style={held > 0 ? ({ "--hold": held } as CSSProperties) : undefined}
               aria-disabled={!live}
-              aria-label={o.label}
+              aria-label={screen.numbered ? `${i + 1}: ${o.label}` : o.label}
               onPointerDown={(e) => onPointerDown(e, i)}
               onPointerUp={glued ? release : undefined}
               onPointerCancel={glued ? release : undefined}
               onKeyDown={(e) => onKey(e, i)}
               onKeyUp={glued ? release : undefined}
             >
-              <span className="key-mark" aria-hidden="true">
+              {screen.numbered && (
+                <span className="key-num" aria-hidden="true">
+                  {i + 1}
+                </span>
+              )}
+              <span className={`key-mark${screen.numbered ? " key-mark-corner" : ""}`} aria-hidden="true">
                 {ANSWER_MARKS[o.color]}
               </span>
               <span className={`key-label${has("spiegel") ? " key-label-mirror" : ""}`} aria-hidden="true">

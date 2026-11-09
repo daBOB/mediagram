@@ -3,8 +3,8 @@
 use crate::dreifelder::{DreifelderGame, Stage};
 use crate::game::ViewCtx;
 use crate::protocol::{
-    AnswerColor, ChoiceOption, DreifelderScene, DreifelderStage, FieldPick, OutPlayer, PhoneScreen, PlayerId, Tone,
-    TvScene,
+    AnswerColor, ChoiceOption, ChoiceStatus, DreifelderScene, DreifelderStage, FieldPick, OutPlayer, OutcomeKey,
+    PhoneScreen, PlayerId, Tone, TvScene,
 };
 use crate::quiz_views::final_by_order;
 
@@ -18,7 +18,12 @@ impl DreifelderGame {
         }
         let Stage::Question { opens_at, closes_at } = self.stage else { return self.outcome(player) };
         let round = self.round();
-        let prompt = if self.tally.is_alive(player) { round.category.clone() } else { "Du bist raus – rate mit".into() };
+        let (alive, all) = self.head_count();
+        let (prompt, status) = if self.tally.is_alive(player) {
+            (round.category.clone(), ChoiceStatus { text: format!("Du bist drin · noch {alive} von {all}"), out: false })
+        } else {
+            ("Raus – rate mit".into(), ChoiceStatus { text: format!("Zählt für deinen Platz · noch {alive} von {all} dabei"), out: true })
+        };
         PhoneScreen::Choice {
             prompt: Some(prompt),
             options: round.options.iter().zip(AnswerColor::ALL).map(|(l, color)| ChoiceOption { label: l.clone(), color }).collect(),
@@ -26,7 +31,14 @@ impl DreifelderGame {
             closes_at: Some(closes_at),
             picked: self.answers.get(&player).map(|a| a.choice),
             tricks: vec![],
+            numbered: true,
+            status: Some(status),
         }
+    }
+
+    /// Players still in, and everyone who started.
+    fn head_count(&self) -> (usize, usize) {
+        (self.tally.alive().len(), self.tally.players().len())
     }
 
     /// The reveal on `player`'s phone: on, out, or how their ghost guess went.
@@ -34,24 +46,41 @@ impl DreifelderGame {
         let round = self.round();
         let picked = self.answers.get(&player).map(|a| a.choice);
         let right = picked == Some(round.correct);
-        let (title, tone) = if self.eliminated.contains(&player) {
-            ("Raus!", Tone::Bad)
-        } else if self.tally.is_alive(player) && right {
-            (if self.over { "Richtig!" } else { "Weiter!" }, Tone::Good)
+        let (alive, all) = self.head_count();
+        let left = format!("{alive} von {all} dabei");
+        // Once the game is over there is nothing left to go on to.
+        let more = |text: String| (!self.over).then_some(text);
+        let (title, tone, text) = if self.eliminated.contains(&player) {
+            ("Raus!", Tone::Bad, more("Rate weiter – Treffer zählen für deinen Platz.".into()))
         } else if self.tally.is_alive(player) {
-            ("Alle daneben – alle bleiben drin", Tone::Neutral)
-        } else if right {
-            ("Richtig, ohne Wertung", Tone::Neutral)
-        } else if picked.is_some() {
-            ("Falsch, ohne Wertung", Tone::Neutral)
+            let title = match (right, self.over) {
+                (true, true) => "Richtig!",
+                (true, false) => "Weiter!",
+                // A leaver can still go out in a round nobody got right.
+                (false, _) if self.eliminated.is_empty() && !self.over => "Alle daneben – alle bleiben drin",
+                (false, _) => "Alle daneben",
+            };
+            (title, if right { Tone::Good } else { Tone::Neutral }, more(format!("Noch {left}")))
         } else {
-            ("Kein Tipp", Tone::Neutral)
+            let title = if right { "Richtig" } else if picked.is_some() { "Falsch" } else { "Kein Tipp" };
+            // Ghost guesses do count: they rank players who went out in the same round.
+            (title, Tone::Muted, more(format!("Zählt für deinen Platz · noch {left}")))
         };
+        let key = |i: u8, caption: &str, crossed| OutcomeKey {
+            caption: caption.into(),
+            number: i + 1,
+            label: round.options[usize::from(i)].clone(),
+            color: AnswerColor::ALL[usize::from(i)],
+            crossed,
+        };
+        let missed = picked.filter(|_| !right).map(|p| key(p, "Dein Tipp", true));
         PhoneScreen::Outcome {
             title: title.into(),
-            text: (!right).then(|| format!("Richtig war: {}", round.options[usize::from(round.correct)])),
+            text,
             tone,
             points: 0,
+            keys: missed.into_iter().chain([key(round.correct, "Richtig", false)]).collect(),
+            show_score: false,
         }
     }
 

@@ -55,6 +55,8 @@ impl Quiz {
                     closes_at: Some(closes_at),
                     picked: self.answers.get(&player).map(|a| a.choice),
                     tricks: vec![],
+                    numbered: false,
+                    status: None,
                 }
             }
             Stage::Reveal { .. } => {
@@ -67,6 +69,8 @@ impl Quiz {
                             text: ms.map(|ms| format!("in {:.1} s", f64::from(ms) / 1000.0).replace('.', ",")),
                             tone: Tone::Good,
                             points: *points,
+                            keys: vec![],
+                            show_score: true,
                         }
                     }
                     Some(QuizResult { choice: Some(_), .. }) => PhoneScreen::Outcome {
@@ -74,12 +78,16 @@ impl Quiz {
                         text: Some(format!("Richtig war: {right}")),
                         tone: Tone::Bad,
                         points: 0,
+                        keys: vec![],
+                        show_score: true,
                     },
                     _ => PhoneScreen::Outcome {
                         title: "Zu spät".into(),
                         text: Some(format!("Richtig war: {right}")),
                         tone: Tone::Neutral,
                         points: 0,
+                        keys: vec![],
+                        show_score: true,
                     },
                 }
             }

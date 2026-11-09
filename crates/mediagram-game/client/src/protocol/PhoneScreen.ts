@@ -2,7 +2,9 @@
 import type { AvatarSlot } from "./AvatarSlot";
 import type { CardDesk } from "./CardDesk";
 import type { ChoiceOption } from "./ChoiceOption";
+import type { ChoiceStatus } from "./ChoiceStatus";
 import type { LobbySettings } from "./LobbySettings";
+import type { OutcomeKey } from "./OutcomeKey";
 import type { SheetLine } from "./SheetLine";
 import type { Tone } from "./Tone";
 import type { Trick } from "./Trick";
@@ -19,4 +21,20 @@ avatars: Array<AvatarSlot>, } | { "kind": "wait", title: string, text: string | 
 /**
  * Kopfnuss nuisances drawn over the buttons; empty in every other game.
  */
-tricks: Array<Trick>, } | { "kind": "sheet", lines: Array<SheetLine>, prompt: string | null, options: Array<ChoiceOption>, opens_at: number, picked: number | null, } | { "kind": "outcome", title: string, text: string | null, tone: Tone, points: number, } | { "kind": "cards", desk: CardDesk, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };
+tricks: Array<Trick>, 
+/**
+ * Numbers on the buttons (1, 2, 3 …), matching numbered fields on the TV.
+ */
+numbered: boolean, 
+/**
+ * A line under the clock; when the player is `out`, the buttons fade.
+ */
+status: ChoiceStatus | null, } | { "kind": "sheet", lines: Array<SheetLine>, prompt: string | null, options: Array<ChoiceOption>, opens_at: number, picked: number | null, } | { "kind": "outcome", title: string, text: string | null, tone: Tone, points: number, 
+/**
+ * Answers drawn as small keys, e.g. the player's pick and the right one.
+ */
+keys: Array<OutcomeKey>, 
+/**
+ * The running score under the result; off where a game scores only at the end.
+ */
+show_score: boolean, } | { "kind": "cards", desk: CardDesk, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };
