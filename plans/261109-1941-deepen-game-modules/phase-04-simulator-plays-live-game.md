@@ -14,8 +14,9 @@ entrance (actions.rs:72-77, the builder picks live); no `lead_ms`/`chain_ms`.
 
 ## Decided
 
-1. `due(&self, players) -> Option<ServerTime>` in live_turn.rs: the time the current
-   stage acts (Ask → `house_at`; Rolled/Guest/Permit → `at + roll_ms + show_ms`;
+1. `due(&self, ctx: &GameCtx) -> Option<ServerTime>` in live_turn.rs (Grand Allee's
+   `house_at` takes `&GameCtx` since the shared grace landed in 0.168.0): the time the
+   current stage acts (Ask → `house_at`; Rolled/Guest/Permit → `at + roll_ms + show_ms`;
    Walking → `ends_at`; Sold/Note → `at + note_ms`; Auction → its close; Final → None).
    `tick` fires only when `due <= now`, so `due` and `tick` cannot drift. Add an
    assertion to `whole_game` (live_game_tests.rs:4-21) that the stage never changes

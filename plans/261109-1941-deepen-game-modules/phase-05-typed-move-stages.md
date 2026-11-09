@@ -28,7 +28,21 @@ next step). `building` without the matching bank `debt` can be written. Test hel
 5. Test: after a clock runs out, the house answers a 6's extra roll at once (idle
    carries through the move).
 
+## Since this spec was written (0.167–0.170)
+
+- `Stage::Note` carries `broke`; the went-broke note is set in live_debts.rs.
+- `house_at(&self, ctx: &GameCtx, since)`; `auto_index` became `Bot::pick` (bots.rs).
+- `due(&self, ctx)` in live_turn.rs is the single source of when a stage acts;
+  `tick` returns early unless `due <= now`. Keep it that way: every new stage shape
+  gets its arm in `due`, never a guard in `tick`.
+- The simulator (play.rs) drives the live game and matches `Stage::Ask` and
+  `Stage::Auction`; keep it compiling.
+- Line numbers above are from 0.166.0; trust the code.
+
 ## Acceptance
 
 No behaviour change; impossible combinations of step and debt no longer compile;
-all tests green; live.rs and every touched file under 200 lines.
+all tests green; live.rs and every touched file under 200 lines. The simulator's
+default run (`cargo run --release -p mediagram-game --bin grand-allee-sim`) prints
+exactly the same tables before and after: it plays 4 000 seeded games through the
+live game, so any difference is a behaviour change.

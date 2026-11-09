@@ -8,11 +8,11 @@ recommendations accepted). Terms: `CONTEXT.md` § Spieleabend.
 
 | # | Phase | Wave | Status |
 |---|---|---|---|
-| 1 | [Game catalogue](phase-01-game-catalogue.md) | 1 (parallel) | pending |
-| 2 | [Host states the facts](phase-02-host-states-facts.md) | 1 (parallel) | pending |
-| 3 | [House grace in the room](phase-03-house-grace.md) | 1 (parallel) | pending |
-| 4 | [Simulator plays the live game](phase-04-simulator-plays-live-game.md) | 2 | pending |
-| 5 | [Typed move stages](phase-05-typed-move-stages.md) | 3 | pending |
+| 1 | [Game catalogue](phase-01-game-catalogue.md) | 1 (parallel) | done (0.169.0) |
+| 2 | [Host states the facts](phase-02-host-states-facts.md) | 1 (parallel) | done (0.167.0) |
+| 3 | [House grace in the room](phase-03-house-grace.md) | 1 (parallel) | done (0.168.0) |
+| 4 | [Simulator plays the live game](phase-04-simulator-plays-live-game.md) | 2 | done (0.170.0) |
+| 5 | [Typed move stages](phase-05-typed-move-stages.md) | 3 | done (0.170.1) |
 
 Wave 1 phases touch mostly different files and run in parallel worktrees
 (`/home/andre/Workspace/spieltisch/wt-*`, branches `refactor/*` from 33f98539).
