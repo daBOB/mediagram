@@ -3,6 +3,7 @@
 
 use super::board::{field, Field, HOTELS};
 use super::live::GrandAlleeGame;
+use super::live_debts::Debt;
 use super::rules::{Permit, Table};
 use super::live_text::taler;
 
@@ -79,7 +80,7 @@ impl GrandAlleeGame {
         let mut opts = vec![Opt::Roll];
         let wings = self.t.owned(self.turn).into_iter().filter(|&h| self.t.leisure_cost(h).is_some_and(|c| c <= self.cash()));
         opts.extend(wings.map(Opt::Leisure));
-        let extra = self.roll == 6;
+        let extra = self.six;
         if extra {
             opts.push(Opt::EndTurn);
         }
@@ -112,9 +113,9 @@ impl GrandAlleeGame {
         Some(ask(prompt, opts))
     }
 
-    /// Passing the Rathaus: one entrance per own built hotel, each once per pass.
-    pub(crate) fn rathaus_ask(&self) -> Option<Ask> {
-        let fits = |h: &u8| !self.served.contains(h) && HOTELS[usize::from(*h)].entrance <= self.cash();
+    /// Passing the Rathaus: one entrance per own built hotel, each once per pass (`served` had theirs).
+    pub(crate) fn rathaus_ask(&self, served: &[u8]) -> Option<Ask> {
+        let fits = |h: &u8| !served.contains(h) && HOTELS[usize::from(*h)].entrance <= self.cash();
         let mut opts: Vec<Opt> = self.t.entrance_hotels(self.turn).into_iter().filter(fits).map(|hotel| Opt::Hotel { hotel, free: false }).collect();
         if opts.is_empty() {
             return None;
@@ -146,13 +147,13 @@ impl GrandAlleeGame {
     }
 
     /// What the mover may put up for a debt auction: all they own but the hotel a doubled permit is being paid for.
-    pub(crate) fn sellable(&self) -> Vec<u8> {
-        self.t.owned(self.turn).into_iter().filter(|&h| self.building.is_none_or(|(b, _)| b != h)).collect()
+    pub(crate) fn sellable(&self, debt: Debt) -> Vec<u8> {
+        self.t.owned(self.turn).into_iter().filter(|&h| debt.building() != Some(h)).collect()
     }
 
-    /// Short of `owed`: which property goes up for auction.
-    pub(crate) fn sell_ask(&self, owed: i32) -> Ask {
-        let opts = self.sellable().into_iter().map(Opt::Sell).collect();
-        Ask { prompt: format!("Dir fehlen {}. Was versteigerst du?", taler(owed - self.cash())), hotel: None, opts }
+    /// Short of `debt`: which property goes up for auction.
+    pub(crate) fn sell_ask(&self, debt: Debt) -> Ask {
+        let opts = self.sellable(debt).into_iter().map(Opt::Sell).collect();
+        Ask { prompt: format!("Dir fehlen {}. Was versteigerst du?", taler(debt.amount() - self.cash())), hotel: None, opts }
     }
 }

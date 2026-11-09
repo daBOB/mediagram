@@ -1,5 +1,5 @@
 use super::live::{GrandAlleeConfig, GrandAlleeGame, Stage};
-use super::rules::Estate;
+use super::rules::{Estate, Rules};
 use crate::game::{Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime};
 use crate::room_seats::Player;
@@ -10,9 +10,14 @@ pub(super) const CEM: PlayerId = 2;
 
 /// `n` connected players; the dice fall as `rolls` say, then as the seed says.
 pub(super) fn game(n: usize, rolls: &[u8]) -> (GrandAlleeGame, Vec<Player>) {
+    game_with(n, rolls, Rules::default())
+}
+
+/// Like `game`, under `rules`.
+pub(super) fn game_with(n: usize, rolls: &[u8], rules: Rules) -> (GrandAlleeGame, Vec<Player>) {
     let names = ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay", "Gus", "Hal"];
     let players: Vec<Player> = (0..n).map(|i| Player::for_test(i as u8, names[i], true)).collect();
-    let cfg = GrandAlleeConfig { rolls: rolls.to_vec(), seed: Some(1), ..GrandAlleeConfig::default() };
+    let cfg = GrandAlleeConfig { rules, rolls: rolls.to_vec(), seed: Some(1), ..GrandAlleeConfig::default() };
     (GrandAlleeGame::new(cfg, &players, 0.0), players)
 }
 
@@ -59,9 +64,7 @@ pub(super) fn pick(g: &mut GrandAlleeGame, p: &mut [Player], who: PlayerId, labe
 /// Seat `s` stands on `field` and its turn begins.
 pub(super) fn place(g: &mut GrandAlleeGame, s: usize, field: u8) {
     g.t.seats[s].field = field;
-    g.turn = s;
-    let ask = g.roll_ask();
-    g.ask(0.0, ask);
+    g.begin_move(s, 0.0);
 }
 
 pub(super) fn own(g: &mut GrandAlleeGame, s: usize, hotel: u8, levels: u8) {

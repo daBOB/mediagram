@@ -3,6 +3,7 @@
 //! on every other phone at once, sealed; the bank buys what nobody bids on.
 
 use super::live::{Auction, Bid, GrandAlleeGame, Stage};
+use super::live_turn::Step;
 use super::money::best_bid;
 use crate::game::{ActionError, GameCtx};
 use crate::protocol::ServerTime;
@@ -10,45 +11,64 @@ use crate::protocol::ServerTime;
 /// Bids go in whole hundreds.
 pub(crate) const BID_STEP: i32 = 100;
 
-impl GrandAlleeGame {
-    pub(crate) fn owe(&mut self, ctx: &GameCtx, to: Option<usize>, amount: i32) {
-        self.debt = Some((to, amount));
-        self.settle(ctx);
+/// What the mover owes and is settling, and so what follows once it is met.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Debt {
+    /// A guest's stay, to the hotel's owner; the field comes next.
+    Rent { owner: usize, amount: i32 },
+    /// A doubled permit, to the bank, raised by auctioning other properties;
+    /// once paid, `count` stages of `hotel` are built.
+    Permit { hotel: u8, count: u8, price: i32 },
+}
+
+impl Debt {
+    /// What the mover has to pay.
+    pub(crate) fn amount(self) -> i32 {
+        match self {
+            Debt::Rent { amount, .. } => amount,
+            Debt::Permit { price, .. } => price,
+        }
     }
 
+    /// The hotel a doubled permit is being paid for, which is not for sale meanwhile.
+    pub(crate) fn building(self) -> Option<u8> {
+        match self {
+            Debt::Rent { .. } => None,
+            Debt::Permit { hotel, .. } => Some(hotel),
+        }
+    }
+}
+
+impl GrandAlleeGame {
     /// Pays the mover's debt once they can, asking what to auction while they
     /// cannot; with nothing left to sell they pay what they have and are out.
-    /// Without a debt the move goes on.
-    pub(crate) fn settle(&mut self, ctx: &GameCtx) {
+    pub(crate) fn settle(&mut self, ctx: &GameCtx, debt: Debt) {
         let (now, s) = (ctx.now, self.turn);
-        let Some((to, amount)) = self.debt else {
-            return self.proceed(now);
-        };
-        let short = self.t.seats[s].cash < amount;
-        if short && !self.sellable().is_empty() {
-            let ask = self.sell_ask(amount);
-            return self.ask(now, ask);
+        let short = self.t.seats[s].cash < debt.amount();
+        if short && !self.sellable(debt).is_empty() {
+            let ask = self.sell_ask(debt);
+            return self.ask(now, ask, Step::Owing(debt));
         }
-        self.debt = None;
-        if let Some((hotel, count)) = self.building.take() {
+        let owner = match debt {
             // nothing else left to sell: the hotel in question goes after all, and the permit costs nothing
-            if short {
-                return self.open_auction(now, hotel);
+            Debt::Permit { hotel, .. } if short => return self.open_auction(now, hotel, None),
+            Debt::Permit { hotel, count, price } => {
+                let first = self.t.build(s, hotel, count, price);
+                return self.built(ctx, hotel, first);
             }
-            let first = self.t.build(s, hotel, count, amount);
-            return self.built(ctx, hotel, first);
-        }
-        if self.t.pay(s, to, amount) {
-            return self.proceed(now);
+            Debt::Rent { owner, .. } => owner,
+        };
+        if self.t.pay(s, Some(owner), debt.amount()) {
+            return self.go_to_field(now);
         }
         self.gone.push(s);
         let text = format!("{} kann nicht zahlen und ist raus.", self.who(ctx.players, s));
         self.stage = Stage::Note { text, broke: true, at: now };
     }
 
-    pub(crate) fn open_auction(&mut self, now: ServerTime, hotel: u8) {
+    pub(crate) fn open_auction(&mut self, now: ServerTime, hotel: u8, owing: Option<Debt>) {
         let bids = self.t.bidders(self.turn).into_iter().map(|b| (b, Bid::Open)).collect();
-        self.stage = Stage::Auction(Auction { hotel, since: now, bids });
+        self.stage = Stage::Auction(Auction { hotel, since: now, bids, owing });
     }
 
     /// The highest bid `seat` may make: its cash in whole steps (no minimum).
@@ -95,6 +115,6 @@ impl GrandAlleeGame {
         let best = best_bid(amounts);
         let price = self.t.auction_price(a.hotel, best);
         self.t.settle_auction(self.turn, a.hotel, best);
-        self.stage = Stage::Sold { hotel: a.hotel, winner: best.map(|(_, w)| w), price, at: ctx.now };
+        self.stage = Stage::Sold { hotel: a.hotel, winner: best.map(|(_, w)| w), price, at: ctx.now, owing: a.owing };
     }
 }

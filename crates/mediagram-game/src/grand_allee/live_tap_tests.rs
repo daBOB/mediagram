@@ -1,7 +1,7 @@
 //! Taps that come too fast and phones left on the table.
 
 use super::live::{GrandAlleeGame, Stage};
-use super::live_tests::{game, own, pick, place, until, ANA};
+use super::live_tests::{game, options, own, pick, place, until, ANA};
 use crate::game::{Game, GameCtx};
 use crate::protocol::{Action, ServerTime};
 use crate::room_seats::Player;
@@ -34,4 +34,16 @@ fn a_player_who_lets_the_clock_run_out_has_the_rest_of_the_turn_decided_at_once(
     // the roll's clock runs out; the Rathaus, two entrances and the plot follow without new clocks
     let done = until(&mut g, &mut p, 0.0, |g| g.turn == 1);
     assert!(done < 30_000.0, "one 20 s clock, then the house: took {done} ms");
+}
+
+#[test]
+fn after_a_clock_ran_out_the_house_answers_a_sixs_extra_roll_at_once() {
+    // the 6 ends on a Baustelle where Ana has nothing to build, so the extra roll follows straight away
+    let (mut g, mut p) = game(2, &[6]);
+    let rolled = until(&mut g, &mut p, 0.0, |g| matches!(g.stage, Stage::Rolled { .. }));
+    assert!(rolled >= g.cfg.ask_ms, "the roll waited for its clock");
+    let extra = until(&mut g, &mut p, rolled, |g| matches!(g.stage, Stage::Ask { .. }));
+    assert_eq!(options(&g, &p, ANA, extra), ["Nochmal würfeln", "Lieber nicht"]);
+    let done = until(&mut g, &mut p, extra, |g| g.turn == 1);
+    assert_eq!(done, extra + 50.0, "no second clock: the house lets the extra turn go on the next tick");
 }

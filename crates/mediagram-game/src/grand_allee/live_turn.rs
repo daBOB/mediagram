@@ -1,19 +1,41 @@
 //! Grand Allee's turn flow: what follows what, and what each answer does.
 
 use super::board::FIELDS;
-use super::live::{GrandAlleeGame, Stage, Step, HOUSE};
+use super::live::{GrandAlleeGame, Stage, HOUSE};
 use super::live_asks::Ask;
+use super::live_debts::Debt;
 use crate::game::{GameCtx, name};
 use crate::protocol::ServerTime;
 use crate::room_seats::Player;
+
+/// Where a move goes on after a question, beyond what its answer says.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum Step {
+    /// The Rathaus menu, with the hotels that got an entrance on this pass; the guest comes next.
+    Rathaus(Vec<u8>),
+    /// A debt the mover is short of: the property they pick is auctioned toward it.
+    Owing(Debt),
+    /// Nothing waits on the answer: it says itself what follows.
+    Done,
+}
+
+impl Step {
+    /// The hotels served on this pass of the Rathaus; none outside its menu.
+    pub(crate) fn served(&self) -> &[u8] {
+        match self {
+            Step::Rathaus(served) => served,
+            Step::Owing(_) | Step::Done => &[],
+        }
+    }
+}
 
 impl GrandAlleeGame {
     pub(crate) fn who(&self, players: &[Player], seat: usize) -> String {
         name(players, self.ids[seat]).into()
     }
 
-    pub(crate) fn ask(&mut self, now: ServerTime, ask: Ask) {
-        self.stage = Stage::Ask { ask, since: now };
+    pub(crate) fn ask(&mut self, now: ServerTime, ask: Ask, step: Step) {
+        self.stage = Stage::Ask { ask, since: now, step };
     }
 
     /// When the house decides an ask opened at `since`: when its clock runs
@@ -48,18 +70,18 @@ impl GrandAlleeGame {
             return;
         }
         match self.stage.clone() {
-            Stage::Ask { ask, .. } => {
+            Stage::Ask { ask, step, .. } => {
                 let pick = HOUSE.pick(&self.t, self.turn, &ask);
                 self.idle = true;
-                self.choose(ctx, ask.opts[pick]);
+                self.choose(ctx, ask.opts[pick], step);
             }
             Stage::Rolled { value, .. } => self.walk(now, value),
-            Stage::Walking { .. } => self.proceed(now),
-            Stage::Guest { owner, amount, .. } => self.owe(ctx, Some(owner), amount),
+            Stage::Walking { rathaus, .. } => self.after_walk(now, rathaus),
+            Stage::Guest { owner, amount, .. } => self.settle(ctx, Debt::Rent { owner, amount }),
             Stage::Permit { hotel, count, permit, .. } => self.permit_lands(ctx, hotel, count, permit),
             Stage::Auction(a) => self.close_auction(ctx, a),
-            Stage::Sold { .. } => self.settle(ctx),
-            Stage::Note { .. } => self.after_move(now),
+            Stage::Sold { owing: Some(debt), .. } => self.settle(ctx, debt),
+            Stage::Sold { owing: None, .. } | Stage::Note { .. } => self.after_move(now),
             Stage::Final => {}
         }
     }
@@ -67,43 +89,40 @@ impl GrandAlleeGame {
     fn walk(&mut self, now: ServerTime, value: u8) {
         let from = self.t.seats[self.turn].field;
         let walk = self.t.walk(self.turn, value);
-        (self.roll, self.rathaus, self.step) = (value, walk.passed_rathaus, Step::Rathaus);
-        self.served.clear();
+        self.six = value == 6;
         // occupied fields are passed over, so the pawn may hop further than the die says
         let hops = (walk.to + FIELDS - from) % FIELDS;
         let at = now + self.cfg.lead_ms;
-        self.stage = Stage::Walking { value, from, at, ends_at: at + f64::from(hops) * self.cfg.hop_ms, bank: walk.bank_paid };
+        let ends_at = at + f64::from(hops) * self.cfg.hop_ms;
+        self.stage = Stage::Walking { value, from, at, ends_at, bank: walk.bank_paid, rathaus: walk.passed_rathaus };
     }
 
-    /// Settles the rest of the move in the design's order: Rathaus, guests, the field.
-    pub(crate) fn proceed(&mut self, now: ServerTime) {
+    /// After the walk the move settles in the design's order, Rathaus, guest,
+    /// field: the Rathaus menu when the walk passed it and it offers something.
+    fn after_walk(&mut self, now: ServerTime, rathaus: bool) {
+        match rathaus.then(|| self.rathaus_ask(&[])).flatten() {
+            Some(ask) => self.ask(now, ask, Step::Rathaus(Vec::new())),
+            None => self.go_to_guest(now),
+        }
+    }
+
+    /// A stay at the hotel whose entrance the mover stopped on, else the field.
+    pub(crate) fn go_to_guest(&mut self, now: ServerTime) {
         let s = self.turn;
-        loop {
-            match self.step {
-                Step::Rathaus => {
-                    self.step = Step::Guest;
-                    if let Some(ask) = self.rathaus.then(|| self.rathaus_ask()).flatten() {
-                        return self.ask(now, ask);
-                    }
-                }
-                Step::Guest => {
-                    self.step = Step::Field;
-                    if let Some((owner, hotel)) = self.t.host_at(s, self.t.seats[s].field) {
-                        let nights = self.die();
-                        self.dice.nights = Some(nights);
-                        let amount = i32::from(nights) * self.t.rate(hotel);
-                        self.stage = Stage::Guest { owner, hotel, nights, amount, at: now };
-                        return;
-                    }
-                }
-                Step::Field => {
-                    self.step = Step::Done;
-                    if let Some(ask) = self.field_ask() {
-                        return self.ask(now, ask);
-                    }
-                }
-                Step::Done => return self.end_move(now, None),
-            }
+        let Some((owner, hotel)) = self.t.host_at(s, self.t.seats[s].field) else {
+            return self.go_to_field(now);
+        };
+        let nights = self.die();
+        self.dice.nights = Some(nights);
+        let amount = i32::from(nights) * self.t.rate(hotel);
+        self.stage = Stage::Guest { owner, hotel, nights, amount, at: now };
+    }
+
+    /// What the field offers, else the move ends.
+    pub(crate) fn go_to_field(&mut self, now: ServerTime) {
+        match self.field_ask() {
+            Some(ask) => self.ask(now, ask, Step::Done),
+            None => self.end_move(now, None),
         }
     }
 
@@ -116,9 +135,9 @@ impl GrandAlleeGame {
 
     /// After a 6 the mover may roll again, once everything is settled; otherwise the next player.
     fn after_move(&mut self, now: ServerTime) {
-        if self.roll == 6 && !self.t.seats[self.turn].out && self.t.active() > 1 {
+        if self.six && !self.t.seats[self.turn].out && self.t.active() > 1 {
             let ask = self.roll_ask();
-            self.ask(now, ask);
+            self.ask(now, ask, Step::Done);
         } else {
             self.next_turn(now);
         }
@@ -143,9 +162,15 @@ impl GrandAlleeGame {
             self.stage = Stage::Final;
             return;
         }
-        (self.turn, self.roll, self.idle) = (next, 0, false);
+        self.begin_move(next, now);
+    }
+
+    /// Starts `seat`'s move with the roll question. The extra roll after a 6
+    /// belongs to the same move, so it does not come through here.
+    pub(crate) fn begin_move(&mut self, seat: usize, now: ServerTime) {
+        (self.turn, self.six, self.idle) = (seat, false, false);
         let ask = self.roll_ask();
-        self.ask(now, ask);
+        self.ask(now, ask, Step::Done);
     }
 
     pub(crate) fn sync_scores(&self, players: &mut [Player]) {

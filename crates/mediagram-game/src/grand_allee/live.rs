@@ -12,6 +12,8 @@ use rand::{Rng, SeedableRng};
 
 use super::bots::{Bot, Style};
 use super::live_asks::Ask;
+use super::live_debts::Debt;
+use super::live_turn::Step;
 use super::rules::{Permit, Rules, Table};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
@@ -77,30 +79,25 @@ pub(crate) struct Auction {
     pub since: ServerTime,
     /// Every bidder with their answer, nearest after the seller first.
     pub bids: Vec<(usize, Bid)>,
+    /// The debt the sale goes toward; `None` when a permit gives the hotel up.
+    pub owing: Option<Debt>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {
-    /// The mover decides, rolling included.
-    Ask { ask: Ask, since: ServerTime },
+    /// The mover decides, rolling included; `step` is where the move goes on.
+    Ask { ask: Ask, since: ServerTime, step: Step },
     Rolled { value: u8, at: ServerTime },
-    Walking { value: u8, from: u8, at: ServerTime, ends_at: ServerTime, bank: bool },
+    /// `rathaus`: the walk passed the Rathaus, whose menu comes first.
+    Walking { value: u8, from: u8, at: ServerTime, ends_at: ServerTime, bank: bool, rathaus: bool },
     Guest { owner: usize, hotel: u8, nights: u8, amount: i32, at: ServerTime },
     Permit { hotel: u8, count: u8, permit: Permit, at: ServerTime },
     Auction(Auction),
-    /// The mover's property went to `winner`, or to the bank for `price`.
-    Sold { hotel: u8, winner: Option<usize>, price: i32, at: ServerTime },
+    /// The mover's property went to `winner`, or to the bank for `price`;
+    /// then the debt it went toward is settled, or the move ends.
+    Sold { hotel: u8, winner: Option<usize>, price: i32, at: ServerTime, owing: Option<Debt> },
     Note { text: String, broke: bool, at: ServerTime },
     Final,
-}
-
-/// What a move still has to settle after its walk, in the design's order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Step {
-    Rathaus,
-    Guest,
-    Field,
-    Done,
 }
 
 /// The dice as they last fell, for the TV.
@@ -120,16 +117,8 @@ pub struct GrandAlleeGame {
     pub(crate) round: u32,
     pub(crate) rounds: u32,
     pub(crate) stage: Stage,
-    pub(crate) step: Step,
-    /// The move's roll (a 6 rolls again; 0 before the first) and whether it passed the Rathaus.
-    pub(crate) roll: u8,
-    pub(crate) rathaus: bool,
-    /// Hotels that got an entrance on this pass of the Rathaus.
-    pub(crate) served: Vec<u8>,
-    /// What the mover still owes: to whom (the bank when `None`) and how much.
-    pub(crate) debt: Option<(Option<usize>, i32)>,
-    /// A doubled permit the mover pays by auctioning other properties: the hotel and its stages, built once the debt is met.
-    pub(crate) building: Option<(u8, u8)>,
+    /// The move's last roll was a 6: it rolls again once everything is settled.
+    pub(crate) six: bool,
     pub(crate) dice: Dice,
     /// The mover let a clock run out this turn: the house answers the rest at once.
     pub(crate) idle: bool,
@@ -146,10 +135,9 @@ impl GrandAlleeGame {
         let rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
         let rolls = cfg.rolls.iter().copied().collect();
         let (t, rounds) = (Table::new(ids.len(), cfg.rules.clone()), cfg.rules.rounds(ids.len()));
-        let (stage, step, dice) = (Stage::Final, Step::Done, Dice::default());
-        let mut g = Self { cfg, t, ids, turn: 0, round: 1, rounds, stage, step, roll: 0, rathaus: false, served: Vec::new(), debt: None, building: None, dice, idle: false, gone: Vec::new(), rng, rolls };
-        let ask = g.roll_ask();
-        g.ask(now, ask);
+        let (stage, dice) = (Stage::Final, Dice::default());
+        let mut g = Self { cfg, t, ids, turn: 0, round: 1, rounds, stage, six: false, dice, idle: false, gone: Vec::new(), rng, rolls };
+        g.begin_move(0, now);
         g
     }
 
@@ -166,14 +154,15 @@ impl Game for GrandAlleeGame {
             Action::Bid { amount, at } => return self.bid(seat, amount, at),
             _ => return Err(ActionError::Ignored),
         };
-        let Stage::Ask { ask, since } = &self.stage else { return Err(ActionError::Ignored) };
+        let Stage::Ask { ask, since, step } = &self.stage else { return Err(ActionError::Ignored) };
         // a tap that began before this prompt appeared answered the one before it
         if seat != self.turn || at < since - self.cfg.early_ms {
             return Err(ActionError::Ignored);
         }
         let opt = *ask.opts.get(usize::from(index)).ok_or(ActionError::NotAllowed("Das gibt es nicht."))?;
+        let step = step.clone();
         self.idle = false;
-        self.choose(ctx, opt);
+        self.choose(ctx, opt, step);
         self.sync_scores(ctx.players);
         Ok(())
     }

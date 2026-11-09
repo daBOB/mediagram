@@ -35,7 +35,7 @@ impl GrandAlleeGame {
     fn turn_view(&self) -> GrandAlleeTurn {
         let (t, player) = (&self.t, self.ids[self.turn]);
         match &self.stage {
-            Stage::Ask { ask, since } => {
+            Stage::Ask { ask, since, .. } => {
                 let marks = ask.opts.iter().zip(AnswerColor::ALL.iter().cycle()).filter_map(|(o, &color)| match *o {
                     Opt::Place { field, .. } => Some(GrandAlleeMark { field, color }),
                     _ => None,
@@ -87,7 +87,7 @@ impl GrandAlleeGame {
                     },
                 }
             }
-            Stage::Sold { hotel, winner, price, at } => {
+            Stage::Sold { hotel, winner, price, at, .. } => {
                 GrandAlleeTurn::Sold { seller: player, hotel: *hotel, winner: winner.map(|w| self.ids[w]), price: *price, started_at: *at }
             }
             Stage::Note { text, broke, at } => GrandAlleeTurn::Note { player, text: text.clone(), broke: *broke, started_at: *at },

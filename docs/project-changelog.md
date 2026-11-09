@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.170.1 — Grand Allee's move travels in its stages
+
+**Changed** (no behaviour change: the simulator's 4 000 seeded games print the same tables)
+
+- The move in progress is no longer six loose fields on the game (`step`, `roll`, `rathaus`, `served`, `debt`, `building`). An ask carries where the move goes on (`Step`: the Rathaus menu with the hotels served so far, a `Debt` being settled, or done), a walk carries whether it passed the Rathaus, and an auction and its sale carry the debt they go toward. A permit debt cannot exist without its hotel, and a Rathaus step cannot sit beside a debt. `proceed` became three named steps: after the walk, to the guest, to the field.
+- `begin_move` starts every move, in the game and in the tests, so a test can no longer start a move carrying the previous player's 6. New test: after a clock ran out, the house answers a 6's extra roll at once.
+
 ## 0.170.0 — The simulator plays the live Grand Allee
 
 **Changed** (from an architecture review; the live game is unchanged)

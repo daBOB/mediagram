@@ -7,6 +7,7 @@ use std::cmp::Reverse;
 use super::board::HOTELS;
 use super::live::{Bid, GrandAlleeGame, Stage};
 use super::live_asks::Opt;
+use super::live_turn::Step;
 use super::rules::Permit;
 use super::live_text::{grouped, taler};
 use crate::game::{ViewCtx, name};
@@ -34,10 +35,10 @@ impl GrandAlleeGame {
         order
     }
 
-    fn label(&self, view: &ViewCtx, opt: Opt) -> String {
+    fn label(&self, view: &ViewCtx, opt: Opt, step: &Step) -> String {
         let (t, cost) = (&self.t, taler(opt.price(&self.t)));
         match opt {
-            Opt::Roll if self.roll == 6 => "Nochmal würfeln".into(),
+            Opt::Roll if self.six => "Nochmal würfeln".into(),
             Opt::Roll => "Würfeln".into(),
             Opt::Leisure(h) => format!("{}: Freizeitflügel · {cost}", hotel(h)),
             Opt::Buy(h) => format!("{} kaufen · {cost}", hotel(h)),
@@ -55,7 +56,7 @@ impl GrandAlleeGame {
             Opt::FreeStage(h) => format!("{}: Stufe {} gratis", hotel(h), t.estate(h).levels + 1),
             Opt::Sell(h) => format!("{} versteigern · Wert {}", hotel(h), taler(t.value(h))),
             Opt::Raise { .. } => "Anderes versteigern und bauen".into(),
-            Opt::Done if !self.served.is_empty() => "Fertig".into(),
+            Opt::Done if !step.served().is_empty() => "Fertig".into(),
             Opt::EndTurn | Opt::Skip | Opt::Done => "Lieber nicht".into(),
             Opt::Back => "Zurück".into(),
         }
@@ -146,8 +147,8 @@ impl GrandAlleeGame {
             return sheet("Du bist raus. Schau zu, wie es ausgeht.".into(), Vec::new(), 0.0, None, None);
         }
         match &self.stage {
-            Stage::Ask { ask, since } if me == self.turn => {
-                let options = buttons(ask.opts.iter().map(|&o| self.label(view, o)));
+            Stage::Ask { ask, since, step } if me == self.turn => {
+                let options = buttons(ask.opts.iter().map(|&o| self.label(view, o, step)));
                 sheet(ask.prompt.clone(), options, *since, Some(since + self.cfg.ask_ms), None)
             }
             Stage::Auction(a) => match a.bids.iter().find(|(b, _)| *b == me) {

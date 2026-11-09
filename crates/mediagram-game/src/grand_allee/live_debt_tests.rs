@@ -1,5 +1,6 @@
 use super::live::{GrandAlleeGame, Stage};
-use super::live_tests::{game, options, own, pick, place, until, waiting, ANA, BEN, CEM};
+use super::rules::Rules;
+use super::live_tests::{game, game_with, options, own, pick, place, until, waiting, ANA, BEN, CEM};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx, HOUSE_GRACE_MS};
 use crate::protocol::{Action, BidRange, GrandAlleeTurn, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
@@ -130,8 +131,7 @@ fn an_absent_player_plays_itself_after_a_moment() {
 
 #[test]
 fn the_game_ends_after_the_round_limit_with_the_richest_first() {
-    let (mut g, mut p) = game(2, &[1, 1]);
-    g.rounds = 1;
+    let (mut g, mut p) = game_with(2, &[1, 1], Rules { min_rounds: 1, max_rounds: 1, ..Rules::default() });
     g.t.seats[1].cash = 13_000;
     let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
     pick(&mut g, &mut p, BEN, "Würfeln", now);
