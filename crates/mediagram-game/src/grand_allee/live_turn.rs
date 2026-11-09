@@ -4,6 +4,7 @@ use super::board::FIELDS;
 use super::live::{GrandAlleeGame, Stage, HOUSE};
 use super::live_asks::Ask;
 use super::live_debts::Debt;
+use super::live_text::Phrase;
 use crate::game::{GameCtx, name};
 use crate::protocol::ServerTime;
 use crate::room_seats::Player;
@@ -126,7 +127,7 @@ impl GrandAlleeGame {
         }
     }
 
-    pub(crate) fn end_move(&mut self, now: ServerTime, note: Option<String>) {
+    pub(crate) fn end_move(&mut self, now: ServerTime, note: Option<Phrase>) {
         match note {
             Some(text) => self.stage = Stage::Note { text, broke: false, at: now },
             None => self.after_move(now),

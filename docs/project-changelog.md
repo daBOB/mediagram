@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.170.2 — Grand Allee speaks to the mover, about the mover
+
+**Fixed**
+
+- The TV no longer shows the mover's own "du" question ("Ben: Dir fehlen 800 Taler. Was versteigerst du?"): it narrates with the mover's name first ("Ben fehlen 800 Taler. Was wird versteigert?"). The mover's own phone now says "du" in the notes it used to narrate in the third person ("Du kaufst Lagune.", "Du kannst nicht zahlen und bist raus."). Every question and note carries both forms (`Phrase` in `live_text.rs`); the name is filled in when a screen is built, so a renamed rejoin reads right. "Du ersteigert" is now "Du ersteigerst".
+- "Kein Gebot" shows once on the TV, in the auction panel where everyone is already looking; the banner keeps the seller's line.
+
+**Changed**
+
+- An absent bidder in a debt auction gets the table's 1.5 s grace before counting as passed, like every other question (`auction_close`); before, the auction closed at once without them. The simulator, where everyone is connected, prints the same tables.
+
 ## 0.170.1 — Grand Allee's move travels in its stages
 
 **Changed** (no behaviour change: the simulator's 4 000 seeded games print the same tables)

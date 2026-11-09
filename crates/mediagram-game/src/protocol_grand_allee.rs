@@ -99,6 +99,7 @@ pub enum GrandAlleeTurn {
     /// The player decides on the phone; at `closes_at` the house decides.
     Ask {
         player: PlayerId,
+        /// The question as the TV tells it, led by the player's name.
         prompt: String,
         hotel: Option<u8>,
         marks: Vec<GrandAlleeMark>,

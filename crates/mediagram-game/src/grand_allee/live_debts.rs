@@ -3,6 +3,7 @@
 //! on every other phone at once, sealed; the bank buys what nobody bids on.
 
 use super::live::{Auction, Bid, GrandAlleeGame, Stage};
+use super::live_text::Phrase;
 use super::live_turn::Step;
 use super::money::best_bid;
 use crate::game::{ActionError, GameCtx};
@@ -62,7 +63,7 @@ impl GrandAlleeGame {
             return self.go_to_field(now);
         }
         self.gone.push(s);
-        let text = format!("{} kann nicht zahlen und ist raus.", self.who(ctx.players, s));
+        let text = Phrase::new("Du kannst nicht zahlen und bist raus.", "kann nicht zahlen und ist raus.");
         self.stage = Stage::Note { text, broke: true, at: now };
     }
 
@@ -98,12 +99,13 @@ impl GrandAlleeGame {
         Ok(())
     }
 
-    /// When an auction closes: at once when every bidder still at the table
-    /// has answered, else when its clock runs out.
+    /// When an auction closes: once no open bidder can still answer, one at the
+    /// table until the clock, an absent one until the table's grace (never past the clock).
     pub(crate) fn auction_close(&self, ctx: &GameCtx, a: &Auction) -> ServerTime {
-        let here = |seat: usize| ctx.players.iter().any(|p| p.id == self.ids[seat] && p.connected());
-        let waiting = a.bids.iter().any(|&(b, answer)| answer == Bid::Open && here(b));
-        if waiting { a.since + self.cfg.auction_ms } else { ctx.now }
+        let clock = a.since + self.cfg.auction_ms;
+        let open = a.bids.iter().filter(|&&(_, answer)| answer == Bid::Open);
+        let holds = open.map(|&(b, _)| ctx.house_at(self.ids[b], a.since).map_or(clock, |at| at.min(clock)));
+        holds.reduce(f64::max).unwrap_or(ctx.now)
     }
 
     /// The highest bid takes the property; whoever stayed silent passed.

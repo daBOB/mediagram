@@ -16,6 +16,6 @@ net worth, Bank stops paying with two players left.
 | 03 | [3D models](phase-03-3d-models.md) — hotels with stages, dice, in Blender | done: ten themed hotels, baked GLBs in `client/public/grand-allee/` |
 | 04 | [TV board and live game](phase-04-tv-board-and-live-game.md) | done: 0.160.0–0.165.0, Bauherr retired |
 | 05 | [Phone controls](phase-05-phone-controls.md) — clock, bid control, hotel cards, Doppelt route | done: 0.166.0 |
-| 06 | Onboarding intro, test night with people, re-timing | open |
+| 06 | [Onboarding intro, test night, re-timing](phase-06-onboarding-test-night-retiming.md) | 6a in progress |
 
 The live Bauherr game stays as it is until phase 04/05 wire the new engine in.

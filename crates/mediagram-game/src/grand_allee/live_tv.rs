@@ -4,6 +4,7 @@
 use super::board::{field, FIELDS, HOTELS};
 use super::live::{Bid, GrandAlleeGame, Stage};
 use super::live_asks::Opt;
+use crate::game::{name, ViewCtx};
 use crate::protocol::{
     AnswerColor, GrandAlleeAuction, GrandAlleeBoard, GrandAlleeEntrance, GrandAlleeEstate, GrandAlleeHotel, GrandAlleeMark,
     GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn, PlayerId, ServerTime, TvScene,
@@ -32,7 +33,8 @@ impl GrandAlleeGame {
         seats.into_iter().map(|s| self.ids[s]).collect()
     }
 
-    fn turn_view(&self) -> GrandAlleeTurn {
+    /// `who` is the mover's name, which leads every sentence about them.
+    fn turn_view(&self, who: &str) -> GrandAlleeTurn {
         let (t, player) = (&self.t, self.ids[self.turn]);
         match &self.stage {
             Stage::Ask { ask, since, .. } => {
@@ -42,7 +44,7 @@ impl GrandAlleeGame {
                 });
                 GrandAlleeTurn::Ask {
                     player,
-                    prompt: ask.prompt.clone(),
+                    prompt: ask.prompt.about(who),
                     hotel: ask.hotel,
                     marks: marks.collect(),
                     opened_at: *since,
@@ -90,7 +92,7 @@ impl GrandAlleeGame {
             Stage::Sold { hotel, winner, price, at, .. } => {
                 GrandAlleeTurn::Sold { seller: player, hotel: *hotel, winner: winner.map(|w| self.ids[w]), price: *price, started_at: *at }
             }
-            Stage::Note { text, broke, at } => GrandAlleeTurn::Note { player, text: text.clone(), broke: *broke, started_at: *at },
+            Stage::Note { text, broke, at } => GrandAlleeTurn::Note { player, text: text.about(who), broke: *broke, started_at: *at },
             Stage::Final => {
                 let ranking = self.players_of(self.standings());
                 GrandAlleeTurn::Final { winner: ranking[0], ranking }
@@ -98,7 +100,7 @@ impl GrandAlleeGame {
         }
     }
 
-    pub(crate) fn tv_view(&self) -> TvScene {
+    pub(crate) fn tv_view(&self, view: &ViewCtx) -> TvScene {
         let t = &self.t;
         let estates = (0..HOTELS.len() as u8)
             .filter_map(|hotel| t.estate(hotel).owner.map(|o| GrandAlleeEstate { hotel, owner: self.ids[o], levels: t.estate(hotel).levels }))
@@ -119,7 +121,7 @@ impl GrandAlleeGame {
                 seats,
                 round: self.round.min(self.rounds),
                 rounds: self.rounds,
-                turn: self.turn_view(),
+                turn: self.turn_view(name(view.players, self.ids[self.turn])),
                 die: self.dice.die,
                 permit: self.dice.permit,
                 nights: self.dice.nights,

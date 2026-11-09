@@ -13,6 +13,7 @@ use rand::{Rng, SeedableRng};
 use super::bots::{Bot, Style};
 use super::live_asks::Ask;
 use super::live_debts::Debt;
+use super::live_text::Phrase;
 use super::live_turn::Step;
 use super::rules::{Permit, Rules, Table};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
@@ -96,7 +97,7 @@ pub(crate) enum Stage {
     /// The mover's property went to `winner`, or to the bank for `price`;
     /// then the debt it went toward is settled, or the move ends.
     Sold { hotel: u8, winner: Option<usize>, price: i32, at: ServerTime, owing: Option<Debt> },
-    Note { text: String, broke: bool, at: ServerTime },
+    Note { text: Phrase, broke: bool, at: ServerTime },
     Final,
 }
 
@@ -176,8 +177,8 @@ impl Game for GrandAlleeGame {
         self.phone_view(view, player)
     }
 
-    fn tv_scene(&self, _view: &ViewCtx) -> TvScene {
-        self.tv_view()
+    fn tv_scene(&self, view: &ViewCtx) -> TvScene {
+        self.tv_view(view)
     }
 
     fn is_finished(&self) -> bool {
