@@ -1,4 +1,5 @@
 use super::live::{GrandAlleeConfig, GrandAlleeGame};
+use super::live_tv::board;
 use crate::game::{Game, GameCtx, ViewCtx};
 use crate::room_seats::Player;
 
@@ -38,4 +39,12 @@ fn whole_games_play_to_the_end_with_the_house_deciding() {
         let worths: Vec<i32> = order.iter().filter(|&&s| !g.t.seats[s].out).map(|&s| g.t.net_worth(s)).collect();
         assert!(worths.windows(2).all(|w| w[0] >= w[1]), "the richest first: {worths:?}");
     }
+}
+
+/// The client's tests check the TV's layout and hotel models against this
+/// board, so a rule change here reaches them; written like ts-rs's types.
+#[test]
+fn the_board_is_written_out_for_the_client_tests() {
+    let json = serde_json::to_string_pretty(&board()).expect("the board serializes") + "\n";
+    std::fs::write(concat!(env!("CARGO_MANIFEST_DIR"), "/client/tests/grand-allee-board.json"), json).expect("the board JSON is written");
 }

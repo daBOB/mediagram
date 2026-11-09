@@ -42,12 +42,9 @@ fn ben_owes_cem(plots: &[u8]) -> (GrandAlleeGame, Vec<Player>) {
     (g, p)
 }
 
-fn auction_view(g: &GrandAlleeGame, p: &[Player]) -> crate::protocol::GrandAlleeAuction {
+fn tv_turn(g: &GrandAlleeGame, p: &[Player]) -> GrandAlleeTurn {
     let TvScene::GrandAllee { scene } = g.tv_scene(&ViewCtx { now: 0.0, players: p, leader: None }) else { panic!("not grand allee") };
-    match scene.turn {
-        GrandAlleeTurn::Auction { auction } => auction,
-        other => panic!("no auction: {other:?}"),
-    }
+    scene.turn
 }
 
 #[test]
@@ -56,18 +53,21 @@ fn a_debt_auction_takes_sealed_bids_from_every_other_phone_and_a_tie_goes_to_the
     let now = pick(&mut g, &mut p, BEN, "Würfeln", 10.0);
     assert_eq!(options(&g, &p, BEN, now), ["Hacienda Sol versteigern · Wert 1.000 Taler"], "the debt must be met: no way out");
     let now = pick(&mut g, &mut p, BEN, "Hacienda Sol versteigern · Wert 1.000 Taler", now);
-    let open = BidRange { value: 1_000, max: 12_000, step: 100, placed: None };
+    let open = BidRange { value: 1_000, bank: 500, max: 12_000, step: 100, placed: None };
     assert_eq!((bid_range(&g, &p, ANA, now), bid_range(&g, &p, CEM, now)), (Some(open.clone()), Some(open)), "no minimum, up to all one has");
     assert_eq!(bid_range(&g, &p, BEN, now), None, "the seller does not bid");
     let now = bid(&mut g, &mut p, ANA, 500, now);
-    let auction = auction_view(&g, &p);
+    let GrandAlleeTurn::Auction { auction } = tv_turn(&g, &p) else { panic!("no auction") };
     assert_eq!((auction.bidders, auction.bid, auction.passed), (vec![CEM, ANA], vec![ANA], vec![]), "who has bid, never how much");
     assert_eq!(bid_range(&g, &p, ANA, now).and_then(|b| b.placed), Some(500));
     assert_eq!(send_bid(&mut g, &mut p, ANA, 900, now), Err(ActionError::Ignored), "sealed and final");
-    bid(&mut g, &mut p, CEM, 500, now);
+    send_bid(&mut g, &mut p, CEM, 500, now).unwrap();
+    let now = until(&mut g, &mut p, now, |g| matches!(g.stage, Stage::Note { .. }));
     assert_eq!(g.t.estate(3).owner, Some(2), "Cem sits nearer after Ben than Ana");
     // 100 + 500 still short of 900, and nothing left to sell: Ben pays what he has and is out
     assert!(g.t.seats[1].out);
+    assert!(matches!(tv_turn(&g, &p), GrandAlleeTurn::Note { player: BEN, broke: true, .. }), "the TV is told Ben went broke");
+    until(&mut g, &mut p, now, waiting);
     assert_eq!((g.t.seats[0].cash, g.t.seats[2].cash), (12_000, 12_000 - 500 + 600));
     assert_eq!((g.turn, g.gone.clone()), (2, vec![1]));
 }

@@ -127,7 +127,8 @@ pub enum GrandAlleeTurn {
     /// The auction's outcome; without a winner the bank paid `price`.
     Sold { seller: PlayerId, hotel: u8, winner: Option<PlayerId>, price: i32, started_at: ServerTime },
     /// What the move came to, shown briefly before the game goes on.
-    Note { player: PlayerId, text: String, started_at: ServerTime },
+    /// `broke`: the mover could not pay and is out.
+    Note { player: PlayerId, text: String, broke: bool, started_at: ServerTime },
     Final { winner: PlayerId, ranking: Vec<PlayerId> },
 }
 

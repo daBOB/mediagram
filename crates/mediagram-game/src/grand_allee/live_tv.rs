@@ -9,7 +9,8 @@ use crate::protocol::{
     GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn, PlayerId, ServerTime, TvScene,
 };
 
-fn board() -> GrandAlleeBoard {
+/// The board as the TV gets it: every field's kind and the hotels with their prices.
+pub(crate) fn board() -> GrandAlleeBoard {
     let hotels = HOTELS.iter().enumerate().map(|(id, h)| GrandAlleeHotel {
         id: id as u8,
         name: h.name.into(),
@@ -89,7 +90,7 @@ impl GrandAlleeGame {
             Stage::Sold { hotel, winner, price, at } => {
                 GrandAlleeTurn::Sold { seller: player, hotel: *hotel, winner: winner.map(|w| self.ids[w]), price: *price, started_at: *at }
             }
-            Stage::Note { text, at } => GrandAlleeTurn::Note { player, text: text.clone(), started_at: *at },
+            Stage::Note { text, broke, at } => GrandAlleeTurn::Note { player, text: text.clone(), broke: *broke, started_at: *at },
             Stage::Final => {
                 let ranking = self.players_of(self.standings());
                 GrandAlleeTurn::Final { winner: ranking[0], ranking }

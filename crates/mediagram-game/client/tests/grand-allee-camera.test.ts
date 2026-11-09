@@ -39,7 +39,7 @@ test("leaning in comes closer; the deep lean closer still and steeper", () => {
 
 test("between turns and at the end, the overview", async () => {
   const b = await testBoard();
-  expect(cameraWish(sceneOf({ turn: { stage: "note", player: 0, text: "", started_at: 0 } }), b, 0)).toBeNull();
+  expect(cameraWish(sceneOf({ turn: { stage: "note", player: 0, text: "", broke: false, started_at: 0 } }), b, 0)).toBeNull();
   expect(cameraWish(sceneOf({ turn: { stage: "final", winner: 0, ranking: [0] } }), b, 0)).toBeNull();
 });
 

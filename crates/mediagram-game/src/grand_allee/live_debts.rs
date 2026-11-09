@@ -43,7 +43,7 @@ impl GrandAlleeGame {
         }
         self.gone.push(s);
         let text = format!("{} kann nicht zahlen und ist raus.", self.who(ctx.players, s));
-        self.end_move(now, Some(text));
+        self.stage = Stage::Note { text, broke: true, at: now };
     }
 
     pub(crate) fn open_auction(&mut self, now: ServerTime, hotel: u8) {

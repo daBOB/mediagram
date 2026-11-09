@@ -11,5 +11,5 @@ export function clampBid(bid: BidRange, x: number): number {
 /** `pct` per cent of the property's value, as a bid this bidder can make. */
 export const bidShare = (bid: BidRange, pct: number) => clampBid(bid, (bid.value * pct) / 100);
 
-/** Where the bid starts: half the value, what the bank would pay without a bid. */
-export const startBid = (bid: BidRange) => bidShare(bid, 50);
+/** Where the bid starts: what the bank would pay without a bid. */
+export const startBid = (bid: BidRange) => clampBid(bid, bid.bank);

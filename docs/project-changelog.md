@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.167.0 — Grand Allee: the host states what the clients worked out
+
+**Changed** (no visible change; from an architecture review)
+
+- The client tests' Grand Allee board is written by `cargo test` from the host's own board (`client/tests/grand-allee-board.json`), replacing a hand copy. A change to a hotel's frontage or stages in `board.rs` now fails the TV's layout and model tests instead of passing them.
+- A debt auction's bid carries the bank's price (`BidRange.bank`); the phone starts the bid there instead of repeating the bank's 50 %.
+- The note for a player going out says so (`GrandAlleeTurn::Note.broke`); the TV's scream follows that fact instead of inferring it from the seats.
+
 ## 0.166.0 — Grand Allee's phone: clock, hotel cards, a real bid
 
 **Added** (phase 05; the user chose the bid control, the cards and the Doppelt choice from rendered mockups)

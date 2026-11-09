@@ -93,7 +93,7 @@ pub(crate) enum Stage {
     Auction(Auction),
     /// The mover's property went to `winner`, or to the bank for `price`.
     Sold { hotel: u8, winner: Option<usize>, price: i32, at: ServerTime },
-    Note { text: String, at: ServerTime },
+    Note { text: String, broke: bool, at: ServerTime },
     Final,
 }
 

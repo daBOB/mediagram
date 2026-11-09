@@ -9,6 +9,10 @@ export type BidRange = {
  */
 value: number, 
 /**
+ * What the bank pays the seller if nobody bids; the phone's bid starts there.
+ */
+bank: number, 
+/**
  * The highest bid: the bidder's cash in whole steps.
  */
 max: number, step: number, 

@@ -98,7 +98,7 @@ impl GrandAlleeGame {
 
     pub(crate) fn end_move(&mut self, now: ServerTime, note: Option<String>) {
         match note {
-            Some(text) => self.stage = Stage::Note { text, at: now },
+            Some(text) => self.stage = Stage::Note { text, broke: false, at: now },
             None => self.after_move(now),
         }
     }

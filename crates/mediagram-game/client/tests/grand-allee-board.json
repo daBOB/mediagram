@@ -1,0 +1,334 @@
+{
+  "fields": [
+    "bank",
+    "allee",
+    "free_build",
+    "free_entrance",
+    "plot",
+    "allee",
+    "site",
+    "allee",
+    "allee",
+    "plot",
+    "allee",
+    "site",
+    "plot",
+    "allee",
+    "site",
+    "allee",
+    "plot",
+    "allee",
+    "site",
+    "allee",
+    "rathaus",
+    "allee",
+    "free_build",
+    "free_entrance",
+    "plot",
+    "allee",
+    "site",
+    "allee",
+    "allee",
+    "plot",
+    "allee",
+    "site",
+    "plot",
+    "allee",
+    "site",
+    "allee",
+    "plot",
+    "allee",
+    "site",
+    "allee"
+  ],
+  "hotels": [
+    {
+      "id": 0,
+      "name": "Lagune",
+      "first": 4,
+      "last": 8,
+      "land": 1200,
+      "entrance": 300,
+      "stages": [
+        {
+          "cost": 1200,
+          "rate": 75
+        },
+        {
+          "cost": 900,
+          "rate": 150
+        },
+        {
+          "cost": 900,
+          "rate": 225
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Kirschblüte",
+      "first": 9,
+      "last": 13,
+      "land": 2000,
+      "entrance": 500,
+      "stages": [
+        {
+          "cost": 2000,
+          "rate": 100
+        },
+        {
+          "cost": 1500,
+          "rate": 200
+        },
+        {
+          "cost": 1500,
+          "rate": 325
+        },
+        {
+          "cost": 1200,
+          "rate": 425
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Fjordhus",
+      "first": 14,
+      "last": 19,
+      "land": 2600,
+      "entrance": 600,
+      "stages": [
+        {
+          "cost": 2400,
+          "rate": 125
+        },
+        {
+          "cost": 1800,
+          "rate": 250
+        },
+        {
+          "cost": 1800,
+          "rate": 400
+        },
+        {
+          "cost": 1600,
+          "rate": 525
+        },
+        {
+          "cost": 1400,
+          "rate": 650
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Hacienda Sol",
+      "first": 24,
+      "last": 28,
+      "land": 1000,
+      "entrance": 300,
+      "stages": [
+        {
+          "cost": 1200,
+          "rate": 75
+        },
+        {
+          "cost": 900,
+          "rate": 150
+        },
+        {
+          "cost": 900,
+          "rate": 225
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Riad Atlas",
+      "first": 29,
+      "last": 33,
+      "land": 1300,
+      "entrance": 350,
+      "stages": [
+        {
+          "cost": 1400,
+          "rate": 75
+        },
+        {
+          "cost": 1000,
+          "rate": 150
+        },
+        {
+          "cost": 1000,
+          "rate": 225
+        },
+        {
+          "cost": 800,
+          "rate": 300
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Alpenrose",
+      "first": 34,
+      "last": 39,
+      "land": 2300,
+      "entrance": 550,
+      "stages": [
+        {
+          "cost": 2200,
+          "rate": 125
+        },
+        {
+          "cost": 1600,
+          "rate": 250
+        },
+        {
+          "cost": 1600,
+          "rate": 375
+        },
+        {
+          "cost": 1400,
+          "rate": 500
+        },
+        {
+          "cost": 1200,
+          "rate": 575
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Maharadscha",
+      "first": 4,
+      "last": 11,
+      "land": 3000,
+      "entrance": 700,
+      "stages": [
+        {
+          "cost": 2800,
+          "rate": 125
+        },
+        {
+          "cost": 2000,
+          "rate": 275
+        },
+        {
+          "cost": 2000,
+          "rate": 425
+        },
+        {
+          "cost": 1800,
+          "rate": 575
+        },
+        {
+          "cost": 1600,
+          "rate": 675
+        },
+        {
+          "cost": 1400,
+          "rate": 750
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Skyline",
+      "first": 12,
+      "last": 19,
+      "land": 3500,
+      "entrance": 800,
+      "stages": [
+        {
+          "cost": 2800,
+          "rate": 150
+        },
+        {
+          "cost": 2200,
+          "rate": 300
+        },
+        {
+          "cost": 2200,
+          "rate": 425
+        },
+        {
+          "cost": 1800,
+          "rate": 550
+        },
+        {
+          "cost": 1600,
+          "rate": 650
+        },
+        {
+          "cost": 1400,
+          "rate": 750
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Savanne",
+      "first": 24,
+      "last": 31,
+      "land": 2800,
+      "entrance": 650,
+      "stages": [
+        {
+          "cost": 2600,
+          "rate": 125
+        },
+        {
+          "cost": 1900,
+          "rate": 250
+        },
+        {
+          "cost": 1900,
+          "rate": 400
+        },
+        {
+          "cost": 1700,
+          "rate": 525
+        },
+        {
+          "cost": 1500,
+          "rate": 650
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Belle Époque",
+      "first": 32,
+      "last": 39,
+      "land": 3200,
+      "entrance": 750,
+      "stages": [
+        {
+          "cost": 2800,
+          "rate": 150
+        },
+        {
+          "cost": 2100,
+          "rate": 300
+        },
+        {
+          "cost": 2100,
+          "rate": 425
+        },
+        {
+          "cost": 1800,
+          "rate": 550
+        },
+        {
+          "cost": 1600,
+          "rate": 650
+        },
+        {
+          "cost": 1400,
+          "rate": 750
+        }
+      ]
+    }
+  ]
+}

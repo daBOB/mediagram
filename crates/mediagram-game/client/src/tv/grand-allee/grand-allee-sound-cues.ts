@@ -23,10 +23,8 @@ export function grandAlleeCues(scene: GrandAlleeScene, now: number): { key: stri
     }
     case "sold":
       return { key: `sold ${t.started_at}`, cues: [{ sound: "thunk", at: t.started_at }] };
-    case "note": {
-      const broke = scene.seats.some((s) => s.player === t.player && s.out);
-      return broke ? { key: `note ${t.started_at}`, cues: [{ sound: "thunk", at: t.started_at }, { sound: "scream", at: t.started_at }] } : null;
-    }
+    case "note":
+      return t.broke ? { key: `note ${t.started_at}`, cues: [{ sound: "thunk", at: t.started_at }, { sound: "scream", at: t.started_at }] } : null;
     case "final":
       return { key: `final ${t.winner}`, cues: [{ sound: "winnerJingle", at: now }] };
     default:

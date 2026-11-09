@@ -158,7 +158,7 @@ impl GrandAlleeGame {
                         Bid::Amount(x) => Some(x),
                     };
                     let value = self.t.value(a.hotel);
-                    let bid = BidRange { value, max: self.bid_max(me), step: BID_STEP, placed };
+                    let bid = BidRange { value, bank: self.t.auction_price(a.hotel, None), max: self.bid_max(me), step: BID_STEP, placed };
                     let prompt = format!("Versteigerung: {}", hotel(a.hotel));
                     sheet(prompt, Vec::new(), a.since, Some(a.since + self.cfg.auction_ms), Some(bid))
                 }

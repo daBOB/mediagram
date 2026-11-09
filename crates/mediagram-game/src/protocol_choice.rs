@@ -55,6 +55,8 @@ pub struct HotelCard {
 pub struct BidRange {
     /// The property's value, which the quick shares are of.
     pub value: i32,
+    /// What the bank pays the seller if nobody bids; the phone's bid starts there.
+    pub bank: i32,
     /// The highest bid: the bidder's cash in whole steps.
     pub max: i32,
     pub step: i32,
