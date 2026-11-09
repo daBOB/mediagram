@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.171.0 — Grand Allee keeps a decision log
+
+**Added**
+
+- Grand Allee records a line per answered question (seat, round, the kind of question and of answer, think time, and whether the player, the clock or the house answered), a line per debt-auction bidder, and a start and an end line per game. No names, only seats. The game keeps them as data (`live_log.rs`); the host drains them after every event and tick through a new `Game::take_log` (default: none) and appends them, with the wall-clock time, to `grand-allee-log.jsonl` in the core's data folder. A failed write only warns.
+- `GET /grand-allee-log` on the game-night server (port 8080) serves that file, since a release build's data folder can't be read from outside the box. A game ended early (back to the lobby, night stopped) leaves a start line without an end line.
+
+The simulator never drains the log; it prints the same tables.
+
 ## 0.170.2 — Grand Allee speaks to the mover, about the mover
 
 **Fixed**

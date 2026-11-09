@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use std::time::Duration;
@@ -34,6 +35,8 @@ pub struct HostConfig {
     pub pool: Arc<TitlePool>,
     /// Textless poster files, asked for by title key; `None` serves the pool's own.
     pub textless: Option<PosterLookup>,
+    /// Where games append their log lines, also served at `/grand-allee-log`; `None` keeps no log.
+    pub log: Option<PathBuf>,
 }
 
 impl Default for HostConfig {
@@ -47,17 +50,20 @@ impl Default for HostConfig {
             readiness: Readiness { poster: false, poster_kids: false },
             pool: Arc::default(),
             textless: None,
+            log: None,
         }
     }
 }
 
 /// Hosts the games over `titles`. The one `kids_locked` decides both which
 /// titles exist and whether the toggle is locked, so the two cannot disagree.
+/// `log` is the file games append their log lines to, across nights.
 pub async fn start_game_night(
     titles: Vec<GameTitle>,
     kids_locked: bool,
     preferred_port: u16,
     textless: Option<PosterLookup>,
+    log: Option<PathBuf>,
 ) -> std::io::Result<Host> {
     let pool = Arc::new(TitlePool::new(titles, kids_locked));
     let cfg = HostConfig {
@@ -69,6 +75,7 @@ pub async fn start_game_night(
         },
         pool: pool.clone(),
         textless: textless.clone(),
+        log,
         ..HostConfig::default()
     };
     Host::start(cfg, game_factory(pool, Arc::new(general_pack()), textless)).await
@@ -106,7 +113,7 @@ impl Host {
             factory,
         );
         let (events, rx) = mpsc::unbounded_channel();
-        let room = tokio::spawn(room_loop(room, rx));
+        let room = tokio::spawn(room_loop(room, rx, cfg.log.clone()));
 
         let state = AppState {
             events: events.clone(),
@@ -114,6 +121,7 @@ impl Host {
             join_url: join_url.as_str().into(),
             pool: cfg.pool,
             textless: cfg.textless,
+            log: cfg.log,
         };
         let (shutdown, stopped) = oneshot::channel::<()>();
         let app = router(state).into_make_service_with_connect_info::<SocketAddr>();

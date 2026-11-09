@@ -13,6 +13,7 @@ use rand::{Rng, SeedableRng};
 use super::bots::{Bot, Style};
 use super::live_asks::Ask;
 use super::live_debts::Debt;
+use super::live_log::{By, Log};
 use super::live_text::Phrase;
 use super::live_turn::Step;
 use super::rules::{Permit, Rules, Table};
@@ -125,6 +126,7 @@ pub struct GrandAlleeGame {
     pub(crate) idle: bool,
     /// Seats in the order they went out.
     pub(crate) gone: Vec<usize>,
+    pub(crate) log: Log,
     rng: StdRng,
     rolls: VecDeque<u8>,
 }
@@ -136,8 +138,8 @@ impl GrandAlleeGame {
         let rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
         let rolls = cfg.rolls.iter().copied().collect();
         let (t, rounds) = (Table::new(ids.len(), cfg.rules.clone()), cfg.rules.rounds(ids.len()));
-        let (stage, dice) = (Stage::Final, Dice::default());
-        let mut g = Self { cfg, t, ids, turn: 0, round: 1, rounds, stage, six: false, dice, idle: false, gone: Vec::new(), rng, rolls };
+        let (stage, dice, log) = (Stage::Final, Dice::default(), Log::new(ids.len(), rounds, now));
+        let mut g = Self { cfg, t, ids, turn: 0, round: 1, rounds, stage, six: false, dice, idle: false, gone: Vec::new(), log, rng, rolls };
         g.begin_move(0, now);
         g
     }
@@ -152,7 +154,7 @@ impl Game for GrandAlleeGame {
         let seat = self.ids.iter().position(|&id| id == player).ok_or(ActionError::Ignored)?;
         let (index, at) = match *action {
             Action::Choose { index, at } => (index, at),
-            Action::Bid { amount, at } => return self.bid(seat, amount, at),
+            Action::Bid { amount, at } => return self.bid(seat, amount, at, ctx.now),
             _ => return Err(ActionError::Ignored),
         };
         let Stage::Ask { ask, since, step } = &self.stage else { return Err(ActionError::Ignored) };
@@ -161,8 +163,9 @@ impl Game for GrandAlleeGame {
             return Err(ActionError::Ignored);
         }
         let opt = *ask.opts.get(usize::from(index)).ok_or(ActionError::NotAllowed("Das gibt es nicht."))?;
-        let step = step.clone();
+        let (step, kind, since) = (step.clone(), ask.kind(), *since);
         self.idle = false;
+        self.log_decision(kind, since, opt, ctx.now, By::Player);
         self.choose(ctx, opt, step);
         self.sync_scores(ctx.players);
         Ok(())
@@ -183,5 +186,9 @@ impl Game for GrandAlleeGame {
 
     fn is_finished(&self) -> bool {
         self.stage == Stage::Final
+    }
+
+    fn take_log(&mut self) -> Vec<serde_json::Value> {
+        self.log.take()
     }
 }

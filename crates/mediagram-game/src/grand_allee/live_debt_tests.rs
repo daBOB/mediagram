@@ -31,7 +31,7 @@ pub(super) fn bid(g: &mut GrandAlleeGame, p: &mut [Player], who: PlayerId, amoun
 /// Ben (seat 1) is on turn at field 2 with 100 Taler and the plots in
 /// `plots`; Cem's Lagune (rate 225) has an entrance on field 5, where Ben's
 /// roll of 3 ends, and the nights die says 4: 900 Taler.
-fn ben_owes_cem(plots: &[u8]) -> (GrandAlleeGame, Vec<Player>) {
+pub(super) fn ben_owes_cem(plots: &[u8]) -> (GrandAlleeGame, Vec<Player>) {
     let (mut g, p) = game(3, &[3, 4]);
     own(&mut g, 2, 0, 3);
     g.t.entrances[5] = Some(0);

@@ -16,6 +16,7 @@ mod kopfnuss_picks;
 mod kopfnuss_supply;
 mod kopfnuss_views;
 pub mod game;
+mod game_log;
 pub mod general;
 pub mod grand_allee;
 pub mod host;

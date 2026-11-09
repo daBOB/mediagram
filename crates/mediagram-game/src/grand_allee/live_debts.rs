@@ -3,6 +3,7 @@
 //! on every other phone at once, sealed; the bank buys what nobody bids on.
 
 use super::live::{Auction, Bid, GrandAlleeGame, Stage};
+use super::live_log::By;
 use super::live_text::Phrase;
 use super::live_turn::Step;
 use super::money::best_bid;
@@ -77,8 +78,8 @@ impl GrandAlleeGame {
         self.t.seats[seat].cash / BID_STEP * BID_STEP
     }
 
-    /// A bidder's sealed answer: a whole number of steps up to their cash, or 0 to pass.
-    pub(crate) fn bid(&mut self, seat: usize, amount: i32, at: ServerTime) -> Result<(), ActionError> {
+    /// A bidder's sealed answer, tapped at `at` and arriving at `now`: a whole number of steps up to their cash, or 0 to pass.
+    pub(crate) fn bid(&mut self, seat: usize, amount: i32, at: ServerTime, now: ServerTime) -> Result<(), ActionError> {
         let Stage::Auction(a) = &self.stage else {
             return Err(ActionError::Ignored);
         };
@@ -96,6 +97,8 @@ impl GrandAlleeGame {
         // sealed and final: a second tap changes nothing
         let slot = a.bids.iter_mut().find(|(b, answer)| *b == seat && *answer == Bid::Open).ok_or(ActionError::Ignored)?;
         slot.1 = bid;
+        let since = a.since;
+        self.log_bid(seat, since, now, By::Player, bid == Bid::Pass);
         Ok(())
     }
 
@@ -110,6 +113,7 @@ impl GrandAlleeGame {
 
     /// The highest bid takes the property; whoever stayed silent passed.
     pub(crate) fn close_auction(&mut self, ctx: &GameCtx, a: Auction) {
+        self.log_silent_bidders(ctx, &a);
         let amounts = a.bids.iter().filter_map(|&(b, answer)| match answer {
             Bid::Amount(x) => Some((x, b)),
             Bid::Open | Bid::Pass => None,

@@ -59,7 +59,7 @@ from those measurements. Design: spieltisch `design/grand-allee-design.md`
 | # | Step | Status |
 |---|---|---|
 | 1 | Wording fixes + auction grace | done (0.170.2) |
-| 2 | Decision log + `/grand-allee-log` | open |
+| 2 | Decision log + `/grand-allee-log` | done (0.171.0); a game ended early has a start line and no end line |
 | 3 | Intro cards: render for approval, then the stage, TV and phones | approved as rendered (`reports/intro-cards/`), building |
 | 4 | APK on the box | open |
 

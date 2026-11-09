@@ -71,10 +71,12 @@ impl GrandAlleeGame {
             return;
         }
         match self.stage.clone() {
-            Stage::Ask { ask, step, .. } => {
-                let pick = HOUSE.pick(&self.t, self.turn, &ask);
+            Stage::Ask { ask, since, step } => {
+                let opt = ask.opts[HOUSE.pick(&self.t, self.turn, &ask)];
+                let by = self.silent_by(ctx, since);
+                self.log_decision(ask.kind(), since, opt, now, by);
                 self.idle = true;
-                self.choose(ctx, ask.opts[pick], step);
+                self.choose(ctx, opt, step);
             }
             Stage::Rolled { value, .. } => self.walk(now, value),
             Stage::Walking { rathaus, .. } => self.after_walk(now, rathaus),
@@ -147,7 +149,8 @@ impl GrandAlleeGame {
     /// Hands over to the next player still in; ends the game after the round
     /// limit or when one player is left.
     pub(crate) fn next_turn(&mut self, now: ServerTime) {
-        let n = self.t.seats.len();
+        // the round the move that just ended belonged to
+        let (n, played) = (self.t.seats.len(), self.round);
         let mut next = self.turn;
         loop {
             next += 1;
@@ -161,7 +164,7 @@ impl GrandAlleeGame {
         }
         if self.round > self.rounds || self.t.active() <= 1 {
             self.stage = Stage::Final;
-            return;
+            return self.log_end(now, played);
         }
         self.begin_move(next, now);
     }

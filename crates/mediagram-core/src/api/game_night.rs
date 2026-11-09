@@ -1,8 +1,10 @@
 //! `Core::start_game_night`/`game_night_back`/`stop_game_night`: the party
 //! games the box hosts for phones on the same network. A game night reads the
-//! catalog and credits but writes nothing to any profile's state.
+//! catalog and credits but writes nothing to any profile's state; it only
+//! appends the games' decision log to the data folder.
 
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use mediagram_game::{GameTitle, Host, PosterLookup};
@@ -17,6 +19,8 @@ use crate::shows::title_of;
 use super::{Core, store};
 
 const PREFERRED_PORT: u16 = 8080;
+/// One file across nights, fetched from the game-night server after a test night.
+const GAME_LOG: &str = "grand-allee-log.jsonl";
 
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
@@ -31,7 +35,8 @@ impl Core {
         let textless = tmdb_key
             .filter(|key| !key.trim().is_empty())
             .and_then(|key| poster_lookup(key, self.data_dir.join("game-posters"), poster_keys));
-        replace(&self.game_night, titles, kids_locked, PREFERRED_PORT, textless).await
+        let log = Some(self.data_dir.join(GAME_LOG));
+        replace(&self.game_night, titles, kids_locked, PREFERRED_PORT, textless, log).await
     }
 
     /// Ends the running game and returns to the lobby. `false` when there is
@@ -70,12 +75,13 @@ async fn replace(
     kids_locked: bool,
     port: u16,
     textless: Option<PosterLookup>,
+    log: Option<PathBuf>,
 ) -> Result<GameNightUrls, CoreError> {
     let mut held = slot.lock().await;
     if let Some(running) = held.take() {
         running.stop().await;
     }
-    let host = mediagram_game::host::start_game_night(titles, kids_locked, port, textless)
+    let host = mediagram_game::host::start_game_night(titles, kids_locked, port, textless, log)
         .await
         .map_err(CoreError::io("starting the game night"))?;
     let urls = GameNightUrls { tv_url: host.tv_url(), join_url: host.join_url() };

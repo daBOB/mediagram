@@ -13,8 +13,8 @@ fn is_free(port: u16) -> bool {
 #[tokio::test]
 async fn start_twice_replaces_the_first() {
     let slot = AsyncMutex::new(None);
-    let first = port_of(&replace(&slot, Vec::new(), false, 0, None).await.unwrap());
-    let second = port_of(&replace(&slot, Vec::new(), false, 0, None).await.unwrap());
+    let first = port_of(&replace(&slot, Vec::new(), false, 0, None, None).await.unwrap());
+    let second = port_of(&replace(&slot, Vec::new(), false, 0, None, None).await.unwrap());
     assert!(first == second || is_free(first), "the first night's port must be released");
 
     stop(&slot).await;
