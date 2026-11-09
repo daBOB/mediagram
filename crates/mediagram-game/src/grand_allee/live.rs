@@ -11,61 +11,19 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
 use super::bots::{Bot, Style};
+pub use super::live_config::GrandAlleeConfig;
 use super::live_asks::Ask;
 use super::live_debts::Debt;
 use super::live_log::{By, Log};
 use super::live_text::Phrase;
 use super::live_turn::Step;
-use super::rules::{Permit, Rules, Table};
+use super::rules::{Permit, Table};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 /// Decides for an absent player and when a clock runs out.
 pub(super) const HOUSE: Bot = Bot { style: Style::Balanced, house: true };
-
-#[derive(Debug, Clone)]
-pub struct GrandAlleeConfig {
-    pub rules: Rules,
-    /// How long a die flies on the TV, and how long it shows after landing.
-    pub roll_ms: f64,
-    pub show_ms: f64,
-    pub hop_ms: f64,
-    /// A walk starts this long after it is decided, so the TV can land the first hop.
-    pub lead_ms: f64,
-    /// How long the outcome of a move or an auction stays up.
-    pub note_ms: f64,
-    /// A pick may arrive this long before its prompt opened by the host's clock.
-    pub early_ms: f64,
-    /// A question that follows straight from a tap opens this long after it,
-    /// so the second tap of a double tap cannot answer it.
-    pub chain_ms: f64,
-    /// A decision's clock; then the house decides.
-    pub ask_ms: f64,
-    pub auction_ms: f64,
-    pub seed: Option<u64>,
-    /// Dice used before the dice themselves, for tests.
-    pub rolls: Vec<u8>,
-}
-
-impl Default for GrandAlleeConfig {
-    fn default() -> Self {
-        Self {
-            rules: Rules::default(),
-            roll_ms: 1150.0,
-            show_ms: 900.0,
-            hop_ms: 280.0,
-            lead_ms: 200.0,
-            note_ms: 1400.0,
-            early_ms: 150.0,
-            chain_ms: 400.0,
-            ask_ms: 20_000.0,
-            auction_ms: 15_000.0,
-            seed: None,
-            rolls: Vec::new(),
-        }
-    }
-}
 
 /// A bidder's answer in a debt auction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,6 +45,8 @@ pub(crate) struct Auction {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {
+    /// Rules card `card` (from 0) on the TV since `at`, before the first roll.
+    Intro { card: u8, at: ServerTime },
     /// The mover decides, rolling included; `step` is where the move goes on.
     Ask { ask: Ask, since: ServerTime, step: Step },
     Rolled { value: u8, at: ServerTime },
@@ -132,15 +92,18 @@ pub struct GrandAlleeGame {
 }
 
 impl GrandAlleeGame {
-    /// Seats the players in joining order. The lobby starts this game with two to eight.
+    /// Seats the players in joining order, then shows the rules cards unless
+    /// `intro_ms` is 0. The lobby starts this game with two to eight.
     pub fn new(cfg: GrandAlleeConfig, players: &[Player], now: ServerTime) -> Self {
         let ids: Vec<PlayerId> = players.iter().map(|p| p.id).collect();
         let rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
         let rolls = cfg.rolls.iter().copied().collect();
         let (t, rounds) = (Table::new(ids.len(), cfg.rules.clone()), cfg.rules.rounds(ids.len()));
-        let (stage, dice, log) = (Stage::Final, Dice::default(), Log::new(ids.len(), rounds, now));
+        let (stage, dice, log) = (Stage::Intro { card: 0, at: now }, Dice::default(), Log::new(ids.len(), rounds, now));
         let mut g = Self { cfg, t, ids, turn: 0, round: 1, rounds, stage, six: false, dice, idle: false, gone: Vec::new(), log, rng, rolls };
-        g.begin_move(0, now);
+        if g.cfg.intro_ms <= 0.0 {
+            g.begin_move(0, now);
+        }
         g
     }
 
@@ -157,6 +120,9 @@ impl Game for GrandAlleeGame {
             Action::Bid { amount, at } => return self.bid(seat, amount, at, ctx.now),
             _ => return Err(ActionError::Ignored),
         };
+        if let Stage::Intro { .. } = self.stage {
+            return self.skip_intro(ctx, player);
+        }
         let Stage::Ask { ask, since, step } = &self.stage else { return Err(ActionError::Ignored) };
         // a tap that began before this prompt appeared answered the one before it
         if seat != self.turn || at < since - self.cfg.early_ms {

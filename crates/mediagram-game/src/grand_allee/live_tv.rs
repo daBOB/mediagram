@@ -33,10 +33,12 @@ impl GrandAlleeGame {
         seats.into_iter().map(|s| self.ids[s]).collect()
     }
 
-    /// `who` is the mover's name, which leads every sentence about them.
-    fn turn_view(&self, who: &str) -> GrandAlleeTurn {
+    /// The mover's name leads every sentence about them; the intro names the leader.
+    fn turn_view(&self, view: &ViewCtx) -> GrandAlleeTurn {
+        let who = name(view.players, self.ids[self.turn]);
         let (t, player) = (&self.t, self.ids[self.turn]);
         match &self.stage {
+            Stage::Intro { card, at } => self.intro_turn(view, *card, *at),
             Stage::Ask { ask, since, .. } => {
                 let marks = ask.opts.iter().zip(AnswerColor::ALL.iter().cycle()).filter_map(|(o, &color)| match *o {
                     Opt::Place { field, .. } => Some(GrandAlleeMark { field, color }),
@@ -121,7 +123,7 @@ impl GrandAlleeGame {
                 seats,
                 round: self.round.min(self.rounds),
                 rounds: self.rounds,
-                turn: self.turn_view(name(view.players, self.ids[self.turn])),
+                turn: self.turn_view(view),
                 die: self.dice.die,
                 permit: self.dice.permit,
                 nights: self.dice.nights,

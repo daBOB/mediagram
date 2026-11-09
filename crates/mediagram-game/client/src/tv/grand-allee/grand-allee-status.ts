@@ -7,9 +7,10 @@ import { taler } from "../../ui/taler";
 const PERMIT_WORD = { approved: "Genehmigt!", rejected: "Abgelehnt!", free: "Gratis!", double: "Doppelt!" } as const;
 export const nights = (n: number) => `${n} ${n === 1 ? "Nacht" : "Nächte"}`;
 
-/** Whom the banner is about: the mover, the seller at an auction, the winner at the end. */
+/** Whom the banner is about: the mover, the seller at an auction, the winner at the end; nobody during the intro. */
 export function onTurn(scene: GrandAlleeScene): number {
   const t = scene.turn;
+  if (t.stage === "intro") return -1;
   if (t.stage === "auction") return t.auction.seller;
   if (t.stage === "sold") return t.seller;
   if (t.stage === "final") return t.winner;
@@ -21,6 +22,8 @@ export function describeTurn(scene: GrandAlleeScene, players: PlayerInfo[], now:
   const hotel = (h: number) => scene.board.hotels[h]?.name ?? "";
   const t = scene.turn;
   switch (t.stage) {
+    case "intro":
+      return { text: "Gleich geht’s los …", die: null };
     case "ask":
       return { text: t.prompt, die: null };
     case "rolled":

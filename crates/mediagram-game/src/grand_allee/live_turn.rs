@@ -56,6 +56,7 @@ impl GrandAlleeGame {
     /// `tick` acts only once this time has come.
     pub(crate) fn due(&self, ctx: &GameCtx) -> Option<ServerTime> {
         Some(match &self.stage {
+            Stage::Intro { at, .. } => at + self.cfg.intro_ms,
             Stage::Ask { since, .. } => self.house_at(ctx, *since),
             Stage::Rolled { at, .. } | Stage::Guest { at, .. } | Stage::Permit { at, .. } => at + self.cfg.roll_ms + self.cfg.show_ms,
             Stage::Walking { ends_at, .. } => *ends_at,
@@ -71,6 +72,7 @@ impl GrandAlleeGame {
             return;
         }
         match self.stage.clone() {
+            Stage::Intro { card, .. } => self.next_card(now, card),
             Stage::Ask { ask, since, step } => {
                 let opt = ask.opts[HOUSE.pick(&self.t, self.turn, &ask)];
                 let by = self.silent_by(ctx, since);

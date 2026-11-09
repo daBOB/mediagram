@@ -3,7 +3,7 @@ import type { GrandAlleeAuction } from "./GrandAlleeAuction";
 import type { GrandAlleeMark } from "./GrandAlleeMark";
 import type { GrandAlleePermit } from "./GrandAlleePermit";
 
-export type GrandAlleeTurn = { "stage": "ask", player: number, 
+export type GrandAlleeTurn = { "stage": "intro", card: number, title: string, lines: Array<string>, opened_at: number, closes_at: number, leader: string | null, } | { "stage": "ask", player: number, 
 /**
  * The question as the TV tells it, led by the player's name.
  */

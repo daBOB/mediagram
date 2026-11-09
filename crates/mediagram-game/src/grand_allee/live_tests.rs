@@ -17,7 +17,7 @@ pub(super) fn game(n: usize, rolls: &[u8]) -> (GrandAlleeGame, Vec<Player>) {
 pub(super) fn game_with(n: usize, rolls: &[u8], rules: Rules) -> (GrandAlleeGame, Vec<Player>) {
     let names = ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay", "Gus", "Hal"];
     let players: Vec<Player> = (0..n).map(|i| Player::for_test(i as u8, names[i], true)).collect();
-    let cfg = GrandAlleeConfig { rules, rolls: rolls.to_vec(), seed: Some(1), ..GrandAlleeConfig::default() };
+    let cfg = GrandAlleeConfig { rules, intro_ms: 0.0, rolls: rolls.to_vec(), seed: Some(1), ..GrandAlleeConfig::default() };
     (GrandAlleeGame::new(cfg, &players, 0.0), players)
 }
 

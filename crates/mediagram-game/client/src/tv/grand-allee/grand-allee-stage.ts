@@ -76,7 +76,7 @@ export async function startGrandAllee(container: HTMLElement, live: Live, now: (
         const [head, figure] = avatar ? await Promise.all([imageOrNull(avatarHeadUrl(avatar)), imageOrNull(`/avatars/${avatar}-figure.webp`)]) : [null, null];
         return { name: p?.name ?? "?", color: p?.color ?? "#999999", head, figure };
       })),
-      Promise.all(["700", "800"].map((w) => document.fonts.load(`${w} 30px ${HUD_FONT}`))).catch(() => {}),
+      Promise.all(["600", "700", "800"].map((w) => document.fonts.load(`${w} 30px ${HUD_FONT}`))).catch(() => {}),
       loadAssets(renderer),
     ]);
     mark("assets");

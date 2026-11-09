@@ -122,7 +122,7 @@ impl GrandAlleeGame {
             Stage::Sold { hotel: h, price, .. } => format!("Kein Gebot: Die Bank kauft {} für {}.", hotel(*h), taler(*price)),
             Stage::Note { text, .. } if mine => text.du.clone(),
             Stage::Note { text, .. } => text.about(who),
-            Stage::Final => String::new(),
+            Stage::Intro { .. } | Stage::Final => String::new(),
         }
     }
 
@@ -149,6 +149,10 @@ impl GrandAlleeGame {
             return sheet("Du bist raus. Schau zu, wie es ausgeht.".into(), Vec::new(), 0.0, None, None);
         }
         match &self.stage {
+            Stage::Intro { card, .. } => {
+                let (prompt, skip) = self.intro_phone(view, player, *card);
+                sheet(prompt, buttons(skip), 0.0, None, None)
+            }
             Stage::Ask { ask, since, step } if me == self.turn => {
                 let options = buttons(ask.opts.iter().map(|&o| self.label(view, o, step)));
                 sheet(ask.prompt.du.clone(), options, *since, Some(since + self.cfg.ask_ms), None)

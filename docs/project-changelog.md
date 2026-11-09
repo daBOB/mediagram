@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.172.0 — Grand Allee opens with three rules cards
+
+**Added**
+
+- Before the first roll the TV shows three rules cards, 10 s each: *Das Ziel*, *Dein Zug*, *Das Geld*. Each has a kicker, a title, bullet lines with gold keywords, three step bars (the current one fills over its 10 s) and "Überspringen: auf Lenas Handy". The top banner reads "Gleich geht’s los …" and no player is highlighted. The host sends the card's text (`GrandAlleeTurn::Intro`, gold words between `**`, the round count and lap bonus from the game). The TV draws it as a HUD label like the rest of the HUD: one upload per card, and the filling bar is a cropped quad, so nothing is redrawn while it runs.
+- The room's leader (earliest-joined connected player) gets "Überspringen" on their phone; their tap starts the first move. Other phones show "Schau auf den Fernseher: <card>". The leader rule is one function (`room_seats::leader`) shared by the room and the game.
+- `GrandAlleeConfig::intro_ms` (10 s per card; 0 leaves the cards out). The simulator plays without them and prints the same tables. The config moved to `live_config.rs`.
+
 ## 0.171.0 — Grand Allee keeps a decision log
 
 **Added**
