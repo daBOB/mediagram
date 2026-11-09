@@ -12,6 +12,7 @@ use ts_rs::TS;
 
 pub use crate::avatars::AvatarSlot;
 pub use crate::cards::{Card, Rank, Suit};
+pub use crate::catalogue::GameEntry;
 pub use crate::protocol_cards::{
     ButtonNeeds, CardDesk, CardsBanner, CardsEvent, CardsEventKind, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard,
 };
@@ -94,6 +95,8 @@ pub enum PhoneScreen {
         blocked: Option<String>,
         /// The whole catalogue; `taken` = owned by another player.
         avatars: Vec<AvatarSlot>,
+        /// The game catalogue, in lobby order.
+        games: Vec<GameEntry>,
     },
     Wait {
         title: String,
@@ -164,6 +167,8 @@ pub enum TvScene {
         leader_name: Option<String>,
         /// Why the chosen game cannot start yet.
         blocked: Option<String>,
+        /// The game catalogue, in lobby order.
+        games: Vec<GameEntry>,
     },
     Quiz { scene: QuizScene },
     Poster { scene: PosterScene },

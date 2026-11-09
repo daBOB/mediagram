@@ -20,6 +20,8 @@ use crate::server::{AppState, router};
 use crate::titles::{GameTitle, TitlePool};
 
 const STOP_WAIT: Duration = Duration::from_secs(2);
+/// The most players a room seats unless its host says otherwise.
+pub(crate) const ROOM_CAP: u8 = 8;
 
 #[derive(Clone)]
 pub struct HostConfig {
@@ -39,7 +41,7 @@ impl Default for HostConfig {
         Self {
             preferred_port: 8080,
             min_players: 1,
-            max_players: 8,
+            max_players: ROOM_CAP,
             kids_locked: false,
             // The default pool holds no titles, so no poster game can be started.
             readiness: Readiness { poster: false, poster_kids: false },

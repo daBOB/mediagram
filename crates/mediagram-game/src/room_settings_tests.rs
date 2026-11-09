@@ -1,3 +1,4 @@
+use crate::catalogue::CATALOGUE;
 use crate::protocol::{Action, GameKind, LobbySettings, PhoneScreen, QuizMode, ServerMsg, TvScene, TvView};
 use crate::room::tests::{Idle, action, cfg, decode, hello, room, room_with};
 use crate::room::{ConnId, Outbox, Room, RoomConfig};
@@ -25,65 +26,39 @@ fn locked_kids_toggle_stays_on() {
 }
 
 #[test]
-fn race_game_needs_two_to_four_players() {
-    let mut r = room(8);
-    hello(&mut r, 1, "Ana", None);
-    configure(&mut r, 1, GameKind::Race, QuizMode::Mixed, false);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::RACE_TOO_FEW));
-    hello(&mut r, 2, "Ben", None);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
-    for (conn, name) in [(3, "Cem"), (4, "Dana"), (5, "Eli")] {
-        hello(&mut r, conn, name, None);
-    }
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::RACE_TOO_MANY));
-}
-
-#[test]
-fn mau_mau_needs_two_to_eight_players() {
-    let mut r = room(8);
-    hello(&mut r, 1, "Ana", None);
-    configure(&mut r, 1, GameKind::MauMau, QuizMode::Mixed, false);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::CARDS_TOO_FEW));
-    for (conn, name) in [(2, "Ben"), (3, "Cem"), (4, "Dana"), (5, "Eli"), (6, "Fay"), (7, "Gus"), (8, "Hal")] {
-        hello(&mut r, conn, name, None);
-        assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }), "{name}");
+fn each_game_starts_within_its_seat_range() {
+    // The game, its seat range and what the lobby says outside it.
+    let table = [
+        (GameKind::Race, 2, 4, "Heimlauf braucht mindestens 2 Spieler.", Some("Heimlauf geht mit höchstens 4 Spielern.")),
+        (GameKind::GrandAllee, 2, 8, "Grand Allee braucht mindestens 2 Spieler.", None),
+        (GameKind::MauMau, 2, 8, "Mau-Mau braucht mindestens 2 Spieler.", None),
+        (GameKind::Schwimmen, 2, 8, "Schwimmen braucht mindestens 2 Spieler.", None),
+        (GameKind::Durak, 2, 6, "Durak braucht mindestens 2 Spieler.", Some("Durak geht mit höchstens 6 Spielern.")),
+        (GameKind::Kopfnuss, 2, 8, "Kopfnuss braucht mindestens 2 Spieler.", None),
+    ];
+    for (game, min, max, too_few, too_many) in table {
+        let mut r = room(8);
+        for n in 1..=8u8 {
+            hello(&mut r, n.into(), &format!("P{n}"), None);
+            configure(&mut r, 1, game, QuizMode::Mixed, false);
+            let want = if n < min { Some(too_few) } else if n > max { too_many } else { None };
+            let PhoneScreen::Lobby { can_start, blocked, .. } = lobby_of(&mut r, 1) else { panic!() };
+            assert_eq!(blocked.as_deref(), want, "{game:?} with {n}");
+            assert_eq!(can_start, want.is_none(), "{game:?} with {n}");
+        }
     }
 }
 
 #[test]
-fn schwimmen_needs_two_to_eight_players() {
+fn lobby_views_carry_the_game_catalogue() {
     let mut r = room(8);
+    r.connect(9, true);
+    r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
     hello(&mut r, 1, "Ana", None);
-    configure(&mut r, 1, GameKind::Schwimmen, QuizMode::Mixed, false);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::SCHWIMMEN_TOO_FEW));
-    hello(&mut r, 2, "Ben", None);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
-}
-
-#[test]
-fn durak_needs_two_to_six_players() {
-    let mut r = room(8);
-    hello(&mut r, 1, "Ana", None);
-    configure(&mut r, 1, GameKind::Durak, QuizMode::Mixed, false);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::DURAK_TOO_FEW));
-    for (conn, name) in [(2, "Ben"), (3, "Cem"), (4, "Dana"), (5, "Eli"), (6, "Fay")] {
-        hello(&mut r, conn, name, None);
-        assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }), "{name}");
-    }
-    hello(&mut r, 7, "Gus", None);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::DURAK_TOO_MANY));
-}
-
-#[test]
-fn grand_allee_seats_two_to_eight_players() {
-    let mut r = room(8);
-    hello(&mut r, 1, "Ana", None);
-    configure(&mut r, 1, GameKind::GrandAllee, QuizMode::Mixed, false);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::GRAND_ALLEE_TOO_FEW));
-    for (conn, name) in [(2, "Ben"), (3, "Cem"), (4, "Dana"), (5, "Eli"), (6, "Fay"), (7, "Gus"), (8, "Hal")] {
-        hello(&mut r, conn, name, None);
-        assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }), "{name}");
-    }
+    let PhoneScreen::Lobby { games, .. } = lobby_of(&mut r, 1) else { panic!() };
+    assert_eq!(games, CATALOGUE);
+    let Some(ServerMsg::Tv { view: TvView { scene: TvScene::Lobby { games, .. }, .. } }) = r.view_for(9, 0.0) else { panic!() };
+    assert_eq!(games, CATALOGUE);
 }
 
 #[test]
@@ -170,17 +145,10 @@ fn factory_sees_the_settings() {
 }
 
 #[test]
-fn kopfnuss_needs_two_players_and_no_kids_mode() {
+fn kopfnuss_is_not_for_kids_mode() {
     let mut r = room(8);
     hello(&mut r, 1, "Ana", None);
-    configure(&mut r, 1, GameKind::Kopfnuss, QuizMode::Mixed, false);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::KOPFNUSS_TOO_FEW));
     hello(&mut r, 2, "Ben", None);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
-    for (conn, name) in [(3, "Cem"), (4, "Dana"), (5, "Eli"), (6, "Fe"), (7, "Gil"), (8, "Hu")] {
-        hello(&mut r, conn, name, None);
-    }
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }), "a full room plays");
     configure(&mut r, 1, GameKind::Kopfnuss, QuizMode::Mixed, true);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::KOPFNUSS_NOT_FOR_KIDS));
 }

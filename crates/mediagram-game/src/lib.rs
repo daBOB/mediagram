@@ -5,6 +5,7 @@
 
 pub mod avatars;
 mod cards;
+mod catalogue;
 mod factory;
 mod film_questions;
 mod kopfnuss;

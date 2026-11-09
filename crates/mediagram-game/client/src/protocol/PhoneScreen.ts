@@ -3,6 +3,7 @@ import type { AvatarSlot } from "./AvatarSlot";
 import type { BidRange } from "./BidRange";
 import type { CardDesk } from "./CardDesk";
 import type { ChoiceOption } from "./ChoiceOption";
+import type { GameEntry } from "./GameEntry";
 import type { HotelCard } from "./HotelCard";
 import type { LobbySettings } from "./LobbySettings";
 import type { SheetLine } from "./SheetLine";
@@ -17,7 +18,11 @@ blocked: string | null,
 /**
  * The whole catalogue; `taken` = owned by another player.
  */
-avatars: Array<AvatarSlot>, } | { "kind": "wait", title: string, text: string | null, } | { "kind": "choice", prompt: string | null, options: Array<ChoiceOption>, opens_at: number, closes_at: number | null, picked: number | null, 
+avatars: Array<AvatarSlot>, 
+/**
+ * The game catalogue, in lobby order.
+ */
+games: Array<GameEntry>, } | { "kind": "wait", title: string, text: string | null, } | { "kind": "choice", prompt: string | null, options: Array<ChoiceOption>, opens_at: number, closes_at: number | null, picked: number | null, 
 /**
  * Kopfnuss nuisances drawn over the buttons; empty in every other game.
  */

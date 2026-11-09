@@ -56,7 +56,7 @@ internal data class ShelfGame(
     @DrawableRes val backdrop: Int?,
 )
 
-// Seats as the host counts them (room_settings.rs); a game without its own art yet shows its name.
+// Names and seats mirror the game catalogue, crates/mediagram-game/src/catalogue.rs; a game without its own art yet shows its name.
 internal val ShelfGames =
     listOf(
         ShelfGame("quiz", "Buzzer-Quiz", "1–8 players", R.drawable.ui_tv_game_poster_quiz, R.drawable.ui_tv_game_backdrop_quiz),

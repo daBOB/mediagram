@@ -133,7 +133,7 @@ impl Room {
                     return Err(not_allowed());
                 }
                 if let Some(why) = self.blocked() {
-                    return Err(error(ErrorCode::NotAllowed, why.into()));
+                    return Err(error(ErrorCode::NotAllowed, why));
                 }
                 if self.connected_count() < self.cfg.min_players {
                     return Err(error(ErrorCode::NotAllowed, "Noch zu wenige Spieler.".into()));

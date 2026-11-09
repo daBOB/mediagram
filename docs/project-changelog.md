@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.169.0 — The game catalogue
+
+**Fixed**
+
+- The game factory built a quiz for any game it did not list; it now matches every game explicitly, so a new game does not compile without its builder.
+
+**Changed** (no visible change; from an architecture review)
+
+- A game's name and seat range live in one entry of the game catalogue (`catalogue.rs`). The lobby's start rule builds its seat messages from it (same texts), and both lobby views carry the catalogue (`games`), so the phones and the TV no longer keep their own names, seat ranges and list of games. Kopfnuss, the quiz and the poster game take the room's cap (8) as their maximum, as the room already enforced.
+- The Android TV shelf keeps its own copy, now pointing at the catalogue.
+
 ## 0.168.0 — One grace for the house at every table
 
 **Changed** (no visible change; from an architecture review)

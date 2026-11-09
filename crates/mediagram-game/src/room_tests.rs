@@ -19,6 +19,7 @@ impl Game for Idle {
             settings: crate::room_settings::initial_settings(false),
             leader_name: None,
             blocked: None,
+            games: Vec::new(),
         }
     }
     fn is_finished(&self) -> bool {

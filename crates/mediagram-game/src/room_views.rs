@@ -1,5 +1,6 @@
 //! What each connection sees, and the change-only flush.
 
+use crate::catalogue::CATALOGUE;
 use crate::game::ViewCtx;
 use crate::protocol::{PhoneScreen, PhoneView, PlayerInfo, Role, ServerMsg, ServerTime, TvScene, TvView};
 use crate::room::{ConnId, Outbox, Room, encode};
@@ -38,7 +39,8 @@ impl Room {
                             min_players: self.cfg.min_players,
                             settings: self.settings.clone(),
                             leader_name: self.leader_name(),
-                            blocked: self.blocked().map(String::from),
+                            blocked: self.blocked(),
+                            games: CATALOGUE.to_vec(),
                         },
                     },
                 },
@@ -58,8 +60,9 @@ impl Room {
                             is_leader,
                             leader_name: self.leader_name(),
                             settings: self.settings.clone(),
-                            blocked: blocked.map(String::from),
+                            blocked,
                             avatars: crate::avatars::slots_for(&self.players, p.id),
+                            games: CATALOGUE.to_vec(),
                         }
                     }
                 };

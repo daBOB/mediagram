@@ -1,5 +1,6 @@
 //! Lobby settings: what the leader picked, and whether it can be started.
 
+use crate::catalogue::{GameEntry, entry};
 use crate::protocol::{GameKind, LobbySettings, QuizMode};
 use crate::room::Room;
 
@@ -19,37 +20,8 @@ impl Default for Readiness {
 }
 
 pub(crate) const NOT_ENOUGH_POSTERS: &str = "Nicht genug Poster für dieses Spiel.";
-/// The race board seats two to four: it has four corners.
-const BOARD_MIN: u8 = 2;
-const BOARD_MAX: u8 = 4;
-pub(crate) const RACE_TOO_FEW: &str = "Heimlauf braucht mindestens 2 Spieler.";
-pub(crate) const RACE_TOO_MANY: &str = "Heimlauf geht mit höchstens 4 Spielern.";
-/// 32 cards deal five to five players, the 52-card deck to eight.
-const CARDS_MIN: u8 = 2;
-const CARDS_MAX: u8 = 8;
-pub(crate) const CARDS_TOO_FEW: &str = "Mau-Mau braucht mindestens 2 Spieler.";
-pub(crate) const CARDS_TOO_MANY: &str = "Mau-Mau geht mit höchstens 8 Spielern.";
-/// Schwimmen deals 3 cards to each and 3 to the middle from 32.
-pub(crate) const SCHWIMMEN_TOO_FEW: &str = "Schwimmen braucht mindestens 2 Spieler.";
-pub(crate) const SCHWIMMEN_TOO_MANY: &str = "Schwimmen geht mit höchstens 8 Spielern.";
-
-/// Durak deals 36 cards, six each.
-const DURAK_MIN: u8 = 2;
-const DURAK_MAX: u8 = 6;
-pub(crate) const DURAK_TOO_FEW: &str = "Durak braucht mindestens 2 Spieler.";
-pub(crate) const DURAK_TOO_MANY: &str = "Durak geht mit höchstens 6 Spielern.";
-
-
-/// Kopfnuss needs someone to send a trick to; any room size plays.
-const KOPFNUSS_MIN: u8 = 2;
-pub(crate) const KOPFNUSS_TOO_FEW: &str = "Kopfnuss braucht mindestens 2 Spieler.";
 /// Kopfnuss asks the general pack, which is not checked for children.
 pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kindermodus.";
-/// Grand Allee's round limit scales with the table, from two to eight.
-const GRAND_ALLEE_MIN: u8 = 2;
-const GRAND_ALLEE_MAX: u8 = 8;
-pub(crate) const GRAND_ALLEE_TOO_FEW: &str = "Grand Allee braucht mindestens 2 Spieler.";
-pub(crate) const GRAND_ALLEE_TOO_MANY: &str = "Grand Allee geht mit höchstens 8 Spielern.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
@@ -78,25 +50,29 @@ impl Room {
     }
 
     /// Why the chosen game cannot start, if it cannot.
-    pub(crate) fn blocked(&self) -> Option<&'static str> {
+    pub(crate) fn blocked(&self) -> Option<String> {
         let s = &self.settings;
         let r = self.cfg.readiness;
-        let (min, max, few, many) = match s.game {
+        match s.game {
+            // Any room plays these, so only the room's own minimum gates them: a seat
+            // message would stand on the TV before anyone has joined.
             GameKind::Quiz => return None,
             GameKind::Poster => {
                 let ready = if s.kids_only { r.poster_kids } else { r.poster };
-                return (!ready).then_some(NOT_ENOUGH_POSTERS);
+                return (!ready).then(|| NOT_ENOUGH_POSTERS.into());
             }
-            GameKind::Race => (BOARD_MIN, BOARD_MAX, RACE_TOO_FEW, RACE_TOO_MANY),
-            GameKind::GrandAllee => (GRAND_ALLEE_MIN, GRAND_ALLEE_MAX, GRAND_ALLEE_TOO_FEW, GRAND_ALLEE_TOO_MANY),
-            GameKind::MauMau => (CARDS_MIN, CARDS_MAX, CARDS_TOO_FEW, CARDS_TOO_MANY),
-            GameKind::Schwimmen => (CARDS_MIN, CARDS_MAX, SCHWIMMEN_TOO_FEW, SCHWIMMEN_TOO_MANY),
-            GameKind::Durak => (DURAK_MIN, DURAK_MAX, DURAK_TOO_FEW, DURAK_TOO_MANY),
-            GameKind::Kopfnuss if s.kids_only => return Some(KOPFNUSS_NOT_FOR_KIDS),
-            GameKind::Kopfnuss => return (self.connected_count() < KOPFNUSS_MIN).then_some(KOPFNUSS_TOO_FEW),
-        };
+            GameKind::Kopfnuss if s.kids_only => return Some(KOPFNUSS_NOT_FOR_KIDS.into()),
+            _ => {}
+        }
+        let GameEntry { name, min, max, .. } = entry(s.game);
         let players = self.connected_count();
-        (players < min).then_some(few).or((players > max).then_some(many))
+        if players < min {
+            Some(format!("{name} braucht mindestens {min} Spieler."))
+        } else if players > max {
+            Some(format!("{name} geht mit höchstens {max} Spielern."))
+        } else {
+            None
+        }
     }
 }
 

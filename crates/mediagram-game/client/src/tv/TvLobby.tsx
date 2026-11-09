@@ -41,7 +41,7 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
         <h1 className="tv-headline">Handy-Kamera auf den Code</h1>
         <p className="tv-url">{view.join_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
         <p className="badges">
-          <span className="badge">{gameBadge(scene.settings)}</span>
+          <span className="badge">{gameBadge(scene)}</span>
           {scene.settings.kids_only && <span className="badge badge-on">Nur für Kinder</span>}
         </p>
       </div>
