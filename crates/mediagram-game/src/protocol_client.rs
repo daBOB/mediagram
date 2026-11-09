@@ -60,6 +60,12 @@ pub enum Action {
         index: u8,
         at: ServerTime,
     },
+    /// A sealed bid set on a `PhoneScreen::Sheet`: a whole number of its
+    /// steps up to its `max`, or 0 to pass.
+    Bid {
+        amount: i32,
+        at: ServerTime,
+    },
     /// A button of a `PhoneScreen::Cards` desk, with the cards picked for it
     /// (indices into the desk's hand and table).
     Cards {

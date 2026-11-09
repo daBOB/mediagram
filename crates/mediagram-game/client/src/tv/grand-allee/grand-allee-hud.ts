@@ -5,7 +5,7 @@
 import * as THREE from "three";
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
-import { taler } from "./grand-allee-status";
+import { taler } from "../../ui/taler";
 import { HUD_FONT } from "../race/race-hud";
 import { Clocks } from "./grand-allee-hud-clocks";
 import { INK, avatar, drop, fit, label, paint, pill, place, type Label } from "./grand-allee-hud-label";

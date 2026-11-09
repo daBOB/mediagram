@@ -29,4 +29,6 @@ mod live_debt_tests;
 #[cfg(test)]
 mod live_game_tests;
 #[cfg(test)]
+mod live_permit_tests;
+#[cfg(test)]
 mod live_tap_tests;

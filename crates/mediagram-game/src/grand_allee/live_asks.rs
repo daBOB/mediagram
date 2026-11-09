@@ -26,6 +26,8 @@ pub(crate) enum Opt {
     FreeStage(u8),
     /// Puts a property up for a debt auction.
     Sell(u8),
+    /// Pays a doubled permit by auctioning other properties, then builds.
+    Raise { hotel: u8, count: u8 },
     Skip,
     /// Leaves the Rathaus.
     Done,
@@ -37,7 +39,7 @@ impl Opt {
     pub(crate) fn hotel(self) -> Option<u8> {
         match self {
             Opt::Leisure(h) | Opt::Buy(h) | Opt::Force(h) | Opt::FreeStage(h) | Opt::Sell(h) => Some(h),
-            Opt::Build { hotel, .. } | Opt::Hotel { hotel, .. } | Opt::Place { hotel, .. } => Some(hotel),
+            Opt::Build { hotel, .. } | Opt::Raise { hotel, .. } | Opt::Hotel { hotel, .. } | Opt::Place { hotel, .. } => Some(hotel),
             Opt::Roll | Opt::EndTurn | Opt::Skip | Opt::Done | Opt::Back => None,
         }
     }
@@ -145,9 +147,14 @@ impl GrandAlleeGame {
         Ask { prompt: format!("{}: {what} – auf welches Feld?", h.name), hotel: Some(hotel), opts }
     }
 
+    /// What the mover may put up for a debt auction: all they own but the hotel a doubled permit is being paid for.
+    pub(crate) fn sellable(&self) -> Vec<u8> {
+        self.t.owned(self.turn).into_iter().filter(|&h| self.building.is_none_or(|(b, _)| b != h)).collect()
+    }
+
     /// Short of `owed`: which property goes up for auction.
     pub(crate) fn sell_ask(&self, owed: i32) -> Ask {
-        let opts = self.t.owned(self.turn).into_iter().map(Opt::Sell).collect();
+        let opts = self.sellable().into_iter().map(Opt::Sell).collect();
         Ask { prompt: format!("Dir fehlen {}. Was versteigerst du?", taler(owed - self.cash())), hotel: None, opts }
     }
 
@@ -171,7 +178,8 @@ impl GrandAlleeGame {
                 at(fits.min_by_key(|&&o| self.price(o)).copied())
             }
             Opt::FreeStage(_) => at(HOUSE.pick_free_stage(t, &hotels).map(Opt::FreeStage)),
-            Opt::Sell(_) => at(HOUSE.sell_choice(t, s).map(Opt::Sell)),
+            // after a doubled permit the hotel in question comes first: the house auctions it, as the simulator does
+            Opt::Sell(_) => at(HOUSE.sell_choice(t, s).map(Opt::Sell)).filter(|_| !opts.iter().any(|o| matches!(o, Opt::Raise { .. }))),
             Opt::Place { .. } => Some(0),
             _ => None,
         };

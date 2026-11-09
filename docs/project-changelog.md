@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.166.0 — Grand Allee's phone: clock, hotel cards, a real bid
+
+**Added** (phase 05; the user chose the bid control, the cards and the Doppelt choice from rendered mockups)
+
+- The phone shows the decision's clock, 20 s for a move and 15 s for an auction, with the same seconds and meter as the quiz.
+- The player's hotels are cards: the hotel's own colour, stages built as dots, rate per night, entrances and value. Cash and the round sit on top.
+- A debt auction takes a real sealed bid: any whole hundred up to the bidder's cash, set with −1.000 / −100 / +100 / +1.000 and quick shares of the value (25 to 100 %), sent with one "Bieten" key, or "Passen". It replaces five fixed shares of the value (`Action::Bid`; `PhoneScreen::Sheet` carries `closes_at`, `hotels` and `bid` and drops `picked`).
+- A Doppelt permit the mover cannot pay now asks, as the rules say: auction that hotel and the permit costs nothing, or auction other properties until it is paid and build. If the others do not raise enough, the hotel in question goes after all. The house, absent players and the simulator still auction the hotel in question.
+
 ## 0.165.0 — Bauherr retired: Grand Allee is the hotel game
 
 **Removed** (user's decision when Grand Allee was planned: it replaces Bauherr rather than standing beside it)

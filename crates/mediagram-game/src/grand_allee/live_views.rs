@@ -10,7 +10,12 @@ use super::live_asks::Opt;
 use super::rules::Permit;
 use super::live_text::{grouped, name, taler};
 use crate::game::ViewCtx;
-use crate::protocol::{AnswerColor, ChoiceOption, PhoneScreen, PlayerId, SheetLine};
+use super::live_debts::BID_STEP;
+use crate::protocol::{AnswerColor, BidRange, ChoiceOption, HotelCard, PhoneScreen, PlayerId, ServerTime, SheetLine};
+
+/// Each hotel's own colour on the phone, by hotel id: its theme (lagoon, cherry
+/// blossom, fjord, terracotta, ochre, alpine green, saffron, steel, savanna, plum).
+const HOTEL_COLORS: [&str; 10] = ["#2aa3a0", "#d9608a", "#4a78a8", "#d0672f", "#c9862b", "#4f9a4a", "#e0a21a", "#5e6b7a", "#8a9a3a", "#8b5a9e"];
 
 fn buttons(labels: impl IntoIterator<Item = String>) -> Vec<ChoiceOption> {
     labels.into_iter().zip(AnswerColor::ALL.iter().cycle()).map(|(label, &color)| ChoiceOption { label, color }).collect()
@@ -49,6 +54,7 @@ impl GrandAlleeGame {
             Opt::Place { field, .. } => format!("Feld {}", field + 1),
             Opt::FreeStage(h) => format!("{}: Stufe {} gratis", hotel(h), t.estate(h).levels + 1),
             Opt::Sell(h) => format!("{} versteigern · Wert {}", hotel(h), taler(t.value(h))),
+            Opt::Raise { .. } => "Anderes versteigern und bauen".into(),
             Opt::Done if !self.served.is_empty() => "Fertig".into(),
             Opt::EndTurn | Opt::Skip | Opt::Done => "Lieber nicht".into(),
             Opt::Back => "Zurück".into(),
@@ -56,16 +62,26 @@ impl GrandAlleeGame {
     }
 
     fn lines(&self, seat: usize) -> Vec<SheetLine> {
-        let t = &self.t;
         let line = |label: &str, value: String| SheetLine { label: label.into(), value };
-        let mut lines = vec![line("Taler", grouped(t.seats[seat].cash)), line("Runde", format!("{} von {}", self.round.min(self.rounds), self.rounds))];
-        for h in t.owned(seat) {
-            let (built, all) = (t.estate(h).levels, HOTELS[usize::from(h)].stages.len());
-            let rate = if built > 0 { format!(" · {} pro Nacht", taler(t.rate(h))) } else { String::new() };
-            lines.push(line(hotel(h), format!("Stufe {built} von {all}{rate}")));
-        }
-        lines.push(line("Vermögen", grouped(t.net_worth(seat))));
-        lines
+        vec![
+            line("Taler", grouped(self.t.seats[seat].cash)),
+            line("Runde", format!("{} von {}", self.round.min(self.rounds), self.rounds)),
+            line("Vermögen", grouped(self.t.net_worth(seat))),
+        ]
+    }
+
+    fn hotel_cards(&self, seat: usize) -> Vec<HotelCard> {
+        let t = &self.t;
+        let card = |h: u8| HotelCard {
+            name: hotel(h).into(),
+            color: HOTEL_COLORS[usize::from(h)].into(),
+            built: t.estate(h).levels,
+            stages: HOTELS[usize::from(h)].stages.len() as u8,
+            rate: t.rate(h),
+            entrances: t.entrances.iter().filter(|&&e| e == Some(h)).count() as u8,
+            value: t.value(h),
+        };
+        t.owned(seat).into_iter().map(card).collect()
     }
 
     /// What everybody sees while nobody has anything to decide.
@@ -116,30 +132,39 @@ impl GrandAlleeGame {
             let rank = order.iter().position(|&s| s == me).map_or(1, |r| r as u8 + 1);
             return PhoneScreen::Final { rank, of: order.len() as u8, score: self.t.net_worth(me), can_restart: view.leader == Some(player) };
         }
-        let lines = self.lines(me);
-        let sheet = |prompt: String, options, opens_at, picked| PhoneScreen::Sheet { lines, prompt: Some(prompt), options, opens_at, picked };
+        let (lines, hotels) = (self.lines(me), self.hotel_cards(me));
+        let sheet = |prompt: String, options, opens_at, closes_at: Option<ServerTime>, bid| PhoneScreen::Sheet {
+            lines,
+            hotels,
+            prompt: Some(prompt),
+            options,
+            opens_at,
+            closes_at,
+            bid,
+        };
         if self.t.seats[me].out {
-            return sheet("Du bist raus. Schau zu, wie es ausgeht.".into(), Vec::new(), 0.0, None);
+            return sheet("Du bist raus. Schau zu, wie es ausgeht.".into(), Vec::new(), 0.0, None, None);
         }
         match &self.stage {
             Stage::Ask { ask, since } if me == self.turn => {
-                sheet(ask.prompt.clone(), buttons(ask.opts.iter().map(|&o| self.label(view, o))), *since, None)
+                let options = buttons(ask.opts.iter().map(|&o| self.label(view, o)));
+                sheet(ask.prompt.clone(), options, *since, Some(since + self.cfg.ask_ms), None)
             }
             Stage::Auction(a) => match a.bids.iter().find(|(b, _)| *b == me) {
                 Some(&(_, answer)) => {
-                    let amounts = self.bid_amounts(me, a.hotel);
-                    let picked = match answer {
+                    let placed = match answer {
                         Bid::Open => None,
-                        Bid::Pass => Some(amounts.len() as u8),
-                        Bid::Amount(x) => amounts.iter().position(|&y| y == x).map(|i| i as u8),
+                        Bid::Pass => Some(0),
+                        Bid::Amount(x) => Some(x),
                     };
-                    let labels = amounts.iter().map(|&x| taler(x)).chain(["Passen".to_string()]);
-                    let prompt = format!("Versteigerung: {} (Wert {}). Dein Gebot?", hotel(a.hotel), taler(self.t.value(a.hotel)));
-                    sheet(prompt, buttons(labels), a.since, picked)
+                    let value = self.t.value(a.hotel);
+                    let bid = BidRange { value, max: self.bid_max(me), step: BID_STEP, placed };
+                    let prompt = format!("Versteigerung: {}", hotel(a.hotel));
+                    sheet(prompt, Vec::new(), a.since, Some(a.since + self.cfg.auction_ms), Some(bid))
                 }
-                None => sheet(self.status(view, me), Vec::new(), 0.0, None),
+                None => sheet(self.status(view, me), Vec::new(), 0.0, None, None),
             },
-            _ => sheet(self.status(view, me), Vec::new(), 0.0, None),
+            _ => sheet(self.status(view, me), Vec::new(), 0.0, None, None),
         }
     }
 }

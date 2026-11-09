@@ -5,13 +5,20 @@
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { BuzzKind } from "./app-bridge";
 
+/** What the host took from this player on a question screen: a pick, or a sheet's sealed bid. */
+function answer(s: PhoneScreen): number | null {
+  if (s.kind === "choice") return s.picked;
+  if (s.kind === "sheet") return s.bid?.placed ?? null;
+  return null;
+}
+
 /** The screen wants something from this player right now. */
 function asks(s: PhoneScreen): boolean {
   switch (s.kind) {
     case "choice":
       return s.picked === null;
     case "sheet":
-      return s.options.length > 0 && s.picked === null;
+      return s.options.length > 0 || (s.bid !== null && s.bid.placed === null);
     // off-turn card players get no buttons at all
     case "cards":
       return s.desk.buttons.length > 0;
@@ -33,8 +40,8 @@ export function buzzFor(prev: PhoneScreen | null, next: PhoneScreen): BuzzKind |
     const repeat = prev?.kind === "outcome" && prev.tone === "bad" && prev.title === next.title;
     return next.tone === "bad" && !repeat ? "wrong" : null;
   }
-  if ((next.kind === "choice" || next.kind === "sheet") && next.picked !== null) {
-    const wasOpen = prev !== null && sameAsk(prev, next) && (prev.kind === "choice" || prev.kind === "sheet") && prev.picked === null;
+  if (answer(next) !== null) {
+    const wasOpen = prev !== null && sameAsk(prev, next) && answer(prev) === null;
     return wasOpen ? "accepted" : null;
   }
   if (asks(next) && !(prev !== null && asks(prev) && sameAsk(prev, next))) return "turn";

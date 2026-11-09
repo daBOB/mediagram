@@ -144,21 +144,6 @@ fn a_granted_permit_is_used_and_the_main_building_brings_a_free_entrance() {
 }
 
 #[test]
-fn a_double_permit_that_cannot_be_paid_auctions_the_hotel_instead() {
-    let (mut g, mut p) = game(2, &[4, 6]);
-    own(&mut g, 0, 0, 0);
-    g.t.seats[0].cash = 1_500;
-    place(&mut g, 0, 2);
-    let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
-    let now = pick(&mut g, &mut p, ANA, "Lagune: 1 Stufe · 1.200 Taler", now);
-    assert!(matches!(g.stage, Stage::Auction(_)), "2.400 Taler for one stage are more than Ana has");
-    assert_eq!(options(&g, &p, BEN, now), ["100 Taler", "300 Taler", "600 Taler", "900 Taler", "1.200 Taler", "Passen"]);
-    pick(&mut g, &mut p, BEN, "600 Taler", now);
-    assert_eq!(g.t.estate(0), Estate { owner: Some(1), levels: 0 });
-    assert_eq!((g.t.seats[0].cash, g.t.seats[1].cash), (2_100, 11_400), "the permit costs nothing");
-}
-
-#[test]
 fn free_build_can_raise_the_main_building_with_its_entrance() {
     let (mut g, mut p) = game(2, &[2]);
     own(&mut g, 0, 0, 0);

@@ -1125,9 +1125,15 @@ Every decision has a 20 s clock, after which the house bot decides, as it does a
 once for an absent player and for the rest of a turn whose clock ran out. A player
 who cannot pay sells whole properties in a sealed debt auction that opens on every
 other phone at once; the bank buys what nobody bids on. A question that a tap opens
-opens 400 ms later, so a double tap cannot answer it. The phone uses
-`PhoneScreen::Sheet`, a generic money sheet (lines, prompt, options answered by
-`Action::Choose`).
+opens 400 ms later, so a double tap cannot answer it. A Doppelt permit the mover
+cannot pay asks whether to auction that hotel (the permit then costs nothing) or
+other properties until it is paid; the house and the simulator take the first. The
+phone uses `PhoneScreen::Sheet` (`client/src/phone/PhoneSheet.tsx`): cash and
+standing on top, the prompt with its clock (`closes_at`), options answered by
+`Action::Choose`, and the player's hotels as cards in each hotel's colour. In a
+debt auction the sheet carries a `BidRange` instead of options: the bidder sets a
+sealed bid in steps of 100 up to their cash (− / + keys, quick shares of the
+value, `SheetBid.tsx`) and sends it with `Action::Bid` (0 passes).
 
 The TV board (`client/src/tv/grand-allee/`, `TvGrandAllee.tsx`) is three.js
 drawing models built and baked headless in Blender by `tools/grand-allee-models/`

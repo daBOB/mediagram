@@ -1,8 +1,31 @@
 use super::live::{GrandAlleeGame, Stage};
 use super::live_tests::{game, options, own, pick, place, until, waiting, ANA, BEN, CEM};
-use crate::game::{Game, ViewCtx};
-use crate::protocol::{GrandAlleeTurn, PhoneScreen, TvScene};
+use crate::game::{ActionError, Game, GameCtx, ViewCtx};
+use crate::protocol::{Action, BidRange, GrandAlleeTurn, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
+
+/// The bid `who`'s phone offers, if any.
+pub(super) fn bid_range(g: &GrandAlleeGame, p: &[Player], who: PlayerId, now: ServerTime) -> Option<BidRange> {
+    match g.phone_screen(&ViewCtx { now, players: p, leader: None }, who) {
+        PhoneScreen::Sheet { bid, .. } => bid,
+        other => panic!("not a sheet: {other:?}"),
+    }
+}
+
+fn send_bid(g: &mut GrandAlleeGame, p: &mut [Player], who: PlayerId, amount: i32, at: ServerTime) -> Result<(), ActionError> {
+    g.on_action(&mut GameCtx { now: at, players: p }, who, &Action::Bid { amount, at })
+}
+
+/// `who` bids `amount` (0 passes), and play goes on until someone has to decide again; returns the time.
+pub(super) fn bid(g: &mut GrandAlleeGame, p: &mut [Player], who: PlayerId, amount: i32, now: ServerTime) -> ServerTime {
+    let Stage::Auction(a) = &g.stage else { panic!("no auction: {:?}", g.stage) };
+    let at = a.since.max(now);
+    send_bid(g, p, who, amount, at).unwrap();
+    // one tick first, so a bid that completes an auction closes it
+    let now = at + 50.0;
+    g.on_tick(&mut GameCtx { now, players: p });
+    until(g, p, now, waiting)
+}
 
 /// Ben (seat 1) is on turn at field 2 with 100 Taler and the plots in
 /// `plots`; Cem's Lagune (rate 225) has an entrance on field 5, where Ben's
@@ -33,14 +56,15 @@ fn a_debt_auction_takes_sealed_bids_from_every_other_phone_and_a_tie_goes_to_the
     let now = pick(&mut g, &mut p, BEN, "Würfeln", 10.0);
     assert_eq!(options(&g, &p, BEN, now), ["Hacienda Sol versteigern · Wert 1.000 Taler"], "the debt must be met: no way out");
     let now = pick(&mut g, &mut p, BEN, "Hacienda Sol versteigern · Wert 1.000 Taler", now);
-    let bids = ["100 Taler", "200 Taler", "500 Taler", "700 Taler", "1.000 Taler", "Passen"];
-    assert_eq!((options(&g, &p, ANA, now), options(&g, &p, CEM, now)), (bids.map(String::from).to_vec(), bids.map(String::from).to_vec()));
-    assert!(options(&g, &p, BEN, now).is_empty(), "the seller does not bid");
-    let now = pick(&mut g, &mut p, ANA, "500 Taler", now);
+    let open = BidRange { value: 1_000, max: 12_000, step: 100, placed: None };
+    assert_eq!((bid_range(&g, &p, ANA, now), bid_range(&g, &p, CEM, now)), (Some(open.clone()), Some(open)), "no minimum, up to all one has");
+    assert_eq!(bid_range(&g, &p, BEN, now), None, "the seller does not bid");
+    let now = bid(&mut g, &mut p, ANA, 500, now);
     let auction = auction_view(&g, &p);
     assert_eq!((auction.bidders, auction.bid, auction.passed), (vec![CEM, ANA], vec![ANA], vec![]), "who has bid, never how much");
-    assert!(matches!(g.phone_screen(&ViewCtx { now, players: &p, leader: None }, ANA), PhoneScreen::Sheet { picked: Some(2), .. }));
-    pick(&mut g, &mut p, CEM, "500 Taler", now);
+    assert_eq!(bid_range(&g, &p, ANA, now).and_then(|b| b.placed), Some(500));
+    assert_eq!(send_bid(&mut g, &mut p, ANA, 900, now), Err(ActionError::Ignored), "sealed and final");
+    bid(&mut g, &mut p, CEM, 500, now);
     assert_eq!(g.t.estate(3).owner, Some(2), "Cem sits nearer after Ben than Ana");
     // 100 + 500 still short of 900, and nothing left to sell: Ben pays what he has and is out
     assert!(g.t.seats[1].out);
@@ -53,7 +77,7 @@ fn without_a_bid_the_bank_buys_and_the_debt_goes_on_until_it_is_covered() {
     let (mut g, mut p) = ben_owes_cem(&[3, 4]);
     let now = pick(&mut g, &mut p, BEN, "Würfeln", 10.0);
     let now = pick(&mut g, &mut p, BEN, "Hacienda Sol versteigern · Wert 1.000 Taler", now);
-    let now = pick(&mut g, &mut p, ANA, "Passen", now);
+    let now = bid(&mut g, &mut p, ANA, 0, now);
     // Cem stays silent: the auction closes when its 15 s run out
     let Stage::Auction(a) = &g.stage else { panic!("auction closed early") };
     let closes = a.since + g.cfg.auction_ms;
@@ -65,11 +89,25 @@ fn without_a_bid_the_bank_buys_and_the_debt_goes_on_until_it_is_covered() {
     // Ben lets the clock run: the house auctions what is left
     let now = until(&mut g, &mut p, now, |g| matches!(g.stage, Stage::Auction(_)));
     p[0].conn = None;
-    pick(&mut g, &mut p, CEM, "Passen", now);
+    bid(&mut g, &mut p, CEM, 0, now);
     assert!(!matches!(g.stage, Stage::Auction(_)), "an absent bidder does not hold the auction up");
     until(&mut g, &mut p, now, |g| g.turn == 2);
     assert_eq!(g.t.seats[1].cash, 100 + 500 + 650 - 900);
     assert!(!g.t.seats[1].out);
+}
+
+#[test]
+fn a_bid_must_be_whole_hundreds_within_the_bidders_cash() {
+    let (mut g, mut p) = ben_owes_cem(&[3]);
+    let now = pick(&mut g, &mut p, BEN, "Würfeln", 10.0);
+    let now = pick(&mut g, &mut p, BEN, "Hacienda Sol versteigern · Wert 1.000 Taler", now);
+    g.t.seats[0].cash = 1_250;
+    assert_eq!(bid_range(&g, &p, ANA, now).map(|b| b.max), Some(1_200));
+    for wrong in [1_300, 450, -100] {
+        assert!(matches!(send_bid(&mut g, &mut p, ANA, wrong, now), Err(ActionError::NotAllowed(_))), "{wrong}");
+    }
+    assert_eq!(send_bid(&mut g, &mut p, BEN, 100, now), Err(ActionError::Ignored), "the seller cannot bid");
+    send_bid(&mut g, &mut p, ANA, 1_200, now).unwrap();
 }
 
 #[test]

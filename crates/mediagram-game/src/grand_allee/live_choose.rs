@@ -2,7 +2,7 @@
 
 use super::board::HOTELS;
 use super::live::{GrandAlleeGame, Stage};
-use super::live_asks::Opt;
+use super::live_asks::{Ask, Opt};
 use super::rules::{permit_for, Permit};
 use super::live_text::taler;
 use crate::game::GameCtx;
@@ -58,6 +58,11 @@ impl GrandAlleeGame {
                 self.built(ctx, h, first);
             }
             Opt::Sell(h) => self.open_auction(now, h),
+            Opt::Raise { hotel, count } => {
+                self.building = Some((hotel, count));
+                let due = self.t.stage_price(hotel, count, Permit::Double);
+                self.owe(ctx, None, due);
+            }
             Opt::Skip => self.end_move(later, None),
             Opt::Done => self.proceed(later),
             Opt::Back => self.rathaus_menu(now),
@@ -79,16 +84,20 @@ impl GrandAlleeGame {
         }
         let price = self.t.stage_price(hotel, count, permit);
         if price > self.t.seats[s].cash {
-            // a granted permit must be used; the way out of one that cannot be
-            // paid is to auction the hotel in question, and the permit costs nothing
-            return self.open_auction(now, hotel);
+            // a granted permit must be used: the mover auctions the hotel in question, and the
+            // permit costs nothing, or auctions other properties until it can be paid
+            if self.t.owned(s).len() < 2 {
+                return self.open_auction(now, hotel);
+            }
+            let prompt = format!("Doppelt: {} kostet {} – oder du versteigerst es.", HOTELS[usize::from(hotel)].name, taler(price));
+            return self.ask(now, Ask { prompt, hotel: Some(hotel), opts: vec![Opt::Sell(hotel), Opt::Raise { hotel, count }] });
         }
         let first = self.t.build(s, hotel, count, price);
         self.built(ctx, hotel, first);
     }
 
     /// The first stage brings a free entrance, on a frontage field the builder picks.
-    fn built(&mut self, ctx: &GameCtx, hotel: u8, first: bool) {
+    pub(crate) fn built(&mut self, ctx: &GameCtx, hotel: u8, first: bool) {
         if first && !self.t.free_frontage(hotel).is_empty() {
             let ask = self.place_ask(hotel, true, None);
             return self.ask(ctx.now + self.cfg.chain_ms, ask);

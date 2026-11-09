@@ -8,8 +8,10 @@ const lobby = { kind: "lobby" } as unknown as PhoneScreen;
 const wait = { kind: "wait", title: "Gleich geht's los", text: null } as PhoneScreen;
 const choice = (opens_at: number, picked: number | null) =>
   ({ kind: "choice", prompt: null, options: [option], opens_at, closes_at: opens_at + 10_000, picked }) as unknown as PhoneScreen;
-const sheet = (opens_at: number, options: number, picked: number | null) =>
-  ({ kind: "sheet", lines: [], prompt: null, options: Array(options).fill(option), opens_at, picked }) as unknown as PhoneScreen;
+const sheet = (opens_at: number, options: number) =>
+  ({ kind: "sheet", lines: [], hotels: [], prompt: null, options: Array(options).fill(option), opens_at, closes_at: null, bid: null }) as unknown as PhoneScreen;
+const auction = (opens_at: number, placed: number | null) =>
+  ({ ...sheet(opens_at, 0), closes_at: opens_at + 15_000, bid: { value: 1_000, max: 5_000, step: 100, placed } }) as unknown as PhoneScreen;
 const outcome = (tone: "good" | "bad" | "neutral", title = "Falsch") =>
   ({ kind: "outcome", title, text: null, tone, points: 0 }) as PhoneScreen;
 const final = (rank: number) => ({ kind: "final", rank, of: 3, score: 10, can_restart: false }) as PhoneScreen;
@@ -36,7 +38,8 @@ test("same screen again does not buzz again", () => {
 
 test("the host taking your pick is buzzer accepted", () => {
   expect(buzzFor(choice(1, null), choice(1, 2))).toBe("accepted");
-  expect(buzzFor(sheet(1, 1, null), sheet(1, 1, 0))).toBe("accepted");
+  expect(buzzFor(auction(1, null), auction(1, 500))).toBe("accepted");
+  expect(buzzFor(auction(1, null), auction(1, 0))).toBe("accepted");
 });
 
 test("the next question after a pick is your turn again", () => {
@@ -65,8 +68,9 @@ test("card buttons appearing is your turn, more buttons in the same turn are not
 });
 
 test("a sheet without options only informs", () => {
-  expect(buzzFor(sheet(1, 0, null), sheet(1, 0, null))).toBeNull();
-  expect(buzzFor(sheet(1, 0, null), sheet(1, 2, null))).toBe("turn");
+  expect(buzzFor(sheet(1, 0), sheet(1, 0))).toBeNull();
+  expect(buzzFor(sheet(1, 0), sheet(1, 2))).toBe("turn");
+  expect(buzzFor(sheet(1, 0), auction(2, null))).toBe("turn");
 });
 
 test("reconnecting onto an answered question stays quiet", () => {

@@ -131,6 +131,8 @@ pub struct GrandAlleeGame {
     pub(crate) served: Vec<u8>,
     /// What the mover still owes: to whom (the bank when `None`) and how much.
     pub(crate) debt: Option<(Option<usize>, i32)>,
+    /// A doubled permit the mover pays by auctioning other properties: the hotel and its stages, built once the debt is met.
+    pub(crate) building: Option<(u8, u8)>,
     pub(crate) dice: Dice,
     /// The mover let a clock run out this turn: the house answers the rest at once.
     pub(crate) idle: bool,
@@ -148,7 +150,7 @@ impl GrandAlleeGame {
         let rolls = cfg.rolls.iter().copied().collect();
         let (t, rounds) = (Table::new(ids.len(), cfg.rules.clone()), cfg.rules.rounds(ids.len()));
         let (stage, step, dice) = (Stage::Final, Step::Done, Dice::default());
-        let mut g = Self { cfg, t, ids, turn: 0, round: 1, rounds, stage, step, roll: 0, rathaus: false, served: Vec::new(), debt: None, dice, idle: false, gone: Vec::new(), rng, rolls };
+        let mut g = Self { cfg, t, ids, turn: 0, round: 1, rounds, stage, step, roll: 0, rathaus: false, served: Vec::new(), debt: None, building: None, dice, idle: false, gone: Vec::new(), rng, rolls };
         let ask = g.roll_ask();
         g.ask(now, ask);
         g
@@ -161,20 +163,20 @@ impl GrandAlleeGame {
 
 impl Game for GrandAlleeGame {
     fn on_action(&mut self, ctx: &mut GameCtx, player: PlayerId, action: &Action) -> Result<(), ActionError> {
-        let Action::Choose { index, at } = *action else {
-            return Err(ActionError::Ignored);
-        };
         let seat = self.ids.iter().position(|&id| id == player).ok_or(ActionError::Ignored)?;
-        match self.stage.clone() {
-            Stage::Auction(_) => self.bid(seat, index, at)?,
-            // a tap that began before this prompt appeared answered the one before it
-            Stage::Ask { ask, since } if seat == self.turn && at >= since - self.cfg.early_ms => {
-                self.idle = false;
-                let opt = *ask.opts.get(usize::from(index)).ok_or(ActionError::NotAllowed("Das gibt es nicht."))?;
-                self.choose(ctx, opt);
-            }
+        let (index, at) = match *action {
+            Action::Choose { index, at } => (index, at),
+            Action::Bid { amount, at } => return self.bid(seat, amount, at),
             _ => return Err(ActionError::Ignored),
+        };
+        let Stage::Ask { ask, since } = &self.stage else { return Err(ActionError::Ignored) };
+        // a tap that began before this prompt appeared answered the one before it
+        if seat != self.turn || at < since - self.cfg.early_ms {
+            return Err(ActionError::Ignored);
         }
+        let opt = *ask.opts.get(usize::from(index)).ok_or(ActionError::NotAllowed("Das gibt es nicht."))?;
+        self.idle = false;
+        self.choose(ctx, opt);
         self.sync_scores(ctx.players);
         Ok(())
     }

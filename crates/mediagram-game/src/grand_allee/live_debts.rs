@@ -7,9 +7,8 @@ use super::money::best_bid;
 use crate::game::{ActionError, GameCtx};
 use crate::protocol::ServerTime;
 
-/// Bid buttons as shares of the property's value.
-// shortcut: a few fixed shares instead of a free amount in steps of 100; the phone controls get a real bid input later
-const BID_PCTS: [i32; 5] = [10, 25, 50, 75, 100];
+/// Bids go in whole hundreds.
+pub(crate) const BID_STEP: i32 = 100;
 
 impl GrandAlleeGame {
     pub(crate) fn owe(&mut self, ctx: &GameCtx, to: Option<usize>, amount: i32) {
@@ -25,11 +24,20 @@ impl GrandAlleeGame {
         let Some((to, amount)) = self.debt else {
             return self.proceed(now);
         };
-        if self.t.seats[s].cash < amount && !self.t.owned(s).is_empty() {
+        let short = self.t.seats[s].cash < amount;
+        if short && !self.sellable().is_empty() {
             let ask = self.sell_ask(amount);
             return self.ask(now, ask);
         }
         self.debt = None;
+        if let Some((hotel, count)) = self.building.take() {
+            // nothing else left to sell: the hotel in question goes after all, and the permit costs nothing
+            if short {
+                return self.open_auction(now, hotel);
+            }
+            let first = self.t.build(s, hotel, count, amount);
+            return self.built(ctx, hotel, first);
+        }
         if self.t.pay(s, to, amount) {
             return self.proceed(now);
         }
@@ -43,27 +51,23 @@ impl GrandAlleeGame {
         self.stage = Stage::Auction(Auction { hotel, since: now, bids });
     }
 
-    /// What `seat` may bid: multiples of 100 up to its cash, no minimum.
-    pub(crate) fn bid_amounts(&self, seat: usize, hotel: u8) -> Vec<i32> {
-        let (value, cash) = (self.t.value(hotel), self.t.seats[seat].cash);
-        let mut amounts: Vec<i32> = BID_PCTS.iter().map(|pct| (value * pct / 100).min(cash) / 100 * 100).filter(|&a| a >= 100).collect();
-        amounts.dedup();
-        amounts
+    /// The highest bid `seat` may make: its cash in whole steps (no minimum).
+    pub(crate) fn bid_max(&self, seat: usize) -> i32 {
+        self.t.seats[seat].cash / BID_STEP * BID_STEP
     }
 
-    /// A bidder's answer: one of the amounts offered, or the option after them, passing.
-    pub(crate) fn bid(&mut self, seat: usize, index: u8, at: ServerTime) -> Result<(), ActionError> {
+    /// A bidder's sealed answer: a whole number of steps up to their cash, or 0 to pass.
+    pub(crate) fn bid(&mut self, seat: usize, amount: i32, at: ServerTime) -> Result<(), ActionError> {
         let Stage::Auction(a) = &self.stage else {
             return Err(ActionError::Ignored);
         };
         if at < a.since - self.cfg.early_ms {
             return Err(ActionError::Ignored);
         }
-        let amounts = self.bid_amounts(seat, a.hotel);
-        let bid = match usize::from(index) {
-            i if i < amounts.len() => Bid::Amount(amounts[i]),
-            i if i == amounts.len() => Bid::Pass,
-            _ => return Err(ActionError::NotAllowed("Das gibt es nicht.")),
+        let bid = match amount {
+            0 => Bid::Pass,
+            x if x > 0 && x % BID_STEP == 0 && x <= self.bid_max(seat) => Bid::Amount(x),
+            _ => return Err(ActionError::NotAllowed("So viel hast du nicht.")),
         };
         let Stage::Auction(a) = &mut self.stage else {
             return Err(ActionError::Ignored);

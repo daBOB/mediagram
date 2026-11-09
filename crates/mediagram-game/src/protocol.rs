@@ -21,7 +21,7 @@ pub use crate::protocol_grand_allee::{
     GrandAlleeAuction, GrandAlleeBoard, GrandAlleeEntrance, GrandAlleeEstate, GrandAlleeFieldKind, GrandAlleeHotel, GrandAlleeMark,
     GrandAlleePermit, GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn,
 };
-pub use crate::protocol_choice::{AnswerColor, ChoiceOption, SheetLine, Tone};
+pub use crate::protocol_choice::{AnswerColor, BidRange, ChoiceOption, HotelCard, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
@@ -111,14 +111,18 @@ pub enum PhoneScreen {
         tricks: Vec<Trick>,
     },
     /// A status sheet for money games: header lines (cash, holdings), a prompt
-    /// and options answered with `Action::Choose`. Without options it only
+    /// and options answered with `Action::Choose` (a bid with `Action::Bid`). Without options it only
     /// informs. Shown to every player, whoever's turn it is.
     Sheet {
         lines: Vec<SheetLine>,
+        hotels: Vec<HotelCard>,
         prompt: Option<String>,
         options: Vec<ChoiceOption>,
         opens_at: ServerTime,
-        picked: Option<u8>,
+        /// The decision's clock; None while this phone has nothing to decide.
+        closes_at: Option<ServerTime>,
+        /// A sealed bid to set instead of options.
+        bid: Option<BidRange>,
     },
     Outcome {
         title: String,

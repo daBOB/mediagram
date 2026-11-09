@@ -880,7 +880,9 @@ html[data-surface="tv"] {
   opacity: 0.45;
 }
 
-/* Sheet: the money games' status lines, prompt and a column of answer buttons. */
+/* Sheet: the money game's phone. Cash and standing on top, the prompt with
+   its clock, a column of answer buttons or a sealed bid, the player's hotels
+   as cards below. */
 .sheet {
   justify-content: flex-start;
   align-items: stretch;
@@ -889,37 +891,50 @@ html[data-surface="tv"] {
   text-align: left;
 }
 
-.sheet-lines {
-  margin: 0;
-  padding: 0.7rem 0.95rem;
-  border-radius: 18px;
-  background: var(--felt-deep);
-  box-shadow: inset 0 0 0 2px var(--felt-line);
-}
-
-.sheet-line {
+.sheet-top {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 1rem;
-  padding: 0.2rem 0;
-  font-size: 1rem;
 }
 
-.sheet-line dt {
+.sheet-cash {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-cash span {
+  font-size: 1.1rem;
   color: var(--muted);
 }
 
-.sheet-line dd {
+.sheet-notes {
   margin: 0;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
   text-align: right;
+  font-size: 0.95rem;
+  color: var(--muted);
 }
 
-.sheet-line:first-child dd {
-  font-family: var(--display);
-  font-size: 1.7rem;
-  line-height: 1.1;
+.sheet-notes dt,
+.sheet-notes dd {
+  display: inline;
+}
+
+.sheet-notes dd {
+  margin: 0;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
 }
 
 .sheet-prompt {
@@ -949,8 +964,139 @@ html[data-surface="tv"] {
   font-size: clamp(1.1rem, 5vw, 1.4rem);
 }
 
-.sheet-keys .key[aria-disabled="true"]:not(.key-picked) {
+.sheet-keys .key[aria-disabled="true"] {
   opacity: 0.7;
+}
+
+/* The sealed bid: the amount large, − / + steps, quick shares of the value. */
+.bid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.bid-facts {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.bid-facts dt {
+  color: var(--muted);
+}
+
+.bid-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bid-facts div:last-child {
+  text-align: right;
+}
+
+.bid-amount {
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.4rem, 13vw, 3.3rem);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.bid-note {
+  margin-top: -0.4rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.bid-steps,
+.bid-shares {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.bid-step,
+.bid-share {
+  min-height: 3.1rem;
+  border: 0;
+  border-radius: 16px;
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: var(--felt-line);
+  box-shadow: 0 4px 0 var(--felt-deep);
+}
+
+.bid-share {
+  min-height: 2.6rem;
+  border-radius: 14px;
+  background: var(--felt-deep);
+  box-shadow: inset 0 0 0 2px var(--felt-line);
+}
+
+.bid-step:active:not(:disabled),
+.bid-share:active:not(:disabled) {
+  transform: translateY(3px);
+}
+
+.bid-step:disabled,
+.bid-share:disabled {
+  opacity: 0.45;
+}
+
+/* The player's hotels: a card each, banded and dotted in the hotel's own colour (--h). */
+.hotel-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0 0 0.7rem;
+  list-style: none;
+}
+
+.hotel-card {
+  padding: 0.55rem 0.8rem 0.6rem 1.15rem;
+  border-radius: 16px;
+  color: var(--ink);
+  background: linear-gradient(to right, var(--h) 0 0.45rem, var(--card) 0.45rem);
+  box-shadow: 0 4px 0 var(--card-edge);
+}
+
+.hotel-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hotel-card-name {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.hotel-card-pips {
+  letter-spacing: 0.12em;
+  color: var(--h);
+}
+
+.hotel-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  font-size: 0.92rem;
+  color: #3d5a50;
+}
+
+.hotel-card-meta b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Race board: the WebGL canvas fills the screen edge to edge (outside the TV
