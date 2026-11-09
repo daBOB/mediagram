@@ -35,7 +35,7 @@ impl GrandAlleeGame {
     }
 
     fn label(&self, view: &ViewCtx, opt: Opt) -> String {
-        let (t, cost) = (&self.t, taler(self.price(opt)));
+        let (t, cost) = (&self.t, taler(opt.price(&self.t)));
         match opt {
             Opt::Roll if self.roll == 6 => "Nochmal würfeln".into(),
             Opt::Roll => "Würfeln".into(),

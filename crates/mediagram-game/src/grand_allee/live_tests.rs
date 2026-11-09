@@ -97,6 +97,18 @@ fn a_six_rolls_again_and_the_extra_turn_may_be_declined() {
 }
 
 #[test]
+fn after_a_six_a_playing_bot_rolls_again_and_the_house_lets_it_go() {
+    use super::bots::{Bot, Style};
+    use super::live::HOUSE;
+    let (mut g, mut p) = game(2, &[6]);
+    let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
+    let Stage::Ask { ask, .. } = g.stage.clone() else { panic!("no ask: {:?}", g.stage) };
+    assert_eq!(options(&g, &p, ANA, now), ["Nochmal würfeln", "Lieber nicht"]);
+    assert_eq!(Bot { style: Style::Cautious, house: false }.pick(&g.t, 0, &ask), 0);
+    assert_eq!(HOUSE.pick(&g.t, 0, &ask), 1);
+}
+
+#[test]
 fn passing_the_rathaus_offers_one_entrance_per_built_hotel() {
     let (mut g, mut p) = game(2, &[3]);
     own(&mut g, 0, 0, 1);

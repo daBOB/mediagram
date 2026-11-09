@@ -1,7 +1,7 @@
 //! Grand Allee's turn flow: what follows what, and what each answer does.
 
 use super::board::FIELDS;
-use super::live::{GrandAlleeGame, Stage, Step};
+use super::live::{GrandAlleeGame, Stage, Step, HOUSE};
 use super::live_asks::Ask;
 use crate::game::{GameCtx, name};
 use crate::protocol::ServerTime;
@@ -28,23 +28,39 @@ impl GrandAlleeGame {
         clock.min(ctx.house_at(self.ids[self.turn], since).unwrap_or(clock))
     }
 
+    /// When the current stage acts: the house answers an ask, a die lands, a
+    /// walk ends, an auction closes, a note goes; `None` once the game is over.
+    /// `tick` acts only once this time has come.
+    pub(crate) fn due(&self, ctx: &GameCtx) -> Option<ServerTime> {
+        Some(match &self.stage {
+            Stage::Ask { since, .. } => self.house_at(ctx, *since),
+            Stage::Rolled { at, .. } | Stage::Guest { at, .. } | Stage::Permit { at, .. } => at + self.cfg.roll_ms + self.cfg.show_ms,
+            Stage::Walking { ends_at, .. } => *ends_at,
+            Stage::Auction(a) => self.auction_close(ctx, a),
+            Stage::Sold { at, .. } | Stage::Note { at, .. } => at + self.cfg.note_ms,
+            Stage::Final => return None,
+        })
+    }
+
     pub(crate) fn tick(&mut self, ctx: &mut GameCtx) {
         let now = ctx.now;
-        let landed = |at: ServerTime| now >= at + self.cfg.roll_ms + self.cfg.show_ms;
+        if self.due(ctx).is_none_or(|due| now < due) {
+            return;
+        }
         match self.stage.clone() {
-            Stage::Ask { ask, since } if now >= self.house_at(ctx, since) => {
-                let pick = self.auto_index(&ask);
+            Stage::Ask { ask, .. } => {
+                let pick = HOUSE.pick(&self.t, self.turn, &ask);
                 self.idle = true;
                 self.choose(ctx, ask.opts[pick]);
             }
-            Stage::Rolled { value, at } if landed(at) => self.walk(now, value),
-            Stage::Walking { ends_at, .. } if now >= ends_at => self.proceed(now),
-            Stage::Guest { owner, amount, at, .. } if landed(at) => self.owe(ctx, Some(owner), amount),
-            Stage::Permit { hotel, count, permit, at } if landed(at) => self.permit_lands(ctx, hotel, count, permit),
-            Stage::Auction(a) => self.auction_tick(ctx, a),
-            Stage::Sold { at, .. } if now >= at + self.cfg.note_ms => self.settle(ctx),
-            Stage::Note { at, .. } if now >= at + self.cfg.note_ms => self.after_move(now),
-            _ => {}
+            Stage::Rolled { value, .. } => self.walk(now, value),
+            Stage::Walking { .. } => self.proceed(now),
+            Stage::Guest { owner, amount, .. } => self.owe(ctx, Some(owner), amount),
+            Stage::Permit { hotel, count, permit, .. } => self.permit_lands(ctx, hotel, count, permit),
+            Stage::Auction(a) => self.close_auction(ctx, a),
+            Stage::Sold { .. } => self.settle(ctx),
+            Stage::Note { .. } => self.after_move(now),
+            Stage::Final => {}
         }
     }
 

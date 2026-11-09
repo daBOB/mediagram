@@ -1117,9 +1117,11 @@ mid-game. Rules and decisions per game: `plans/261107-0207-card-games-and-bauher
 (plots, a permit die, entrances, guests paying per night): own name, ten hotels,
 board and prices. 2–8 players, currency Taler. `src/grand_allee/` holds the rules
 as plain data and pure table operations (`board.rs`: a ring of 40 fields with ten
-hotels; `rules.rs`, `building.rs`, `debts.rs`, `money.rs`, `offers.rs`), a bot
-simulator that tuned the numbers (`play.rs`, `bots.rs`, `actions.rs`), and the
-live game on the `Game` trait (`live*.rs`). A game lasts 280 turns shared by the
+hotels; `rules.rs`, `building.rs`, `money.rs`, `offers.rs`), the live game on
+the `Game` trait (`live*.rs`), and a simulator that tunes the numbers by playing
+that live game (`play.rs`, `bots.rs`): a bot in every seat answers each question
+after an assumed think time, and the clock jumps to the stage's next deadline
+(`due`), so the simulator has no move order of its own. A game lasts 280 turns shared by the
 players (30 to 120 rounds) or until one player is left; net worth is the score.
 Every decision has a 20 s clock, after which the house bot decides, as it does at
 once for an absent player and for the rest of a turn whose clock ran out. A player
@@ -1127,7 +1129,8 @@ who cannot pay sells whole properties in a sealed debt auction that opens on eve
 other phone at once; the bank buys what nobody bids on. A question that a tap opens
 opens 400 ms later, so a double tap cannot answer it. A Doppelt permit the mover
 cannot pay asks whether to auction that hotel (the permit then costs nothing) or
-other properties until it is paid; the house and the simulator take the first. The
+other properties until it is paid; the house takes the first, a simulator bot the
+second when its other properties at the bank's price cover the shortfall. The
 phone uses `PhoneScreen::Sheet` (`client/src/phone/PhoneSheet.tsx`): cash and
 standing on top, the prompt with its clock (`closes_at`), options answered by
 `Action::Choose`, and the player's hotels as cards in each hotel's colour. In a

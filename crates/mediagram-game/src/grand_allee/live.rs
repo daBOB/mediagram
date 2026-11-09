@@ -18,7 +18,7 @@ use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 /// Decides for an absent player and when a clock runs out.
-pub(super) const HOUSE: Bot = Bot { style: Style::Balanced };
+pub(super) const HOUSE: Bot = Bot { style: Style::Balanced, house: true };
 
 #[derive(Debug, Clone)]
 pub struct GrandAlleeConfig {

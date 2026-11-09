@@ -12,7 +12,10 @@ fn whole_game(players: usize, seed: u64) -> (GrandAlleeGame, Vec<Player>) {
     // far beyond the longest game the simulator has seen
     while !g.is_finished() && now < 4.0 * 3_600_000.0 {
         now += 50.0;
-        g.on_tick(&mut GameCtx { now, players: &mut p });
+        let mut ctx = GameCtx { now, players: &mut p };
+        let (before, due) = (g.stage.clone(), g.due(&ctx));
+        g.on_tick(&mut ctx);
+        assert!(g.stage == before || due.is_some_and(|due| due <= now), "moved on before it was due at {now}: {before:?}");
         if now % 5_000.0 == 0.0 {
             let view = ViewCtx { now, players: &p, leader: None };
             serde_json::to_string(&g.tv_scene(&view)).expect("the TV scene serializes");

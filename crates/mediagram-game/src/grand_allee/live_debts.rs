@@ -78,14 +78,16 @@ impl GrandAlleeGame {
         Ok(())
     }
 
-    /// Closes once every bidder still at the table has answered, or when the
-    /// clock runs out; whoever stayed silent passed.
-    pub(crate) fn auction_tick(&mut self, ctx: &GameCtx, a: Auction) {
+    /// When an auction closes: at once when every bidder still at the table
+    /// has answered, else when its clock runs out.
+    pub(crate) fn auction_close(&self, ctx: &GameCtx, a: &Auction) -> ServerTime {
         let here = |seat: usize| ctx.players.iter().any(|p| p.id == self.ids[seat] && p.connected());
         let waiting = a.bids.iter().any(|&(b, answer)| answer == Bid::Open && here(b));
-        if waiting && ctx.now < a.since + self.cfg.auction_ms {
-            return;
-        }
+        if waiting { a.since + self.cfg.auction_ms } else { ctx.now }
+    }
+
+    /// The highest bid takes the property; whoever stayed silent passed.
+    pub(crate) fn close_auction(&mut self, ctx: &GameCtx, a: Auction) {
         let amounts = a.bids.iter().filter_map(|&(b, answer)| match answer {
             Bid::Amount(x) => Some((x, b)),
             Bid::Open | Bid::Pass => None,

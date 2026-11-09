@@ -81,6 +81,19 @@ fn when_the_clock_runs_out_the_house_auctions_the_hotel_in_question() {
 }
 
 #[test]
+fn a_playing_bot_raises_the_money_when_its_other_properties_cover_it_and_the_house_never_does() {
+    use super::bots::{Bot, Style};
+    use super::live::HOUSE;
+    let (mut g, _, _) = doubled(true);
+    let Stage::Ask { ask, .. } = g.stage.clone() else { panic!("no ask: {:?}", g.stage) };
+    let bot = Bot { style: Style::Bold, house: false };
+    assert_eq!(bot.pick(&g.t, 0, &ask), 0, "Hacienda Sol fetches 500 from the bank, 900 are missing");
+    g.t.seats[0].cash = 1_900;
+    assert_eq!(bot.pick(&g.t, 0, &ask), 1, "500 missing, 500 covered: raise");
+    assert_eq!(HOUSE.pick(&g.t, 0, &ask), 0, "the house auctions the hotel in question");
+}
+
+#[test]
 fn the_sheet_carries_the_clock_to_the_mover_and_the_hotels_as_cards() {
     use crate::game::{Game, ViewCtx};
     use crate::protocol::{HotelCard, PhoneScreen};

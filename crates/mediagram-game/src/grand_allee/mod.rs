@@ -1,12 +1,10 @@
 //! Grand Allee, the hotel game rebuilt for 2–8 players (design:
-//! spieltisch `design/grand-allee-design.md`): the rules engine, a bot
-//! simulator for tuning its numbers, and the live game the room plays.
+//! spieltisch `design/grand-allee-design.md`): the rules engine, the live game
+//! the room plays, and a simulator that plays it with bots to tune the numbers.
 
 pub mod board;
 pub mod bots;
-mod actions;
 mod building;
-mod debts;
 pub(crate) mod live;
 mod live_asks;
 mod live_choose;

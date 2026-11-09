@@ -12,7 +12,7 @@ impl GrandAlleeGame {
     pub(crate) fn choose(&mut self, ctx: &GameCtx, opt: Opt) {
         let (now, s) = (ctx.now, self.turn);
         let later = now + self.cfg.chain_ms;
-        let (who, price) = (self.who(ctx.players, s), self.price(opt));
+        let (who, price) = (self.who(ctx.players, s), opt.price(&self.t));
         let hotel = |h: u8| HOTELS[usize::from(h)].name;
         match opt {
             Opt::Roll => {

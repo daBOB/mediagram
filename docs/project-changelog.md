@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.170.0 — The simulator plays the live Grand Allee
+
+**Changed** (from an architecture review; the live game is unchanged)
+
+- `grand-allee-sim` no longer keeps its own copy of the move order (`actions.rs`, `debts.rs` deleted). It drives `GrandAlleeGame` itself: a bot in every seat answers each question after a player's think time, and the clock jumps from one deadline to the next (`due`, which `tick` now also uses). The dice, the move order, the Doppelt choice and every timing are the live game's own.
+- The house's picks moved into `Bot::pick`. The house still lets an extra turn go, takes the cheapest entrance and auctions the hotel in question; a playing bot rolls again after a 6 and, on a Doppelt it cannot pay, raises the money when its other properties at the bank's price cover the shortfall.
+- New baseline (`plans/261109-1941-deepen-game-modules/reports/`): with the live game's real timings a game at 4–8 players takes 42–43 min, not 37–40. The rules play out the same; the old simulator under-timed entrance picks, declined questions and walks. Retiming waits for measured think times. A default run takes 0.8 s instead of 0.1 s.
+
 ## 0.169.0 — The game catalogue
 
 **Fixed**

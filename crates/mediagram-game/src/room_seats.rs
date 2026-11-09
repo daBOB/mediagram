@@ -41,7 +41,7 @@ impl Player {
         self.conn.is_some()
     }
 
-    /// A seated player outside of any room, for testing game modules.
+    /// A seated player outside of any room, for testing game modules and for the simulator.
     #[doc(hidden)]
     pub fn for_test(id: PlayerId, name: &str, connected: bool) -> Self {
         Self {
