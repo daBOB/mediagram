@@ -60,3 +60,56 @@ A subtitle track written for a deaf or hard-of-hearing audience: dialogue
 plus the sound a hearing viewer would otherwise infer.
 _Avoid_: CC, closed captions (this format carries only text tracks, never a
 broadcast-style closed-caption stream)
+
+### Spieleabend
+
+The game night: party games played on the TV, each player deciding from their
+own phone.
+
+**Room**:
+One game night at one TV: the players who joined from their phones, the lobby
+between games and the game being played.
+_Avoid_: session, party
+
+**Seat**:
+A player's place at the table of the game being played, in joining order.
+_Avoid_: slot, position
+
+**Absent**:
+Seated, but without a connection from the player's phone right now.
+_Avoid_: offline, idle (Grand Allee's idle means a clock ran out, not absence)
+
+**House**:
+The bot that decides for an absent player, or when a decision's clock runs out.
+It plays cautiously on purpose, because the player did not choose.
+_Avoid_: AI, auto-player, computer
+
+**Grace**:
+How long the house waits before deciding for an absent player, counted from
+the later of the player leaving and the question opening. The same at every
+table.
+_Avoid_: timeout, delay
+
+**Bot**:
+A seat played by a strategy in the simulator. Unlike the house, it plays to win.
+_Avoid_: AI, computer player
+
+**Simulator**:
+Plays thousands of seeded Grand Allee games with a bot in every seat, to tune
+the rules and estimate how long a game night takes.
+_Avoid_: sim run, test game
+
+**Game catalogue**:
+The games a room can start, each with its name and seat range.
+_Avoid_: catalogue alone (the avatar list and the media library use the word),
+game list
+
+**Seat range**:
+The fewest and the most players a game starts with.
+_Avoid_: player count, limits
+
+**Move** (Grand Allee):
+One player's go, from the roll until the next player's go, including the extra
+roll after a 6.
+_Avoid_: turn (in prose fine, but not for the whole go), round (all players'
+moves once)
