@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.173.0 — Flüchtig, the hidden-move chase
+
+**Added** (user: "lets create the scotland yard clone"; rules settled in a clickable prototype first, `plans/261109-1924-fluechtig/`, approved as it played)
+
+- Flüchtig for two to six (catalogue entry): one player, drawn at random, runs unseen through an own 48-field city (taxi, bus, U-Bahn, a river with three bridges); the others hunt with four pieces (five at six players), dealt round-robin. 18 rounds; the fugitive is seen after rounds 3, 8, 13 and 18.
+- The fugitive has 3 shadow rides (the log does not say which transport) and one double move, offered only where a second step exists; every ticket a hunter spends goes to the fugitive. Caught when a hunter lands on their field or they cannot move; free after the last round or when no hunter can move.
+- Phones get their own screen (`PhoneScreen::Fluechtig`), the user's pick of three rendered looks: the mover picks where to from round number tiles drawn like the TV's fields, each marked with the tickets that reach it. A hunter with one ticket to that field moves at once; otherwise, and always for the fugitive (one tap or two would give away the line they ride), a second question asks which ticket, each saying what the room will see ("Alle sehen: Bus", or nobody sees with a shadow ride), with "Zurück". Tickets are in the plan's line colours. Other phones show who moves and who is next, their own pieces or hideout, the travel log and where the fugitive may be. Only the fugitive's phone ever shows their field. The house moves for an absent mover after the table's grace.
+- The TV gives the whole screen to the city plan (2D, no three.js, no assets), with panels over it: the round, whose turn in the mover's colour, the rounds until the next sighting, the latest news with the travel log and the fugitive's tickets, and the hunters' fields. Hunters stand in their players' colours, the fields the fugitive may be on are ringed, the last sighting is marked; at the end the route they really ran, then the awards ceremony, titled for the side that won (`TvFinal` takes an optional `title`). The Android TV games shelf lists it.
+
 ## 0.172.0 — Grand Allee opens with three rules cards
 
 **Added**

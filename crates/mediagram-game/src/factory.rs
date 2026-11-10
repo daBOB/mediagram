@@ -12,6 +12,7 @@ use crate::kopfnuss::KopfnussGame;
 use crate::kopfnuss_config::KopfnussConfig;
 use crate::kopfnuss_supply::QuestionSupply;
 use crate::film_questions::film_questions;
+use crate::fluechtig::{FluechtigConfig, FluechtigGame};
 use crate::grand_allee::live::{GrandAlleeConfig, GrandAlleeGame};
 use crate::durak::{DurakConfig, DurakGame};
 use crate::maumau::{MauMauConfig, MauMauGame};
@@ -49,6 +50,7 @@ pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless:
             GameKind::Schwimmen => Box::new(SchwimmenGame::new(SchwimmenConfig::default(), ctx.players, ctx.now)),
             GameKind::Durak => Box::new(DurakGame::new(DurakConfig::default(), ctx.players, ctx.now)),
             GameKind::GrandAllee => Box::new(GrandAlleeGame::new(GrandAlleeConfig::default(), ctx.players, ctx.now)),
+            GameKind::Fluechtig => Box::new(FluechtigGame::new(FluechtigConfig::default(), ctx.players, ctx.now)),
             GameKind::Poster => {
                 let eligible = pool.eligible(settings.kids_only);
                 let cfg = PosterConfig::default();

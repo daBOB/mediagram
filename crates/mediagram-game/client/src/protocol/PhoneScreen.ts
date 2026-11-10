@@ -3,6 +3,7 @@ import type { AvatarSlot } from "./AvatarSlot";
 import type { BidRange } from "./BidRange";
 import type { CardDesk } from "./CardDesk";
 import type { ChoiceOption } from "./ChoiceOption";
+import type { FluechtigPhone } from "./FluechtigPhone";
 import type { GameEntry } from "./GameEntry";
 import type { HotelCard } from "./HotelCard";
 import type { LobbySettings } from "./LobbySettings";
@@ -34,4 +35,4 @@ closes_at: number | null,
 /**
  * A sealed bid to set instead of options.
  */
-bid: BidRange | null, } | { "kind": "outcome", title: string, text: string | null, tone: Tone, points: number, } | { "kind": "cards", desk: CardDesk, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };
+bid: BidRange | null, } | { "kind": "outcome", title: string, text: string | null, tone: Tone, points: number, } | { "kind": "cards", desk: CardDesk, } | { "kind": "fluechtig", phone: FluechtigPhone, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };

@@ -29,6 +29,7 @@ pub(crate) const CATALOGUE: &[GameEntry] = &[
     entry(GameKind::Kopfnuss),
     entry(GameKind::Race),
     entry(GameKind::GrandAllee),
+    entry(GameKind::Fluechtig),
     entry(GameKind::MauMau),
     entry(GameKind::Schwimmen),
     entry(GameKind::Durak),
@@ -45,6 +46,8 @@ pub(crate) const fn entry(kind: GameKind) -> GameEntry {
         GameKind::Race => ("Heimlauf", 2, 4),
         // Grand Allee's round limit scales with the table, from two to eight.
         GameKind::GrandAllee => ("Grand Allee", 2, 8),
+        // One runs, the rest share four hunter pieces (five at six players).
+        GameKind::Fluechtig => ("Flüchtig", 2, 6),
         // 32 cards deal five to five players, the 52-card deck to eight.
         GameKind::MauMau => ("Mau-Mau", 2, 8),
         // Schwimmen deals 3 cards to each and 3 to the middle from 32.

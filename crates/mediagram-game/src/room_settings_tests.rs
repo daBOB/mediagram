@@ -35,6 +35,7 @@ fn each_game_starts_within_its_seat_range() {
         (GameKind::Schwimmen, 2, 8, "Schwimmen braucht mindestens 2 Spieler.", None),
         (GameKind::Durak, 2, 6, "Durak braucht mindestens 2 Spieler.", Some("Durak geht mit höchstens 6 Spielern.")),
         (GameKind::Kopfnuss, 2, 8, "Kopfnuss braucht mindestens 2 Spieler.", None),
+        (GameKind::Fluechtig, 2, 6, "Flüchtig braucht mindestens 2 Spieler.", Some("Flüchtig geht mit höchstens 6 Spielern.")),
     ];
     for (game, min, max, too_few, too_many) in table {
         let mut r = room(8);

@@ -18,6 +18,11 @@ pub use crate::protocol_cards::{
 };
 pub use crate::protocol_client::{Action, ClientMsg, Role};
 pub use crate::protocol_kopfnuss::{Climber, KopfnussScene, KopfnussStage, Trick, TrickHit, TrickLoad};
+pub use crate::protocol_fluechtig::{
+    FluechtigBoard, FluechtigHunter, FluechtigLink, FluechtigLogEntry, FluechtigScene, FluechtigSide, FluechtigSpot, FluechtigTicket,
+    FluechtigTickets, FluechtigTurn,
+};
+pub use crate::protocol_fluechtig_phone::{FluechtigAsk, FluechtigMover, FluechtigOption, FluechtigPhone, FluechtigPiece, FluechtigSeen};
 pub use crate::protocol_grand_allee::{
     GrandAlleeAuction, GrandAlleeBoard, GrandAlleeEntrance, GrandAlleeEstate, GrandAlleeFieldKind, GrandAlleeHotel, GrandAlleeMark,
     GrandAlleePermit, GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn,
@@ -137,6 +142,10 @@ pub enum PhoneScreen {
     Cards {
         desk: CardDesk,
     },
+    /// A Flüchtig phone: the chase as this player may know it, and the move to make.
+    Fluechtig {
+        phone: FluechtigPhone,
+    },
     Final {
         rank: u8,
         of: u8,
@@ -176,4 +185,5 @@ pub enum TvScene {
     Cards { scene: CardsScene },
     Kopfnuss { scene: KopfnussScene },
     GrandAllee { scene: GrandAlleeScene },
+    Fluechtig { scene: FluechtigScene },
 }

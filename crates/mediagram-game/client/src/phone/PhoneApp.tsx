@@ -5,6 +5,7 @@ import type { PhoneView } from "../protocol/PhoneView";
 import type { ServerMsg } from "../protocol/ServerMsg";
 import { CardsDesk } from "./CardsDesk";
 import { ChoiceScreen } from "./ChoiceScreen";
+import { PhoneFluechtig } from "./PhoneFluechtig";
 import { PhoneLobby } from "./PhoneLobby";
 import { PhoneSheet } from "./PhoneSheet";
 import { buzz, memory as store } from "./app-bridge";
@@ -151,6 +152,8 @@ function Screen({ view, conn }: { view: PhoneView; conn: Connection }) {
       return <CardsDesk desk={screen.desk} conn={conn} />;
     case "sheet":
       return <PhoneSheet screen={screen} conn={conn} />;
+    case "fluechtig":
+      return <PhoneFluechtig phone={screen.phone} me={me} conn={conn} />;
     case "outcome":
       return (
         <section className={`screen outcome tone-${screen.tone}`}>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useConnection } from "../net";
 import type { TvView } from "../protocol/TvView";
 import { TvKopfnuss } from "./TvKopfnuss";
+import { TvFluechtig } from "./TvFluechtig";
 import { TvGrandAllee } from "./TvGrandAllee";
 import { TvLobby } from "./TvLobby";
 import { TvPoster } from "./TvPoster";
@@ -37,6 +38,8 @@ export function TvApp() {
         <TvCards key={view.scene.scene.game + view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "kopfnuss" ? (
         <TvKopfnuss scene={view.scene.scene} players={view.players} conn={conn} />
+      ) : view.scene.kind === "fluechtig" ? (
+        <TvFluechtig scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "grand_allee" ? (
         <TvGrandAllee key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : (

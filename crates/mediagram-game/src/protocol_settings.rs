@@ -21,6 +21,8 @@ pub enum GameKind {
     Kopfnuss,
     /// Grand Allee, the hotel game for two to eight.
     GrandAllee,
+    /// Flüchtig, the hidden-move chase for two to six.
+    Fluechtig,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
