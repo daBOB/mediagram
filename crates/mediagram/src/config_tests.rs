@@ -68,3 +68,29 @@ fn debug_output_redacts_secrets() {
     assert!(!dbg.contains("sekrit") && !dbg.contains("k3y"));
     assert!(dbg.contains("<redacted>"));
 }
+
+#[test]
+fn the_cache_server_keys_are_read() {
+    let cfg: Config = toml::from_str(
+        "api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\ncache_server = \"http://127.0.0.1:7788\"\ncache_server_token = \"t0ken\"\n",
+    )
+    .unwrap();
+    assert_eq!(cfg.cache_server.as_deref(), Some("http://127.0.0.1:7788"));
+    assert_eq!(cfg.cache_server_token.as_deref(), Some("t0ken"));
+    assert!(
+        cfg.home_cache(&mediagram_core::http::client().unwrap())
+            .is_some()
+    );
+    assert!(!format!("{cfg:?}").contains("t0ken"));
+}
+
+#[test]
+fn no_cache_server_means_no_home_cache() {
+    let cfg: Config =
+        toml::from_str("api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\ncache_server = \"\"\n")
+            .unwrap();
+    assert!(
+        cfg.home_cache(&mediagram_core::http::client().unwrap())
+            .is_none()
+    );
+}
