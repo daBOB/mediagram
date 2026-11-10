@@ -72,3 +72,20 @@ fn names_follow_the_published_shapes() {
     assert!(!valid_art_name(&format!("{}.jpg", "a".repeat(65))));
     assert!(valid_tmdb_key(&key('f')) && !valid_tmdb_key(&key('F')) && !valid_tmdb_key("ab"));
 }
+
+#[test]
+fn a_read_blob_outlives_a_later_written_one_after_reopening() {
+    let dir = tempdir().unwrap();
+    let store = BlobStore::open(dir.path().to_path_buf(), 20).unwrap();
+    store.put(BlobKind::Tmdb, &key('a'), &[1; 10]).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    store.put(BlobKind::Tmdb, &key('b'), &[2; 10]).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    store.get(BlobKind::Tmdb, &key('a')).unwrap().unwrap();
+    drop(store);
+
+    let reopened = BlobStore::open(dir.path().to_path_buf(), 20).unwrap();
+    reopened.put(BlobKind::Tmdb, &key('c'), &[3; 10]).unwrap();
+    assert_eq!(reopened.head(BlobKind::Tmdb, &key('a')).unwrap(), Some(10));
+    assert_eq!(reopened.head(BlobKind::Tmdb, &key('b')).unwrap(), None);
+}

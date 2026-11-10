@@ -10,7 +10,7 @@
 //! disagree about which of two racing writers won.
 
 use std::fs;
-use std::io;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 use std::time::SystemTime;
@@ -105,11 +105,16 @@ impl BlobStore {
         if !self.lock().touch(&rel) {
             return Ok(None);
         }
-        match fs::read(self.root.join(rel)) {
-            Ok(bytes) => Ok(Some(bytes)),
-            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(None),
-            Err(e) => Err(e),
-        }
+        let mut file = match fs::File::open(self.root.join(rel)) {
+            Ok(f) => f,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(e) => return Err(e),
+        };
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes)?;
+        // Best-effort: the mtime is what a restart rebuilds recency from.
+        let _ = file.set_modified(SystemTime::now());
+        Ok(Some(bytes))
     }
 
     /// The length held under `name`, without counting it as a use.

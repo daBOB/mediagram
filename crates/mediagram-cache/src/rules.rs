@@ -10,9 +10,14 @@ pub const CHUNK: u64 = 1 << 20;
 
 /// `^[A-Za-z0-9]{1,64}$`, the shape the web player's `STREAM_PATH` already
 /// requires of a set id. No `.`, `/` or `..`, so a value that passes this
-/// can be joined onto a store root and never escape it.
+/// can be joined onto a store root and never escape it. `blobs` is the
+/// blob store's directory under the same root, so it is never a set id:
+/// evicting such a set would delete every blob with it.
 pub fn valid_id(id: &str) -> bool {
-    !id.is_empty() && id.len() <= 64 && id.bytes().all(|b| b.is_ascii_alphanumeric())
+    id != "blobs"
+        && !id.is_empty()
+        && id.len() <= 64
+        && id.bytes().all(|b| b.is_ascii_alphanumeric())
 }
 
 /// A plain, non-negative decimal — nothing `u32::from_str` would accept but
