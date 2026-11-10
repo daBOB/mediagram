@@ -13,6 +13,7 @@ async fn a_channel_with_no_pins_has_no_release() {
         &fixture.core,
         &fixture.owner,
         -100,
+        MEDIA_APP_TAG,
         Scripted(vec![].into_iter()),
     )
     .await;
@@ -26,10 +27,18 @@ async fn a_refused_pin_read_is_an_error_not_an_empty_answer() {
         &fixture.core,
         &fixture.owner,
         -100,
+        MEDIA_APP_TAG,
         Scripted(vec![Err(rpc(500))].into_iter()),
     )
     .await;
     assert!(found.is_err());
+}
+
+/// Devices already out there read only `#mlib-app` for the media app.
+#[test]
+fn each_app_looks_for_its_own_tag() {
+    assert_eq!(ReleaseApp::MediaApp.tag(), "#mlib-app");
+    assert_eq!(ReleaseApp::Spieltisch.tag(), "#spieltisch-app");
 }
 
 fn release_of(bytes: &[u8]) -> AppRelease {

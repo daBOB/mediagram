@@ -14,6 +14,7 @@ import testing.FakeCoreProvider
 import uniffi.mediagram_core.AppRelease
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
+import uniffi.mediagram_core.ReleaseApp
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
@@ -49,6 +50,7 @@ class AppUpdaterTest {
             val updater = updater()
             updater.checkAndDownload()
             assertEquals(UpdateStatus.Ready("0.93.0"), updater.status.value)
+            assertEquals(ReleaseApp.MEDIA_APP, core.releaseApp, "the media app reads only its own releases")
             assertEquals(listOf(File(dir, "93000.apk").path), core.downloadedPaths)
             updater.installIfReady()
             assertEquals(listOf(File(dir, "93000.apk")), installer.installed)

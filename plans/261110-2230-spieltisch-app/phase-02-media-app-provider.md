@@ -48,6 +48,37 @@
 - Contract: one fixture, `crates/mediagram-game/tests/fixtures/night-titles.json`.
   The core's test produces that shape; the game crate's test parses it.
 
+## Design details (settled 2026-11-10, before building)
+
+- **Where the provider lives:** `android/feature/games`, beside `GameNightConfig`, which
+  holds the kids and section rules it needs. Phase 4 removes the module's UI, view model
+  and announcer, and keeps the config and the provider.
+- **Permission:**
+  - `com.mediagram.android.permission.GAME_NIGHT`, `protectionLevel="signature"`.
+  - Both apps declare it. If Spieltisch is installed before the media app, it still holds
+    the permission once the media app arrives.
+  - The provider requires it to read.
+- **Package visibility (Android 11+):**
+  - Spieltisch declares `<queries><provider android:authorities="com.mediagram.android.games"/></queries>`.
+  - The media app declares `<queries><package android:name="com.mediagram.spieltisch"/></queries>`,
+    needed in phase 4 to launch it.
+- **Night row:**
+  - `query(/night)` returns one row: `kids_locked`, and the `titles` JSON from
+    `game_night_titles` under the active profile's config, built from the same
+    `GameNightConfig` rules as an in-app night.
+  - No profile, or the media app not ready: locked and `[]`.
+- **Files:**
+  - `openFile(/image/{key}/{poster|still})` and `openFile(/textless/{key})` serve a title
+    only if it is in the night's allowed titles for the active profile right now.
+    Otherwise FileNotFound, so a key can't fetch a picture the profile may not see.
+  - Read-only file descriptors, nothing else.
+- **Spieltisch's images:**
+  - The host's `/img` route and the textless lookup ask the embedder for a file the first
+    time. Kotlin implements a uniffi foreign trait, `MediaImages { fetch(key, kind) -> path? }`.
+    It copies the descriptor into Spieltisch's cache and returns the cached path.
+  - Rust calls it off the async runtime (`spawn_blocking`).
+  - Only the host's entry point and its image route change in `mediagram-game`.
+
 ## Related code files
 
 - Create:

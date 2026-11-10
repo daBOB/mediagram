@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import uniffi.mediagram_core.AppRelease
 import uniffi.mediagram_core.CoreInterface
+import uniffi.mediagram_core.ReleaseApp
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -97,7 +98,7 @@ class AppUpdater
                 val handle = settings.read() ?: return
                 val core = coreProvider.coreOrNull() ?: return
                 lastCheckAtMs = now()
-                val release = core.latestAppRelease(handle)
+                val release = core.latestAppRelease(handle, ReleaseApp.MEDIA_APP)
                 if (release == null || !isNewer(release.versionCode, config.installedVersionCode)) {
                     ready = null
                     removeStale(wantedCode = null)

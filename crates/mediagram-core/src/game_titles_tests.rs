@@ -1,4 +1,4 @@
-use mediagram_game::{TitleKind, TitlePool};
+use mediagram_game::{GameTitle, TitlePool};
 
 use super::*;
 use crate::catalog::PlayableSet;
@@ -43,7 +43,7 @@ fn ids(of: &[&str]) -> HashSet<String> {
     of.iter().map(|s| s.to_string()).collect()
 }
 
-fn build(sets: &[SetSummary], kids: &[&str]) -> Vec<GameTitle> {
+fn build(sets: &[SetSummary], kids: &[&str]) -> Vec<NightTitle> {
     let all: HashSet<String> = sets.iter().map(|s| s.set_id.clone()).collect();
     game_titles(sets, &credits, &ids(kids), &all)
 }
@@ -79,8 +79,8 @@ fn films_map_one_per_set() {
     assert_eq!(titles.len(), 2);
     let t = &titles[0];
     assert_eq!((t.key.as_str(), t.kind, t.title.as_str(), t.year), ("A", TitleKind::Film, "Alien", Some(1979)));
-    assert_eq!(t.poster, Some(PathBuf::from("/p/a.jpg")));
-    assert_eq!(t.still, Some(PathBuf::from("/b/a.jpg")));
+    assert_eq!(t.poster.as_deref(), Some("/p/a.jpg"));
+    assert_eq!(t.still.as_deref(), Some("/b/a.jpg"));
     assert_eq!(t.directors, vec!["Cora".to_string()]);
     assert_eq!(t.cast, vec!["Anna".to_string(), "Ben".into()]);
     assert!(t.kids_ok && !titles[1].kids_ok);
@@ -97,8 +97,8 @@ fn episodes_group_into_one_show() {
     let t = &titles[0];
     assert_eq!((t.key.as_str(), t.kind, t.title.as_str()), ("show:Dark", TitleKind::Series, "Dark"));
     assert_eq!(t.year, Some(2017));
-    assert_eq!(t.poster, Some(PathBuf::from("/p/dark.jpg")));
-    assert_eq!(t.still, Some(PathBuf::from("/b/dark.jpg")));
+    assert_eq!(t.poster.as_deref(), Some("/p/dark.jpg"));
+    assert_eq!(t.still.as_deref(), Some("/b/dark.jpg"));
     assert_eq!(t.cast, vec!["Anna".to_string(), "Ben".into()]);
 }
 
@@ -128,7 +128,8 @@ fn kids_locked_keeps_only_kids_titles() {
         set("B", "movie", Some("Bambi"), None, 1942),
         set("E1", "ep", None, Some("Dark"), 2017),
     ];
-    let pool = TitlePool::new(build(&sets, &["B"]), true);
+    let json = serde_json::to_value(build(&sets, &["B"])).unwrap();
+    let pool = TitlePool::new(serde_json::from_value::<Vec<GameTitle>>(json).unwrap(), true);
     assert_eq!(pool.eligible(false).len(), 1);
     assert_eq!(pool.get(0).key, "B");
 }
@@ -147,4 +148,19 @@ fn poster_keys_follow_title_keys() {
     assert_eq!(keys.len(), 2);
     assert_eq!(keys["A"], "tmdb-movie-7");
     assert_eq!(keys["show:Lost"], "tmdb-tv-7");
+}
+
+/// The games read their titles in the shape this fixture holds; the game
+/// crate parses the same file, so neither side can drift alone.
+#[test]
+fn titles_serialize_to_the_shape_the_games_read() {
+    let mut alien = set("A", "movie", Some("Alien"), None, 1979);
+    alien.poster_path = Some("/data/posters/alien.jpg".into());
+    alien.backdrop_path = Some("/data/backdrops/alien.jpg".into());
+    let mut dark = set("E1", "ep", None, Some("Dark"), 2017);
+    dark.poster_path = Some("/data/posters/dark.jpg".into());
+    let sets = [alien, set("B", "movie", Some("Bambi"), None, 1942), dark, set("E2", "ep", None, Some("Dark"), 2019)];
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("../../mediagram-game/tests/fixtures/night-titles.json")).unwrap();
+    assert_eq!(serde_json::to_value(build(&sets, &["B", "E1", "E2"])).unwrap(), fixture);
 }

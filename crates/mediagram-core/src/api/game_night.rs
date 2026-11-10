@@ -3,7 +3,7 @@
 //! catalog and credits but writes nothing to any profile's state; it only
 //! appends the games' decision log to the data folder.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -12,10 +12,10 @@ use tokio::sync::Mutex as AsyncMutex;
 
 use crate::dto::{GameNightConfig, GameNightUrls};
 use crate::error::CoreError;
-use crate::game_posters::poster_lookup;
+use crate::game_posters::{CACHE_DIR, poster_lookup};
 use crate::game_titles::poster_keys;
-use crate::shows::title_of;
 
+use super::game_night_export::night_titles;
 use super::{Core, store};
 
 const PREFERRED_PORT: u16 = 8080;
@@ -30,11 +30,20 @@ impl Core {
         let GameNightConfig { kids_set_ids, visible_set_ids, kids_locked, tmdb_key } = config;
         let kids: HashSet<String> = kids_set_ids.into_iter().collect();
         let visible: HashSet<String> = visible_set_ids.into_iter().collect();
-        let (titles, poster_keys) = self.blocking(move |core| titles(core, &kids, &visible)).await?;
+        let (titles, poster_keys) = self
+            .blocking(move |core| {
+                store::list_sets(core).map(|sets| (night_titles(core, &sets, &kids, &visible), poster_keys(&sets)))
+            })
+            .await?;
+        // Through the same JSON a games app of its own is handed, so a night
+        // hosted here already runs on that contract.
+        let titles: Vec<GameTitle> = serde_json::to_value(titles)
+            .and_then(serde_json::from_value)
+            .map_err(CoreError::io("handing the titles to the games"))?;
         // Without a key the poster game simply shows the normal posters.
         let textless = tmdb_key
             .filter(|key| !key.trim().is_empty())
-            .and_then(|key| poster_lookup(key, self.data_dir.join("game-posters"), poster_keys));
+            .and_then(|key| poster_lookup(key, self.data_dir.join(CACHE_DIR), poster_keys));
         let log = Some(self.data_dir.join(GAME_LOG));
         replace(&self.game_night, titles, kids_locked, PREFERRED_PORT, textless, log).await
     }
@@ -49,23 +58,6 @@ impl Core {
     pub async fn stop_game_night(self: Arc<Self>) {
         stop(&self.game_night).await
     }
-}
-
-/// The titles, and each one's poster key for the textless lookup.
-fn titles(
-    core: &Core,
-    kids: &HashSet<String>,
-    visible: &HashSet<String>,
-) -> Result<(Vec<GameTitle>, HashMap<String, String>), CoreError> {
-    let sets = store::list_sets(core)?;
-    let conn = store::open_installed(core, "a game night's credits");
-    let credits = |poster_key: &str| {
-        let (kind, id) = title_of(poster_key)?;
-        crate::credits::for_title(conn.as_ref()?, kind, id)
-            .inspect_err(|err| tracing::warn!(error = %err, "a title's credits could not be read"))
-            .ok()
-    };
-    Ok((crate::game_titles::game_titles(&sets, &credits, kids, visible), poster_keys(&sets)))
 }
 
 /// Hosts a night in `slot`, ending the one it held first so the port is free.

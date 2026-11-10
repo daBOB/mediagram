@@ -33,6 +33,8 @@ pub struct Channel {
     pub posted: i32,
     pub downloads: usize,
     pub sends: usize,
+    /// The file name of each document sent, in order.
+    pub sent_names: Vec<String>,
     /// Unpin requests made, refused ones included.
     pub unpins: usize,
     pub unpin_fails: HashSet<i32>,
@@ -193,7 +195,7 @@ impl ChannelRemote for FakeChannel {
     async fn send_document(
         &self,
         bytes: &[u8],
-        _name: &str,
+        name: &str,
         _mime: &str,
         caption: &str,
     ) -> Result<i32> {
@@ -204,6 +206,7 @@ impl ChannelRemote for FakeChannel {
         let bytes = bytes.to_vec();
         Ok(self.with(|c| {
             c.sends += 1;
+            c.sent_names.push(name.to_string());
             c.post(caption.to_string(), Some(bytes), false, true)
         }))
     }

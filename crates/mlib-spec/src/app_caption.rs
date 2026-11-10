@@ -7,6 +7,10 @@
 //!  "profile":{"message":4201,"bytes":30412,"sha256":"…"}}
 //! ```
 //!
+//! The marker's tag names the app: `#mlib-app` the media app, `#spieltisch-app`
+//! the games. Readers and writers name the tag they mean, and a caption with
+//! another tag is not a release to them.
+//!
 //! `profile` is optional and names the APK's dex metadata: a separate
 //! channel document Android takes beside the APK to compile the app at
 //! install. A reader that predates it skips the field and installs the APK
@@ -17,12 +21,18 @@
 
 use serde::{Deserialize, Serialize};
 
-/// What every app release caption starts with, whatever its version.
-pub const PREFIX: &str = "#mlib-app";
+/// The media app's tag. Media apps already on devices read only this one and
+/// take the highest versionCode among its posts, so no other app may use it.
+pub const MEDIA_APP_TAG: &str = "#mlib-app";
 
-/// The marker this version of the spec writes, and the only one it reads: a
-/// later format may mean something this build would install wrongly.
-pub const MARKER: &str = "#mlib-app v=1";
+/// Spieltisch's tag, its own so a media app never takes a games release for
+/// its update.
+pub const SPIELTISCH_TAG: &str = "#spieltisch-app";
+
+/// What follows the tag in the marker this version of the spec writes, and
+/// the only one it reads: a later format may mean something this build would
+/// install wrongly.
+const VERSION: &str = " v=1";
 
 /// One release, as its caption declares it. `code` is the APK's versionCode,
 /// `bytes` and `sha256` describe the attached document exactly.
@@ -53,23 +63,23 @@ fn any_profile<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Opti
     Ok(serde_json::from_value(value).ok())
 }
 
-/// The caption for `release`.
+/// The caption for `release` under the app's `tag`.
 ///
 /// # Panics
 /// Never, in practice: the body is only strings and integers, which always
 /// serialize.
 #[must_use]
-pub fn render(release: &AppRelease) -> String {
+pub fn render(tag: &str, release: &AppRelease) -> String {
     let json = serde_json::to_string(release).expect("strings and integers always serialize");
-    format!("{MARKER}\n{json}")
+    format!("{tag}{VERSION}\n{json}")
 }
 
 /// The release a caption declares, or `None` for anything that is not a
-/// complete, well-formed v1 release caption.
+/// complete, well-formed v1 release caption under the app's `tag`.
 #[must_use]
-pub fn parse(caption: &str) -> Option<AppRelease> {
+pub fn parse(tag: &str, caption: &str) -> Option<AppRelease> {
     let (marker, json) = caption.split_once('\n')?;
-    if marker.trim_end() != MARKER {
+    if marker.trim_end().strip_prefix(tag) != Some(VERSION) {
         return None;
     }
     let mut release: AppRelease = serde_json::from_str(json.trim()).ok()?;
@@ -84,15 +94,16 @@ pub fn parse(caption: &str) -> Option<AppRelease> {
     sound.then_some(release)
 }
 
-/// Which of `candidates` — `(caption, message id)` — is the newest release:
-/// the highest versionCode, a tie going to the later message. Its position
-/// in `candidates` and the release itself, or `None` when none is a release.
+/// Which of `candidates` — `(caption, message id)` — is the app's newest
+/// release under `tag`: the highest versionCode, a tie going to the later
+/// message. Its position in `candidates` and the release itself, or `None`
+/// when none is a release of that app.
 #[must_use]
-pub fn newest(candidates: &[(&str, i64)]) -> Option<(usize, AppRelease)> {
+pub fn newest(tag: &str, candidates: &[(&str, i64)]) -> Option<(usize, AppRelease)> {
     candidates
         .iter()
         .enumerate()
-        .filter_map(|(index, (text, id))| parse(text).map(|release| (index, *id, release)))
+        .filter_map(|(index, (text, id))| parse(tag, text).map(|release| (index, *id, release)))
         .max_by_key(|(_, id, release)| (release.code, *id))
         .map(|(index, _, release)| (index, release))
 }

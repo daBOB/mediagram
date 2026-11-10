@@ -1,0 +1,35 @@
+[
+  {
+    "key": "A",
+    "kind": "film",
+    "title": "Alien",
+    "year": 1979,
+    "poster": "/data/posters/alien.jpg",
+    "still": "/data/backdrops/alien.jpg",
+    "directors": ["Cora"],
+    "cast": ["Anna", "Ben"],
+    "kids_ok": false
+  },
+  {
+    "key": "B",
+    "kind": "film",
+    "title": "Bambi",
+    "year": 1942,
+    "poster": null,
+    "still": null,
+    "directors": ["Cora"],
+    "cast": ["Anna", "Ben"],
+    "kids_ok": true
+  },
+  {
+    "key": "show:Dark",
+    "kind": "series",
+    "title": "Dark",
+    "year": 2017,
+    "poster": "/data/posters/dark.jpg",
+    "still": null,
+    "directors": [],
+    "cast": ["Anna", "Ben"],
+    "kids_ok": true
+  }
+]

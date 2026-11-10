@@ -19,11 +19,13 @@ import uniffi.mediagram_core.GameNightUrls
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.NightTitlesConfig
 import uniffi.mediagram_core.PeopleHitRecord
 import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.ProfileOutcome
+import uniffi.mediagram_core.ReleaseApp
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
@@ -244,6 +246,13 @@ class FakeCore(
 
     override suspend fun gameNightBack(): Boolean = gameNightBackAnswer
 
+    override suspend fun gameNightTitles(config: NightTitlesConfig): String = "[]"
+
+    override suspend fun textlessPoster(
+        titleKey: String,
+        tmdbKey: String?,
+    ): String? = null
+
     /** When set, [stopGameNight] suspends on it after counting: a stop still under way. */
     var gameNightStopGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
 
@@ -376,6 +385,9 @@ class FakeCore(
     var releaseFailure: Throwable? = null
     var releaseChecks = 0
 
+    /** Which app the last [latestAppRelease] asked about. */
+    var releaseApp: ReleaseApp? = null
+
     /** Bytes [downloadAppRelease] writes to the path it is given, or the failure it throws instead. */
     var releaseApk: ByteArray = ByteArray(0)
     var downloadFailure: Throwable? = null
@@ -384,8 +396,12 @@ class FakeCore(
     /** When set, [downloadAppRelease] suspends on it before writing, so a test can cancel a download in flight. */
     var downloadGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
 
-    override suspend fun latestAppRelease(handle: String): AppRelease? {
+    override suspend fun latestAppRelease(
+        handle: String,
+        app: ReleaseApp,
+    ): AppRelease? {
         releaseChecks++
+        releaseApp = app
         releaseFailure?.let { throw it }
         return latestRelease
     }
