@@ -12,6 +12,7 @@ mod credits;
 pub mod enrich;
 mod events;
 mod game_night;
+mod game_night_export;
 mod preferences;
 mod read;
 mod refresh;

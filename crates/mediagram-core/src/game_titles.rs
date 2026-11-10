@@ -2,12 +2,37 @@
 //! app already lists and the credits it already holds.
 
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 
-use mediagram_game::{GameTitle, TitleKind};
+use serde::Serialize;
 
 use crate::credits::{Credited, TitleCredits};
 use crate::dto::SetSummary;
+
+/// A film, or one show of a series, in the JSON shape the games read their
+/// titles in. The core owns the shape so it can hand titles to a games app
+/// it does not link; `mediagram-game/tests/fixtures/night-titles.json` holds
+/// both sides to it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct NightTitle {
+    pub key: String,
+    pub kind: TitleKind,
+    pub title: String,
+    pub year: Option<u16>,
+    /// Absolute paths on this device.
+    pub poster: Option<String>,
+    pub still: Option<String>,
+    pub directors: Vec<String>,
+    /// In billing order.
+    pub cast: Vec<String>,
+    pub kids_ok: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TitleKind {
+    Film,
+    Series,
+}
 
 type Credits<'a> = &'a dyn Fn(&str) -> Option<TitleCredits>;
 
@@ -19,16 +44,16 @@ fn show_key(show: &str) -> String {
     format!("show:{show}")
 }
 
-fn film(set: &SetSummary, credits: Credits, kids: &HashSet<String>) -> Option<GameTitle> {
+fn film(set: &SetSummary, credits: Credits, kids: &HashSet<String>) -> Option<NightTitle> {
     let credited = set.poster_key.as_deref().and_then(credits).unwrap_or_default();
-    Some(GameTitle {
+    Some(NightTitle {
         key: set.set_id.clone(),
         kind: TitleKind::Film,
         // A film without a title cannot be asked about.
         title: set.title.clone()?,
         year: set.year.and_then(|y| u16::try_from(y).ok()),
-        poster: set.poster_path.as_ref().map(PathBuf::from),
-        still: set.backdrop_path.as_ref().map(PathBuf::from),
+        poster: set.poster_path.clone(),
+        still: set.backdrop_path.clone(),
         directors: names(&credited.crew),
         cast: names(&credited.cast),
         kids_ok: kids.contains(&set.set_id),
@@ -36,17 +61,17 @@ fn film(set: &SetSummary, credits: Credits, kids: &HashSet<String>) -> Option<Ga
 }
 
 /// One show from all of its episode sets, in catalog order.
-fn series(show: &str, eps: &[&SetSummary], credits: Credits, kids: &HashSet<String>) -> GameTitle {
+fn series(show: &str, eps: &[&SetSummary], credits: Credits, kids: &HashSet<String>) -> NightTitle {
     // Episodes of one show share a poster key, so the first that has one is
     // as good as any.
     let credited = eps.iter().find_map(|e| e.poster_key.as_deref()).and_then(credits).unwrap_or_default();
-    GameTitle {
+    NightTitle {
         key: show_key(show),
         kind: TitleKind::Series,
         title: show.to_string(),
         year: eps.iter().filter_map(|e| e.year).min().and_then(|y| u16::try_from(y).ok()),
-        poster: eps.iter().find_map(|e| e.poster_path.as_ref()).map(PathBuf::from),
-        still: eps.iter().find_map(|e| e.backdrop_path.as_ref()).map(PathBuf::from),
+        poster: eps.iter().find_map(|e| e.poster_path.clone()),
+        still: eps.iter().find_map(|e| e.backdrop_path.clone()),
         // A series' crew is its creators, not directors a player would name.
         directors: Vec::new(),
         cast: names(&credited.cast),
@@ -66,7 +91,7 @@ pub fn game_titles(
     credits: Credits,
     kids_set_ids: &HashSet<String>,
     visible_set_ids: &HashSet<String>,
-) -> Vec<GameTitle> {
+) -> Vec<NightTitle> {
     let mut out = Vec::new();
     let mut shows: Vec<&str> = Vec::new();
     let mut episodes: HashMap<&str, Vec<&SetSummary>> = HashMap::new();

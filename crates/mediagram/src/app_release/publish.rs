@@ -7,17 +7,21 @@ use sha2::{Digest, Sha256};
 use super::badging::Badging;
 use crate::channel_index::remote::ChannelRemote;
 
-/// The only package this command sends: the app that will install it.
-pub const APP_PACKAGE: &str = "com.mediagram.android";
+/// The apps this command sends, by the package the APK declares: the tag its
+/// captions carry, and the name its files go out under.
+const APPS: [(&str, &str, &str); 2] = [
+    ("com.mediagram.android", app_caption::MEDIA_APP_TAG, "mediagram"),
+    ("com.mediagram.spieltisch", app_caption::SPIELTISCH_TAG, "spieltisch"),
+];
 
 const APK_MIME: &str = "application/vnd.android.package-archive";
 
 const PROFILE_MIME: &str = "application/octet-stream";
 
-/// Sends `apk`, pins it, and unpins the releases it replaces; returns its
-/// message id. Refuses another package, and a versionCode not above the
-/// newest release already in the channel — Android would refuse to install
-/// it over that one anyway.
+/// Sends `apk`, pins it, and unpins the releases of the same app it
+/// replaces; returns its message id. Refuses a package not in [`APPS`], and a
+/// versionCode not above the app's newest release already in the channel —
+/// Android would refuse to install it over that one anyway.
 ///
 /// `profile`, the APK's dex metadata, goes first as a document of its own,
 /// unpinned, which the APK's caption then names.
@@ -28,16 +32,16 @@ pub async fn publish(
     badging: &Badging,
     now: i64,
 ) -> Result<i32> {
-    if badging.package != APP_PACKAGE {
-        bail!("this APK is {}, not {APP_PACKAGE}", badging.package);
-    }
+    let Some(&(_, tag, file)) = APPS.iter().find(|(package, ..)| *package == badging.package) else {
+        bail!("this APK is {}, not one of {:?}", badging.package, APPS.map(|(package, ..)| package));
+    };
     let candidates = remote.candidates().await?;
     let posted: Vec<(&str, i64)> = candidates
         .iter()
         .filter(|candidate| candidate.own_post)
         .map(|candidate| (candidate.caption.as_str(), i64::from(candidate.id)))
         .collect();
-    if let Some((_, newest)) = app_caption::newest(&posted)
+    if let Some((_, newest)) = app_caption::newest(tag, &posted)
         && badging.version_code <= newest.code
     {
         bail!(
@@ -51,7 +55,7 @@ pub async fn publish(
 
     let profile = match profile {
         Some(dm) => {
-            let name = format!("mediagram-{}.dm", badging.version_name);
+            let name = format!("{file}-{}.dm", badging.version_name);
             let message = remote.send_document(dm, &name, PROFILE_MIME, "").await?;
             Some(AppProfile {
                 message: i64::from(message),
@@ -69,17 +73,18 @@ pub async fn publish(
         published_at: now,
         profile,
     };
-    let name = format!("mediagram-{}.apk", release.version);
+    let name = format!("{file}-{}.apk", release.version);
     let id = remote
-        .send_document(apk, &name, APK_MIME, &app_caption::render(&release))
+        .send_document(apk, &name, APK_MIME, &app_caption::render(tag, &release))
         .await?;
     remote.pin(id).await?;
 
     // A replaced release left pinned is harmless — readers take the highest
-    // versionCode — so a refused unpin is reported, not fatal.
+    // versionCode — so a refused unpin is reported, not fatal. The other
+    // app's release must stay pinned: it is how its devices find updates.
     for old in candidates
         .iter()
-        .filter(|c| c.id != id && app_caption::parse(&c.caption).is_some())
+        .filter(|c| c.id != id && app_caption::parse(tag, &c.caption).is_some())
     {
         if let Err(err) = remote.unpin(old.id).await {
             tracing::warn!(old_id = old.id, error = %format_args!("{err:#}"), "could not unpin a replaced app release");

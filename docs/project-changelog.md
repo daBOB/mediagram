@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.175.0 — The media app can hand a night to the games app
+
+The games are moving into their own Android app, Spieltisch. This is the media library's side: what Spieltisch will read from the media app, and release posts kept apart per app. Nothing changes for a viewer yet.
+
+**Added**
+
+- `game_night_titles`: the titles a night may show, as JSON in the shape the game host reads, under the profile's kids and section rules. On a kids night only kid-safe titles leave the media app at all; the host filters by the same flag again. A fixture shared by the core and the game crate keeps the two sides to one shape.
+- `textless_poster`: a title's textless poster as a file in the media app's cache, fetched from TMDB on a first ask. The TMDB key stays in the media app.
+- Release posts per app: Spieltisch's go out under their own tag, `#spieltisch-app`, with `spieltisch-{v}` file names. `mediagram publish-app` reads the app from the APK's package. Each app's "newer than the newest" check and the unpinning of its old release look at its own posts only. Media apps already installed read only `#mlib-app`, so a Spieltisch post can never become their update.
+
+**Changed**
+
+- A night's titles are built once, in a shape the core owns; nights hosted in the media app use the same builder.
+- Textless poster downloads are serialised per poster file for the whole process and give up after 20 s, so a request that hangs can't block that poster for good.
+
 ## 0.174.0 — Sternenstaub, and Matratzensport for grown-ups
 
 **Added**

@@ -1,5 +1,6 @@
-//! `mediagram publish-app <apk>`: the newest Android app release, sent to the
-//! library channel and pinned, for every installed release build to pick up.
+//! `mediagram publish-app <apk>`: the newest release of an Android app, the
+//! media app or Spieltisch by the APK's package, sent to the library channel
+//! and pinned, for every installed release build of that app to pick up.
 
 use std::path::Path;
 
@@ -32,7 +33,8 @@ pub async fn run(cfg: &Config, apk: &Path, profile: Option<&Path>) -> Result<()>
     tg.shutdown().await;
     let id = result?;
     println!(
-        "published {} (versionCode {}, {} bytes{}) as message {id}, pinned",
+        "published {} {} (versionCode {}, {} bytes{}) as message {id}, pinned",
+        badging.package,
         badging.version_name,
         badging.version_code,
         bytes.len(),

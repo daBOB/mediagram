@@ -593,6 +593,21 @@ message), installs it only over a lower versionCode, and only after the
 downloaded file matches `bytes` and `sha256`. A caption whose marker is not
 exactly `#mlib-app v=1`, or whose JSON lacks a field, is not a release.
 
+The marker's tag names the app. `#mlib-app` is the media app
+(`com.mediagram.android`); Spieltisch, the games app
+(`com.mediagram.spieltisch`), posts the same JSON under its own tag:
+
+    #spieltisch-app v=1
+    {"version":"0.175.0","code":175000,"bytes":31457280,"sha256":"<64 lowercase hex>","published_at":1791700000}
+
+Each app reads only its own tag, so the rules above hold per app: the newest
+release is the highest `code` among that tag's posts, and `publish-app`,
+which picks the tag from the APK's package, unpins only older releases with
+the same tag. Media apps that predate Spieltisch read only `#mlib-app` and
+take its highest `code` whatever the package, which is why no other app may
+ever post under it. The APK goes out as `mediagram-<version>.apk` or
+`spieltisch-<version>.apk`, its profile as the same name ending in `.dm`.
+
 A release may also carry its dex metadata (AGP's `.dm` for API 31 and up),
 posted just before the APK as a document of its own, unpinned, and named in
 the caption by an optional field:

@@ -738,6 +738,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_stop_game_night(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_game_night_titles(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_textless_poster(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_preferences(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_preference(
@@ -910,7 +914,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_download_app_release(`ptr`: Long,`release`: RustBuffer.ByValue,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_latest_app_release(`ptr`: Long,`handle`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_latest_app_release(`ptr`: Long,`handle`: RustBuffer.ByValue,`app`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_fetch_portrait(`ptr`: Long,`personId`: Long,
     ): Long
@@ -931,6 +935,10 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_start_game_night(`ptr`: Long,`config`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_stop_game_night(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_game_night_titles(`ptr`: Long,`config`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_textless_poster(`ptr`: Long,`titleKey`: RustBuffer.ByValue,`tmdbKey`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_preferences(`ptr`: Long,`profileId`: RustBuffer.ByValue,
     ): Long
@@ -1215,7 +1223,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_download_app_release() and 0xFFFF) != 29906) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_latest_app_release() and 0xFFFF) != 55573) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_latest_app_release() and 0xFFFF) != 4062) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_portrait() and 0xFFFF) != 36612) {
@@ -1246,6 +1254,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_stop_game_night() and 0xFFFF) != 54038) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_game_night_titles() and 0xFFFF) != 44908) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_textless_poster() and 0xFFFF) != 58710) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_preferences() and 0xFFFF) != 41509) {
@@ -2097,10 +2111,10 @@ public interface CoreInterface {
     suspend fun `downloadAppRelease`(`release`: AppRelease, `path`: kotlin.String)
 
     /**
-     * The newest Android app release pinned in the chosen library's
-     * channel, or `None` when it holds none.
+     * The newest release of `app` pinned in the chosen library's channel,
+     * or `None` when it holds none.
      */
-    suspend fun `latestAppRelease`(`handle`: kotlin.String): AppRelease?
+    suspend fun `latestAppRelease`(`handle`: kotlin.String, `app`: ReleaseApp): AppRelease?
 
     /**
      * Downloads this person's portrait (w185) from the profile path the
@@ -2173,6 +2187,19 @@ public interface CoreInterface {
      * Ends the night; nothing to do when none runs.
      */
     suspend fun `stopGameNight`()
+
+    /**
+     * The titles a night may show, as a JSON array of [`NightTitle`]s.
+     * The caller decides the kids and section rules, as for a night hosted here.
+     */
+    suspend fun `gameNightTitles`(`config`: NightTitlesConfig): kotlin.String
+
+    /**
+     * The textless poster of the title `title_key` names, as a file in this
+     * app's cache, fetched from TMDB on a first ask. `None` without a TMDB
+     * key, for a title TMDB has none for, or when it cannot be fetched.
+     */
+    suspend fun `textlessPoster`(`titleKey`: kotlin.String, `tmdbKey`: kotlin.String?): kotlin.String?
 
     /**
      * Every choice this profile has made, in one round trip: there are a
@@ -3080,18 +3107,19 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * The newest Android app release pinned in the chosen library's
-     * channel, or `None` when it holds none.
+     * The newest release of `app` pinned in the chosen library's channel,
+     * or `None` when it holds none.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `latestAppRelease`(`handle`: kotlin.String) : AppRelease? {
+    override suspend fun `latestAppRelease`(`handle`: kotlin.String, `app`: ReleaseApp) : AppRelease? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_latest_app_release(
                 uniffiHandle,
 
         FfiConverterString.lower(`handle`),
+        FfiConverterTypeReleaseApp.lower(`app`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3354,6 +3382,59 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         // lift function
         { Unit },
 
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * The titles a night may show, as a JSON array of [`NightTitle`]s.
+     * The caller decides the kids and section rules, as for a night hosted here.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `gameNightTitles`(`config`: NightTitlesConfig) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_game_night_titles(
+                uniffiHandle,
+
+        FfiConverterTypeNightTitlesConfig.lower(`config`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * The textless poster of the title `title_key` names, as a file in this
+     * app's cache, fetched from TMDB on a first ask. `None` without a TMDB
+     * key, for a title TMDB has none for, or when it cannot be fetched.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `textlessPoster`(`titleKey`: kotlin.String, `tmdbKey`: kotlin.String?) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_textless_poster(
+                uniffiHandle,
+
+        FfiConverterString.lower(`titleKey`),
+        FfiConverterOptionalString.lower(`tmdbKey`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -5832,6 +5913,63 @@ public object FfiConverterTypeNextAchievement: FfiConverterRustBuffer<NextAchiev
 
 
 /**
+ * Which titles a night may show, for a games app that hosts the night
+ * itself: [`GameNightConfig`] without what only a night hosted here needs.
+ */
+data class NightTitlesConfig (
+    /**
+     * Sets whose rating is kid-safe for the profile.
+     */
+    var `kidsSetIds`: List<kotlin.String>
+    ,
+    /**
+     * Sets in the sections the profile sees.
+     */
+    var `visibleSetIds`: List<kotlin.String>
+    ,
+    /**
+     * A kids profile's night: only kid-safe titles leave this app at all,
+     * though the games app's host filters by the same flag again.
+     */
+    var `kidsLocked`: kotlin.Boolean
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNightTitlesConfig: FfiConverterRustBuffer<NightTitlesConfig> {
+    override fun read(buf: ByteBuffer): NightTitlesConfig {
+        return NightTitlesConfig(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NightTitlesConfig) = (
+            FfiConverterSequenceString.allocationSize(value.`kidsSetIds`) +
+            FfiConverterSequenceString.allocationSize(value.`visibleSetIds`) +
+            FfiConverterBoolean.allocationSize(value.`kidsLocked`)
+    )
+
+    override fun write(value: NightTitlesConfig, buf: ByteBuffer) {
+            FfiConverterSequenceString.write(value.`kidsSetIds`, buf)
+            FfiConverterSequenceString.write(value.`visibleSetIds`, buf)
+            FfiConverterBoolean.write(value.`kidsLocked`, buf)
+    }
+}
+
+
+
+/**
  * One name [`crate::api::Core::search_people`] found, most-credited people
  * surfacing first.
  */
@@ -7710,6 +7848,44 @@ public object FfiConverterTypeProfileOutcome : FfiConverterRustBuffer<ProfileOut
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Which app's releases to look for. Each has its own caption tag, so one
+ * app's lookup never sees the other's posts.
+ */
+
+enum class ReleaseApp {
+
+    MEDIA_APP,
+    SPIELTISCH;
+
+
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeReleaseApp: FfiConverterRustBuffer<ReleaseApp> {
+    override fun read(buf: ByteBuffer) = try {
+        ReleaseApp.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: ReleaseApp) = 4UL
+
+    override fun write(value: ReleaseApp, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 

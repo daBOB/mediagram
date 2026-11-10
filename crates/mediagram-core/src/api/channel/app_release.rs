@@ -7,6 +7,7 @@ use grammers_client::message::Message;
 use grammers_mtsender::SenderPoolFatHandle;
 use grammers_session::types::PeerRef;
 use grammers_tl_types::enums::MessagesFilter;
+use mlib_spec::app_caption::{MEDIA_APP_TAG, SPIELTISCH_TAG};
 
 use super::responses::Responses;
 use super::{index, library};
@@ -39,6 +40,23 @@ pub struct AppRelease {
     pub profile: Option<AppFile>,
 }
 
+/// Which app's releases to look for. Each has its own caption tag, so one
+/// app's lookup never sees the other's posts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum ReleaseApp {
+    MediaApp,
+    Spieltisch,
+}
+
+impl ReleaseApp {
+    fn tag(self) -> &'static str {
+        match self {
+            ReleaseApp::MediaApp => MEDIA_APP_TAG,
+            ReleaseApp::Spieltisch => SPIELTISCH_TAG,
+        }
+    }
+}
+
 /// A document in the release's channel, and how to check it once fetched.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct AppFile {
@@ -49,13 +67,14 @@ pub struct AppFile {
 
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
-    /// The newest Android app release pinned in the chosen library's
-    /// channel, or `None` when it holds none.
+    /// The newest release of `app` pinned in the chosen library's channel,
+    /// or `None` when it holds none.
     pub async fn latest_app_release(
         &self,
         handle: String,
+        app: ReleaseApp,
     ) -> Result<Option<AppRelease>, CoreError> {
-        latest(self, &handle).await
+        latest(self, &handle, app.tag()).await
     }
 
     /// Downloads `release`'s APK to `path`, verified against its caption;
@@ -71,15 +90,15 @@ impl Core {
     }
 }
 
-/// The newest release pinned in the library `handle` names, or `None`.
-async fn latest(core: &Core, handle: &str) -> Result<Option<AppRelease>, CoreError> {
+/// The newest release under `tag` pinned in the library `handle` names, or `None`.
+async fn latest(core: &Core, handle: &str, tag: &str) -> Result<Option<AppRelease>, CoreError> {
     let (entry, peer) = library::peer_of(core, handle)?;
     let (client, owner) = session::connection(core).await;
     let pinned = client
         .search_messages(peer)
         .filter(MessagesFilter::InputMessagesFilterPinned)
         .limit(MAX_PINNED);
-    latest_with(core, &owner, entry.chat, pinned).await
+    latest_with(core, &owner, entry.chat, tag, pinned).await
 }
 
 /// Only the channel's own posts count, as for the index: a member's message
@@ -88,6 +107,7 @@ async fn latest_with(
     core: &Core,
     owner: &SenderPoolFatHandle,
     chat_id: i64,
+    tag: &str,
     mut pinned: impl Responses<Item = Message>,
 ) -> Result<Option<AppRelease>, CoreError> {
     let mut posts: Vec<(String, i64)> = Vec::new();
@@ -108,7 +128,7 @@ async fn latest_with(
         .map(|(text, id)| (text.as_str(), *id))
         .collect();
     Ok(
-        mlib_spec::app_caption::newest(&candidates).map(|(position, release)| AppRelease {
+        mlib_spec::app_caption::newest(tag, &candidates).map(|(position, release)| AppRelease {
             version_name: release.version,
             version_code: release.code,
             bytes: release.bytes,
