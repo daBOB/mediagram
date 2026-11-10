@@ -2,12 +2,14 @@
 //! empty search pages are fetched again so a later search can find new titles.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+use crate::home_cache::{HomeCache, tmdb_path};
 use crate::tmdb_client::TmdbApi;
 
 /// Wraps any `TmdbApi` with a disk cache keyed by sha256(path + sorted
@@ -19,6 +21,8 @@ pub struct DiskCachedApi<A> {
     /// keeps every entry for good: what `add` looked up stays answerable
     /// with no key and no network.
     max_age: Option<Duration>,
+    /// The household's cache server, asked between the disk and TMDB.
+    home: Option<Arc<HomeCache>>,
 }
 
 impl<A: TmdbApi> DiskCachedApi<A> {
@@ -27,6 +31,7 @@ impl<A: TmdbApi> DiskCachedApi<A> {
             inner,
             cache_dir: cache_dir.into().join("tmdb-cache"),
             max_age: None,
+            home: None,
         }
     }
 
@@ -35,6 +40,14 @@ impl<A: TmdbApi> DiskCachedApi<A> {
     #[must_use]
     pub fn with_max_age(mut self, age: Duration) -> Self {
         self.max_age = Some(age);
+        self
+    }
+
+    /// Reads from and feeds the household's cache server, so an answer
+    /// fetched once serves every player. `None` changes nothing.
+    #[must_use]
+    pub fn with_home_cache(mut self, home: Option<Arc<HomeCache>>) -> Self {
+        self.home = home;
         self
     }
 
@@ -49,20 +62,29 @@ impl<A: TmdbApi> DiskCachedApi<A> {
             .and_then(|modified| modified.elapsed().ok())
             .is_some_and(|age| age < max_age)
     }
+}
 
-    fn cache_key(path: &str, query: &[(&str, String)]) -> String {
-        let mut pairs: Vec<(&str, &str)> = query.iter().map(|(k, v)| (*k, v.as_str())).collect();
-        pairs.sort_unstable();
-        let mut buf = path.to_string();
-        for (key, value) in pairs {
-            buf.push('\u{1f}');
-            buf.push_str(key);
-            buf.push('=');
-            buf.push_str(value);
-        }
-        let mut hasher = Sha256::new();
-        hasher.update(buf.as_bytes());
-        hex::encode(hasher.finalize())
+pub(crate) fn cache_key(path: &str, query: &[(&str, String)]) -> String {
+    let mut pairs: Vec<(&str, &str)> = query.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    pairs.sort_unstable();
+    let mut buf = path.to_string();
+    for (key, value) in pairs {
+        buf.push('\u{1f}');
+        buf.push_str(key);
+        buf.push('=');
+        buf.push_str(value);
+    }
+    let mut hasher = Sha256::new();
+    hasher.update(buf.as_bytes());
+    hex::encode(hasher.finalize())
+}
+
+impl<A> DiskCachedApi<A> {
+    fn store(&self, file: &std::path::Path, value: &Value) -> Result<()> {
+        std::fs::create_dir_all(&self.cache_dir)
+            .with_context(|| format!("creating tmdb cache dir {}", self.cache_dir.display()))?;
+        std::fs::write(file, serde_json::to_vec(value)?)
+            .with_context(|| format!("writing tmdb cache file {}", file.display()))
     }
 }
 
@@ -70,14 +92,30 @@ impl<A: TmdbApi> TmdbApi for DiskCachedApi<A> {
     async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value> {
         let file = self
             .cache_dir
-            .join(format!("{}.json", Self::cache_key(path, query)));
+            .join(format!("{}.json", cache_key(path, query)));
+        let home = self.home.as_deref().map(|h| (h, tmdb_path(path, query)));
         let cached: Option<Value> = std::fs::read(&file)
             .ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok());
         if let Some(value) = &cached
             && self.fresh(&file)
         {
+            if let Some((home, key)) = &home
+                && !home.has(key).await
+            {
+                home.put(key, &serde_json::to_vec(value)?).await;
+            }
             return Ok(value.clone());
+        }
+        if cached.is_none()
+            && let Some((home, key)) = &home
+            && let Some(value) = home
+                .get(key)
+                .await
+                .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
+        {
+            self.store(&file, &value)?;
+            return Ok(value);
         }
 
         let value = match (self.inner.get_json(path, query).await, cached) {
@@ -95,10 +133,10 @@ impl<A: TmdbApi> TmdbApi for DiskCachedApi<A> {
         if empty_page {
             return Ok(value);
         }
-        std::fs::create_dir_all(&self.cache_dir)
-            .with_context(|| format!("creating tmdb cache dir {}", self.cache_dir.display()))?;
-        std::fs::write(&file, serde_json::to_vec(&value)?)
-            .with_context(|| format!("writing tmdb cache file {}", file.display()))?;
+        self.store(&file, &value)?;
+        if let Some((home, key)) = &home {
+            home.put(key, &serde_json::to_vec(&value)?).await;
+        }
         Ok(value)
     }
 }
