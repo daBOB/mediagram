@@ -59,8 +59,10 @@ git -C "$REPO" checkout -q -B "$REPO_BRANCH" FETCH_HEAD
 
 step "cache server: the LAN chunk store every player in the house reads through"
 rustup default stable >/dev/null
-(cd "$REPO" && cargo build --release -p mediagram-cache)
+# The uploader's CLI too: the web player runs `mediagram posters` for its cover art.
+(cd "$REPO" && cargo build --release -p mediagram-cache -p mediagram)
 sudo install -m 755 "$REPO/target/release/mediagram_cache" /usr/local/bin/mediagram_cache
+sudo install -m 755 "$REPO/target/release/mediagram" /usr/local/bin/mediagram
 sudo install -m 644 "$REPO/crates/mediagram-cache/mediagram-cache.service" /etc/systemd/system/
 # 128 GiB of the SSD for chunks (the server's own default is 64 GiB).
 sudo install -d /etc/systemd/system/mediagram-cache.service.d
@@ -87,6 +89,18 @@ if ! sudo grep -q '^MEDIAGRAM_SESSION=.' "$PLAYER_ENV" 2>/dev/null && [ ! -e ~/.
   echo "$settings" | grep -E '^MEDIAGRAM_(API_ID|API_HASH|SESSION|CHAT_ID|CHANNEL_ACCESS_HASH)=' |
     sudo install -m 600 /dev/stdin "$PLAYER_ENV"
   sudo grep -q '^MEDIAGRAM_SESSION=.' "$PLAYER_ENV" || { echo "sign-in did not produce a session" >&2; exit 1; }
+fi
+# Cover art: `mediagram posters` needs a TMDB key, and its config wants the Telegram app
+# and channel too even though posters never use them. Asked once; empty means no art.
+POSTERS_CONFIG=~/.config/mediagram/config.toml
+if [ ! -f "$POSTERS_CONFIG" ]; then
+  read -r -p "TMDB v3 key or v4 token for cover art (Enter to skip): " tmdb_key </dev/tty
+  if [ -n "$tmdb_key" ]; then
+    install -d -m 700 ~/.config/mediagram
+    sudo sed -n -E 's/^MEDIAGRAM_API_ID=(.*)/api_id = \1/p; s/^MEDIAGRAM_API_HASH=(.*)/api_hash = "\1"/p; s/^MEDIAGRAM_CHAT_ID=(.*)/channel = "\1"/p' "$PLAYER_ENV" |
+      install -m 600 /dev/stdin "$POSTERS_CONFIG"
+    echo "tmdb_key = \"$tmdb_key\"" >>"$POSTERS_CONFIG"
+  fi
 fi
 # The player reads and fills the same cache server as the Android app; the token lets it write.
 for _ in $(seq 1 20); do sudo test -s /var/lib/mediagram-cache/token && break; sleep 0.5; done
