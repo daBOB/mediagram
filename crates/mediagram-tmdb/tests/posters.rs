@@ -287,7 +287,9 @@ async fn no_posters_means_no_directory() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path().join("posters");
 
-    let written = download_into(&http_client(), &[], &dir).await.unwrap();
+    let written = download_into(&http_client(), &[], &dir, None)
+        .await
+        .unwrap();
 
     assert!(written.is_empty());
     assert!(
@@ -308,7 +310,9 @@ async fn a_malformed_key_is_refused_without_a_request() {
         width: None,
     }];
 
-    let written = download_into(&http_client(), &refs, &dir).await.unwrap();
+    let written = download_into(&http_client(), &refs, &dir, None)
+        .await
+        .unwrap();
 
     assert!(written.is_empty());
     assert_eq!(
@@ -336,7 +340,9 @@ async fn a_poster_already_on_disk_is_kept_and_not_requested_again() {
 
     // The bytes are the proof: had the skip failed, the CDN response would
     // have replaced this placeholder with a real image.
-    let written = download_into(&http_client(), &refs, &dir).await.unwrap();
+    let written = download_into(&http_client(), &refs, &dir, None)
+        .await
+        .unwrap();
 
     assert_eq!(written, vec!["tmdb-movie-550".to_string()]);
     assert_eq!(

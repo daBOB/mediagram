@@ -15,6 +15,7 @@ pub mod home_cache;
 pub mod localized;
 pub mod poster_files;
 pub mod posters;
+mod private_files;
 pub mod tmdb_client;
 mod tmdb_title_refs;
 pub mod tmdb_types;

@@ -44,6 +44,14 @@ impl PosterRef {
             None => poster_url(&self.path),
         }
     }
+
+    /// The CDN size segment this image is fetched at, which also names it on
+    /// the home cache server.
+    #[must_use]
+    pub fn size(&self) -> String {
+        self.width
+            .map_or_else(|| "w342".to_string(), |w| format!("w{w}"))
+    }
 }
 
 /// A poster that will not arrive promptly is not worth stalling a run for,

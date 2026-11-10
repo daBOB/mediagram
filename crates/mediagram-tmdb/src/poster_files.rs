@@ -1,13 +1,13 @@
 //! Writing posters to disk: downloading each within a size and time limit,
 //! into a directory only its owner can read.
 
-use std::io::Write;
-use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::path::Path;
 
 use anyhow::{Context, Result, bail};
 
+use crate::home_cache::{HomeCache, art_path};
 use crate::posters::{POSTER_MAX_BYTES, POSTER_TIMEOUT, PosterRef};
+use crate::private_files::{restrict_dir, write_private};
 
 /// Downloads each poster into `dir` as `<key>.jpg`, returning the keys that
 /// landed, in the order they were asked for.
@@ -21,6 +21,11 @@ use crate::posters::{POSTER_MAX_BYTES, POSTER_TIMEOUT, PosterRef};
 /// its key carries no width: without a record of what landed, a device that
 /// now wants a sharper backdrop would keep the blurry one for ever.
 ///
+/// With a home cache server, an image it holds is read from it instead of the
+/// CDN, an image fetched from the CDN is uploaded to it, and an image already
+/// on disk is uploaded if the server lacks it, so one download serves every
+/// player in the house.
+///
 /// A poster that will not download is skipped rather than fatal. The catalog
 /// is the product; the artwork is a convenience, and one unreachable image
 /// must never cost a run that has already done real work.
@@ -28,8 +33,9 @@ pub async fn download_into(
     http: &reqwest::Client,
     refs: &[PosterRef],
     dir: &Path,
+    home: Option<&HomeCache>,
 ) -> Result<Vec<String>> {
-    download_each(http, refs, dir, |_| {}).await
+    download_each(http, refs, dir, home, |_| {}).await
 }
 
 /// [`download_into`], calling `step(done)` before each image so a caller
@@ -38,9 +44,10 @@ pub async fn download_each(
     http: &reqwest::Client,
     refs: &[PosterRef],
     dir: &Path,
+    home: Option<&HomeCache>,
     step: impl FnMut(usize),
 ) -> Result<Vec<String>> {
-    fetch_each(http, refs, dir, step, PosterRef::url).await
+    fetch_each(http, refs, dir, home, step, PosterRef::url).await
 }
 
 /// [`download_each`] with the URL of each image supplied by the caller, so a
@@ -49,6 +56,7 @@ async fn fetch_each(
     http: &reqwest::Client,
     refs: &[PosterRef],
     dir: &Path,
+    home: Option<&HomeCache>,
     mut step: impl FnMut(usize),
     url_of: impl Fn(&PosterRef) -> String,
 ) -> Result<Vec<String>> {
@@ -68,12 +76,31 @@ async fn fetch_each(
             continue;
         }
         let dest = dir.join(format!("{}.jpg", poster.key));
+        let art = art_path(&poster.size(), &poster.path);
         if is_held(poster, dir) {
+            if let Some(home) = home
+                && !home.has(&art).await
+                && let Ok(bytes) = std::fs::read(&dest)
+            {
+                home.put(&art, &bytes).await;
+            }
             written.push(poster.key.clone());
             continue;
         }
-        match download(http, &url_of(poster), &dest).await {
-            Ok(()) => {
+        let from_server = match home {
+            Some(home) => home
+                .get(&art)
+                .await
+                .filter(|b| b.len() as u64 <= POSTER_MAX_BYTES),
+            None => None,
+        };
+        let stored = match &from_server {
+            Some(bytes) => Ok(bytes.clone()),
+            None => download(http, &url_of(poster)).await,
+        }
+        .and_then(|bytes| write_private(&dest, &bytes).map(|()| bytes));
+        match stored {
+            Ok(bytes) => {
                 if let Some(width) = poster.width
                     && let Err(err) =
                         write_private(&width_record(poster, dir), width.to_string().as_bytes())
@@ -81,6 +108,9 @@ async fn fetch_each(
                     // Without the record the next run fetches it again,
                     // which costs a download and nothing else.
                     tracing::warn!(key = %poster.key, error = %format_args!("{err:#}"), "image width not recorded");
+                }
+                if let (Some(home), None) = (home, &from_server) {
+                    home.put(&art, &bytes).await;
                 }
                 written.push(poster.key.clone());
             }
@@ -126,7 +156,7 @@ fn is_held(poster: &PosterRef, dir: &Path) -> bool {
         .is_some_and(|held| held >= wanted)
 }
 
-async fn download(http: &reqwest::Client, url: &str, dest: &Path) -> Result<()> {
+async fn download(http: &reqwest::Client, url: &str) -> Result<Vec<u8>> {
     let response = http
         .get(url)
         .timeout(POSTER_TIMEOUT)
@@ -145,43 +175,13 @@ async fn download(http: &reqwest::Client, url: &str, dest: &Path) -> Result<()> 
     if bytes.len() as u64 > POSTER_MAX_BYTES {
         bail!("poster body exceeded the {POSTER_MAX_BYTES} byte limit");
     }
-    write_private(dest, &bytes)
-}
-
-/// Artwork is written for one account's library and nobody else's, so a
-/// poster is created owner-only rather than restricted after it lands.
-///
-/// Written beside `path` and renamed into place: an image that is replaced
-/// may be on screen or mid-read, and must never be seen half-written. The
-/// process id keeps two runs from sharing one temporary file.
-fn write_private(path: &Path, bytes: &[u8]) -> Result<()> {
-    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("image");
-    let tmp = path.with_file_name(format!(".{name}.{}.tmp", std::process::id()));
-    let written = (|| -> Result<()> {
-        // The temporary file is always new to this call, so `mode` applies.
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(&tmp)
-            .with_context(|| format!("creating {}", tmp.display()))?;
-        file.write_all(bytes)
-            .with_context(|| format!("writing {}", tmp.display()))?;
-        std::fs::rename(&tmp, path).with_context(|| format!("replacing {}", path.display()))
-    })();
-    if written.is_err() {
-        let _ = std::fs::remove_file(&tmp);
-    }
-    written
-}
-
-/// The same, for a directory, which needs the execute bit to be enterable.
-fn restrict_dir(path: &Path) -> Result<()> {
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
-        .with_context(|| format!("restricting {}", path.display()))
+    Ok(bytes.to_vec())
 }
 
 #[cfg(test)]
 #[path = "poster_files_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "poster_files_home_tests.rs"]
+mod home_tests;

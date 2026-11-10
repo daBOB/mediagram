@@ -69,7 +69,7 @@ impl Staging {
         http: &reqwest::Client,
         refs: &[PosterRef],
     ) -> Result<Vec<PosterEntry>> {
-        let keys = download_into(http, refs, &self.path.join(POSTER_DIR)).await?;
+        let keys = download_into(http, refs, &self.path.join(POSTER_DIR), None).await?;
         Ok(keys
             .into_iter()
             .map(|key| PosterEntry {

@@ -19,7 +19,9 @@ async fn cdn() -> Cdn {
     let (up_task, hits_task) = (up.clone(), hits.clone());
     tokio::spawn(async move {
         loop {
-            let Ok((mut socket, _)) = listener.accept().await else { return };
+            let Ok((mut socket, _)) = listener.accept().await else {
+                return;
+            };
             let mut request = [0u8; 2048];
             let _ = socket.read(&mut request).await;
             hits_task.fetch_add(1, Ordering::SeqCst);
@@ -54,9 +56,16 @@ fn poster() -> PosterRef {
 async fn run(cdn: &Cdn, refs: &[PosterRef], dir: &Path) -> Vec<String> {
     let _ = rustls::crypto::ring::default_provider().install_default();
     let base = cdn.url.clone();
-    fetch_each(&reqwest::Client::new(), refs, dir, |_| {}, |p| format!("{base}{}", p.path))
-        .await
-        .unwrap()
+    fetch_each(
+        &reqwest::Client::new(),
+        refs,
+        dir,
+        None,
+        |_| {},
+        |p| format!("{base}{}", p.path),
+    )
+    .await
+    .unwrap()
 }
 
 fn hold(dir: &Path, key: &str, record: Option<&str>) {

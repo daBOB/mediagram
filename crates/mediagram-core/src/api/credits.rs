@@ -63,7 +63,7 @@ impl Core {
         let client = crate::http::client().ok()?;
         let poster = PosterRef { key: key.clone(), path: profile, width: Some(PORTRAIT_WIDTH) };
         let dir = store::artwork_dir(&self);
-        let written = mediagram_tmdb::poster_files::download_into(&client, std::slice::from_ref(&poster), &dir)
+        let written = mediagram_tmdb::poster_files::download_into(&client, std::slice::from_ref(&poster), &dir, None)
             .await
             .unwrap_or_else(|err| {
                 tracing::warn!(error = %format_args!("{err:#}"), "the portrait could not be downloaded");

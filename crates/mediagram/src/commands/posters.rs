@@ -88,7 +88,7 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     let dir = data_dir.join(POSTER_DIR);
     let held = already_held(&refs, &dir);
     let started = std::time::Instant::now();
-    let written = download_each(&http, &refs, &dir, |done| {
+    let written = download_each(&http, &refs, &dir, None, |done| {
         term::redraw(&term::count_line(
             "fetching",
             done,

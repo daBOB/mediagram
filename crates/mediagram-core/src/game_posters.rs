@@ -81,7 +81,7 @@ pub async fn textless_poster(
         return None;
     };
     let wanted = PosterRef { key: poster_key.to_string(), path, width: Some(WIDTH) };
-    download_into(http, &[wanted], cache_dir).await.ok()?;
+    download_into(http, &[wanted], cache_dir, None).await.ok()?;
     file.exists().then_some(file)
 }
 
