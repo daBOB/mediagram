@@ -104,6 +104,8 @@ Everything is environment variables. `web/.env` is read at startup and is in
 | `MEDIAGRAM_TRUST_PROXY` | `0` | Believe `X-Forwarded-For`. Set to `1` **only** behind a proxy |
 | `MEDIAGRAM_CACHE_DIR`, `MEDIAGRAM_CACHE_MAX` | `~/.cache/mediagram-player`, `8G` | Chunk cache and its quota |
 | `MEDIAGRAM_CACHE_READAHEAD` | `4` | Chunks fetched ahead of a sequential read |
+| `MEDIAGRAM_CACHE_SERVER` | unset | The [home cache server](#home-cache-server), e.g. `http://127.0.0.1:7788`: what the chunk cache lacks is asked of it before Telegram, in the same 1 MiB chunks the Android app reads, so the two share one cache. Unreachable, it is skipped for 30 s and Telegram serves |
+| `MEDIAGRAM_CACHE_SERVER_TOKEN` | unset | Its pairing token. Without it the player reads the server but never writes to it |
 | `MEDIAGRAM_SERIES_PRELOAD` | `1` | Opening an episode takes the next two into the cache in full, one download at a time. `0` turns it off |
 | `MEDIAGRAM_TRANSCODE_DIR` | `~/.cache/mediagram-hls` | Where HLS segments are written. Cleared at startup |
 | `MEDIAGRAM_TRANSCODE_MAXRATE` | `8000000` | The uplink budget, in bits per second |
@@ -673,9 +675,10 @@ the routes, not of the proxy, and it holds however the player is exposed.
 `mediagram_cache` (`crates/mediagram-cache`) is a separate, optional process
 on the same home box: a dumb LAN chunk store Android devices read and write
 so a chunk fetched from Telegram once is not fetched again by the next
-device. It has no Telegram session, no index of its own, and nothing to do
-with the player above — the two run independently and neither depends on
-the other being up.
+device. It has no Telegram session and no index of its own. The player above
+reads and fills it too when `MEDIAGRAM_CACHE_SERVER` points at it, so a chunk
+either one fetched serves both; still, the two run independently and neither
+depends on the other being up.
 
 ### Installing it
 

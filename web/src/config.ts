@@ -50,6 +50,8 @@ export interface Config {
    * of lookahead, comfortably ahead of a 4 Mbit/s stream.
    */
   cacheReadahead: number;
+  /** The LAN chunk server read before Telegram, shared with the Android app; null when unset. */
+  cacheServer: { url: string; token: string | null } | null;
   /** Where HLS segments are written while a transcode runs. */
   transcodeDir: string;
   /**
@@ -196,6 +198,9 @@ export function load(): Config {
     cacheDir: process.env.MEDIAGRAM_CACHE_DIR || `${process.env.HOME}/.cache/mediagram-player`,
     cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX || "8G"),
     cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD || "4"),
+    cacheServer: process.env.MEDIAGRAM_CACHE_SERVER
+      ? { url: process.env.MEDIAGRAM_CACHE_SERVER.replace(/\/+$/, ""), token: process.env.MEDIAGRAM_CACHE_SERVER_TOKEN?.trim() || null }
+      : null,
     transcodeDir: process.env.MEDIAGRAM_TRANSCODE_DIR || `${process.env.HOME}/.cache/mediagram-hls`,
     stateDb:
       process.env.MEDIAGRAM_STATE_DB ||
@@ -245,6 +250,7 @@ export function redactedConfig(config: Config): Record<string, unknown> {
     cacheDir: config.cacheDir,
     cacheMaxBytes: config.cacheMaxBytes,
     cacheReadahead: config.cacheReadahead,
+    cacheServer: config.cacheServer && { url: config.cacheServer.url, token: config.cacheServer.token && "<redacted>" },
     transcodeDir: config.transcodeDir,
     stateDb: config.stateDb,
     transcodeMaxrate: config.transcodeMaxrate,
