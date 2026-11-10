@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
         Some(path) => load_titles(path)?,
         None => Vec::new(),
     };
-    let host = start_game_night(titles, kids_locked, env_or("GAME_PORT", 8080), None).await?;
+    let host = start_game_night(titles, kids_locked, env_or("GAME_PORT", 8080), None, None).await?;
 
     println!();
     if let Ok(code) = QrCode::new(host.join_url().as_bytes()) {

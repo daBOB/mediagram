@@ -9,6 +9,7 @@ import { taler } from "../../ui/taler";
 import { HUD_FONT } from "../race/race-hud";
 import { Clocks } from "./grand-allee-hud-clocks";
 import { INK, avatar, drop, fit, label, paint, pill, place, type Label } from "./grand-allee-hud-label";
+import { IntroCard } from "./grand-allee-intro";
 import { TIMES } from "./grand-allee-look";
 import type { SeatLook } from "./grand-allee-pieces";
 import { describeTurn, onTurn } from "./grand-allee-status";
@@ -25,6 +26,7 @@ export class GrandAlleeHud {
   private result: Label;
   private tags: Label[];
   private clocks: Clocks;
+  private intro: IntroCard;
   private tagW = 330;
   private flashes = new Map<number, { amount: number; t: number }>();
   /** How many labels were drawn again, for the frame log: a redraw is a texture upload. */
@@ -36,6 +38,7 @@ export class GrandAlleeHud {
     this.result = label(this.scene, 560, 104);
     this.tags = seats.map(() => label(this.scene, 330, 84));
     this.clocks = new Clocks(this.scene, seats);
+    this.intro = new IntroCard(this.scene);
   }
   private labels() {
     return [this.round, this.banner, this.result, ...this.tags, ...this.clocks.labels];
@@ -55,7 +58,8 @@ export class GrandAlleeHud {
     const n = this.seats.length;
     this.tagW = Math.min(330, (1920 - 84 - 14 * (n - 1)) / Math.max(1, n));
     this.tags.forEach((l) => (l.w = this.tagW));
-    for (const l of this.labels()) fit(l, this.u);
+    // the intro card is not uploaded here: a TV that comes after the intro never needs it
+    for (const l of [...this.labels(), ...this.intro.labels]) fit(l, this.u);
     this.update(scene, players, now, t);
     for (const l of this.labels()) this.renderer.initTexture(l.tex);
   }
@@ -103,6 +107,7 @@ export class GrandAlleeHud {
     }
     this.updateTags(scene, who, t, W, m);
     this.repaints += this.clocks.update(scene, players, now, W, H - m - this.banner.canvas.height, u);
+    this.repaints += this.intro.update(scene, now, W, H, u);
   }
 
   private updateTags(scene: GrandAlleeScene, who: number, t: number, W: number, m: number) {
@@ -155,5 +160,6 @@ export class GrandAlleeHud {
   dispose() {
     [this.round, this.banner, this.result, ...this.tags].forEach(drop);
     this.clocks.dispose();
+    this.intro.dispose();
   }
 }

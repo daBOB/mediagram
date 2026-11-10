@@ -116,11 +116,13 @@ impl GrandAlleeGame {
             .into(),
             Stage::Auction(a) => sub(&format!("versteigerst {} …", hotel(a.hotel)), &format!("versteigert {} …", hotel(a.hotel))),
             Stage::Sold { hotel: h, winner: Some(w), price, .. } => {
-                format!("{} ersteigert {} für {}.", if *w == me { "Du" } else { name(view.players, self.ids[*w]) }, hotel(*h), taler(*price))
+                let what = format!("{} für {}.", hotel(*h), taler(*price));
+                if *w == me { format!("Du ersteigerst {what}") } else { format!("{} ersteigert {what}", name(view.players, self.ids[*w])) }
             }
             Stage::Sold { hotel: h, price, .. } => format!("Kein Gebot: Die Bank kauft {} für {}.", hotel(*h), taler(*price)),
-            Stage::Note { text, .. } => text.clone(),
-            Stage::Final => String::new(),
+            Stage::Note { text, .. } if mine => text.du.clone(),
+            Stage::Note { text, .. } => text.about(who),
+            Stage::Intro { .. } | Stage::Final => String::new(),
         }
     }
 
@@ -147,9 +149,13 @@ impl GrandAlleeGame {
             return sheet("Du bist raus. Schau zu, wie es ausgeht.".into(), Vec::new(), 0.0, None, None);
         }
         match &self.stage {
+            Stage::Intro { card, .. } => {
+                let (prompt, skip) = self.intro_phone(view, player, *card);
+                sheet(prompt, buttons(skip), 0.0, None, None)
+            }
             Stage::Ask { ask, since, step } if me == self.turn => {
                 let options = buttons(ask.opts.iter().map(|&o| self.label(view, o, step)));
-                sheet(ask.prompt.clone(), options, *since, Some(since + self.cfg.ask_ms), None)
+                sheet(ask.prompt.du.clone(), options, *since, Some(since + self.cfg.ask_ms), None)
             }
             Stage::Auction(a) => match a.bids.iter().find(|(b, _)| *b == me) {
                 Some(&(_, answer)) => {

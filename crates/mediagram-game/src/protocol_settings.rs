@@ -23,6 +23,8 @@ pub enum GameKind {
     GrandAllee,
     /// Dreifelder: pick one of three fields, a wrong pick is out, last one standing wins.
     Dreifelder,
+    /// Flüchtig, the hidden-move chase for two to six.
+    Fluechtig,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

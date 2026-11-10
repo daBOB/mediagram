@@ -49,7 +49,7 @@ pub fn play(seed: u64, players: usize, rules: Rules) -> Record {
     let bots: Vec<Bot> = (0..players).map(|_| Bot { style: STYLES[rng.random_range(0..STYLES.len())], house: false }).collect();
     // every bot is at the table, so the house never decides for one
     let mut p: Vec<Player> = (0..players).map(|i| Player::for_test(i as u8, &format!("Bot {}", i + 1), true)).collect();
-    let cfg = GrandAlleeConfig { rules, seed: Some(rng.random()), ..GrandAlleeConfig::default() };
+    let cfg = GrandAlleeConfig { rules, intro_ms: 0.0, seed: Some(rng.random()), ..GrandAlleeConfig::default() };
     let mut g = GrandAlleeGame::new(cfg, &p, 0.0);
     let mut rec = Record {
         styles: bots.iter().map(|b| b.style).collect(),

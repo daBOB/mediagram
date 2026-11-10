@@ -8,7 +8,10 @@ mod building;
 pub(crate) mod live;
 mod live_asks;
 mod live_choose;
+mod live_config;
 mod live_debts;
+mod live_intro;
+mod live_log;
 mod live_turn;
 mod live_text;
 mod live_tv;
@@ -26,6 +29,10 @@ mod live_tests;
 mod live_debt_tests;
 #[cfg(test)]
 mod live_game_tests;
+#[cfg(test)]
+mod live_intro_tests;
+#[cfg(test)]
+mod live_log_tests;
 #[cfg(test)]
 mod live_permit_tests;
 #[cfg(test)]

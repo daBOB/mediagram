@@ -5,7 +5,7 @@ use super::board::{field, Field, HOTELS};
 use super::live::GrandAlleeGame;
 use super::live_debts::Debt;
 use super::rules::{Permit, Table};
-use super::live_text::taler;
+use super::live_text::{taler, Phrase};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Opt {
@@ -59,15 +59,15 @@ impl Opt {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Ask {
-    pub prompt: String,
+    pub prompt: Phrase,
     /// The hotel in question, for the TV to point at.
     pub hotel: Option<u8>,
     pub opts: Vec<Opt>,
 }
 
-fn ask(prompt: impl Into<String>, opts: Vec<Opt>) -> Ask {
+fn ask(prompt: Phrase, opts: Vec<Opt>) -> Ask {
     let hotel = opts.first().and_then(|o| o.hotel());
-    Ask { prompt: prompt.into(), hotel, opts }
+    Ask { prompt, hotel, opts }
 }
 
 impl GrandAlleeGame {
@@ -84,33 +84,37 @@ impl GrandAlleeGame {
         if extra {
             opts.push(Opt::EndTurn);
         }
-        Ask { prompt: if extra { "Eine 6: Du darfst nochmal!" } else { "Du bist dran" }.into(), hotel: None, opts }
+        let prompt = if extra { Phrase::new("Eine 6: Du darfst nochmal!", "hat eine 6 und darf nochmal!") } else { Phrase::new("Du bist dran", "ist dran") };
+        Ask { prompt, hotel: None, opts }
     }
 
     /// What the field the mover stopped on offers that they can pay, if anything.
     pub(crate) fn field_ask(&self) -> Option<Ask> {
         let (s, at, cash) = (self.turn, self.t.seats[self.turn].field, self.cash());
         let t = &self.t;
-        let (prompt, mut opts): (&str, Vec<Opt>) = match field(at) {
+        let (du, then, mut opts): (&str, &str, Vec<Opt>) = match field(at) {
             Field::Plot => {
                 let offers = t.plot_offers(s, at).into_iter().filter(|&(_, price)| price <= cash);
-                ("Grundstück: Was kaufst du?", offers.map(|(h, _)| if t.estate(h).owner.is_some() { Opt::Force(h) } else { Opt::Buy(h) }).collect())
+                ("Grundstück: Was kaufst du?", "steht auf einem Grundstück: Was wird gekauft?", offers.map(|(h, _)| if t.estate(h).owner.is_some() { Opt::Force(h) } else { Opt::Buy(h) }).collect())
             }
             Field::Site => {
                 // only stages the player can pay at their normal price
                 let affordable = move |h: u8| (1..=t.permit_stages_left(h)).take_while(move |&n| t.stage_price(h, n, Permit::Approved) <= cash);
                 let builds = t.site_hotels(s, at).into_iter().flat_map(|hotel| affordable(hotel).map(move |count| Opt::Build { hotel, count }));
-                ("Baustelle: Was baust du? Dann entscheidet der Genehmigungswürfel.", builds.collect())
+                ("Baustelle: Was baust du? Dann entscheidet der Genehmigungswürfel.", "steht auf einer Baustelle: Was wird gebaut?", builds.collect())
             }
             Field::FreeEntrance => return self.free_entrance_ask(),
-            Field::FreeBuild => ("Gratis bauen: Welche Stufe schenkt dir die Stadt?", t.open_hotels(s).into_iter().map(Opt::FreeStage).collect()),
+            Field::FreeBuild => {
+                let opts = t.open_hotels(s).into_iter().map(Opt::FreeStage).collect();
+                ("Gratis bauen: Welche Stufe schenkt dir die Stadt?", "bekommt eine Stufe gratis: Für welches Hotel?", opts)
+            }
             Field::Bank | Field::Rathaus | Field::Allee => return None,
         };
         if opts.is_empty() {
             return None;
         }
         opts.push(Opt::Skip);
-        Some(ask(prompt, opts))
+        Some(ask(Phrase::new(du, then), opts))
     }
 
     /// Passing the Rathaus: one entrance per own built hotel, each once per pass (`served` had theirs).
@@ -121,7 +125,8 @@ impl GrandAlleeGame {
             return None;
         }
         opts.push(Opt::Done);
-        Some(Ask { prompt: "Rathaus: Ein Eingang je Hotel – für welches?".into(), hotel: None, opts })
+        let prompt = Phrase::new("Rathaus: Ein Eingang je Hotel – für welches?", "kommt am Rathaus vorbei: Ein Eingang je Hotel – für welches?");
+        Some(Ask { prompt, hotel: None, opts })
     }
 
     /// Freier Eingang: which hotel; a single candidate goes straight to its fields.
@@ -132,7 +137,8 @@ impl GrandAlleeGame {
             hotels => {
                 let mut opts: Vec<Opt> = hotels.iter().map(|&hotel| Opt::Hotel { hotel, free: true }).collect();
                 opts.push(Opt::Skip);
-                Some(Ask { prompt: "Freier Eingang: Für welches Hotel?".into(), hotel: None, opts })
+                let prompt = Phrase::new("Freier Eingang: Für welches Hotel?", "bekommt einen Eingang gratis: Für welches Hotel?");
+                Some(Ask { prompt, hotel: None, opts })
             }
         }
     }
@@ -142,8 +148,13 @@ impl GrandAlleeGame {
         let mut opts: Vec<Opt> = self.t.free_frontage(hotel).into_iter().map(|field| Opt::Place { hotel, field, free }).collect();
         opts.extend(out);
         let h = &HOTELS[usize::from(hotel)];
-        let what = if free { "Eingang gratis".to_string() } else { format!("Eingang für {}", taler(h.entrance)) };
-        Ask { prompt: format!("{}: {what} – auf welches Feld?", h.name), hotel: Some(hotel), opts }
+        let (what, then) = if free {
+            ("Eingang gratis".to_string(), format!("setzt einen Gratis-Eingang für {}", h.name))
+        } else {
+            (format!("Eingang für {}", taler(h.entrance)), format!("kauft einen Eingang für {} ({})", h.name, taler(h.entrance)))
+        };
+        let prompt = Phrase::new(format!("{}: {what} – auf welches Feld?", h.name), format!("{then} – auf welches Feld?"));
+        Ask { prompt, hotel: Some(hotel), opts }
     }
 
     /// What the mover may put up for a debt auction: all they own but the hotel a doubled permit is being paid for.
@@ -154,6 +165,8 @@ impl GrandAlleeGame {
     /// Short of `debt`: which property goes up for auction.
     pub(crate) fn sell_ask(&self, debt: Debt) -> Ask {
         let opts = self.sellable(debt).into_iter().map(Opt::Sell).collect();
-        Ask { prompt: format!("Dir fehlen {}. Was versteigerst du?", taler(debt.amount() - self.cash())), hotel: None, opts }
+        let short = taler(debt.amount() - self.cash());
+        let prompt = Phrase::new(format!("Dir fehlen {short}. Was versteigerst du?"), format!("fehlen {short}. Was wird versteigert?"));
+        Ask { prompt, hotel: None, opts }
     }
 }

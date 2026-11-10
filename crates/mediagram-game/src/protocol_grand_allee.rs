@@ -96,9 +96,20 @@ pub struct GrandAlleeAuction {
 #[serde(tag = "stage", rename_all = "snake_case")]
 #[ts(export)]
 pub enum GrandAlleeTurn {
+    /// Rules card `card` of three before the first roll, its gold words
+    /// between `**`; `leader` may skip the cards on their phone.
+    Intro {
+        card: u8,
+        title: String,
+        lines: Vec<String>,
+        opened_at: ServerTime,
+        closes_at: ServerTime,
+        leader: Option<String>,
+    },
     /// The player decides on the phone; at `closes_at` the house decides.
     Ask {
         player: PlayerId,
+        /// The question as the TV tells it, led by the player's name.
         prompt: String,
         hotel: Option<u8>,
         marks: Vec<GrandAlleeMark>,

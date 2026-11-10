@@ -22,6 +22,8 @@ function asks(s: PhoneScreen): boolean {
     // off-turn card players get no buttons at all
     case "cards":
       return s.desk.buttons.length > 0;
+    case "fluechtig":
+      return s.phone.ask !== null;
     default:
       return false;
   }
@@ -31,6 +33,8 @@ function asks(s: PhoneScreen): boolean {
 function sameAsk(a: PhoneScreen, b: PhoneScreen): boolean {
   if (a.kind !== b.kind) return false;
   if ((a.kind === "choice" || a.kind === "sheet") && (b.kind === "choice" || b.kind === "sheet")) return a.opens_at === b.opens_at;
+  // one move asks twice (field, then ticket) from the same field; the next move starts elsewhere
+  if (a.kind === "fluechtig" && b.kind === "fluechtig") return a.phone.round === b.phone.round && a.phone.ask?.at === b.phone.ask?.at;
   return true;
 }
 

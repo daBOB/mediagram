@@ -22,12 +22,15 @@ export const TvFinal = memo(function TvFinal({
   conn,
   ranked: inOrder = false,
   jingle = true,
+  title,
 }: {
   players: PlayerInfo[];
   conn: Connection;
   ranked?: boolean;
   /** false: the game already played the winner jingle at the win. */
   jingle?: boolean;
+  /** Overrides "<first player> gewinnt!", for a game a side wins together. */
+  title?: string;
 }) {
   const ranked = inOrder ? players : [...players].sort((a, b) => b.score - a.score);
   const rankOf = (p: PlayerInfo) => (inOrder ? ranked.indexOf(p) : ranked.filter((o) => o.score > p.score).length) + 1;
@@ -52,7 +55,7 @@ export const TvFinal = memo(function TvFinal({
   return (
     <section className="ceremony">
       <header className="ceremony-head">
-        <h1 className="ceremony-title">{ranked.length > 0 ? `${ranked[0].name} gewinnt!` : "Spiel beendet"}</h1>
+        <h1 className="ceremony-title">{title ?? (ranked.length > 0 ? `${ranked[0].name} gewinnt!` : "Spiel beendet")}</h1>
         <button className="cta cta-tv ceremony-back" autoFocus onClick={() => conn.send({ t: "action", action: { t: "back_to_lobby" } })}>
           Zurück zur Lobby
         </button>

@@ -31,7 +31,7 @@ pub(super) fn bid(g: &mut GrandAlleeGame, p: &mut [Player], who: PlayerId, amoun
 /// Ben (seat 1) is on turn at field 2 with 100 Taler and the plots in
 /// `plots`; Cem's Lagune (rate 225) has an entrance on field 5, where Ben's
 /// roll of 3 ends, and the nights die says 4: 900 Taler.
-fn ben_owes_cem(plots: &[u8]) -> (GrandAlleeGame, Vec<Player>) {
+pub(super) fn ben_owes_cem(plots: &[u8]) -> (GrandAlleeGame, Vec<Player>) {
     let (mut g, p) = game(3, &[3, 4]);
     own(&mut g, 2, 0, 3);
     g.t.entrances[5] = Some(0);
@@ -91,10 +91,42 @@ fn without_a_bid_the_bank_buys_and_the_debt_goes_on_until_it_is_covered() {
     let now = until(&mut g, &mut p, now, |g| matches!(g.stage, Stage::Auction(_)));
     p[0].conn = None;
     bid(&mut g, &mut p, CEM, 0, now);
-    assert!(!matches!(g.stage, Stage::Auction(_)), "an absent bidder does not hold the auction up");
+    assert!(matches!(g.stage, Stage::Auction(_)), "an absent bidder holds the auction for the table's grace, then passes");
     until(&mut g, &mut p, now, |g| g.turn == 2);
     assert_eq!(g.t.seats[1].cash, 100 + 500 + 650 - 900);
     assert!(!g.t.seats[1].out);
+}
+
+/// Ben's Hacienda Sol is up for auction, Ana left before it opened, and Cem has passed; returns the time.
+fn ana_away_cem_passed() -> (GrandAlleeGame, Vec<Player>, ServerTime) {
+    let (mut g, mut p) = ben_owes_cem(&[3]);
+    (p[0].conn, p[0].left_at) = (None, Some(5.0));
+    let now = pick(&mut g, &mut p, BEN, "Würfeln", 10.0);
+    let now = pick(&mut g, &mut p, BEN, "Hacienda Sol versteigern · Wert 1.000 Taler", now);
+    let now = bid(&mut g, &mut p, CEM, 0, now);
+    (g, p, now)
+}
+
+#[test]
+fn an_absent_bidder_who_left_before_the_auction_delays_its_close_by_the_grace() {
+    let (mut g, mut p, now) = ana_away_cem_passed();
+    let Stage::Auction(a) = &g.stage else { panic!("closed before the grace") };
+    let grace = a.since + HOUSE_GRACE_MS;
+    let now = until(&mut g, &mut p, now, |g| !matches!(g.stage, Stage::Auction(_)));
+    assert_eq!(now, grace, "everyone else has answered: the auction waits the grace, not its clock");
+    assert_eq!(g.t.estate(3).owner, None, "Ana's silence is a pass: the bank buys");
+}
+
+#[test]
+fn an_absent_bidder_back_within_the_grace_can_still_bid() {
+    let (mut g, mut p, _) = ana_away_cem_passed();
+    p[0].conn = Some(0);
+    let Stage::Auction(a) = &g.stage else { panic!("closed before the grace") };
+    let past = a.since + HOUSE_GRACE_MS + 50.0;
+    g.on_tick(&mut GameCtx { now: past, players: &mut p });
+    assert!(matches!(g.stage, Stage::Auction(_)), "back at the table, the clock is Ana's again");
+    bid(&mut g, &mut p, ANA, 600, past);
+    assert_eq!(g.t.estate(3).owner, Some(0));
 }
 
 #[test]

@@ -1,4 +1,23 @@
-//! How the live game writes a sum of money.
+//! How the live game writes a sum of money, and a sentence about the mover.
+
+/// A sentence about the mover: "du" on their own phone, led by their name everywhere else.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct Phrase {
+    pub du: String,
+    /// Follows the mover's name, which the TV's banner colours when it leads.
+    pub then: String,
+}
+
+impl Phrase {
+    pub(crate) fn new(du: impl Into<String>, then: impl Into<String>) -> Self {
+        Self { du: du.into(), then: then.into() }
+    }
+
+    /// For everyone but the mover, who is called `name`.
+    pub(crate) fn about(&self, name: &str) -> String {
+        format!("{name} {}", self.then)
+    }
+}
 
 /// 12000 as "12.000".
 pub(crate) fn grouped(n: i32) -> String {

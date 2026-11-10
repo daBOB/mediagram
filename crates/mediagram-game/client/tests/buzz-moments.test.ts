@@ -76,3 +76,14 @@ test("a sheet without options only informs", () => {
 test("reconnecting onto an answered question stays quiet", () => {
   expect(buzzFor(null, choice(1, 2))).toBeNull();
 });
+
+const chase = (round: number, at: number | null) =>
+  ({ kind: "fluechtig", phone: { round, ask: at === null ? null : { at, opens_at: round * 1000 + at } } }) as unknown as PhoneScreen;
+
+test("a Flüchtig move buzzes once, not again for its ticket question", () => {
+  expect(buzzFor(chase(1, null), chase(1, 6))).toBe("turn");
+  expect(buzzFor(chase(1, 6), chase(1, 6))).toBeNull();
+  // the second ride of a double move starts from the new field
+  expect(buzzFor(chase(1, 6), chase(1, 7))).toBe("turn");
+  expect(buzzFor(chase(1, 6), chase(1, null))).toBeNull();
+});

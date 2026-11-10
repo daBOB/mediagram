@@ -6,7 +6,7 @@ use super::live_asks::{Ask, Opt};
 use super::live_debts::Debt;
 use super::live_turn::Step;
 use super::rules::{permit_for, Permit};
-use super::live_text::taler;
+use super::live_text::{taler, Phrase};
 use crate::game::GameCtx;
 use crate::protocol::ServerTime;
 
@@ -15,7 +15,7 @@ impl GrandAlleeGame {
     pub(crate) fn choose(&mut self, ctx: &GameCtx, opt: Opt, step: Step) {
         let (now, s) = (ctx.now, self.turn);
         let later = now + self.cfg.chain_ms;
-        let (who, price) = (self.who(ctx.players, s), opt.price(&self.t));
+        let price = opt.price(&self.t);
         let hotel = |h: u8| HOTELS[usize::from(h)].name;
         match opt {
             Opt::Roll => {
@@ -31,12 +31,13 @@ impl GrandAlleeGame {
             }
             Opt::Buy(h) => {
                 self.t.buy(s, h);
-                self.end_move(now, Some(format!("{who} kauft {}.", hotel(h))));
+                self.end_move(now, Some(Phrase::new(format!("Du kaufst {}.", hotel(h)), format!("kauft {}.", hotel(h)))));
             }
             Opt::Force(h) => {
                 let owner = self.t.estate(h).owner.map_or_else(String::new, |o| self.who(ctx.players, o));
                 self.t.forced_buy(s, h);
-                self.end_move(now, Some(format!("{who} übernimmt {} von {owner} für {}.", hotel(h), taler(price))));
+                let what = format!("{} von {owner} für {}.", hotel(h), taler(price));
+                self.end_move(now, Some(Phrase::new(format!("Du übernimmst {what}"), format!("übernimmt {what}"))));
             }
             Opt::Build { hotel, count } => {
                 let permit = permit_for(self.die());
@@ -50,7 +51,8 @@ impl GrandAlleeGame {
             Opt::Place { hotel: h, field, free } => {
                 self.t.place_entrance(s, h, field, price);
                 if free {
-                    self.end_move(now, Some(format!("{who} setzt einen Eingang für {} auf Feld {}.", hotel(h), field + 1)));
+                    let what = format!("einen Eingang für {} auf Feld {}.", hotel(h), field + 1);
+                    self.end_move(now, Some(Phrase::new(format!("Du setzt {what}"), format!("setzt {what}"))));
                 } else {
                     self.rathaus_menu(now, [step.served(), &[h]].concat());
                 }
@@ -88,7 +90,7 @@ impl GrandAlleeGame {
     pub(crate) fn permit_lands(&mut self, ctx: &GameCtx, hotel: u8, count: u8, permit: Permit) {
         let (now, s) = (ctx.now, self.turn);
         if permit == Permit::Rejected {
-            return self.end_move(now, Some(format!("{}: Genehmigung abgelehnt.", self.who(ctx.players, s))));
+            return self.end_move(now, Some(Phrase::new("Du bekommst keine Genehmigung.", "bekommt keine Genehmigung.")));
         }
         let price = self.t.stage_price(hotel, count, permit);
         if price > self.t.seats[s].cash {
@@ -97,7 +99,8 @@ impl GrandAlleeGame {
             if self.t.owned(s).len() < 2 {
                 return self.open_auction(now, hotel, None);
             }
-            let prompt = format!("Doppelt: {} kostet {} – oder du versteigerst es.", HOTELS[usize::from(hotel)].name, taler(price));
+            let cost = format!("{} kostet {}", HOTELS[usize::from(hotel)].name, taler(price));
+            let prompt = Phrase::new(format!("Doppelt: {cost} – oder du versteigerst es."), format!("muss doppelt zahlen: {cost} – oder es wird versteigert."));
             return self.ask(now, Ask { prompt, hotel: Some(hotel), opts: vec![Opt::Sell(hotel), Opt::Raise { hotel, count }] }, Step::Done);
         }
         let first = self.t.build(s, hotel, count, price);
@@ -111,7 +114,7 @@ impl GrandAlleeGame {
             return self.ask(ctx.now + self.cfg.chain_ms, ask, Step::Done);
         }
         let (h, levels) = (&HOTELS[usize::from(hotel)], self.t.estate(hotel).levels);
-        let text = format!("{} baut {}: Stufe {levels} von {}.", self.who(ctx.players, self.turn), h.name, h.stages.len());
-        self.end_move(ctx.now, Some(text));
+        let what = format!("{}: Stufe {levels} von {}.", h.name, h.stages.len());
+        self.end_move(ctx.now, Some(Phrase::new(format!("Du baust {what}"), format!("baut {what}"))));
     }
 }

@@ -3,6 +3,8 @@
 //! on every other phone at once, sealed; the bank buys what nobody bids on.
 
 use super::live::{Auction, Bid, GrandAlleeGame, Stage};
+use super::live_log::By;
+use super::live_text::Phrase;
 use super::live_turn::Step;
 use super::money::best_bid;
 use crate::game::{ActionError, GameCtx};
@@ -62,7 +64,7 @@ impl GrandAlleeGame {
             return self.go_to_field(now);
         }
         self.gone.push(s);
-        let text = format!("{} kann nicht zahlen und ist raus.", self.who(ctx.players, s));
+        let text = Phrase::new("Du kannst nicht zahlen und bist raus.", "kann nicht zahlen und ist raus.");
         self.stage = Stage::Note { text, broke: true, at: now };
     }
 
@@ -76,8 +78,8 @@ impl GrandAlleeGame {
         self.t.seats[seat].cash / BID_STEP * BID_STEP
     }
 
-    /// A bidder's sealed answer: a whole number of steps up to their cash, or 0 to pass.
-    pub(crate) fn bid(&mut self, seat: usize, amount: i32, at: ServerTime) -> Result<(), ActionError> {
+    /// A bidder's sealed answer, tapped at `at` and arriving at `now`: a whole number of steps up to their cash, or 0 to pass.
+    pub(crate) fn bid(&mut self, seat: usize, amount: i32, at: ServerTime, now: ServerTime) -> Result<(), ActionError> {
         let Stage::Auction(a) = &self.stage else {
             return Err(ActionError::Ignored);
         };
@@ -95,19 +97,23 @@ impl GrandAlleeGame {
         // sealed and final: a second tap changes nothing
         let slot = a.bids.iter_mut().find(|(b, answer)| *b == seat && *answer == Bid::Open).ok_or(ActionError::Ignored)?;
         slot.1 = bid;
+        let since = a.since;
+        self.log_bid(seat, since, now, By::Player, bid == Bid::Pass);
         Ok(())
     }
 
-    /// When an auction closes: at once when every bidder still at the table
-    /// has answered, else when its clock runs out.
+    /// When an auction closes: once no open bidder can still answer, one at the
+    /// table until the clock, an absent one until the table's grace (never past the clock).
     pub(crate) fn auction_close(&self, ctx: &GameCtx, a: &Auction) -> ServerTime {
-        let here = |seat: usize| ctx.players.iter().any(|p| p.id == self.ids[seat] && p.connected());
-        let waiting = a.bids.iter().any(|&(b, answer)| answer == Bid::Open && here(b));
-        if waiting { a.since + self.cfg.auction_ms } else { ctx.now }
+        let clock = a.since + self.cfg.auction_ms;
+        let open = a.bids.iter().filter(|&&(_, answer)| answer == Bid::Open);
+        let holds = open.map(|&(b, _)| ctx.house_at(self.ids[b], a.since).map_or(clock, |at| at.min(clock)));
+        holds.reduce(f64::max).unwrap_or(ctx.now)
     }
 
     /// The highest bid takes the property; whoever stayed silent passed.
     pub(crate) fn close_auction(&mut self, ctx: &GameCtx, a: Auction) {
+        self.log_silent_bidders(ctx, &a);
         let amounts = a.bids.iter().filter_map(|&(b, answer)| match answer {
             Bid::Amount(x) => Some((x, b)),
             Bid::Open | Bid::Pass => None,

@@ -7,9 +7,10 @@ import { taler } from "../../ui/taler";
 const PERMIT_WORD = { approved: "Genehmigt!", rejected: "Abgelehnt!", free: "Gratis!", double: "Doppelt!" } as const;
 export const nights = (n: number) => `${n} ${n === 1 ? "Nacht" : "Nächte"}`;
 
-/** Whom the banner is about: the mover, the seller at an auction, the winner at the end. */
+/** Whom the banner is about: the mover, the seller at an auction, the winner at the end; nobody during the intro. */
 export function onTurn(scene: GrandAlleeScene): number {
   const t = scene.turn;
+  if (t.stage === "intro") return -1;
   if (t.stage === "auction") return t.auction.seller;
   if (t.stage === "sold") return t.seller;
   if (t.stage === "final") return t.winner;
@@ -21,8 +22,10 @@ export function describeTurn(scene: GrandAlleeScene, players: PlayerInfo[], now:
   const hotel = (h: number) => scene.board.hotels[h]?.name ?? "";
   const t = scene.turn;
   switch (t.stage) {
+    case "intro":
+      return { text: "Gleich geht’s los …", die: null };
     case "ask":
-      return { text: `${name(t.player)}: ${t.prompt}`, die: null };
+      return { text: t.prompt, die: null };
     case "rolled":
       return now < t.lands_at ? { text: `${name(t.player)} würfelt …`, die: "…" } : { text: `${name(t.player)} würfelt eine ${t.value}.`, die: String(t.value) };
     case "walking":
@@ -38,8 +41,9 @@ export function describeTurn(scene: GrandAlleeScene, players: PlayerInfo[], now:
     case "auction":
       return { text: `${name(t.auction.seller)} versteigert ${hotel(t.auction.hotel)}.`, die: null };
     case "sold":
+      // "Kein Gebot" is the auction panel's headline, where eyes already are: the banner stays on the seller
       return t.winner === null
-        ? { text: `Kein Gebot: Die Bank kauft ${hotel(t.hotel)} für ${taler(t.price)}.`, die: null }
+        ? { text: `${name(t.seller)} versteigert ${hotel(t.hotel)}.`, die: null }
         : { text: `${name(t.winner)} ersteigert ${hotel(t.hotel)} für ${taler(t.price)}.`, die: null };
     case "note":
       return { text: t.text, die: null };

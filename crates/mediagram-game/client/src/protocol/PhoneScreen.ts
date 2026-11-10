@@ -4,6 +4,7 @@ import type { BidRange } from "./BidRange";
 import type { CardDesk } from "./CardDesk";
 import type { ChoiceOption } from "./ChoiceOption";
 import type { ChoiceStatus } from "./ChoiceStatus";
+import type { FluechtigPhone } from "./FluechtigPhone";
 import type { GameEntry } from "./GameEntry";
 import type { HotelCard } from "./HotelCard";
 import type { LobbySettings } from "./LobbySettings";
@@ -52,4 +53,4 @@ keys: Array<OutcomeKey>,
 /**
  * The running score under the result; off where a game scores only at the end.
  */
-show_score: boolean, } | { "kind": "cards", desk: CardDesk, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };
+show_score: boolean, } | { "kind": "cards", desk: CardDesk, } | { "kind": "fluechtig", phone: FluechtigPhone, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };

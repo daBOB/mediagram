@@ -17,7 +17,26 @@ to `main`. Full phase-by-phase detail lives in
 
 - `LobbySettings` and the `configure` action carry `adult`. A client that leaves it out means off, so older phones and `tools/smoke.mjs` keep working.
 
-## 0.171.0 — Dreifelder, the three-field elimination quiz
+## 0.173.0 — Flüchtig, the hidden-move chase
+
+**Added** (user: "lets create the scotland yard clone"; rules settled in a clickable prototype first, `plans/261109-1924-fluechtig/`, approved as it played)
+
+- Flüchtig for two to six (catalogue entry): one player, drawn at random, runs unseen through an own 48-field city (taxi, bus, U-Bahn, a river with three bridges); the others hunt with four pieces (five at six players), dealt round-robin. 18 rounds; the fugitive is seen after rounds 3, 8, 13 and 18.
+- The fugitive has 3 shadow rides (the log does not say which transport) and one double move, offered only where a second step exists; every ticket a hunter spends goes to the fugitive. Caught when a hunter lands on their field or they cannot move; free after the last round or when no hunter can move.
+- Phones get their own screen (`PhoneScreen::Fluechtig`), the user's pick of three rendered looks: the mover picks where to from round number tiles drawn like the TV's fields, each marked with the tickets that reach it. A hunter with one ticket to that field moves at once; otherwise, and always for the fugitive (one tap or two would give away the line they ride), a second question asks which ticket, each saying what the room will see ("Alle sehen: Bus", or nobody sees with a shadow ride), with "Zurück". Tickets are in the plan's line colours. Other phones show who moves and who is next, their own pieces or hideout, the travel log and where the fugitive may be. Only the fugitive's phone ever shows their field. The house moves for an absent mover after the table's grace.
+- The TV gives the whole screen to the city plan (2D, no three.js, no assets), with panels over it: the round, whose turn in the mover's colour, the rounds until the next sighting, the latest news with the travel log and the fugitive's tickets, and the hunters' fields. Hunters stand in their players' colours, the fields the fugitive may be on are ringed, the last sighting is marked; at the end the route they really ran, then the awards ceremony, titled for the side that won (`TvFinal` takes an optional `title`). The Android TV games shelf lists it.
+
+## 0.172.0 — Grand Allee opens with three rules cards
+
+**Added**
+
+- Before the first roll the TV shows three rules cards, 10 s each: *Das Ziel*, *Dein Zug*, *Das Geld*. Each has a kicker, a title, bullet lines with gold keywords, three step bars (the current one fills over its 10 s) and "Überspringen: auf Lenas Handy". The top banner reads "Gleich geht’s los …" and no player is highlighted. The host sends the card's text (`GrandAlleeTurn::Intro`, gold words between `**`, the round count and lap bonus from the game). The TV draws it as a HUD label like the rest of the HUD: one upload per card, and the filling bar is a cropped quad, so nothing is redrawn while it runs.
+- The room's leader (earliest-joined connected player) gets "Überspringen" on their phone; their tap starts the first move. Other phones show "Schau auf den Fernseher: <card>". The leader rule is one function (`room_seats::leader`) shared by the room and the game.
+- `GrandAlleeConfig::intro_ms` (10 s per card; 0 leaves the cards out). The simulator plays without them and prints the same tables. The config moved to `live_config.rs`.
+
+## 0.171.0 — Dreifelder, and Grand Allee keeps a decision log
+
+Two lines both released 0.171.0: Dreifelder on `feat/dreifelder-on-games` and the decision log on `spieltisch-games`. They met on main, so the two are one entry here.
 
 Built on `feat/kopfnuss` as 0.166.0 and 0.167.0, which this line had already used; merged here as one release. Dreifelder is in the game catalogue, so the phones and the TV list it from the host.
 
@@ -30,12 +49,26 @@ Built on `feat/kopfnuss` as 0.166.0 and 0.167.0, which this line had already use
 - Phones: three answer keys fill the grid, the third across the bottom (Kopfnuss's three-category vote now does the same).
 - `tools/smoke.mjs --game dreifelder`: four bots that look the answers up play a scripted game through a leaver, an all-wrong round and the 12-question cap, and check the finishing order.
 - Generic phone screens: `Choice` takes `numbered` and a `status` line, `Outcome` takes `keys` and `show_score`, and `Tone` gains `muted`. Every other game sends the defaults and looks as before.
+- Grand Allee records a line per answered question (seat, round, the kind of question and of answer, think time, and whether the player, the clock or the house answered), a line per debt-auction bidder, and a start and an end line per game. No names, only seats. The game keeps them as data (`live_log.rs`); the host drains them after every event and tick through a new `Game::take_log` (default: none) and appends them, with the wall-clock time, to `grand-allee-log.jsonl` in the core's data folder. A failed write only warns.
+- `GET /grand-allee-log` on the game-night server (port 8080) serves that file, since a release build's data folder can't be read from outside the box. A game ended early (back to the lobby, night stopped) leaves a start line without an end line.
+
+The simulator never drains the log; it prints the same tables.
 
 **Changed**
 
 - The quiz's tap clamp and speed points are shared (`QuizConfig::claim_time`, `speed_points`), as are the question view and the by-placing final screen; the buzzer quiz and Kopfnuss behave as before.
 - Dreifelder's answer buttons are numbered 1–3 like the fields on the TV, with the shape in the corner. A line under the clock says whether you are still in and how many are left; once you are out the buttons fade, and the line says your right guesses still count for your place (they rank players who went out in the same round).
 - Dreifelder's reveal shows the right field as a small numbered key, and your own wrong pick struck through above it. Out players get a dark card. The "Stand: 0 Punkte" line is gone from Dreifelder, which only scores at the end.
+## 0.170.2 — Grand Allee speaks to the mover, about the mover
+
+**Fixed**
+
+- The TV no longer shows the mover's own "du" question ("Ben: Dir fehlen 800 Taler. Was versteigerst du?"): it narrates with the mover's name first ("Ben fehlen 800 Taler. Was wird versteigert?"). The mover's own phone now says "du" in the notes it used to narrate in the third person ("Du kaufst Lagune.", "Du kannst nicht zahlen und bist raus."). Every question and note carries both forms (`Phrase` in `live_text.rs`); the name is filled in when a screen is built, so a renamed rejoin reads right. "Du ersteigert" is now "Du ersteigerst".
+- "Kein Gebot" shows once on the TV, in the auction panel where everyone is already looking; the banner keeps the seller's line.
+
+**Changed**
+
+- An absent bidder in a debt auction gets the table's 1.5 s grace before counting as passed, like every other question (`auction_close`); before, the auction closed at once without them. The simulator, where everyone is connected, prints the same tables.
 
 ## 0.170.1 — Grand Allee's move travels in its stages
 

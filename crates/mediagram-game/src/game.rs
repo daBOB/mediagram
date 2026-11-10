@@ -63,6 +63,12 @@ pub trait Game: Send {
     fn tv_scene(&self, view: &ViewCtx) -> TvScene;
 
     fn is_finished(&self) -> bool;
+
+    /// Log lines recorded since the last call, which the host appends to a
+    /// file so a night's decisions can be measured afterwards; most games keep none.
+    fn take_log(&mut self) -> Vec<serde_json::Value> {
+        Vec::new()
+    }
 }
 
 /// Builds a fresh game when the leader presses start, from the lobby

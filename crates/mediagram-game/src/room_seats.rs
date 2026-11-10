@@ -133,9 +133,9 @@ impl Room {
         }
     }
 
-    /// The earliest-joined connected player.
+    /// The room's leader, by the one rule in [`leader`].
     pub fn leader(&self) -> Option<PlayerId> {
-        self.players.iter().find(|p| p.connected()).map(|p| p.id)
+        leader(&self.players)
     }
 
     pub(crate) fn connected_count(&self) -> u8 {
@@ -149,6 +149,11 @@ impl Room {
     pub(crate) fn player_mut(&mut self, id: PlayerId) -> Option<&mut Player> {
         self.players.iter_mut().find(|p| p.id == id)
     }
+}
+
+/// Who may start, restart or skip ahead: the earliest-joined connected player.
+pub(crate) fn leader(players: &[Player]) -> Option<PlayerId> {
+    players.iter().find(|p| p.connected()).map(|p| p.id)
 }
 
 pub(crate) fn clean_name(raw: &str) -> String {
