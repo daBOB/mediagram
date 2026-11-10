@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Unreleased (feat/funstation) — funstation, and one cache for every player
+
+**Added** (user, 2026-11-10: a top-tier TV machine next to the Mali box, "funstation", set up by "one script on a fresh cachyos install", deployed more than once; "all player uses the cache server"; "the web player use the cache server on funstation too"; "set the cache server to 128GB")
+
+- `scripts/setup-funstation.sh` turns a fresh CachyOS (Plasma) install into a funstation and is safe to re-run: passwordless sudo and the dev machine's SSH key, no dim/blank/sleep/lock, Plasma Bigscreen with autologin, Android TV 16 in WayDroid (WayDroid-ATV, with the remote-pairing screen skipped and ufw opened for its bridge), the cache server built on the box with a 128 GiB budget, and the web player on port 8770. Telegram and channel settings are asked once and kept root-only in `/etc/mediagram-player.env`, never in the repo.
+- The web player reads through the home cache server (`MEDIAGRAM_CACHE_SERVER`, `MEDIAGRAM_CACHE_SERVER_TOKEN`) in the Android app's own 1 MiB set-level chunks, stores what Telegram sends it with the same signed PUT, and skips an unreachable server for 30 s. Its own disk cache stays as a small layer above.
+- Measured on the first funstation (Ryzen 3 4300U): Android TV boots in 12–20 s, draws with the host's Mesa, and lists hardware-backed HEVC/H.264 decoders up to 4K60. Open: a 4K two-part MKV fails in the Android app there with Media3's `POSITION_OUT_OF_RANGE` although the file reads cleanly through the web player.
+
 ## 0.163.0 — Kopfnuss, the quiz with tricks
 
 **Added** (user, 2026-11-08: a quiz party game where players vote the category and throw "spanners in their opponents' works", with less waiting than the genre's usual one question per round; built on `feat/kopfnuss` as 0.160.0–0.160.2, renumbered here because those numbers collided with Grand Allee's)
