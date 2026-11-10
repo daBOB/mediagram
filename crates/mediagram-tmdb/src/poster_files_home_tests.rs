@@ -232,3 +232,48 @@ async fn a_missing_width_on_the_server_is_fetched_from_the_cdn_at_this_width() {
     );
     assert!(!server.lines().iter().any(|l| l.contains("w1280")));
 }
+
+#[tokio::test]
+async fn an_empty_server_body_is_a_miss_and_the_cdn_is_asked() {
+    let server = fake(Box::new(|line| match line.split(' ').next().unwrap() {
+        "GET" => (200, Vec::new()),
+        "PUT" => (201, Vec::new()),
+        _ => (404, Vec::new()),
+    }))
+    .await;
+    let cdn = fake(cdn_reply()).await;
+    let tmp = tempfile::tempdir().unwrap();
+
+    walk(&cdn, &home(&server), &[poster()], tmp.path()).await;
+
+    assert_eq!(cdn.lines().len(), 1);
+    assert_eq!(
+        std::fs::read(tmp.path().join("tmdb-movie-1.jpg")).unwrap(),
+        b"from-cdn"
+    );
+    assert_eq!(server.put_body().unwrap(), b"from-cdn");
+}
+
+#[tokio::test]
+async fn a_held_backdrop_is_uploaded_under_the_width_it_has() {
+    let tmp = tempfile::tempdir().unwrap();
+    std::fs::write(tmp.path().join("tmdb-movie-1-bg.jpg"), b"wide").unwrap();
+    std::fs::write(tmp.path().join("tmdb-movie-1-bg.width"), "1280").unwrap();
+    let (server, cdn) = (fake(server_holding(&[])).await, fake(cdn_reply()).await);
+
+    walk(&cdn, &home(&server), &[backdrop(780)], tmp.path()).await;
+
+    let lines = server.lines();
+    assert!(
+        lines
+            .iter()
+            .any(|l| l.starts_with("HEAD /v1/art/w1280/b.jpg"))
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|l| l.starts_with("PUT /v1/art/w1280/b.jpg"))
+    );
+    assert!(!lines.iter().any(|l| l.contains("w780")));
+    assert_eq!(server.put_body().unwrap(), b"wide");
+}
