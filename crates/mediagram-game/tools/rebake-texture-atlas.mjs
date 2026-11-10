@@ -40,7 +40,7 @@ const q0 = [0, 0, 0], q1 = [0, 0, 0], tmp = [0, 0, 0];
 
 /** The tangent frame three.js derives on screen for a mesh without tangents (perturbNormal2Arb): the gradients of u
  *  and v across the triangle (edges e1, e2, texture steps d1, d2) around the shading normal, scaled together. */
-function frame(e1, e2, d1, d2, nrm, T, B) {
+export function frame(e1, e2, d1, d2, nrm, T, B) {
   cross(e2, nrm, q1);
   cross(nrm, e1, q0);
   for (let k = 0; k < 3; k++) (T[k] = q1[k] * d1[0] + q0[k] * d2[0]), (B[k] = q1[k] * d1[1] + q0[k] * d2[1]);
@@ -48,14 +48,14 @@ function frame(e1, e2, d1, d2, nrm, T, B) {
   for (let k = 0; k < 3; k++) (T[k] *= s), (B[k] *= s);
 }
 
-/** One normal-map texel moved from the old chart's frame (To, Bo) to the new one's (Tn, Bn), so the surface lights as
- *  before: three reads the old map through normalScale (scale, -scale) and the new one through (1, -1). */
-function moveNormal(m, scale, To, Bo, Tn, Bn, nrm, out, o) {
+/** One normal-map texel moved from the old frame (To, Bo, normal nf) to the new chart's (Tn, Bn, normal nt), so the
+ *  surface lights as before: three reads the old map through normalScale (scale, -scale), the new through (1, -1). */
+function moveNormal(m, scale, To, Bo, nf, Tn, Bn, nt, out, o) {
   const x = (m[0] / 127.5 - 1) * scale, y = -(m[1] / 127.5 - 1) * scale, z = m[2] / 127.5 - 1;
-  const w = [To[0] * x + Bo[0] * y + nrm[0] * z, To[1] * x + Bo[1] * y + nrm[1] * z, To[2] * x + Bo[2] * y + nrm[2] * z];
-  const det = dot(Tn, cross(Bn, nrm, tmp));
+  const w = [To[0] * x + Bo[0] * y + nf[0] * z, To[1] * x + Bo[1] * y + nf[1] * z, To[2] * x + Bo[2] * y + nf[2] * z];
+  const det = dot(Tn, cross(Bn, nt, tmp));
   let a = 0, b = 0, c = 1;
-  if (Math.abs(det) > 1e-12) (a = dot(w, tmp) / det), (b = dot(w, cross(nrm, Tn, tmp)) / det), (c = dot(w, cross(Tn, Bn, tmp)) / det);
+  if (Math.abs(det) > 1e-12) (a = dot(w, tmp) / det), (b = dot(w, cross(nt, Tn, tmp)) / det), (c = dot(w, cross(Tn, Bn, tmp)) / det);
   const len = Math.hypot(a, b, c) || 1;
   out[o] = Math.round((a / len + 1) * 127.5);
   out[o + 1] = Math.round((-b / len + 1) * 127.5);
@@ -64,7 +64,7 @@ function moveNormal(m, scale, To, Bo, Tn, Bn, nrm, out, o) {
 }
 
 /** One primitive: new charts from xatlas, then each new triangle filled from the old maps at its old coordinates. */
-async function rebakePrimitive(doc, prim, colour, normal, size, padding) {
+async function rebakePrimitive(doc, prim, colour, normal, size, padding, fullFrame) {
   if (prim.listTargets().length) throw new Error('morph targets are not carried over');
   const pos = prim.getAttribute('POSITION'), oldUv = prim.getAttribute('TEXCOORD_0'), nor = prim.getAttribute('NORMAL');
   if (normal && !nor) throw new Error('a normal map needs vertex normals');
@@ -102,7 +102,7 @@ async function rebakePrimitive(doc, prim, colour, normal, size, padding) {
   const uv = vertex.coords1;
   if (uv.some((x) => x < 0 || x > 1)) throw new Error('xatlas coordinates outside 0..1');
   const ou = [[0, 0], [0, 0], [0, 0]], ps = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], ns = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
-  const e1 = [0, 0, 0], e2 = [0, 0, 0], nrm = [0, 0, 0], To = [0, 0, 0], Bo = [0, 0, 0], Tn = [0, 0, 0], Bn = [0, 0, 0];
+  const e1 = [0, 0, 0], e2 = [0, 0, 0], nrm = [0, 0, 0], To = [0, 0, 0], Bo = [0, 0, 0], Tn = [0, 0, 0], Bn = [0, 0, 0], nf = [0, 0, 0], pt = [0, 0, 0];
   const m = new Uint8Array(4), od1 = [0, 0], od2 = [0, 0], nd1 = [0, 0], nd2 = [0, 0];
   for (let t = 0; t < idx.length; t += 3) {
     for (let k = 0; k < 3; k++) oldUv.getElement(idx[t + k], ou[k]), pos.getElement(idx[t + k], ps[k]), nor?.getElement(idx[t + k], ns[k]);
@@ -125,13 +125,14 @@ async function rebakePrimitive(doc, prim, colour, normal, size, padding) {
         const o = (y * size + x) * 4;
         sample(srcC, u, v, outC, o);
         if (normal) {
-          for (let k = 0; k < 3; k++) nrm[k] = w0 * ns[0][k] + w1 * ns[1][k] + w2 * ns[2][k];
+          for (let k = 0; k < 3; k++) (nrm[k] = w0 * ns[0][k] + w1 * ns[1][k] + w2 * ns[2][k]), (pt[k] = w0 * ps[0][k] + w1 * ps[1][k] + w2 * ps[2][k]);
           const l = Math.hypot(...nrm) || 1;
           for (let k = 0; k < 3; k++) nrm[k] /= l;
-          frame(e1, e2, od1, od2, nrm, To, Bo);
           frame(e1, e2, nd1, nd2, nrm, Tn, Bn);
+          // the old map belongs to the full mesh's surface: read it in that frame where known
+          if (!fullFrame?.(u, v, pt, nf, To, Bo)) frame(e1, e2, od1, od2, nrm, To, Bo), nf.splice(0, 3, ...nrm);
           sample(srcN, u, v, m, 0);
-          moveNormal(m, normal.scale, To, Bo, Tn, Bn, nrm, outN, o);
+          moveNormal(m, normal.scale, To, Bo, nf, Tn, Bn, nrm, outN, o);
         }
         mask[y * size + x] = 1;
       }
@@ -154,8 +155,9 @@ async function rebakePrimitive(doc, prim, colour, normal, size, padding) {
 
 /** Every textured material's one primitive gets new charts and `size`-square colour and normal maps with `padding`
  *  texels between charts (asked of xatlas, whose atlas comes out ~15% larger and is drawn at `size`: ~5 texels, enough
- *  for the mip levels the TV samples an avatar at). */
-export async function rebakeTextureAtlas(doc, size, padding = 6) {
+ *  for the mip levels the TV samples an avatar at). `fullFrame` (full-detail-normal-frames.mjs) bakes the normal map
+ *  against the mesh before simplifying. */
+export async function rebakeTextureAtlas(doc, size, padding = 6, fullFrame = null) {
   const root = doc.getRoot();
   const prims = root.listMeshes().flatMap((m) => m.listPrimitives());
   const done = [];
@@ -166,7 +168,7 @@ export async function rebakeTextureAtlas(doc, size, padding = 6) {
     if (users.length > 1) throw new Error(`${mat.getName()}: ${users.length} primitives share one map (one expected)`);
     if (mat.getMetallicRoughnessTexture() || mat.getOcclusionTexture() || mat.getEmissiveTexture()) throw new Error('only colour and normal maps are rebaked');
     const normal = nTex && { image: nTex.getImage(), scale: mat.getNormalScale() };
-    const r = await rebakePrimitive(doc, users[0], tex.getImage(), normal, size, padding);
+    const r = await rebakePrimitive(doc, users[0], tex.getImage(), normal, size, padding, fullFrame);
     tex.setImage(r.colour).setMimeType('image/png');
     if (nTex) nTex.setImage(r.normal).setMimeType('image/png'), mat.setNormalScale(1); // the scale is baked in
     done.push(`${r.before} -> ${r.after} vertices, charts cover ${(r.covered * 100).toFixed(0)}%`);
