@@ -1,5 +1,5 @@
 use super::live::{GrandAlleeConfig, GrandAlleeGame, Stage};
-use super::rules::Estate;
+use super::rules::{Estate, Rules};
 use crate::game::{Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime};
 use crate::room_seats::Player;
@@ -10,9 +10,14 @@ pub(super) const CEM: PlayerId = 2;
 
 /// `n` connected players; the dice fall as `rolls` say, then as the seed says.
 pub(super) fn game(n: usize, rolls: &[u8]) -> (GrandAlleeGame, Vec<Player>) {
+    game_with(n, rolls, Rules::default())
+}
+
+/// Like `game`, under `rules`.
+pub(super) fn game_with(n: usize, rolls: &[u8], rules: Rules) -> (GrandAlleeGame, Vec<Player>) {
     let names = ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay", "Gus", "Hal"];
     let players: Vec<Player> = (0..n).map(|i| Player::for_test(i as u8, names[i], true)).collect();
-    let cfg = GrandAlleeConfig { rolls: rolls.to_vec(), seed: Some(1), ..GrandAlleeConfig::default() };
+    let cfg = GrandAlleeConfig { rules, intro_ms: 0.0, rolls: rolls.to_vec(), seed: Some(1), ..GrandAlleeConfig::default() };
     (GrandAlleeGame::new(cfg, &players, 0.0), players)
 }
 
@@ -59,9 +64,7 @@ pub(super) fn pick(g: &mut GrandAlleeGame, p: &mut [Player], who: PlayerId, labe
 /// Seat `s` stands on `field` and its turn begins.
 pub(super) fn place(g: &mut GrandAlleeGame, s: usize, field: u8) {
     g.t.seats[s].field = field;
-    g.turn = s;
-    let ask = g.roll_ask();
-    g.ask(0.0, ask);
+    g.begin_move(s, 0.0);
 }
 
 pub(super) fn own(g: &mut GrandAlleeGame, s: usize, hotel: u8, levels: u8) {
@@ -94,6 +97,18 @@ fn a_six_rolls_again_and_the_extra_turn_may_be_declined() {
     assert_eq!(g.turn, 1, "Ben's 6 offers another turn too");
     pick(&mut g, &mut p, BEN, "Lieber nicht", now);
     assert_eq!((g.turn, g.round), (0, 2));
+}
+
+#[test]
+fn after_a_six_a_playing_bot_rolls_again_and_the_house_lets_it_go() {
+    use super::bots::{Bot, Style};
+    use super::live::HOUSE;
+    let (mut g, mut p) = game(2, &[6]);
+    let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
+    let Stage::Ask { ask, .. } = g.stage.clone() else { panic!("no ask: {:?}", g.stage) };
+    assert_eq!(options(&g, &p, ANA, now), ["Nochmal würfeln", "Lieber nicht"]);
+    assert_eq!(Bot { style: Style::Cautious, house: false }.pick(&g.t, 0, &ask), 0);
+    assert_eq!(HOUSE.pick(&g.t, 0, &ask), 1);
 }
 
 #[test]
@@ -141,21 +156,6 @@ fn a_granted_permit_is_used_and_the_main_building_brings_a_free_entrance() {
     pick(&mut g, &mut p, ANA, "Feld 5", now);
     assert_eq!(g.t.entrances[4], Some(0));
     assert_eq!(g.t.seats[0].cash, 9_900);
-}
-
-#[test]
-fn a_double_permit_that_cannot_be_paid_auctions_the_hotel_instead() {
-    let (mut g, mut p) = game(2, &[4, 6]);
-    own(&mut g, 0, 0, 0);
-    g.t.seats[0].cash = 1_500;
-    place(&mut g, 0, 2);
-    let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
-    let now = pick(&mut g, &mut p, ANA, "Lagune: 1 Stufe · 1.200 Taler", now);
-    assert!(matches!(g.stage, Stage::Auction(_)), "2.400 Taler for one stage are more than Ana has");
-    assert_eq!(options(&g, &p, BEN, now), ["100 Taler", "300 Taler", "600 Taler", "900 Taler", "1.200 Taler", "Passen"]);
-    pick(&mut g, &mut p, BEN, "600 Taler", now);
-    assert_eq!(g.t.estate(0), Estate { owner: Some(1), levels: 0 });
-    assert_eq!((g.t.seats[0].cash, g.t.seats[1].cash), (2_100, 11_400), "the permit costs nothing");
 }
 
 #[test]

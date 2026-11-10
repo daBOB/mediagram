@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -14,6 +15,7 @@ use qrcode::render::svg;
 use rust_embed::RustEmbed;
 use tokio::sync::mpsc;
 
+use crate::game_log::serve_log;
 use crate::poster_lookup::{PosterLookup, textless_file};
 use crate::room_loop::Event;
 use crate::titles::{ImageKind, TitlePool};
@@ -32,6 +34,7 @@ pub(crate) struct AppState {
     pub(crate) join_url: Arc<str>,
     pub(crate) pool: Arc<TitlePool>,
     pub(crate) textless: Option<PosterLookup>,
+    pub(crate) log: Option<PathBuf>,
 }
 
 pub(crate) fn router(state: AppState) -> Router {
@@ -39,6 +42,7 @@ pub(crate) fn router(state: AppState) -> Router {
         .route("/ws", get(ws_handler))
         .route("/qr.svg", get(qr_svg))
         .route("/img/{i}/{which}", get(image))
+        .route("/grand-allee-log", get(serve_log))
         .fallback(static_handler)
         .with_state(state)
 }

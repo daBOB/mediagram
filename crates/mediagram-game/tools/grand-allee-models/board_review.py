@@ -5,8 +5,9 @@ every material unlit (KHR_materials_unlit), triangles per mesh.
 blender -b --factory-startup --python-exit-code 1 -P board_review.py -- --glbs <dir> --out <dir>
 
 Renders: the TV view at 55 degrees with all ten hotels placed from board_path
-(fully built), the top view, close-ups of fields 0-3, fields 20-23 and the
-bridge at field 21, and the two dice turned to show all six faces."""
+(fully built), the top view, close-ups of fields 0-3, fields 20-23, the
+bridge at field 21 and the waist where two park plots' lands meet on a bend,
+and the two dice turned to show all six faces."""
 
 import argparse
 import json
@@ -54,6 +55,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--glbs", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--hotels", default=board_layout.HOTELS, help="folder of the hotel GLBs")
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -71,12 +73,13 @@ def main():
     meshes = load(os.path.join(args.glbs, "board.glb"))
     report["board"]["tris"] = {o.name: board.triangles([o]) for o in meshes}
     L = Layout()
-    board_layout.place_hotels(L.plots)
+    board_layout.place_hotels(L.plots, args.hotels)
     f = L.fields
     shots = {"tv": board.tv_camera(), "top": build.camera("top", (0, 0, 160), (0, 0.01, 0), 30),
              "fields-0-3": close("c0", sum(f[i]["x"] for i in range(4)) / 4, sum(f[i]["y"] for i in range(4)) / 4, 34),
              "fields-20-23": close("c1", sum(f[i]["x"] for i in range(20, 24)) / 4, sum(f[i]["y"] for i in range(20, 24)) / 4, 34),
-             "bridge-21": close("c2", f[21]["x"], f[21]["y"], 15)}
+             "bridge-21": close("c2", f[21]["x"], f[21]["y"], 15),
+             "plots-meet-11-12": close("c3", (f[11]["x"] + f[12]["x"]) / 2, (f[11]["y"] + f[12]["y"]) / 2 + 2, 30)}
     for i, kind in enumerate(("number", "permit")):  # two of each die, the second turned to show the other three faces
         for j, turn in enumerate(((0, 0, 0), (math.pi, 0, math.pi / 2))):
             die = load(os.path.join(args.glbs, f"die-{kind}.glb"), (300 + 1.8 * j, 1.8 * i, 0.6), turn)

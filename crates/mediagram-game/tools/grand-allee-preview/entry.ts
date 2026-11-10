@@ -24,7 +24,7 @@ const PRESETS: Record<string, Partial<GrandAlleeScene>> = {
   opening: { seats: seats([0, 0, 0, 0, 0, 0], Array(6).fill(30_000)), turn: ask(0, "Du bist dran", null) },
   midgame: {
     estates: built, entrances: doors, seats: seats([2, 9, 15, 22, 28, 36]), round: 9, die: 4, permit: "approved",
-    turn: { stage: "note", player: 2, text: "Oma Gerda baut Fjordhus: Stufe 4 von 5.", started_at: T - 300 },
+    turn: { stage: "note", player: 2, text: "Oma Gerda baut Fjordhus: Stufe 4 von 5.", broke: false, started_at: T - 300 },
   },
   dice: {
     estates: built.slice(0, 5), entrances: doors.slice(0, 4), seats: seats([3, 12, 21, 26, 31, 38]), round: 4,

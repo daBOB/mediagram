@@ -5,9 +5,9 @@
 import * as THREE from "three";
 import type { AnswerColor } from "../../protocol/AnswerColor";
 import { ANSWER_MARKS } from "../../ui/answers";
-import { Blobs, MARK_COLORS } from "../bauherr/bauherr-pieces";
+import { Blobs } from "./grand-allee-blobs";
 import { shade } from "./grand-allee-board";
-import { COINS, PAWN, SUN } from "./grand-allee-look";
+import { COINS, MARK_COLORS, PAWN, SUN } from "./grand-allee-look";
 
 export interface SeatLook {
   name: string;

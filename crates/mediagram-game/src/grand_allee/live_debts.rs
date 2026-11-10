@@ -3,67 +3,93 @@
 //! on every other phone at once, sealed; the bank buys what nobody bids on.
 
 use super::live::{Auction, Bid, GrandAlleeGame, Stage};
+use super::live_log::By;
+use super::live_text::Phrase;
+use super::live_turn::Step;
 use super::money::best_bid;
 use crate::game::{ActionError, GameCtx};
 use crate::protocol::ServerTime;
 
-/// Bid buttons as shares of the property's value.
-// shortcut: a few fixed shares instead of a free amount in steps of 100; the phone controls get a real bid input later
-const BID_PCTS: [i32; 5] = [10, 25, 50, 75, 100];
+/// Bids go in whole hundreds.
+pub(crate) const BID_STEP: i32 = 100;
+
+/// What the mover owes and is settling, and so what follows once it is met.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Debt {
+    /// A guest's stay, to the hotel's owner; the field comes next.
+    Rent { owner: usize, amount: i32 },
+    /// A doubled permit, to the bank, raised by auctioning other properties;
+    /// once paid, `count` stages of `hotel` are built.
+    Permit { hotel: u8, count: u8, price: i32 },
+}
+
+impl Debt {
+    /// What the mover has to pay.
+    pub(crate) fn amount(self) -> i32 {
+        match self {
+            Debt::Rent { amount, .. } => amount,
+            Debt::Permit { price, .. } => price,
+        }
+    }
+
+    /// The hotel a doubled permit is being paid for, which is not for sale meanwhile.
+    pub(crate) fn building(self) -> Option<u8> {
+        match self {
+            Debt::Rent { .. } => None,
+            Debt::Permit { hotel, .. } => Some(hotel),
+        }
+    }
+}
 
 impl GrandAlleeGame {
-    pub(crate) fn owe(&mut self, ctx: &GameCtx, to: Option<usize>, amount: i32) {
-        self.debt = Some((to, amount));
-        self.settle(ctx);
-    }
-
     /// Pays the mover's debt once they can, asking what to auction while they
     /// cannot; with nothing left to sell they pay what they have and are out.
-    /// Without a debt the move goes on.
-    pub(crate) fn settle(&mut self, ctx: &GameCtx) {
+    pub(crate) fn settle(&mut self, ctx: &GameCtx, debt: Debt) {
         let (now, s) = (ctx.now, self.turn);
-        let Some((to, amount)) = self.debt else {
-            return self.proceed(now);
-        };
-        if self.t.seats[s].cash < amount && !self.t.owned(s).is_empty() {
-            let ask = self.sell_ask(amount);
-            return self.ask(now, ask);
+        let short = self.t.seats[s].cash < debt.amount();
+        if short && !self.sellable(debt).is_empty() {
+            let ask = self.sell_ask(debt);
+            return self.ask(now, ask, Step::Owing(debt));
         }
-        self.debt = None;
-        if self.t.pay(s, to, amount) {
-            return self.proceed(now);
+        let owner = match debt {
+            // nothing else left to sell: the hotel in question goes after all, and the permit costs nothing
+            Debt::Permit { hotel, .. } if short => return self.open_auction(now, hotel, None),
+            Debt::Permit { hotel, count, price } => {
+                let first = self.t.build(s, hotel, count, price);
+                return self.built(ctx, hotel, first);
+            }
+            Debt::Rent { owner, .. } => owner,
+        };
+        if self.t.pay(s, Some(owner), debt.amount()) {
+            return self.go_to_field(now);
         }
         self.gone.push(s);
-        let text = format!("{} kann nicht zahlen und ist raus.", self.who(ctx.players, s));
-        self.end_move(now, Some(text));
+        let text = Phrase::new("Du kannst nicht zahlen und bist raus.", "kann nicht zahlen und ist raus.");
+        self.stage = Stage::Note { text, broke: true, at: now };
     }
 
-    pub(crate) fn open_auction(&mut self, now: ServerTime, hotel: u8) {
+    pub(crate) fn open_auction(&mut self, now: ServerTime, hotel: u8, owing: Option<Debt>) {
         let bids = self.t.bidders(self.turn).into_iter().map(|b| (b, Bid::Open)).collect();
-        self.stage = Stage::Auction(Auction { hotel, since: now, bids });
+        self.stage = Stage::Auction(Auction { hotel, since: now, bids, owing });
     }
 
-    /// What `seat` may bid: multiples of 100 up to its cash, no minimum.
-    pub(crate) fn bid_amounts(&self, seat: usize, hotel: u8) -> Vec<i32> {
-        let (value, cash) = (self.t.value(hotel), self.t.seats[seat].cash);
-        let mut amounts: Vec<i32> = BID_PCTS.iter().map(|pct| (value * pct / 100).min(cash) / 100 * 100).filter(|&a| a >= 100).collect();
-        amounts.dedup();
-        amounts
+    /// The highest bid `seat` may make: its cash in whole steps (no minimum).
+    pub(crate) fn bid_max(&self, seat: usize) -> i32 {
+        self.t.seats[seat].cash / BID_STEP * BID_STEP
     }
 
-    /// A bidder's answer: one of the amounts offered, or the option after them, passing.
-    pub(crate) fn bid(&mut self, seat: usize, index: u8, at: ServerTime) -> Result<(), ActionError> {
+    /// A bidder's sealed answer, tapped at `at` and arriving at `now`: a whole number of steps up to their cash, or 0 to pass.
+    pub(crate) fn bid(&mut self, seat: usize, amount: i32, at: ServerTime, now: ServerTime) -> Result<(), ActionError> {
         let Stage::Auction(a) = &self.stage else {
             return Err(ActionError::Ignored);
         };
         if at < a.since - self.cfg.early_ms {
             return Err(ActionError::Ignored);
         }
-        let amounts = self.bid_amounts(seat, a.hotel);
-        let bid = match usize::from(index) {
-            i if i < amounts.len() => Bid::Amount(amounts[i]),
-            i if i == amounts.len() => Bid::Pass,
-            _ => return Err(ActionError::NotAllowed("Das gibt es nicht.")),
+        let bid = match amount {
+            0 => Bid::Pass,
+            x if x > 0 && x % BID_STEP == 0 && x <= self.bid_max(seat) => Bid::Amount(x),
+            _ => return Err(ActionError::NotAllowed("So viel hast du nicht.")),
         };
         let Stage::Auction(a) = &mut self.stage else {
             return Err(ActionError::Ignored);
@@ -71,17 +97,23 @@ impl GrandAlleeGame {
         // sealed and final: a second tap changes nothing
         let slot = a.bids.iter_mut().find(|(b, answer)| *b == seat && *answer == Bid::Open).ok_or(ActionError::Ignored)?;
         slot.1 = bid;
+        let since = a.since;
+        self.log_bid(seat, since, now, By::Player, bid == Bid::Pass);
         Ok(())
     }
 
-    /// Closes once every bidder still at the table has answered, or when the
-    /// clock runs out; whoever stayed silent passed.
-    pub(crate) fn auction_tick(&mut self, ctx: &GameCtx, a: Auction) {
-        let here = |seat: usize| ctx.players.iter().any(|p| p.id == self.ids[seat] && p.connected());
-        let waiting = a.bids.iter().any(|&(b, answer)| answer == Bid::Open && here(b));
-        if waiting && ctx.now < a.since + self.cfg.auction_ms {
-            return;
-        }
+    /// When an auction closes: once no open bidder can still answer, one at the
+    /// table until the clock, an absent one until the table's grace (never past the clock).
+    pub(crate) fn auction_close(&self, ctx: &GameCtx, a: &Auction) -> ServerTime {
+        let clock = a.since + self.cfg.auction_ms;
+        let open = a.bids.iter().filter(|&&(_, answer)| answer == Bid::Open);
+        let holds = open.map(|&(b, _)| ctx.house_at(self.ids[b], a.since).map_or(clock, |at| at.min(clock)));
+        holds.reduce(f64::max).unwrap_or(ctx.now)
+    }
+
+    /// The highest bid takes the property; whoever stayed silent passed.
+    pub(crate) fn close_auction(&mut self, ctx: &GameCtx, a: Auction) {
+        self.log_silent_bidders(ctx, &a);
         let amounts = a.bids.iter().filter_map(|&(b, answer)| match answer {
             Bid::Amount(x) => Some((x, b)),
             Bid::Open | Bid::Pass => None,
@@ -89,6 +121,6 @@ impl GrandAlleeGame {
         let best = best_bid(amounts);
         let price = self.t.auction_price(a.hotel, best);
         self.t.settle_auction(self.turn, a.hotel, best);
-        self.stage = Stage::Sold { hotel: a.hotel, winner: best.map(|(_, w)| w), price, at: ctx.now };
+        self.stage = Stage::Sold { hotel: a.hotel, winner: best.map(|(_, w)| w), price, at: ctx.now, owing: a.owing };
     }
 }

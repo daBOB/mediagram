@@ -8,8 +8,7 @@
 //! the next) and "Fertig" when done, and a player who is done is not asked
 //! again. A player with nothing to add is skipped. Taking works the same way,
 //! except nothing is defended. The table then stays in view for a moment (Bito
-//! or taken) before the cards move on. Players who are gone play for
-//! themselves after `auto_ms`.
+//! or taken) before the cards move on. The house plays for a player who is gone.
 
 use rand::SeedableRng;
 use rand::rngs::StdRng;
@@ -22,8 +21,6 @@ use crate::room_seats::Player;
 
 #[derive(Debug, Clone)]
 pub struct DurakConfig {
-    /// An absent player's move happens after this.
-    pub auto_ms: f64,
     /// How long the banner keeps naming the last happening.
     pub banner_ms: f64,
     /// How long a finished bout stays on the table before the cards move.
@@ -33,7 +30,7 @@ pub struct DurakConfig {
 
 impl Default for DurakConfig {
     fn default() -> Self {
-        Self { auto_ms: 1500.0, banner_ms: 2600.0, settle_ms: 2400.0, seed: None }
+        Self { banner_ms: 2600.0, settle_ms: 2400.0, seed: None }
     }
 }
 
@@ -166,8 +163,7 @@ impl Game for DurakGame {
             return;
         }
         let (Some(seat), Some(since)) = (self.actor(), self.since()) else { return };
-        let Some(left) = self.absent_since(ctx.players, seat) else { return };
-        if ctx.now >= left.max(since) + self.cfg.auto_ms {
+        if ctx.house_at(self.player_at(seat), since).is_some_and(|at| ctx.now >= at) {
             self.auto_play(ctx, seat);
         }
     }

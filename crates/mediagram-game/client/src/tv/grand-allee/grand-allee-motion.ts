@@ -4,13 +4,12 @@
 
 import * as THREE from "three";
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
-import { MARK_COLORS } from "../bauherr/bauherr-pieces";
 import { coinCount, coinProgress, pawnPlace, sharing } from "./grand-allee-clock";
 import type { Dice } from "./grand-allee-dice";
 import type { Changes } from "./grand-allee-events";
 import { stepHotel, type HotelView } from "./grand-allee-hotels";
 import { fieldAt, fieldPoint, type Board } from "./grand-allee-layout";
-import { COINS, DIE, PAWN, TIMES } from "./grand-allee-look";
+import { COINS, DIE, MARK_COLORS, PAWN, TIMES } from "./grand-allee-look";
 import type { Pieces } from "./grand-allee-pieces";
 import type { Grounds } from "./grand-allee-plots";
 

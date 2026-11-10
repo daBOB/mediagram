@@ -4,12 +4,14 @@
 use super::board::{field, FIELDS, HOTELS};
 use super::live::{Bid, GrandAlleeGame, Stage};
 use super::live_asks::Opt;
+use crate::game::{name, ViewCtx};
 use crate::protocol::{
     AnswerColor, GrandAlleeAuction, GrandAlleeBoard, GrandAlleeEntrance, GrandAlleeEstate, GrandAlleeHotel, GrandAlleeMark,
     GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn, PlayerId, ServerTime, TvScene,
 };
 
-fn board() -> GrandAlleeBoard {
+/// The board as the TV gets it: every field's kind and the hotels with their prices.
+pub(crate) fn board() -> GrandAlleeBoard {
     let hotels = HOTELS.iter().enumerate().map(|(id, h)| GrandAlleeHotel {
         id: id as u8,
         name: h.name.into(),
@@ -31,17 +33,20 @@ impl GrandAlleeGame {
         seats.into_iter().map(|s| self.ids[s]).collect()
     }
 
-    fn turn_view(&self) -> GrandAlleeTurn {
+    /// The mover's name leads every sentence about them; the intro names the leader.
+    fn turn_view(&self, view: &ViewCtx) -> GrandAlleeTurn {
+        let who = name(view.players, self.ids[self.turn]);
         let (t, player) = (&self.t, self.ids[self.turn]);
         match &self.stage {
-            Stage::Ask { ask, since } => {
+            Stage::Intro { card, at } => self.intro_turn(view, *card, *at),
+            Stage::Ask { ask, since, .. } => {
                 let marks = ask.opts.iter().zip(AnswerColor::ALL.iter().cycle()).filter_map(|(o, &color)| match *o {
                     Opt::Place { field, .. } => Some(GrandAlleeMark { field, color }),
                     _ => None,
                 });
                 GrandAlleeTurn::Ask {
                     player,
-                    prompt: ask.prompt.clone(),
+                    prompt: ask.prompt.about(who),
                     hotel: ask.hotel,
                     marks: marks.collect(),
                     opened_at: *since,
@@ -86,10 +91,10 @@ impl GrandAlleeGame {
                     },
                 }
             }
-            Stage::Sold { hotel, winner, price, at } => {
+            Stage::Sold { hotel, winner, price, at, .. } => {
                 GrandAlleeTurn::Sold { seller: player, hotel: *hotel, winner: winner.map(|w| self.ids[w]), price: *price, started_at: *at }
             }
-            Stage::Note { text, at } => GrandAlleeTurn::Note { player, text: text.clone(), started_at: *at },
+            Stage::Note { text, broke, at } => GrandAlleeTurn::Note { player, text: text.about(who), broke: *broke, started_at: *at },
             Stage::Final => {
                 let ranking = self.players_of(self.standings());
                 GrandAlleeTurn::Final { winner: ranking[0], ranking }
@@ -97,7 +102,7 @@ impl GrandAlleeGame {
         }
     }
 
-    pub(crate) fn tv_view(&self) -> TvScene {
+    pub(crate) fn tv_view(&self, view: &ViewCtx) -> TvScene {
         let t = &self.t;
         let estates = (0..HOTELS.len() as u8)
             .filter_map(|hotel| t.estate(hotel).owner.map(|o| GrandAlleeEstate { hotel, owner: self.ids[o], levels: t.estate(hotel).levels }))
@@ -118,7 +123,7 @@ impl GrandAlleeGame {
                 seats,
                 round: self.round.min(self.rounds),
                 rounds: self.rounds,
-                turn: self.turn_view(),
+                turn: self.turn_view(view),
                 die: self.dice.die,
                 permit: self.dice.permit,
                 nights: self.dice.nights,

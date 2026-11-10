@@ -124,16 +124,16 @@ impl Room {
         let player = c.player;
         let is_leader = player.is_some() && player == self.leader();
         match action {
-            Action::Configure { game, quiz_mode, kids_only } => {
+            Action::Configure { game, quiz_mode, kids_only, adult } => {
                 // The TV sets the game its poster shelf picked, as the leader's phone does.
-                self.configure(is_tv || is_leader, game, quiz_mode, kids_only).then_some(()).ok_or_else(not_allowed)
+                self.configure(is_tv || is_leader, game, quiz_mode, kids_only, adult).then_some(()).ok_or_else(not_allowed)
             }
             Action::StartGame => {
                 if !(is_tv || is_leader) || self.game.is_some() {
                     return Err(not_allowed());
                 }
                 if let Some(why) = self.blocked() {
-                    return Err(error(ErrorCode::NotAllowed, why.into()));
+                    return Err(error(ErrorCode::NotAllowed, why));
                 }
                 if self.connected_count() < self.cfg.min_players {
                     return Err(error(ErrorCode::NotAllowed, "Noch zu wenige Spieler.".into()));

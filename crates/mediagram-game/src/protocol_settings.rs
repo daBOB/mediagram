@@ -17,12 +17,14 @@ pub enum GameKind {
     Schwimmen,
     /// Durak (throw-in) on the card table.
     Durak,
-    /// Bauherr, the hotel-building board game.
-    Bauherr,
     /// Kopfnuss, the quiz where players play tricks on each other's phones.
     Kopfnuss,
     /// Grand Allee, the hotel game for two to eight.
     GrandAllee,
+    /// Dreifelder: pick one of three fields, a wrong pick is out, last one standing wins.
+    Dreifelder,
+    /// Flüchtig, the hidden-move chase for two to six.
+    Fluechtig,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -42,4 +44,14 @@ pub struct LobbySettings {
     pub kids_only: bool,
     /// The kids-only toggle cannot be switched off (a kids profile started it).
     pub kids_locked: bool,
+    /// *Matratzensport (ab 18)*: the quizzes also ask the adult questions about
+    /// sexuality. Never on together with `kids_only`.
+    pub adult: bool,
+}
+
+impl LobbySettings {
+    /// Whether tonight's quizzes may ask the adult questions.
+    pub fn asks_adult_questions(&self) -> bool {
+        self.adult && !self.kids_only
+    }
 }

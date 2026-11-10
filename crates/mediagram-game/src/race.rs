@@ -92,15 +92,6 @@ impl RaceGame {
             self.start_turn(now, (self.turn + 1) % self.seats.len(), false);
         }
     }
-
-    /// When the player whose turn it is dropped out, if they are gone. Their turn
-    /// plays itself `auto_ms` after the later of this and the prompt, so a phone
-    /// that blips after a long think does not have a move made for it at once.
-    fn absent_since(&self, players: &[Player]) -> Option<ServerTime> {
-        let id = self.player_at(self.turn);
-        let p = players.iter().find(|p| p.id == id)?;
-        (!p.connected()).then(|| p.left_at.unwrap_or(0.0))
-    }
 }
 
 /// What plays for an absent player: a capture, else into the goal, else the piece furthest along.
@@ -134,9 +125,9 @@ impl Game for RaceGame {
 
     fn on_tick(&mut self, ctx: &mut GameCtx) {
         let now = ctx.now;
-        let auto_after = |from: ServerTime| self.absent_since(ctx.players).map(|left| left.max(from) + self.cfg.auto_ms);
+        let house_acts = |since: ServerTime| ctx.house_at(self.player_at(self.turn), since).is_some_and(|at| now >= at);
         match self.stage.clone() {
-            Stage::Roll { since, tries, .. } if auto_after(since).is_some_and(|at| now >= at) => {
+            Stage::Roll { since, tries, .. } if house_acts(since) => {
                 self.roll(now, tries);
             }
             Stage::Rolled { value, at, moves, tries } => {
@@ -150,7 +141,7 @@ impl Game for RaceGame {
                         }
                     }
                     1 if now >= landed + self.cfg.show_ms => self.play(ctx, value, moves[0]),
-                    n if n > 1 && auto_after(landed).is_some_and(|at| now >= at) => {
+                    n if n > 1 && house_acts(landed) => {
                         self.play(ctx, value, auto_pick(&moves));
                     }
                     _ => {}

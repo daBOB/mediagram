@@ -1,0 +1,317 @@
+/* Flüchtig on a phone: number tiles like the TV's fields, tickets in the plan's line colours. */
+
+.flp {
+  flex: 1;
+  width: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  text-align: left;
+}
+
+.flp :is(h2, h3, ul, ol, p) {
+  margin: 0;
+  padding: 0;
+}
+
+.flp h3 {
+  font: 800 0.95rem var(--display);
+  color: var(--muted);
+}
+
+.flp-head {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.flp-head small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.flp-head b {
+  display: block;
+  font: 800 1.45rem/1.1 var(--display);
+}
+
+.flp-head em {
+  display: block;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--yellow);
+  margin-top: 0.15rem;
+}
+
+.flp-head em.flp-alarm {
+  color: var(--ink);
+  background: var(--yellow);
+  border-radius: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  display: inline-block;
+}
+
+.flp-disc {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.flp-ring {
+  flex: none;
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: var(--ink);
+  font: 800 1.9rem var(--display);
+  outline: 3px dashed var(--orange);
+  outline-offset: 4px;
+  margin: 4px;
+}
+
+.flp-wallet {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.flp-wallet span {
+  flex: 1;
+  background: var(--c);
+  color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.1rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.22);
+}
+
+.flp-wallet b {
+  display: block;
+  font: 800 1.2rem var(--display);
+}
+
+.flp-prompt {
+  font: 800 1.5rem/1.15 var(--display);
+}
+
+.flp-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem 1rem;
+}
+
+.flp-tile {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  border: 6px solid var(--ring);
+  box-shadow: 0 6px 0 var(--card-edge);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.flp-tile b {
+  font: 800 2.2rem/1 var(--display);
+}
+
+.flp-tile span {
+  display: flex;
+  gap: 0.2rem;
+  margin-top: 0.3rem;
+}
+
+.flp-tile i,
+.flp-log i {
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 0.25rem;
+  padding: 0.05rem 0.25rem;
+}
+
+.flp-wide,
+.flp-ticket,
+.flp-back {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.flp-wide {
+  margin-top: auto;
+  background: var(--orange);
+  color: var(--ink);
+  border: 0;
+  border-radius: 1.1rem;
+  padding: 0.8rem 1.1rem;
+  font: 800 1.2rem var(--display);
+  box-shadow: 0 6px 0 var(--orange-edge);
+}
+
+.flp-wide small {
+  display: block;
+  font: 400 0.82rem var(--body);
+}
+
+.flp-tickets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.flp-ticket {
+  background: var(--c);
+  color: #fff;
+  border: 0;
+  border-left: 10px dotted rgb(255 255 255 / 0.35);
+  border-radius: 1rem;
+  padding: 0.9rem 1.1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  box-shadow: 0 6px 0 rgb(0 0 0 / 0.35);
+}
+
+.flp-ticket b {
+  font: 800 1.6rem var(--display);
+}
+
+.flp-ticket span {
+  font-weight: 700;
+  align-self: center;
+}
+
+.flp-ticket small {
+  grid-column: 1 / -1;
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+.flp-back {
+  margin-top: auto;
+  background: none;
+  border: 2px solid var(--muted);
+  color: var(--muted);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* a question opened by the last tap is not live yet */
+.flp-shut button {
+  opacity: 0.55;
+}
+
+.flp-maybe {
+  background: var(--felt-deep);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.flp-maybe span {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  outline: 2px dashed var(--orange);
+  outline-offset: 2px;
+}
+
+.flp-pieces {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.flp-pieces li {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  background: var(--felt-deep);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.flp-pieces b {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 0.2rem;
+}
+
+.flp-mini {
+  display: inline-block;
+  border-radius: 0.25rem;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.05rem 0.3rem;
+  margin-right: 0.25rem;
+}
+
+.flp-log {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.35rem;
+}
+
+.flp-log li {
+  min-height: 2.8rem;
+  background: var(--felt-line);
+  border-radius: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding-top: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.flp-log li.flp-reveal {
+  outline: 2px dashed var(--yellow);
+  outline-offset: -2px;
+}
+
+.flp-log li.flp-now {
+  outline: 2px solid var(--card);
+  outline-offset: -2px;
+}
+
+.flp-log b {
+  color: var(--yellow);
+}

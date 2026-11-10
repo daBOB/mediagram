@@ -98,11 +98,11 @@ def main():
     print("@@JSON@@" + json.dumps({"fields": len(data["fields"]), "plots": len(data["plots"])}))
 
 
-def place_hotels(plots):
+def place_hotels(plots, folder=HOTELS):
     """Imports each plot's baked hotel GLB at its place, turn and scale."""
     for plot in plots:
         before = set(bpy.data.objects)
-        bpy.ops.import_scene.gltf(filepath=os.path.join(HOTELS, plot["name"] + ".glb"))
+        bpy.ops.import_scene.gltf(filepath=os.path.join(folder, plot["name"] + ".glb"))
         for o in set(bpy.data.objects) - before:
             if o.parent is None:
                 o.rotation_mode = "XYZ"  # the glTF importer leaves quaternions, which would ignore the angle

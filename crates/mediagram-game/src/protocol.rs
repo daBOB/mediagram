@@ -12,20 +12,23 @@ use ts_rs::TS;
 
 pub use crate::avatars::AvatarSlot;
 pub use crate::cards::{Card, Rank, Suit};
+pub use crate::catalogue::GameEntry;
 pub use crate::protocol_cards::{
     ButtonNeeds, CardDesk, CardsBanner, CardsEvent, CardsEventKind, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard,
 };
-pub use crate::protocol_bauherr::{
-    BauherrBoard, BauherrEntrance, BauherrEstate, BauherrLevel, BauherrMark, BauherrPermit, BauherrPlot, BauherrScene,
-    BauherrSeat, BauherrTile, BauherrTileKind, BauherrTurn,
-};
 pub use crate::protocol_client::{Action, ClientMsg, Role};
 pub use crate::protocol_kopfnuss::{Climber, KopfnussScene, KopfnussStage, Trick, TrickHit, TrickLoad};
+pub use crate::protocol_fluechtig::{
+    FluechtigBoard, FluechtigHunter, FluechtigLink, FluechtigLogEntry, FluechtigScene, FluechtigSide, FluechtigSpot, FluechtigTicket,
+    FluechtigTickets, FluechtigTurn,
+};
+pub use crate::protocol_fluechtig_phone::{FluechtigAsk, FluechtigMover, FluechtigOption, FluechtigPhone, FluechtigPiece, FluechtigSeen};
 pub use crate::protocol_grand_allee::{
     GrandAlleeAuction, GrandAlleeBoard, GrandAlleeEntrance, GrandAlleeEstate, GrandAlleeFieldKind, GrandAlleeHotel, GrandAlleeMark,
     GrandAlleePermit, GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn,
 };
-pub use crate::protocol_choice::{AnswerColor, ChoiceOption, SheetLine, Tone};
+pub use crate::protocol_dreifelder::{DreifelderScene, DreifelderStage, FieldPick, OutPlayer};
+pub use crate::protocol_choice::{AnswerColor, BidRange, ChoiceOption, ChoiceStatus, HotelCard, OutcomeKey, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
@@ -98,6 +101,8 @@ pub enum PhoneScreen {
         blocked: Option<String>,
         /// The whole catalogue; `taken` = owned by another player.
         avatars: Vec<AvatarSlot>,
+        /// The game catalogue, in lobby order.
+        games: Vec<GameEntry>,
     },
     Wait {
         title: String,
@@ -113,26 +118,42 @@ pub enum PhoneScreen {
         picked: Option<u8>,
         /// Kopfnuss nuisances drawn over the buttons; empty in every other game.
         tricks: Vec<Trick>,
+        /// Numbers on the buttons (1, 2, 3 …), matching numbered fields on the TV.
+        numbered: bool,
+        /// A line under the clock; when the player is `out`, the buttons fade.
+        status: Option<ChoiceStatus>,
     },
     /// A status sheet for money games: header lines (cash, holdings), a prompt
-    /// and options answered with `Action::Choose`. Without options it only
+    /// and options answered with `Action::Choose` (a bid with `Action::Bid`). Without options it only
     /// informs. Shown to every player, whoever's turn it is.
     Sheet {
         lines: Vec<SheetLine>,
+        hotels: Vec<HotelCard>,
         prompt: Option<String>,
         options: Vec<ChoiceOption>,
         opens_at: ServerTime,
-        picked: Option<u8>,
+        /// The decision's clock; None while this phone has nothing to decide.
+        closes_at: Option<ServerTime>,
+        /// A sealed bid to set instead of options.
+        bid: Option<BidRange>,
     },
     Outcome {
         title: String,
         text: Option<String>,
         tone: Tone,
         points: i32,
+        /// Answers drawn as small keys, e.g. the player's pick and the right one.
+        keys: Vec<OutcomeKey>,
+        /// The running score under the result; off where a game scores only at the end.
+        show_score: bool,
     },
     /// A card table: own hand, buttons and what is on the table.
     Cards {
         desk: CardDesk,
+    },
+    /// A Flüchtig phone: the chase as this player may know it, and the move to make.
+    Fluechtig {
+        phone: FluechtigPhone,
     },
     Final {
         rank: u8,
@@ -164,12 +185,15 @@ pub enum TvScene {
         leader_name: Option<String>,
         /// Why the chosen game cannot start yet.
         blocked: Option<String>,
+        /// The game catalogue, in lobby order.
+        games: Vec<GameEntry>,
     },
     Quiz { scene: QuizScene },
     Poster { scene: PosterScene },
     Race { scene: RaceScene },
     Cards { scene: CardsScene },
-    Bauherr { scene: BauherrScene },
     Kopfnuss { scene: KopfnussScene },
     GrandAllee { scene: GrandAlleeScene },
+    Dreifelder { scene: DreifelderScene },
+    Fluechtig { scene: FluechtigScene },
 }

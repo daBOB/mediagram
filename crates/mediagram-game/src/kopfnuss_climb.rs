@@ -52,7 +52,7 @@ impl Climb {
             })
             .collect();
         Self {
-            deck: questions.into_iter().map(|q| Round::shuffled(q, rng)).collect(),
+            deck: questions.into_iter().map(|q| Round::shuffled(q, rng, AnswerColor::ALL.len())).collect(),
             steps: cfg.steps,
             lock_ms: cfg.lock_ms,
             gap_ms: cfg.next_gap_ms,
@@ -172,6 +172,8 @@ impl Climb {
             closes_at: None,
             picked: None,
             tricks: vec![],
+            numbered: false,
+            status: None,
         }
     }
 }

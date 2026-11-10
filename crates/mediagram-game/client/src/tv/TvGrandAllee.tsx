@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Connection } from "../net";
 import type { GrandAlleeScene } from "../protocol/GrandAlleeScene";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
-import { mark } from "./bauherr/bauherr-timing";
+import { mark } from "./grand-allee/grand-allee-timing";
 import type { GrandAlleeHandle } from "./grand-allee/grand-allee-stage";
 import { TvFinal } from "./TvFinal";
 import { TvSettingsPanel } from "./settings/TvSettingsPanel";

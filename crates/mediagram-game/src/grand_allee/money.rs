@@ -1,6 +1,6 @@
 //! Paying and debt auctions as plain table operations: who bids, who wins,
-//! where the property goes, and going out. The simulator's bots and the live
-//! game's phones settle debts through these alike.
+//! where the property goes, and going out. The live game settles every debt
+//! through these, whether a phone, the house or a simulator bot decides.
 
 use super::rules::Table;
 

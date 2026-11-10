@@ -5,6 +5,150 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.174.0 — Sternenstaub, and Matratzensport for grown-ups
+
+**Added**
+
+- A thirteenth question category, "Sternenstaub": 73 questions, 36 about Star Trek and 37 about Star Wars. They cover the series and films, crews and actors, ships, planets and gadgets, with the names of the German dubs ("Pille", "Energie!", "X-Flügler"). Each is sourced, from German Wikipedia or Jedipedia (dilithium from English Wikipedia). Kopfnuss offers it as a category of its own; the general quiz and Dreifelder mix it in with the rest.
+- Five Sternenstaub fun facts for the Kopfnuss winner, as every other category has.
+- "Matratzensport (ab 18)": 62 questions about sexuality for adults, kept in their own file (`questions/matratzensport.json`). They cover the body, hormones, contraception and sexual health, research history, culture and literature, and LGBT rights, all factual, nothing explicit, each sourced from Wikipedia. They are asked only when the leader turns on the new lobby switch of that name. It is off at the start of every night. Kids mode turns it off and locks it, and a kids profile never gets it. With it on, Kopfnuss offers Matratzensport as a category, and the general quiz and Dreifelder mix the questions in. The TV lobby shows "Matratzensport · ab 18" beside the game. The fun facts stay family-friendly.
+
+**Changed**
+
+- `LobbySettings` and the `configure` action carry `adult`. A client that leaves it out means off, so older phones and `tools/smoke.mjs` keep working.
+
+## 0.173.0 — Flüchtig, the hidden-move chase
+
+**Added** (user: "lets create the scotland yard clone"; rules settled in a clickable prototype first, `plans/261109-1924-fluechtig/`, approved as it played)
+
+- Flüchtig for two to six (catalogue entry): one player, drawn at random, runs unseen through an own 48-field city (taxi, bus, U-Bahn, a river with three bridges); the others hunt with four pieces (five at six players), dealt round-robin. 18 rounds; the fugitive is seen after rounds 3, 8, 13 and 18.
+- The fugitive has 3 shadow rides (the log does not say which transport) and one double move, offered only where a second step exists; every ticket a hunter spends goes to the fugitive. Caught when a hunter lands on their field or they cannot move; free after the last round or when no hunter can move.
+- Phones get their own screen (`PhoneScreen::Fluechtig`), the user's pick of three rendered looks: the mover picks where to from round number tiles drawn like the TV's fields, each marked with the tickets that reach it. A hunter with one ticket to that field moves at once; otherwise, and always for the fugitive (one tap or two would give away the line they ride), a second question asks which ticket, each saying what the room will see ("Alle sehen: Bus", or nobody sees with a shadow ride), with "Zurück". Tickets are in the plan's line colours. Other phones show who moves and who is next, their own pieces or hideout, the travel log and where the fugitive may be. Only the fugitive's phone ever shows their field. The house moves for an absent mover after the table's grace.
+- The TV gives the whole screen to the city plan (2D, no three.js, no assets), with panels over it: the round, whose turn in the mover's colour, the rounds until the next sighting, the latest news with the travel log and the fugitive's tickets, and the hunters' fields. Hunters stand in their players' colours, the fields the fugitive may be on are ringed, the last sighting is marked; at the end the route they really ran, then the awards ceremony, titled for the side that won (`TvFinal` takes an optional `title`). The Android TV games shelf lists it.
+
+## 0.172.0 — Grand Allee opens with three rules cards
+
+**Added**
+
+- Before the first roll the TV shows three rules cards, 10 s each: *Das Ziel*, *Dein Zug*, *Das Geld*. Each has a kicker, a title, bullet lines with gold keywords, three step bars (the current one fills over its 10 s) and "Überspringen: auf Lenas Handy". The top banner reads "Gleich geht’s los …" and no player is highlighted. The host sends the card's text (`GrandAlleeTurn::Intro`, gold words between `**`, the round count and lap bonus from the game). The TV draws it as a HUD label like the rest of the HUD: one upload per card, and the filling bar is a cropped quad, so nothing is redrawn while it runs.
+- The room's leader (earliest-joined connected player) gets "Überspringen" on their phone; their tap starts the first move. Other phones show "Schau auf den Fernseher: <card>". The leader rule is one function (`room_seats::leader`) shared by the room and the game.
+- `GrandAlleeConfig::intro_ms` (10 s per card; 0 leaves the cards out). The simulator plays without them and prints the same tables. The config moved to `live_config.rs`.
+
+## 0.171.0 — Dreifelder, and Grand Allee keeps a decision log
+
+Two lines both released 0.171.0: Dreifelder on `feat/dreifelder-on-games` and the decision log on `spieltisch-games`. They met on main, so the two are one entry here.
+
+Built on `feat/kopfnuss` as 0.166.0 and 0.167.0, which this line had already used; merged here as one release. Dreifelder is in the game catalogue, so the phones and the TV list it from the host.
+
+**Added**
+
+- Dreifelder, a new game for two to eight beside Kopfnuss. Every question has three fields; a wrong pick, or none, puts a player out, unless everyone still in got it wrong. The last one in wins; after 12 questions the fastest right answers decide among those left. Twelve questions a game: nine general and three about the household's films (all general when the library has none), never repeated tonight, sharing Kopfnuss's question history.
+- Players who are out keep guessing on their phone ("Du bist raus – rate mit"). Their guesses score nothing and never hold a round up, but they rank players who went out in the same round. Final scores follow the placing, 100 per player beaten, and the game ends on the shared awards ceremony.
+- A player who leaves without a pick is out at the next reveal, even when everyone still in got it wrong; if nobody still in is connected, the game ends there. Not offered in kids mode.
+- TV: the question over three coloured, numbered fields; at the reveal every pawn stands in the field it picked (players already out faded beside them), the right field lights, and the line under the question says who is out or that everyone stays. A row at the bottom collects who is out.
+- Phones: three answer keys fill the grid, the third across the bottom (Kopfnuss's three-category vote now does the same).
+- `tools/smoke.mjs --game dreifelder`: four bots that look the answers up play a scripted game through a leaver, an all-wrong round and the 12-question cap, and check the finishing order.
+- Generic phone screens: `Choice` takes `numbered` and a `status` line, `Outcome` takes `keys` and `show_score`, and `Tone` gains `muted`. Every other game sends the defaults and looks as before.
+- Grand Allee records a line per answered question (seat, round, the kind of question and of answer, think time, and whether the player, the clock or the house answered), a line per debt-auction bidder, and a start and an end line per game. No names, only seats. The game keeps them as data (`live_log.rs`); the host drains them after every event and tick through a new `Game::take_log` (default: none) and appends them, with the wall-clock time, to `grand-allee-log.jsonl` in the core's data folder. A failed write only warns.
+- `GET /grand-allee-log` on the game-night server (port 8080) serves that file, since a release build's data folder can't be read from outside the box. A game ended early (back to the lobby, night stopped) leaves a start line without an end line.
+
+The simulator never drains the log; it prints the same tables.
+
+**Changed**
+
+- The quiz's tap clamp and speed points are shared (`QuizConfig::claim_time`, `speed_points`), as are the question view and the by-placing final screen; the buzzer quiz and Kopfnuss behave as before.
+- Dreifelder's answer buttons are numbered 1–3 like the fields on the TV, with the shape in the corner. A line under the clock says whether you are still in and how many are left; once you are out the buttons fade, and the line says your right guesses still count for your place (they rank players who went out in the same round).
+- Dreifelder's reveal shows the right field as a small numbered key, and your own wrong pick struck through above it. Out players get a dark card. The "Stand: 0 Punkte" line is gone from Dreifelder, which only scores at the end.
+## 0.170.2 — Grand Allee speaks to the mover, about the mover
+
+**Fixed**
+
+- The TV no longer shows the mover's own "du" question ("Ben: Dir fehlen 800 Taler. Was versteigerst du?"): it narrates with the mover's name first ("Ben fehlen 800 Taler. Was wird versteigert?"). The mover's own phone now says "du" in the notes it used to narrate in the third person ("Du kaufst Lagune.", "Du kannst nicht zahlen und bist raus."). Every question and note carries both forms (`Phrase` in `live_text.rs`); the name is filled in when a screen is built, so a renamed rejoin reads right. "Du ersteigert" is now "Du ersteigerst".
+- "Kein Gebot" shows once on the TV, in the auction panel where everyone is already looking; the banner keeps the seller's line.
+
+**Changed**
+
+- An absent bidder in a debt auction gets the table's 1.5 s grace before counting as passed, like every other question (`auction_close`); before, the auction closed at once without them. The simulator, where everyone is connected, prints the same tables.
+
+## 0.170.1 — Grand Allee's move travels in its stages
+
+**Changed** (no behaviour change: the simulator's 4 000 seeded games print the same tables)
+
+- The move in progress is no longer six loose fields on the game (`step`, `roll`, `rathaus`, `served`, `debt`, `building`). An ask carries where the move goes on (`Step`: the Rathaus menu with the hotels served so far, a `Debt` being settled, or done), a walk carries whether it passed the Rathaus, and an auction and its sale carry the debt they go toward. A permit debt cannot exist without its hotel, and a Rathaus step cannot sit beside a debt. `proceed` became three named steps: after the walk, to the guest, to the field.
+- `begin_move` starts every move, in the game and in the tests, so a test can no longer start a move carrying the previous player's 6. New test: after a clock ran out, the house answers a 6's extra roll at once.
+
+## 0.170.0 — The simulator plays the live Grand Allee
+
+**Changed** (from an architecture review; the live game is unchanged)
+
+- `grand-allee-sim` no longer keeps its own copy of the move order (`actions.rs`, `debts.rs` deleted). It drives `GrandAlleeGame` itself: a bot in every seat answers each question after a player's think time, and the clock jumps from one deadline to the next (`due`, which `tick` now also uses). The dice, the move order, the Doppelt choice and every timing are the live game's own.
+- The house's picks moved into `Bot::pick`. The house still lets an extra turn go, takes the cheapest entrance and auctions the hotel in question; a playing bot rolls again after a 6 and, on a Doppelt it cannot pay, raises the money when its other properties at the bank's price cover the shortfall.
+- New baseline (`plans/261109-1941-deepen-game-modules/reports/`): with the live game's real timings a game at 4–8 players takes 42–43 min, not 37–40. The rules play out the same; the old simulator under-timed entrance picks, declined questions and walks. Retiming waits for measured think times. A default run takes 0.8 s instead of 0.1 s.
+
+## 0.169.0 — The game catalogue
+
+**Fixed**
+
+- The game factory built a quiz for any game it did not list; it now matches every game explicitly, so a new game does not compile without its builder.
+
+**Changed** (no visible change; from an architecture review)
+
+- A game's name and seat range live in one entry of the game catalogue (`catalogue.rs`). The lobby's start rule builds its seat messages from it (same texts), and both lobby views carry the catalogue (`games`), so the phones and the TV no longer keep their own names, seat ranges and list of games. Kopfnuss, the quiz and the poster game take the room's cap (8) as their maximum, as the room already enforced.
+- The Android TV shelf keeps its own copy, now pointing at the catalogue.
+
+## 0.168.0 — One grace for the house at every table
+
+**Changed** (no visible change; from an architecture review)
+
+- When the house decides for an absent player is one rule for every game, `GameCtx::house_at`: the grace (1.5 s, `HOUSE_GRACE_MS`) after the later of the player leaving and the question opening. Durak, Mau-Mau, Schwimmen, Heimlauf and Grand Allee each had their own copy; Grand Allee keeps its 20 s clock and its idle rule on top.
+- `auto_ms` is gone from the five game configs.
+- One `game::name` looks up a player's name ("Jemand" for one not seated) instead of five copies; Kopfnuss's "?" becomes "Jemand", which no game shows.
+
+## 0.167.0 — Grand Allee: the host states what the clients worked out
+
+**Changed** (no visible change; from an architecture review)
+
+- The client tests' Grand Allee board is written by `cargo test` from the host's own board (`client/tests/grand-allee-board.json`), replacing a hand copy. A change to a hotel's frontage or stages in `board.rs` now fails the TV's layout and model tests instead of passing them.
+- A debt auction's bid carries the bank's price (`BidRange.bank`); the phone starts the bid there instead of repeating the bank's 50 %.
+- The note for a player going out says so (`GrandAlleeTurn::Note.broke`); the TV's scream follows that fact instead of inferring it from the seats.
+
+## 0.166.0 — Grand Allee's phone: clock, hotel cards, a real bid
+
+**Added** (phase 05; the user chose the bid control, the cards and the Doppelt choice from rendered mockups)
+
+- The phone shows the decision's clock, 20 s for a move and 15 s for an auction, with the same seconds and meter as the quiz.
+- The player's hotels are cards: the hotel's own colour, stages built as dots, rate per night, entrances and value. Cash and the round sit on top.
+- A debt auction takes a real sealed bid: any whole hundred up to the bidder's cash, set with −1.000 / −100 / +100 / +1.000 and quick shares of the value (25 to 100 %), sent with one "Bieten" key, or "Passen". It replaces five fixed shares of the value (`Action::Bid`; `PhoneScreen::Sheet` carries `closes_at`, `hotels` and `bid` and drops `picked`).
+- A Doppelt permit the mover cannot pay now asks, as the rules say: auction that hotel and the permit costs nothing, or auction other properties until it is paid and build. If the others do not raise enough, the hotel in question goes after all. The house, absent players and the simulator still auction the hotel in question.
+
+## 0.165.0 — Bauherr retired: Grand Allee is the hotel game
+
+**Removed** (user's decision when Grand Allee was planned: it replaces Bauherr rather than standing beside it)
+
+- Bauherr is gone from the lobby, the phones and the TV games shelf. `GameKind::Bauherr`, its rules, turn flow and views, its wire types, the TV board (`client/src/tv/bauherr/`), its baked town (`client/public/bauherr/`, 8.8 MB) and its headless-Chrome bake (`tools/bauherr-bake/`) are deleted.
+
+**Changed**
+
+- What Grand Allee borrowed from Bauherr now lives with it: the name and Taler formatting on the host (`grand_allee/live_text.rs`, now tested), and on the TV the camera's glide, the start and frame timing log (marks and beacon now named `grand-allee`), the shadow blobs and the answer colours. The Basis transcoder moved to `public/basis/`.
+- The dice are always the Blender models; the painted Bauherr dice that stood in before the models existed are gone.
+
+## 0.164.0 — Grand Allee's curved road and plots, light on the TV box
+
+**Changed** (user, after seeing Grand Allee on the box: "Each hotel has a plot of land that adapts to the course of the route", "make the players road curved")
+
+- The road is one smooth curve: every field is drawn along it (`board_land.field_outline`), not as a straight quad. Pawns, the camera and coins follow the road's curved middle.
+- Each hotel's land runs from the road's kerb along its frontage fields back past the hotel, so it touches the road and follows every bend. Neighbouring plots share their dividing line. On the board it is a striped lawn with edging; on the TV the owner's frame runs along it. `board_path.py` checks that every hotel stands on its land and that no land overlaps another, the road or the water.
+- The board is re-baked to match: curved kerbs, inlays and bridge parapets; trees, houses and the market moved off the land. 10 598 triangles.
+
+**Performance**
+
+- The hotel and board atlases ship as Basis ETC1S KTX2 (`tools/grand-allee-models/glb-to-ktx2.mjs`, toktx 4.4.2), transcoded in a worker like Bauherr's. GPU memory for the 14 atlases drops from about 151 MB to about 19 MB. A test fails if a WebP atlas slips back in.
+- On the Skyworth box (0.163.1 test build): 2.6–3.6 s from starting the game to the board, and 58.6 fps over a whole 29-minute bot game on a 59 Hz display (0.41 % of frames over 25 ms). App GPU memory stays flat at about 196 MiB.
+
+**Fixed**
+
+- The TV's games shelf holds more games than fit on one screen. It now scrolls like the film rows. Before, the ninth card (Grand Allee) was squeezed into a tall black panel over Durak and Bauherr, and the remote could not reach it.
+
 ## 0.163.0 — Kopfnuss, the quiz with tricks
 
 **Added** (user, 2026-11-08: a quiz party game where players vote the category and throw "spanners in their opponents' works", with less waiting than the genre's usual one question per round; built on `feat/kopfnuss` as 0.160.0–0.160.2, renumbered here because those numbers collided with Grand Allee's)

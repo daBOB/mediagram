@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,18 +56,19 @@ internal data class ShelfGame(
     @DrawableRes val backdrop: Int?,
 )
 
-// Seats as the host counts them (room_settings.rs); a game without its own art yet shows its name.
+// Names and seats mirror the game catalogue, crates/mediagram-game/src/catalogue.rs; a game without its own art yet shows its name.
 internal val ShelfGames =
     listOf(
         ShelfGame("quiz", "Buzzer-Quiz", "1–8 players", R.drawable.ui_tv_game_poster_quiz, R.drawable.ui_tv_game_backdrop_quiz),
         ShelfGame("poster", "Poster-Raten", "1–8 players", R.drawable.ui_tv_game_poster_poster, R.drawable.ui_tv_game_backdrop_poster),
         ShelfGame("kopfnuss", "Kopfnuss", "2–8 players", null, null),
+        ShelfGame("dreifelder", "Dreifelder", "2–8 players", null, null),
         ShelfGame("race", "Heimlauf", "2–4 players", null, null),
         ShelfGame("mau_mau", "Mau-Mau", "2–8 players", R.drawable.ui_tv_game_poster_mau_mau, R.drawable.ui_tv_game_backdrop_mau_mau),
         ShelfGame("schwimmen", "Schwimmen", "2–8 players", R.drawable.ui_tv_game_poster_schwimmen, R.drawable.ui_tv_game_backdrop_schwimmen),
         ShelfGame("durak", "Durak", "2–6 players", R.drawable.ui_tv_game_poster_durak, R.drawable.ui_tv_game_backdrop_durak),
-        ShelfGame("bauherr", "Bauherr", "2–4 players", null, R.drawable.ui_tv_game_backdrop_bauherr),
         ShelfGame("grand_allee", "Grand Allee", "2–8 players", null, null),
+        ShelfGame("fluechtig", "Flüchtig", "2–6 players", null, null),
     )
 
 /**
@@ -80,8 +83,15 @@ internal fun TvGamesShelf(
 ) {
     val ground = MaterialTheme.colorScheme.background
     val game = ShelfGames[focused]
-    val requesters = remember { ShelfGames.map { FocusRequester() } }
-    LaunchedEffect(Unit) { requesters[focused].requestFocus() }
+    // More games than one screen holds: the row scrolls (as the film rows do), and the poster to
+    // come back to is scrolled in before it takes focus, since a poster off screen isn't composed.
+    val arrival = remember { focused }
+    val listState = rememberLazyListState()
+    val requester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        listState.scrollToItem(arrival)
+        requester.requestFocus()
+    }
     Box(Modifier.fillMaxSize().background(ground)) {
         GameBackdrop(game.backdrop)
         Column(Modifier.padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical + 24.tvDp)) {
@@ -93,12 +103,13 @@ internal fun TvGamesShelf(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical + 12.tvDp),
         ) {
             val plate = stripPlateWidth(maxWidth)
-            Row(horizontalArrangement = Arrangement.spacedBy(StripGap)) {
-                ShelfGames.forEachIndexed { i, g ->
+            LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(StripGap)) {
+                itemsIndexed(ShelfGames, key = { _, g -> g.kind }) { i, g ->
+                    val arrive = if (i == arrival) Modifier.focusRequester(requester) else Modifier
                     GamePoster(
                         game = g,
                         onPick = { onPick(g) },
-                        modifier = Modifier.width(plate).focusRequester(requesters[i]).onFocusChanged { if (it.isFocused) onFocus(i) },
+                        modifier = Modifier.width(plate).then(arrive).onFocusChanged { if (it.isFocused) onFocus(i) },
                     )
                 }
             }

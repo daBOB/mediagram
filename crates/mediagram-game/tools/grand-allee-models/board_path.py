@@ -18,6 +18,8 @@ import sys
 
 import numpy as np
 
+import board_land as bl
+
 FIELD = 6.0  # every field's length along the road
 ROAD = 4.0
 CLEAR = 1.0  # plot edge to road edge, at least
@@ -117,7 +119,9 @@ def fields(path):
         for s, side in ((s0, -1), (s0, 1), (s0 + LENGTHS[i], 1), (s0 + LENGTHS[i], -1)):
             px, py, qx, qy = path.at(s)
             corners.append((round(px + side * qy * ROAD / 2, 3), round(py - side * qx * ROAD / 2, 3)))
-        out.append({"id": i, "x": round(x, 3), "y": round(y, 3), "heading": round(math.atan2(ty, tx), 4), "corners": corners})
+        outline = [(round(px, 3), round(py, 3)) for px, py in bl.field_outline(path, s0, LENGTHS[i], ROAD / 2)]
+        out.append({"id": i, "x": round(x, 3), "y": round(y, 3), "heading": round(math.atan2(ty, tx), 4), "corners": corners,
+                    "outline": outline})
     return out
 
 
@@ -142,7 +146,8 @@ def plots(path, field_list, scale=HOTEL_SCALE):
         w, d, moved = w * scale, d * scale, 0.0
         while path.distance(footprint(x, y, w, d)) < ROAD / 2 + CLEAR and moved < d + ROAD:
             y, moved = y + step, moved + abs(step)
-        out.append({"hotel": hid, "name": mod, "x": round(x, 3), "y": round(y, 3),
+        reach = path.distance(footprint(x, y, w, d)) - ROAD / 2 - bl.KERB + 0.5  # the land reaches just past the hotel's nearest edge
+        out.append({"hotel": hid, "name": mod, "x": round(x, 3), "y": round(y, 3), "first": first, "last": last, "side": side, "reach": round(reach, 3),
                     "w": w, "d": d, "rotation": 0.0, "scale": scale, "clear": moved < d + ROAD})
     return out
 
@@ -175,9 +180,16 @@ def layout():
     path = Path()
     field_list = fields(path)
     plot_list = plots(path, field_list)
+    bl.attach_land(path, plot_list, field_starts(), LENGTHS, ROAD / 2)
     return {"board": BOARD, "road": ROAD, "fields": field_list, "plots": plot_list, "sea_y": SEA_Y,
             "river": RIVER, "river_width": RIVER_WIDTH, "pond": POND,
-            "centre_line": [(round(x, 3), round(y, 3)) for x, y in path.pts[::8]]}, problems(field_list, plot_list)
+            "centre_line": [(round(x, 3), round(y, 3)) for x, y in path.pts[::8]]}, problems(field_list, plot_list) + land_checks(path, plot_list)
+
+
+def land_checks(path, plot_list):
+    river = dense(RIVER)
+    water = lambda pts: min(nearest(pts, river) - RIVER_WIDTH / 2, nearest(pts, [POND[:2]]) - POND[2])
+    return bl.land_problems(plot_list, path.distance, water, ROAD / 2)
 
 
 if __name__ == "__main__":

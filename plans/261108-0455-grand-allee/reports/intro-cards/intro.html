@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&display=block" rel="stylesheet">
+<style>
+  :root { --ink: #fff4e2; --pill: rgba(28,18,11,0.86); --gold: #ffc861; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  body { position: relative; font-family: "Bricolage Grotesque", system-ui, sans-serif; color: var(--ink); }
+  .board { position: absolute; inset: 0; background: url(board.png) 0 0 / 1920px 1080px; }
+  .banner { position: absolute; left: 730px; top: 40px; width: 460px; height: 70px; border-radius: 35px;
+    background: #22170f; display: grid; place-items: center; font-weight: 800; font-size: 36px; }
+  .card { position: absolute; left: 50%; top: 168px; transform: translateX(-50%); width: 1180px; box-sizing: border-box;
+    padding: 46px 64px 40px; border-radius: 40px; min-height: 662px; display: flex; flex-direction: column; background: var(--pill); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+  .kicker { font-weight: 700; font-size: 26px; letter-spacing: .06em; text-transform: uppercase; opacity: .72; }
+  h1 { margin: 6px 0 26px; font-weight: 800; font-size: 76px; line-height: 1; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+  li { font-weight: 600; font-size: 40px; line-height: 1.22; padding-left: 40px; position: relative; }
+  li::before { content: ""; position: absolute; left: 4px; top: 17px; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); }
+  b { color: var(--gold); font-weight: 800; }
+  .foot { display: flex; align-items: center; gap: 28px; margin-top: auto; padding-top: 38px; }
+  .steps { display: flex; gap: 12px; }
+  .steps i { display: block; width: 92px; height: 12px; border-radius: 6px; background: rgba(255,244,226,.22); overflow: hidden; }
+  .steps i.done { background: var(--ink); }
+  .steps i.now { background: linear-gradient(90deg, var(--ink) 40%, rgba(255,244,226,.22) 40%); }
+  .skip { margin-left: auto; font-weight: 700; font-size: 28px; opacity: .8; }
+</style>
+</head>
+<body>
+<div class="board"></div>
+<div class="banner">Gleich geht’s los …</div>
+<div class="card" id="card"></div>
+<script>
+const cards = [
+  ["Das Ziel", [
+    "Nach <b>56 Runden</b> gewinnt, wer am meisten besitzt:",
+    "<b>Geld, Grundstücke</b> und <b>gebaute Hotels</b> zählen.",
+    "Wer eine Rechnung nicht mehr bezahlen kann, ist <b>raus</b>.",
+  ]],
+  ["Dein Zug", [
+    "<b>Würfle</b> auf dem Handy und lauf.",
+    "Freies <b>Grundstück</b>? Kaufen.",
+    "<b>Baustelle</b>? Bauen – der Genehmigungswürfel entscheidet.",
+    "Am <b>Rathaus</b> vorbei: Eingänge kaufen.",
+    "Eine <b>6</b> darf nochmal.",
+  ]],
+  ["Das Geld", [
+    "Landest du auf einem <b>fremden Eingang</b>, zahlst du: Nächte × Preis des Hotels.",
+    "Über die <b>Bank</b>: 2 000 Taler.",
+    "Fehlt dir Geld, <b>versteigerst</b> du Besitz an die anderen.",
+  ]],
+];
+const n = Number(new URLSearchParams(location.search).get("c") || 1);
+const [title, lines] = cards[n - 1];
+const steps = [1, 2, 3].map(i => `<i class="${i < n ? "done" : i === n ? "now" : ""}"></i>`).join("");
+document.getElementById("card").innerHTML =
+  `<div class="kicker">So geht Grand Allee · ${n} / 3</div><h1>${title}</h1>` +
+  `<ul>${lines.map(l => `<li>${l}</li>`).join("")}</ul>` +
+  `<div class="foot"><div class="steps">${steps}</div><div class="skip">Überspringen: auf Lenas Handy</div></div>`;
+</script>
+</body>
+</html>

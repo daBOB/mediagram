@@ -1,21 +1,19 @@
 // The two dice beside the pond: the number die (thrown for the move and again for a guest's nights) and the permit die. 4b's
 // die-number.glb and die-permit.glb mark each face with an empty face_<value> at its centre (face_1..face_6; face_approved,
-// face_rejected, face_free, face_double), from which the TV works out which turn brings a face up; until they exist,
-// Bauherr's painted dice stand in. Each throw flies from the host's rolled_at to lands_at, then shows its value until the next.
+// face_rejected, face_free, face_double), from which the TV works out which turn brings a face up. Each throw flies from the
+// host's rolled_at to lands_at, then shows its value until the next.
 
 import * as THREE from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
-import { DIE_SIZE, FACE_UP, NUMBER_FACES, PERMIT_FACES, upYaws } from "../bauherr/bauherr-dice";
-import { shade } from "./grand-allee-board";
 import { flight } from "./grand-allee-clock";
 import { toSpot, type Board } from "./grand-allee-layout";
 import { DIE } from "./grand-allee-look";
 
 const UP = new THREE.Vector3(0, 1, 0);
-const PERMIT_OF = { ok: "approved", no: "rejected", free: "free", x2: "double" } as const;
-/** Bauherr's throw was made for its own die: its distances scale with ours. */
-const K = DIE.size / DIE_SIZE;
+/** The throw's distances were tuned for a 1.2 m die: they scale with ours. */
+const K = DIE.size / 1.2;
+/** The turn that brings box face k (+x, -x, +y, -y, +z, -z) to the top. */
+export const FACE_UP: [number, number, number][] = [[0, 0, Math.PI / 2], [0, 0, -Math.PI / 2], [0, 0, 0], [Math.PI, 0, 0], [-Math.PI / 2, 0, 0], [Math.PI / 2, 0, 0]];
 /** The turns that show a value on top, by value. */
 type Faces = Map<string, THREE.Quaternion[]>;
 interface Die {
@@ -30,22 +28,6 @@ interface Die {
 }
 
 const add = (faces: Faces, value: string, q: THREE.Quaternion) => faces.set(value, [...(faces.get(value) ?? []), q]);
-
-/** Bauherr's painted die (its faces in 3 x 2 cells of one image), scaled up. */
-function paintedDie(map: THREE.Texture, values: string[]) {
-  const geo = new RoundedBoxGeometry(DIE_SIZE, DIE_SIZE, DIE_SIZE, 4, 0.11), uv = geo.attributes.uv;
-  geo.groups.forEach((grp, k) => {
-    const col = k % 3, row = Math.floor(k / 3), seen = new Set<number>();
-    for (let i = grp.start; i < grp.start + grp.count; i++) seen.add(geo.index ? geo.index.getX(i) : i);
-    for (const j of seen) uv.setXY(j, (col + 0.03 + uv.getX(j) * 0.94) / 3, (row + 0.03 + uv.getY(j) * 0.94) / 2);
-  });
-  geo.clearGroups();
-  const obj = new THREE.Mesh(shade(geo, 0.72), new THREE.MeshBasicMaterial({ map, vertexColors: true }));
-  obj.scale.setScalar(K);
-  const yaws = upYaws(), faces: Faces = new Map();
-  values.forEach((v, k) => add(faces, v, new THREE.Quaternion().setFromEuler(new THREE.Euler(...FACE_UP[k])).premultiply(new THREE.Quaternion().setFromAxisAngle(UP, yaws[k]))));
-  return { obj, faces };
-}
 
 /** The value an empty named face_<value> marks (repeats are face_approved_1 or face_approved001); null for any other node. */
 export function faceValue(name: string): string | null {
@@ -84,7 +66,7 @@ export class Dice {
   private spun = new THREE.Quaternion();
   private yaw = new THREE.Quaternion();
 
-  constructor(scene: THREE.Scene, board: Board, models: { number: THREE.Object3D | null; permit: THREE.Object3D | null }, ivory: THREE.Texture | null, oak: THREE.Texture | null) {
+  constructor(scene: THREE.Scene, board: Board, models: { number: THREE.Object3D; permit: THREE.Object3D }) {
     const [px, py] = board.json.pond;
     const make = (die: { obj: THREE.Object3D; faces: Faces }, at: [number, number]): Die => {
       const s = toSpot([px + at[0], py + at[1]]), rest = new THREE.Vector3(s.x, DIE.size / 2, s.z);
@@ -94,12 +76,8 @@ export class Dice {
       scene.add(die.obj);
       return { ...die, rest, from: new THREE.Vector3(), to: rest.clone(), q, axis: new THREE.Vector3(0, 1, 0), thrown: -1 };
     };
-    const painted = (map: THREE.Texture | null, values: string[]) => {
-      if (!map) throw new Error("dice: neither a model nor an image");
-      return paintedDie(map, values);
-    };
-    this.number = make(models.number ? modelDie(models.number) : painted(ivory, NUMBER_FACES.map(String)), DIE.number);
-    this.permit = make(models.permit ? modelDie(models.permit) : painted(oak, PERMIT_FACES.map((f) => PERMIT_OF[f])), DIE.permit);
+    this.number = make(modelDie(models.number), DIE.number);
+    this.permit = make(modelDie(models.permit), DIE.permit);
   }
 
   private throwTo(d: Die, value: string, side: number, rolledAt: number) {

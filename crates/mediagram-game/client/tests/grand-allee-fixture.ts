@@ -1,31 +1,12 @@
 // The Grand Allee board as the host sends it, players and a scene to start from, for the tests and the board's stand-in host
-// (tools/grand-allee-preview). Kinds, hotels and stages as in src/grand_allee/board.rs.
+// (tools/grand-allee-preview). The board is the host's own: `cargo test` writes it to grand-allee-board.json.
 import type { GrandAlleeBoard } from "../src/protocol/GrandAlleeBoard";
-import type { GrandAlleeFieldKind } from "../src/protocol/GrandAlleeFieldKind";
 import type { GrandAlleeScene } from "../src/protocol/GrandAlleeScene";
 import type { PlayerInfo } from "../src/protocol/PlayerInfo";
 import { boardOf, type Board, type LayoutJson } from "../src/tv/grand-allee/grand-allee-layout";
+import board from "./grand-allee-board.json";
 
-const KINDS = "B.GEP.S..P.SP.S.P.S.R.GEP.S..P.SP.S.P.S.";
-const KIND: Record<string, GrandAlleeFieldKind> = { B: "bank", R: "rathaus", P: "plot", S: "site", E: "free_entrance", G: "free_build", ".": "allee" };
-// name, first and last frontage field, land, entrance, [cost, rate] per stage
-const HOTELS: [string, number, number, number, number, [number, number][]][] = [
-  ["Lagune", 4, 8, 1200, 300, [[1200, 75], [900, 150], [900, 225]]],
-  ["Kirschblüte", 9, 13, 2000, 500, [[2000, 100], [1500, 200], [1500, 325], [1200, 425]]],
-  ["Fjordhus", 14, 19, 2600, 600, [[2400, 125], [1800, 250], [1800, 400], [1600, 525], [1400, 650]]],
-  ["Hacienda Sol", 24, 28, 1000, 300, [[1200, 75], [900, 150], [900, 225]]],
-  ["Riad Atlas", 29, 33, 1300, 350, [[1400, 75], [1000, 150], [1000, 225], [800, 300]]],
-  ["Alpenrose", 34, 39, 2300, 550, [[2200, 125], [1600, 250], [1600, 375], [1400, 500], [1200, 575]]],
-  ["Maharadscha", 4, 11, 3000, 700, [[2800, 125], [2000, 275], [2000, 425], [1800, 575], [1600, 675], [1400, 750]]],
-  ["Skyline", 12, 19, 3500, 800, [[2800, 150], [2200, 300], [2200, 425], [1800, 550], [1600, 650], [1400, 750]]],
-  ["Savanne", 24, 31, 2800, 650, [[2600, 125], [1900, 250], [1900, 400], [1700, 525], [1500, 650]]],
-  ["Belle Époque", 32, 39, 3200, 750, [[2800, 150], [2100, 300], [2100, 425], [1800, 550], [1600, 650], [1400, 750]]],
-];
-
-export const boardData = (): GrandAlleeBoard => ({
-  fields: [...KINDS].map((k) => KIND[k]),
-  hotels: HOTELS.map(([name, first, last, land, entrance, stages], id) => ({ id, name, first, last, land, entrance, stages: stages.map(([cost, rate]) => ({ cost, rate })) })),
-});
+export const boardData = (): GrandAlleeBoard => structuredClone(board) as GrandAlleeBoard;
 
 const CAST: [string, string, string][] = [
   ["Lena", "#e4572e", "fox"], ["Jonas", "#3fae5a", "frog"], ["Oma Gerda", "#f2b631", "granny"], ["Papa", "#3d7be8", "panda"],

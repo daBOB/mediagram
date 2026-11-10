@@ -1,8 +1,7 @@
 """Flat 'ink' for the board and the dice: polygons drawn on a plane (painted
 icons, letters, pips, signs). They exist only in the scenes the bakes look at;
-the GLBs carry them as texture, never as geometry. Icon shapes follow
-Bauherr's road icons (tools/bauherr-bake/page/field-icons.mjs) with y up:
-coin, pediment, staked plot, crane, door with a star, and its permit die's gift."""
+the GLBs carry them as texture, never as geometry. Icons, with y up:
+coin, pediment, staked plot, crane, door with a star, and the permit die's gift."""
 
 import math
 

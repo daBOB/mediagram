@@ -8,7 +8,7 @@ import { Token } from "../ui/Token";
 import { TRICK_NAMES } from "../ui/tricks";
 import { KopfnussClimb, KopfnussFact } from "./kopfnuss/KopfnussClimb";
 import { KopfnussSound } from "./kopfnuss/kopfnuss-sound";
-import { TvFinal } from "./TvFinal";
+import { TvFinal, byFinish } from "./TvFinal";
 import { TvQuiz } from "./TvQuiz";
 import "./kopfnuss/kopfnuss.css";
 
@@ -69,11 +69,8 @@ export function TvKopfnuss({ scene, players, conn }: Props) {
       return <KopfnussClimb stage={stage} players={players} conn={conn} />;
     case "fact":
       return <KopfnussFact stage={stage} players={players} />;
-    case "final": {
-      const order = new Map(stage.order.map((id, i) => [id, i]));
-      const ranked = players.filter((p) => order.has(p.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
-      return <TvFinal players={ranked} conn={conn} ranked />;
-    }
+    case "final":
+      return <TvFinal players={byFinish(players, stage.order)} conn={conn} ranked />;
   }
 }
 

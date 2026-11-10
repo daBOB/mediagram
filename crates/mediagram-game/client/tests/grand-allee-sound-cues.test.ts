@@ -16,12 +16,11 @@ test("a guest's nights die clatters and the coins arrive with a jingle at paid_a
   expect(plan.cues).toEqual([{ sound: "die", at: clatterAt(0, 1150) }, { sound: "goalJingle", at: 2050 }]);
 });
 
-test("a player going broke thuds and screams; other notes are silent", () => {
+test("a player going broke thuds and screams, on the host's word alone; other notes are silent", () => {
   const note = { stage: "note", player: 1, text: "", started_at: 500 } as const;
-  const broke = sceneOf({ turn: note });
-  broke.seats[1].out = true;
-  expect(grandAlleeCues(broke, 0)?.cues.map((c) => c.sound)).toEqual(["thunk", "scream"]);
-  expect(grandAlleeCues(sceneOf({ turn: note }), 0)).toBeNull();
+  // every seat is still in: the sound follows the note's fact, not the seats
+  expect(grandAlleeCues(sceneOf({ turn: { ...note, broke: true } }), 0)?.cues.map((c) => c.sound)).toEqual(["thunk", "scream"]);
+  expect(grandAlleeCues(sceneOf({ turn: { ...note, broke: false } }), 0)).toBeNull();
 });
 
 test("each stage's cues are keyed by its own clock, so they are scheduled once", () => {

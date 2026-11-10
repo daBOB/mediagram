@@ -1,7 +1,7 @@
 // Run with `bun test` in crates/mediagram-game/client.
 import { expect, test } from "bun:test";
 import type { GrandAlleeTurn } from "../src/protocol/GrandAlleeTurn";
-import { CameraRig, cameraWish, deepField, diceSpot, poseAt } from "../src/tv/grand-allee/grand-allee-camera";
+import { CameraRig, cameraWish, deepField, diceSpot, glide, poseAt } from "../src/tv/grand-allee/grand-allee-camera";
 import { fieldPoint } from "../src/tv/grand-allee/grand-allee-layout";
 import { CAMERA, DEEP } from "../src/tv/grand-allee/grand-allee-look";
 import { sceneOf, testBoard } from "./grand-allee-fixture";
@@ -10,6 +10,18 @@ const deg = (rad: number) => (rad * 180) / Math.PI;
 const pitchOf = (p: ReturnType<typeof poseAt>) => deg(Math.atan2(p.pos[1] - p.at[1], p.pos[2] - p.at[2]));
 const distOf = (p: ReturnType<typeof poseAt>) => Math.hypot(p.pos[1] - p.at[1], p.pos[2] - p.at[2]);
 const walk = (from: number, to: number): GrandAlleeTurn => ({ stage: "walking", player: 0, value: to - from, from, to, started_at: 0, hop_ms: 280, bank: false });
+
+test("glide approaches its target without overshoot and settles", () => {
+  const v = { v: 0 };
+  let x = 0, prev = 0;
+  for (let i = 0; i < 60 * 8; i++) {
+    x = glide(x, 1, v, 1, 1 / 60);
+    expect(x).toBeLessThanOrEqual(1 + 1e-9);
+    expect(x).toBeGreaterThanOrEqual(prev - 1e-9);
+    prev = x;
+  }
+  expect(x).toBeCloseTo(1, 3);
+});
 
 test("the overview looks 55 degrees down at the board's centre, wherever the focus is", () => {
   const p = poseAt(0, 0, 40, -30);
@@ -27,7 +39,7 @@ test("leaning in comes closer; the deep lean closer still and steeper", () => {
 
 test("between turns and at the end, the overview", async () => {
   const b = await testBoard();
-  expect(cameraWish(sceneOf({ turn: { stage: "note", player: 0, text: "", started_at: 0 } }), b, 0)).toBeNull();
+  expect(cameraWish(sceneOf({ turn: { stage: "note", player: 0, text: "", broke: false, started_at: 0 } }), b, 0)).toBeNull();
   expect(cameraWish(sceneOf({ turn: { stage: "final", winner: 0, ranking: [0] } }), b, 0)).toBeNull();
 });
 

@@ -1,0 +1,99 @@
+/* Dreifelder on the TV, on top of the quiz's question card and answer keys. */
+
+.df-fields {
+  grid-template-columns: repeat(3, 1fr);
+  align-content: stretch;
+}
+
+/* A field is a place to stand: its answer on top, the pawns that picked it below. */
+.df-field {
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 9rem;
+}
+
+.df-field-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.df-field-number {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  opacity: 0.6;
+}
+
+/* At the reveal the clock's place says who is out, or that nobody is. */
+.df.stage-reveal .qclock {
+  min-width: auto;
+  font-size: 2rem;
+}
+
+.df-standing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.8rem;
+}
+
+/* Out players' guesses stand in the field too, faded: they count for nothing. */
+.df-ghost {
+  opacity: 0.5;
+}
+
+.df-nopick {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.df-table {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.df-in {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2.4rem;
+}
+
+.df-out {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.7;
+}
+
+.df-out-label {
+  margin-right: 0.3rem;
+  color: var(--muted);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+/* Who went out this round drops into the row. */
+.df-out-new {
+  animation: df-drop 600ms ease-out both;
+}
+
+@keyframes df-drop {
+  from {
+    transform: translateY(-2.5rem);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .df-out-new {
+    animation: none;
+  }
+}

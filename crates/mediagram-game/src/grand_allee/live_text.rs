@@ -1,0 +1,45 @@
+//! How the live game writes a sum of money, and a sentence about the mover.
+
+/// A sentence about the mover: "du" on their own phone, led by their name everywhere else.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct Phrase {
+    pub du: String,
+    /// Follows the mover's name, which the TV's banner colours when it leads.
+    pub then: String,
+}
+
+impl Phrase {
+    pub(crate) fn new(du: impl Into<String>, then: impl Into<String>) -> Self {
+        Self { du: du.into(), then: then.into() }
+    }
+
+    /// For everyone but the mover, who is called `name`.
+    pub(crate) fn about(&self, name: &str) -> String {
+        format!("{name} {}", self.then)
+    }
+}
+
+/// 12000 as "12.000".
+pub(crate) fn grouped(n: i32) -> String {
+    let digits = n.abs().to_string();
+    let groups: Vec<String> = digits.as_bytes().rchunks(3).rev().map(|c| String::from_utf8_lossy(c).into_owned()).collect();
+    format!("{}{}", if n < 0 { "-" } else { "" }, groups.join("."))
+}
+
+pub(crate) fn taler(n: i32) -> String {
+    format!("{} Taler", grouped(n))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{grouped, taler};
+
+    #[test]
+    fn money_is_grouped_in_thousands_with_dots() {
+        assert_eq!(grouped(0), "0");
+        assert_eq!(grouped(999), "999");
+        assert_eq!(grouped(12000), "12.000");
+        assert_eq!(grouped(-1234567), "-1.234.567");
+        assert_eq!(taler(2500), "2.500 Taler");
+    }
+}

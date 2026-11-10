@@ -1,20 +1,17 @@
 //! What the phones and the TV show for each Kopfnuss stage.
 
-use crate::game::ViewCtx;
+use crate::game::{ViewCtx, name};
 use crate::kopfnuss::{KopfnussGame, Stage};
 use crate::kopfnuss_picks::Step;
 use crate::protocol::{
     AnswerColor, ChoiceOption, KopfnussScene, KopfnussStage, PhoneScreen, PlayerId, TrickLoad, TvScene,
 };
+use crate::quiz_views::final_by_order;
 use crate::room_seats::Player;
 
 /// Buttons in the answer colors, repeating them past four.
 fn buttons(labels: impl IntoIterator<Item = String>) -> Vec<ChoiceOption> {
     labels.into_iter().zip(AnswerColor::ALL.iter().cycle()).map(|(label, &color)| ChoiceOption { label, color }).collect()
-}
-
-fn name(players: &[Player], id: PlayerId) -> String {
-    players.iter().find(|p| p.id == id).map_or_else(|| "?".into(), |p| p.name.clone())
 }
 
 impl KopfnussGame {
@@ -32,7 +29,7 @@ impl KopfnussGame {
                     ),
                     Step::Target => (
                         format!("{} – für wen?", sheet.trick.map_or("Trick", |t| t.name())),
-                        buttons(sheet.targets.iter().map(|&t| name(view.players, t))),
+                        buttons(sheet.targets.iter().map(|&t| name(view.players, t).to_string())),
                     ),
                     Step::Done => {
                         return PhoneScreen::Wait { title: "Erledigt!".into(), text: Some("Gleich wird ausgezählt …".into()) };
@@ -45,6 +42,8 @@ impl KopfnussGame {
                     closes_at: Some(closes_at),
                     picked: None,
                     tricks: vec![],
+                    numbered: false,
+                    status: None,
                 }
             }
             Stage::Resolve { .. } => PhoneScreen::Wait {
@@ -54,14 +53,18 @@ impl KopfnussGame {
             Stage::Question => {
                 let Some(quiz) = &self.quiz else { return PhoneScreen::Wait { title: String::new(), text: None } };
                 match quiz.phone_view(view, player) {
-                    PhoneScreen::Choice { prompt, options, opens_at, closes_at, picked, .. } => PhoneScreen::Choice {
-                        prompt,
-                        options,
-                        opens_at,
-                        closes_at,
-                        picked,
-                        tricks: self.tricks.get(&player).cloned().unwrap_or_default(),
-                    },
+                    PhoneScreen::Choice { prompt, options, opens_at, closes_at, picked, numbered, status, .. } => {
+                        PhoneScreen::Choice {
+                            prompt,
+                            options,
+                            opens_at,
+                            closes_at,
+                            picked,
+                            tricks: self.tricks.get(&player).cloned().unwrap_or_default(),
+                            numbered,
+                            status,
+                        }
+                    }
                     // The contained quiz's own final screen is never Kopfnuss's.
                     PhoneScreen::Final { .. } => PhoneScreen::Wait { title: "Nächste Runde".into(), text: None },
                     other => other,
@@ -76,19 +79,11 @@ impl KopfnussGame {
                 let title = if winner == Some(player) {
                     "Du hast den Gipfel erreicht!".to_string()
                 } else {
-                    format!("{} hat den Gipfel erreicht", winner.map_or_else(String::new, |w| name(view.players, w)))
+                    format!("{} hat den Gipfel erreicht", winner.map_or("", |w| name(view.players, w)))
                 };
                 PhoneScreen::Wait { title, text: Some(self.fact.clone()) }
             }
-            Stage::Final => {
-                let rank = self.order.iter().position(|&p| p == player).map_or(self.order.len() + 1, |i| i + 1);
-                PhoneScreen::Final {
-                    rank: rank as u8,
-                    of: view.players.len() as u8,
-                    score: view.players.iter().find(|p| p.id == player).map_or(0, |p| p.score),
-                    can_restart: view.leader == Some(player),
-                }
-            }
+            Stage::Final => final_by_order(&self.order, view, player),
         }
     }
 

@@ -1,5 +1,6 @@
-//! Grand Allee's board as data: a closed oval of 40 fields with ten hotels on
-//! both sides of its two straights. Hotels, prices and names are our own.
+//! Grand Allee's board as data: a closed ring of 40 fields with ten hotels
+//! along it. Hotels, prices and names are our own; where the ring winds on the
+//! TV is `tools/grand-allee-models/board_path.py`'s.
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;

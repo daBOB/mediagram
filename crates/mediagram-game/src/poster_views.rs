@@ -22,6 +22,8 @@ impl PosterGame {
                 text: None,
                 tone: Tone::Bad,
                 points: 0,
+                keys: vec![],
+                show_score: true,
             },
             Stage::Showing { started_at, closes_at } => PhoneScreen::Choice {
                 prompt: Some(if round.series { "Welche Serie?" } else { "Welcher Film?" }.into()),
@@ -35,6 +37,8 @@ impl PosterGame {
                 closes_at: Some(closes_at),
                 picked: self.claims.contains_key(&player).then_some(round.correct),
                 tricks: vec![],
+                numbered: false,
+                status: None,
             },
             Stage::Reveal { .. } => match self.winner {
                 Some((w, points)) if w == player => PhoneScreen::Outcome {
@@ -42,12 +46,16 @@ impl PosterGame {
                     text: Some(round.name.clone()),
                     tone: Tone::Good,
                     points,
+                    keys: vec![],
+                    show_score: true,
                 },
                 _ => PhoneScreen::Outcome {
                     title: "Aufgelöst".into(),
                     text: Some(round.name.clone()),
                     tone: Tone::Neutral,
                     points: 0,
+                    keys: vec![],
+                    show_score: true,
                 },
             },
             Stage::Final => {

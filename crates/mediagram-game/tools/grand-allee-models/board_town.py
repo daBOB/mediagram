@@ -12,7 +12,7 @@ from mathutils import Matrix
 import board_ink as ink
 import materials as m
 import parts as p
-from board_kit import BANK_AT, BRIDGES, RATHAUS_AT, SCALE
+from board_kit import BANK_AT, BRIDGES, RATHAUS_AT, SCALE, offset
 
 
 def site(name, at):
@@ -102,28 +102,30 @@ def obox(bm, a, b, l0, l1, z0, z1, t0=0.0, t1=1.0):
 
 
 def bridges(L):
-    """Over fields 1 and 21: a low stone parapet along each road edge where the
-    kerb stops, an iron railing on it, stone pillars at the ends. The deck is
+    """Over fields 1 and 21: a low stone parapet along each curved road edge where
+    the kerb stops, an iron railing on it, stone pillars at the ends. The deck is
     the field itself; the river's channel is in the ground's bake."""
+    from board_ground import strip
     stone = m.textured("bridge_stone", "sandstone_blocks_05", 1.5, "#d8ccb6")
     iron = m.plain("bridge_iron", "#3a3632")
-    edges = [(f"{fid}_{n}", a, b) for fid in BRIDGES for n, (a, b) in
-             (("outer", (L.fields[fid]["corners"][0], L.fields[fid]["corners"][3])),
-              ("inner", (L.fields[fid]["corners"][2], L.fields[fid]["corners"][1])))]  # each runs with the outside on its left
     out = []
-    for tag, a, b in edges:
-        k = 1 / math.dist(a, b)
+    for fid in BRIDGES:
+        o = L.fields[fid]["outline"]
+        for tag, line in (("outer", o[:7]), ("inner", o[7:])):  # each runs with the outside on its left
+            ends = ((line[0], line[1], 0.0), (line[-2], line[-1], 1.0))
 
-        def masonry(bm, a=a, b=b, k=k):
-            obox(bm, a, b, -0.02, 0.3, 0, 0.32)
-            for t in (0.0, 1.0):
-                obox(bm, a, b, -0.06, 0.38, 0, 1.05, t - 0.25 * k, t + 0.25 * k)
-                obox(bm, a, b, -0.1, 0.42, 1.05, 1.15, t - 0.3 * k, t + 0.3 * k)
+            def masonry(bm, line=line, ends=ends):
+                strip(bm, bm.loops.layers.uv.new("atlas"), offset(line, -0.02), 0.32, 0.32, False)
+                for a, b, t in ends:
+                    k = 1 / math.dist(a, b)
+                    obox(bm, a, b, -0.06, 0.38, 0, 1.05, t - 0.25 * k, t + 0.25 * k)
+                    obox(bm, a, b, -0.1, 0.42, 1.05, 1.15, t - 0.3 * k, t + 0.3 * k)
 
-        def railing(bm, a=a, b=b, k=k):
-            obox(bm, a, b, 0.1, 0.2, 0.86, 0.94)
-            for i in range(1, 8):
-                obox(bm, a, b, 0.12, 0.18, 0.32, 0.86, i / 8 - 0.035 * k, i / 8 + 0.035 * k)
+            def railing(bm, line=line):
+                strip(bm, bm.loops.layers.uv.new("atlas"), offset(line, 0.1), 0.1, 0.08, False, z0=0.86)
+                for a, b in zip(line[:-2], line[1:-1]):  # a baluster at every inner point of the edge
+                    k = 1 / math.dist(a, b)
+                    obox(bm, a, b, 0.12, 0.18, 0.32, 0.86, 1 - 0.035 * k, 1 + 0.035 * k)
 
-        out += [p.mesh_object(f"bridge_{tag}_parapet", masonry, stone), p.mesh_object(f"bridge_{tag}_railing", railing, iron)]
+            out += [ink.solid(f"bridge_{fid}_{tag}_parapet", masonry, stone), ink.solid(f"bridge_{fid}_{tag}_railing", railing, iron)]
     return out

@@ -1,18 +1,34 @@
-// Ownership on the ground: a frame round every owned plot in its owner's colour (an unbuilt plot shows its owner too; a free one
-// shows nothing over the board's own edging), flashing when the plot changes hands, and the entrances: a small gate on the field's
-// road edge on the hotel's side, in the owner's colour, dropping in when placed. One draw call each.
+// Ownership on the ground: a frame along the land of every owned plot, from the road's edge round the hotel, in its owner's colour
+// (an unbuilt plot shows its owner too; a free one shows nothing over the board's own edging), flashing when the plot changes
+// hands, and the entrances: a small gate at the field's road edge on the hotel's side, in the owner's colour, dropping in when
+// placed. One draw call each.
 
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
 import { shade } from "./grand-allee-board";
-import type { Board } from "./grand-allee-layout";
+import type { Board, Spot } from "./grand-allee-layout";
 import { GROUND, TIMES } from "./grand-allee-look";
 
-/** Metres: the frame's distance round the plot and its width; a free plot's frame waits under the board. */
-const FRAME = { margin: 0.9, width: 0.7, y: 0.14, hidden: -4 };
+/** Metres: the frame's width inside the land's edge; a free plot's frame waits under the board. */
+export const FRAME = { width: 0.7, y: 0.14, hidden: -4 };
 /** Metres from the road's centre line to a gate: on the field, at its edge. */
-const GATE_EDGE = 2.3;
+export const GATE_EDGE = 2.3;
+
+/** The polygon `w` metres inside the closed polygon `poly` (either winding), mitred at each corner, at most three widths deep. */
+export function inset(poly: Spot[], w: number): Spot[] {
+  const n = poly.length, turn = Math.sign(poly.reduce((a, p, i) => a + p.x * poly[(i + 1) % n].z - poly[(i + 1) % n].x * p.z, 0)) || 1;
+  // the inward normal of the edge p → q: on the left of it in a counter-clockwise polygon
+  const normal = (p: Spot, q: Spot) => {
+    const dx = q.x - p.x, dz = q.z - p.z, l = Math.hypot(dx, dz) || 1;
+    return { x: (-dz / l) * turn, z: (dx / l) * turn };
+  };
+  return poly.map((p, i) => {
+    const a = normal(poly[(i + n - 1) % n], p), b = normal(p, poly[(i + 1) % n]), mx = a.x + b.x, mz = a.z + b.z, ml = Math.hypot(mx, mz) || 1;
+    const depth = Math.min(3 * w, w / Math.max(1e-3, (mx / ml) * b.x + (mz / ml) * b.z));
+    return { x: p.x + (mx / ml) * depth, z: p.z + (mz / ml) * depth };
+  });
+}
 
 function gateGeometry() {
   const box = (w: number, h: number, d: number, x: number, y: number) => new THREE.BoxGeometry(w, h, d).translate(x, y, 0);
@@ -24,6 +40,8 @@ function gateGeometry() {
 export class Grounds {
   readonly frames: THREE.Mesh;
   readonly gates: THREE.InstancedMesh;
+  /** Each plot's frame vertices, [first, count]: a point on the land's edge and its inset partner, in turn. */
+  readonly ranges: [number, number][];
   private pos: Float32Array;
   private col: Float32Array;
   private c = new THREE.Color();
@@ -38,18 +56,18 @@ export class Grounds {
   private busy = -1;
 
   constructor(scene: THREE.Scene, private board: Board) {
-    // per plot four strips round its rectangle (plots stand square to the board): 16 vertices
-    const idx: number[] = [];
-    this.pos = new Float32Array(board.plots.length * 48);
-    this.col = new Float32Array(board.plots.length * 48).fill(1);
-    board.plots.forEach((p, i) => {
-      const k = FRAME.width, x0 = p.x - p.w / 2 - FRAME.margin, x1 = p.x + p.w / 2 + FRAME.margin, z0 = p.z - p.d / 2 - FRAME.margin, z1 = p.z + p.d / 2 + FRAME.margin;
-      [[x0, z0, x1, z0 + k], [x0, z1 - k, x1, z1], [x0, z0 + k, x0 + k, z1 - k], [x1 - k, z0 + k, x1, z1 - k]].forEach(([a, b, c, d], strip) => {
-        const base = i * 16 + strip * 4;
-        [[a, b], [c, b], [c, d], [a, d]].forEach(([x, z], j) => this.pos.set([x, FRAME.hidden, z], (base + j) * 3));
-        idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
-      });
+    const pos: number[] = [], idx: number[] = [];
+    this.ranges = board.plots.map((p): [number, number] => {
+      const inner = inset(p.land, FRAME.width), first = pos.length / 3, n = p.land.length;
+      p.land.forEach((o, i) => pos.push(o.x, FRAME.hidden, o.z, inner[i].x, FRAME.hidden, inner[i].z));
+      for (let i = 0; i < n; i++) {
+        const a = first + 2 * i, b = first + 2 * ((i + 1) % n);
+        idx.push(a, b, b + 1, a, b + 1, a + 1);
+      }
+      return [first, 2 * n];
     });
+    this.pos = new Float32Array(pos);
+    this.col = new Float32Array(pos.length).fill(1);
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
     g.setAttribute("color", new THREE.BufferAttribute(this.col, 3).setUsage(THREE.DynamicDrawUsage));
@@ -74,11 +92,11 @@ export class Grounds {
     const owner = new Map(scene.estates.map((e) => [e.hotel, e.owner]));
     const paint = (who: number | undefined) => this.c.set(who === undefined ? GROUND.free : colorOf(who));
     this.board.plots.forEach((p, i) => {
-      const who = owner.get(p.hotel), since = pulses.get(p.hotel), a = since === undefined ? 0 : t - since;
+      const who = owner.get(p.hotel), since = pulses.get(p.hotel), a = since === undefined ? 0 : t - since, [first, count] = this.ranges[i];
       const flash = since === undefined ? 0 : Math.max(0, 1 - a / TIMES.pulse) * (0.5 + 0.5 * Math.cos(a * 9));
       if (since !== undefined) end = Math.max(end, since + TIMES.pulse);
       paint(who).lerp(this.white, flash * 0.7);
-      for (let j = i * 16; j < i * 16 + 16; j++) {
+      for (let j = first; j < first + count; j++) {
         this.pos[j * 3 + 1] = who === undefined ? FRAME.hidden : FRAME.y;
         [this.col[j * 3], this.col[j * 3 + 1], this.col[j * 3 + 2]] = [this.c.r, this.c.g, this.c.b];
       }
@@ -90,11 +108,11 @@ export class Grounds {
     for (const e of scene.entrances) {
       const f = this.board.fields[e.field], plot = this.board.plots[e.hotel];
       if (!f || !plot) continue;
-      // the walk's right is three's local +z of the field; the gate stands on the side the hotel is on
-      const rx = Math.sin(f.rot), rz = Math.cos(f.rot), side = (plot.x - f.x) * rx + (plot.z - f.z) * rz >= 0 ? 1 : -1;
+      // the walk's right is three's local +z of the field, turned along the curve at its centre; the gate stands on the plot's side
+      const rx = Math.sin(f.rot) * plot.side, rz = Math.cos(f.rot) * plot.side;
       const since = drops.get(e.field), v = since === undefined ? 1 : Math.min(1, (t - since) / TIMES.place), ease = 1 - (1 - v) ** 3;
       if (since !== undefined) end = Math.max(end, since + TIMES.place);
-      this.v.set(f.x + rx * side * GATE_EDGE, (1 - ease) * 9, f.z + rz * side * GATE_EDGE);
+      this.v.set(f.x + rx * GATE_EDGE, (1 - ease) * 9, f.z + rz * GATE_EDGE);
       this.gates.setMatrixAt(n, this.m.compose(this.v, this.q.setFromAxisAngle(this.up, f.rot), this.s.setScalar(0.4 + 0.6 * ease)));
       this.gates.setColorAt(n++, paint(owner.get(e.hotel)));
     }

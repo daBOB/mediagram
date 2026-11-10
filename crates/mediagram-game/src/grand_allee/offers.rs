@@ -1,5 +1,5 @@
-//! What a field or a turn offers a seat: pure lookups that the simulator's
-//! bots and the live game's phone asks share, so both read the rules alike.
+//! What a field or a turn offers a seat: pure lookups the live game's asks
+//! are built from, so every question reads the rules alike.
 
 use super::board::{hotels_at, HOTELS};
 use super::rules::Table;

@@ -14,7 +14,7 @@ import board_path as bp
 import materials as m
 import parts as p
 from board_kit import (BANK, BEACH, BRIDGES, EDGING_GAP, EDGING_H, EDGING_W, FIELD_KINDS, ICON, ICONS, INK, INLAY,
-                       KERB_H, KERB_W, KINDS, PATH_W, SEAM, TEXT, WATER_Z, inset, offset)
+                       KERB_H, KERB_W, KINDS, PATH_W, SEAM, TEXT, WATER_Z, area, inset, offset)
 
 STEP = 0.4  # terrain grid; the river's banks get two cells, smooth-shaded
 
@@ -64,10 +64,10 @@ def water():
 
 def paving(L):
     """The town side: paving from the south road's outer kerb to the board's edge
-    (the Bank's forecourt included), garden lawns between the town hotels and a
-    lawn strip along the south edge; a small square before the Rathaus."""
+    (the Bank's forecourt included) and a lawn strip along the south edge; a
+    small square before the Rathaus."""
     w, h = bp.BOARD
-    edge = offset(L.outer[22:] + L.outer[:2], KERB_W)  # south road, Rathaus end to the Bank's bridge
+    edge = offset(L.edge(L.outer, 22, 1), KERB_W)  # south road, Rathaus end to the Bank's bridge
     town = edge + [(-w / 2, -2.4), (-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, edge[0][1])]
     stone = m.textured("ground_paving", "sandstone_blocks_05", 2.2, "#d3c4a8", "OVERLAY", 0.55)
     at = lambda z: (lambda u, v: (u, v, z))  # noqa: E731
@@ -75,47 +75,47 @@ def paving(L):
     rx0, ry0, rx1, ry1 = L.buildings[1]
     ink.flat("ground_square", ink.rect(edge[0][0] + 0.5, ry0 - 2.5, rx1 + 1.5, ry1 + 1.0), at(0.003), stone)
     lawn = m.textured("ground_garden", "sparse_grass", 4.0, "#6a9a44", "OVERLAY", 0.45)
-    south = [b for b in L.plot_boxes() if b[3] < -15]
-    south.sort()
-    gardens = [ink.rect(a[2] + 1.5, max(a[1], b[1]) + 0.5, b[0] - 1.5, min(a[3], b[3]) - 2.0)[0] for a, b in zip(south, south[1:])]
-    ink.flat("ground_gardens", gardens + ink.rect(-w / 2, -h / 2, w / 2, -h / 2 + 7.0), at(0.005), lawn)
+    ink.flat("ground_gardens", ink.rect(-w / 2, -h / 2, w / 2, -h / 2 + 7.0), at(0.005), lawn)
 
 
 def plot_lawns(L):
-    """A free plot is a mown lawn in stripes inside its edging."""
+    """A plot's land is a mown lawn in stripes, from the road's kerb back past its hotel."""
     g = m.Graph("ground_plot_lawn")
     band = g.op("LESS_THAN", g.op("FRACT", g.op("DIVIDE", g.xyz.outputs["X"], 1.4)), 0.5)
     g.color(g.image("sparse_grass", 4.0, g.mix(band, "#7fae52", "#6c9a45"), "OVERLAY", 0.35))
-    ink.flat("ground_plot_lawns", [r for b in L.plot_boxes() for r in ink.rect(*b)], lambda u, v: (u, v, 0.006), g.mat)
+    ink.flat("ground_plot_lawns", [p["land"] for p in L.plots], lambda u, v: (u, v, 0.006), g.mat)
 
 
 def park_paths(L):
-    """Gravel paths in the Kurpark: arcs round the pond, spokes to the road's
-    waist, and promenades along the river wherever the plots leave room."""
+    """Gravel paths in the Kurpark: arcs round the pond, spokes towards the road's
+    waist, promenades along the river; all cut back where they would reach a
+    plot's land or the road."""
     cx, cy, r = bp.POND
     r += BANK + 1.5
+    ok = lambda q, near=0.3: L.inside([q])[0] and not L.in_land([q], PATH_W / 2 + 0.3)[0] \
+        and L.road([q])[0] > bp.ROAD / 2 + KERB_W + near  # noqa: E731
     lines = [[(cx + r * math.cos(math.radians(a)), cy + r * math.sin(math.radians(a))) for a in range(a0, a1 + 1, 6)]
              for a0, a1 in ((30, 150), (210, 330))]
     for sign in (1, -1):
         spoke = [(cx, cy + sign * r)]
-        while L.road([spoke[-1]])[0] > bp.ROAD / 2 + KERB_W + 0.3:
+        while ok((cx, spoke[-1][1] + sign * 0.25)):
             spoke.append((cx, spoke[-1][1] + sign * 0.25))
         lines.append(spoke)
     river = bp.dense(bp.RIVER, 0.5)
-    blocked = L.plot_boxes(PATH_W / 2 + 0.3)
-    for side in (1, -1):
+    lines += [offset(river, side * (bp.RIVER_WIDTH / 2 + BANK + 1.2)) for side in (1, -1)]
+    runs = []
+    for i, line in enumerate(lines):
         run = []
-        for q in offset(river, side * (bp.RIVER_WIDTH / 2 + BANK + 1.2)) + [None]:
-            ok = q is not None and L.inside([q])[0] and not L.in_boxes([q], blocked)[0] \
-                and L.road([q])[0] > bp.ROAD / 2 + KERB_W + 0.8 and math.dist(q, (cx, cy)) > r + 0.5
-            if ok:
+        for q in line + [None]:  # promenades also keep off the pond's arcs
+            if q is not None and ok(q, 0.8 if i > 3 else 0.3) and (i <= 3 or math.dist(q, (cx, cy)) > r + 0.5):
                 run.append(q)
-            elif len(run) > 12:
-                lines.append(run)
-            run = run if ok else []
+                continue
+            if len(run) > 16:  # shorter pieces, cut off between two lands, would read as debris
+                runs.append(run)
+            run = []
     gravel = m.textured("ground_path", "gravel_floor", 2.0, "#d6d0c4", "OVERLAY", 0.3)
-    ink.flat("ground_paths", [q for line in lines for q in ink.ribbon(line, PATH_W)], lambda u, v: (u, v, 0.004), gravel)
-    return lines
+    ink.flat("ground_paths", [q for line in runs for q in ink.ribbon(line, PATH_W)], lambda u, v: (u, v, 0.004), gravel)
+    return runs
 
 
 def field_object(name, f, poly, z, material):
@@ -135,14 +135,14 @@ def road(L):
     joint = m.textured("road_joint", "stone_wall", 1.0, "#4a443d", "OVERLAY", 0.4)
     setts = m.textured("road_setts", "cobblestone_square", 2.4, "#cfc6b6", "OVERLAY", 0.6)
     cream = m.plain("road_ink", INK)
-    ink.flat("road_joints", [f["corners"] for f in L.fields], lambda u, v: (u, v, 0.006), joint)
+    ink.flat("road_joints", [f["outline"] for f in L.fields], lambda u, v: (u, v, 0.006), joint)
     for f in L.fields:
         kind = FIELD_KINDS[f["id"]]
-        field_object(f"road_field_{f['id']}", f, inset(f["corners"], SEAM), 0.01, setts)
+        field_object(f"road_field_{f['id']}", f, inset(f["outline"], SEAM), 0.01, setts)
         if kind == ".":
             continue
         tint = KINDS[kind]
-        field_object(f"road_inlay_{f['id']}", f, inset(f["corners"], SEAM + INLAY), 0.014,
+        field_object(f"road_inlay_{f['id']}", f, inset(f["outline"], SEAM + INLAY), 0.014,
                      m.textured(f"road_inlay_{f['id']}", "cobblestone_square", 2.4, tint, "OVERLAY", 0.45))
         shade = m.plain(f"road_ink_shadow_{f['id']}", "#" + "".join(f"{int(tint[i:i + 2], 16) * 2 // 5:02x}" for i in (1, 3, 5)))
         size, dy = (ICON * 0.85, 1.25) if kind in TEXT else (ICON, 0.0)
@@ -153,13 +153,13 @@ def road(L):
                          mat, 0.95, 3.1, weight=0.03)
 
 
-def strip(bm, uv, line, w, h, closed):
+def strip(bm, uv, line, w, h, closed, z0=0.0):
     """A kerb along `line`, `w` wide to its left, `h` high: top and both walls,
     no bottom. Top faces take the atlas at their own (x, y); walls take it at
     the kerb's middle, so they show the kerb's colour, not the ground's."""
     out = offset(line, w, closed)
     mid = offset(line, w / 2, closed)
-    rows = [[bm.verts.new((x, y, z)) for x, y in pts] for pts, z in ((line, 0), (line, h), (out, h), (out, 0))]
+    rows = [[bm.verts.new((x, y, z)) for x, y in pts] for pts, z in ((line, z0), (line, z0 + h), (out, z0 + h), (out, z0))]
     n = len(line)
     for i in range(n if closed else n - 1):
         j = (i + 1) % n
@@ -176,11 +176,12 @@ def strip(bm, uv, line, w, h, closed):
 
 
 def ground_parts(L):
-    """Kerbs on both road edges (the bridges have parapets instead) and a low
-    edging round each plot. UVs are board (x, y); the bake turns them into atlas UVs."""
+    """Kerbs along both curved road edges (the bridges have parapets instead) and
+    a low edging round each plot's land where it does not meet the road (the kerb
+    is its edge there). UVs are board (x, y); the bake turns them into atlas UVs."""
     kerb = m.textured("ground_kerb", "stone_wall", 1.2, "#cbc6bc", "OVERLAY", 0.3)
     a, b = BRIDGES
-    runs = [(L.outer[a + 1:b + 1], 1), (L.outer[b + 1:] + L.outer[:a + 1], 1), (L.inner[a + 1:b + 1], -1), (L.inner[b + 1:] + L.inner[:a + 1], -1)]
+    runs = [(L.edge(L.outer, a + 1, b), 1), (L.edge(L.outer, b + 1, a), 1), (L.edge(L.inner, a + 1, b), -1), (L.edge(L.inner, b + 1, a), -1)]
 
     def kerbs(bm):
         uv = bm.loops.layers.uv.new("atlas")
@@ -189,8 +190,9 @@ def ground_parts(L):
 
     def edging(bm):
         uv = bm.loops.layers.uv.new("atlas")
-        for x0, y0, x1, y1 in L.plot_boxes(EDGING_GAP):
-            strip(bm, uv, [(x0, y0), (x0, y1), (x1, y1), (x1, y0)], EDGING_W, EDGING_H, True)  # clockwise: left is outside
+        for p in L.plots:
+            land = p["land"]
+            back = land[-5:] + land[:1]  # off the road: the frontage's end, back to the far side, round to its start
+            strip(bm, uv, back[::-1] if area(land) > 0 else back, EDGING_W, EDGING_H, False)  # the land on the right
 
     return [ink.solid("ground_kerbs", kerbs, kerb), ink.solid("ground_edging", edging, kerb)]
-

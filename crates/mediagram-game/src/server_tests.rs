@@ -31,17 +31,39 @@ async fn falls_back_when_preferred_port_is_taken() {
     host.stop().await;
 }
 
-#[tokio::test]
-async fn qr_svg_is_served() {
-    let host = start(0).await;
-    let mut s = TcpStream::connect(("127.0.0.1", host.port())).await.unwrap();
-    s.write_all(b"GET /qr.svg HTTP/1.1\r\nhost: x\r\nconnection: close\r\n\r\n").await.unwrap();
+/// A raw GET on the host's port: the response head and body.
+async fn get(port: u16, path: &str) -> (String, String) {
+    let mut s = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
+    s.write_all(format!("GET {path} HTTP/1.1\r\nhost: x\r\nconnection: close\r\n\r\n").as_bytes()).await.unwrap();
     let mut raw = String::new();
     s.read_to_string(&mut raw).await.unwrap();
     let (head, body) = raw.split_once("\r\n\r\n").unwrap();
+    (head.into(), body.into())
+}
+
+#[tokio::test]
+async fn qr_svg_is_served() {
+    let host = start(0).await;
+    let (head, body) = get(host.port(), "/qr.svg").await;
     assert!(head.starts_with("HTTP/1.1 200"), "{head}");
     assert!(head.to_lowercase().contains("content-type: image/svg+xml"), "{head}");
     assert!(body.contains("<svg"));
+    host.stop().await;
+}
+
+#[tokio::test]
+async fn the_games_log_is_served_as_text_once_it_exists() {
+    let dir = tempfile::tempdir().unwrap();
+    let log = dir.path().join("grand-allee-log.jsonl");
+    let cfg = HostConfig { preferred_port: 0, log: Some(log.clone()), ..HostConfig::default() };
+    let host = Host::start(cfg, factory()).await.unwrap();
+    let (head, _) = get(host.port(), "/grand-allee-log").await;
+    assert!(head.starts_with("HTTP/1.1 404"), "no file yet: {head}");
+    std::fs::write(&log, "{\"ev\":\"start\"}\n").unwrap();
+    let (head, body) = get(host.port(), "/grand-allee-log").await;
+    assert!(head.starts_with("HTTP/1.1 200"), "{head}");
+    assert!(head.to_lowercase().contains("content-type: text/plain; charset=utf-8"), "{head}");
+    assert_eq!(body, "{\"ev\":\"start\"}\n");
     host.stop().await;
 }
 
@@ -71,6 +93,7 @@ async fn images_are_only_served_to_the_box() {
         join_url: "http://x/".into(),
         pool: Arc::new(TitlePool::new(vec![t], false)),
         textless: None,
+        log: None,
     };
     let get = |peer: &str, i: usize, which: &str| {
         let peer: SocketAddr = peer.parse().unwrap();
@@ -110,6 +133,7 @@ async fn poster_with(lookup: crate::PosterLookup) -> (axum::http::StatusCode, Ve
         join_url: "http://x/".into(),
         pool: std::sync::Arc::new(TitlePool::new(vec![t], false)),
         textless: Some(lookup),
+        log: None,
     };
     let peer = "127.0.0.1:5000".parse().unwrap();
     let res = image(State(state), ConnectInfo(peer), Path((0, "poster".into()))).await.into_response();

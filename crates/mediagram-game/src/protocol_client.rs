@@ -47,6 +47,9 @@ pub enum Action {
         game: GameKind,
         quiz_mode: QuizMode,
         kids_only: bool,
+        /// Older clients leave it out: off.
+        #[serde(default)]
+        adult: bool,
     },
     StartGame,
     BackToLobby,
@@ -58,6 +61,12 @@ pub enum Action {
     /// of server time at the moment of the tap.
     Choose {
         index: u8,
+        at: ServerTime,
+    },
+    /// A sealed bid set on a `PhoneScreen::Sheet`: a whole number of its
+    /// steps up to its `max`, or 0 to pass.
+    Bid {
+        amount: i32,
         at: ServerTime,
     },
     /// A button of a `PhoneScreen::Cards` desk, with the cards picked for it

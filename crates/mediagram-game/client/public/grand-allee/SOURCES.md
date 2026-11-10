@@ -2,7 +2,7 @@
 
 Every model here (`<hotel>.glb`, one per hotel, `board.glb` and the dice
 `die-number.glb`, `die-permit.glb`, each with its baked texture atlases
-embedded as WebP) is made by the builder scripts in
+embedded: KTX2 in the hotels and the board, WebP in the dice) is made by the builder scripts in
 `crates/mediagram-game/tools/grand-allee-models/` (see its README): geometry
 by code, light baked in Blender's Cycles. The atlases are derived from
 photographic textures from **Poly Haven**, all under **CC0 1.0** (public

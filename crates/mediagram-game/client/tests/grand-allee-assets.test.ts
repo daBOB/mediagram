@@ -1,17 +1,17 @@
 // Run with `bun test` in crates/mediagram-game/client. Pins what the TV relies on in the shipped models
 // (public/grand-allee/*.glb, from tools/grand-allee-models): unlit materials, one stage_<n> per stage of the rules, the dice's
-// face_* empties, and the atlas budgets in that tool's README.
+// face_* empties, the atlas budgets in that tool's README, and the hotels' and board's atlases as KTX2 the box transcodes to ETC1.
 import { expect, test } from "bun:test";
 import * as THREE from "three";
-import { FACE_UP } from "../src/tv/bauherr/bauherr-dice";
-import { faceTurn, faceValue } from "../src/tv/grand-allee/grand-allee-dice";
+import { FACE_UP, faceTurn, faceValue } from "../src/tv/grand-allee/grand-allee-dice";
 import { boardData, testBoard } from "./grand-allee-fixture";
 
 interface Gltf {
   nodes: { name?: string; translation?: number[] }[];
   materials: { extensions?: Record<string, unknown> }[];
-  images?: { bufferView: number }[];
+  images?: { bufferView: number; mimeType?: string }[];
   bufferViews: { byteOffset?: number; byteLength: number }[];
+  extensionsRequired?: string[];
 }
 const DIR = new URL("../public/grand-allee/", import.meta.url).pathname;
 
@@ -26,11 +26,24 @@ function webpSize(b: Uint8Array): [number, number] {
   if (tag === "VP8L") return [1 + (v.getUint32(21, true) & 0x3fff), 1 + ((v.getUint32(21, true) >> 14) & 0x3fff)];
   return [v.getUint16(26, true) & 0x3fff, v.getUint16(28, true) & 0x3fff];
 }
-const atlases = ({ json, bin }: { json: Gltf; bin: Uint8Array }) =>
+/** A KTX2's header and data format descriptor: size, mip levels, Basis ETC1S (BasisLZ), sRGB, colour slices (1: RGB, no alpha). */
+function ktx2(b: Uint8Array) {
+  const v = new DataView(b.buffer, b.byteOffset, b.byteLength), dfd = v.getUint32(48, true);
+  return {
+    size: [v.getUint32(20, true), v.getUint32(24, true)] as [number, number],
+    levels: v.getUint32(40, true),
+    etc1s: v.getUint32(44, true) === 1,
+    srgb: b[dfd + 14] === 2,
+    slices: (v.getUint16(dfd + 10, true) - 24) / 16,
+  };
+}
+const images = ({ json, bin }: { json: Gltf; bin: Uint8Array }) =>
   (json.images ?? []).map((i) => {
     const bv = json.bufferViews[i.bufferView], at = bv.byteOffset ?? 0;
-    return webpSize(bin.subarray(at, at + bv.byteLength));
+    return { mime: i.mimeType, bytes: bin.subarray(at, at + bv.byteLength) };
   });
+/** Width and height of each atlas, KTX2 or WebP. */
+const atlases = (g: { json: Gltf; bin: Uint8Array }) => images(g).map(({ mime, bytes }) => (mime === "image/ktx2" ? ktx2(bytes).size : webpSize(bytes)));
 const unlit = (json: Gltf) => json.materials.every((m) => "KHR_materials_unlit" in (m.extensions ?? {}));
 
 test("every hotel is unlit, has a stage_<n> with its body for each stage the rules give it and no more, within its atlas budget", async () => {
@@ -50,6 +63,17 @@ test("the board is unlit and within its atlas budget: a 2048 x 1536 ground and t
   expect(unlit(g.json)).toBe(true);
   expect(Math.max(...sizes.flat())).toBeLessThanOrEqual(2048);
   expect(sizes.reduce((a, [w, h]) => a + w * h, 0)).toBeLessThanOrEqual(2048 * 1536 + 2 * 1024 * 1024);
+});
+
+test("the hotels' and the board's atlases are KTX2 the box transcodes to ETC1: Basis ETC1S, RGB only, sRGB, every mip level", async () => {
+  for (const name of [...(await testBoard()).plots.map((p) => p.name), "board"]) {
+    const g = await glb(name);
+    expect([name, g.json.extensionsRequired]).toEqual([name, ["KHR_texture_basisu"]]);
+    for (const { mime, bytes } of images(g)) {
+      const k = ktx2(bytes), levels = Math.floor(Math.log2(Math.max(...k.size))) + 1;
+      expect([name, mime, k.etc1s, k.slices, k.srgb, k.levels]).toEqual([name, "image/ktx2", true, 1, true, levels]);
+    }
+  }
 });
 
 const DICE = { "die-number": ["1", "2", "3", "4", "5", "6"], "die-permit": ["approved", "approved", "approved", "double", "free", "rejected"] };

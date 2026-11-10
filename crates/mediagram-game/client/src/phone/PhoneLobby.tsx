@@ -5,7 +5,7 @@ import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { inApp } from "./app-bridge";
 import { AvatarPicker } from "./AvatarPicker";
-import { GAME_NAMES, QUIZ_MODES } from "../ui/lobby";
+import { QUIZ_MODES } from "../ui/lobby";
 import { Token } from "../ui/Token";
 
 type Lobby = Extract<PhoneScreen, { kind: "lobby" }>;
@@ -46,7 +46,7 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
     const next = { ...settings, ...patch };
     conn.send({
       t: "action",
-      action: { t: "configure", game: next.game, quiz_mode: next.quiz_mode, kids_only: next.kids_only },
+      action: { t: "configure", game: next.game, quiz_mode: next.quiz_mode, kids_only: next.kids_only, adult: next.adult },
     });
   };
   const quiz = settings.game === "quiz";
@@ -58,30 +58,25 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
         <h1 className="lobby-title">Was spielen wir?</h1>
       </header>
 
-      <div className={`game${quiz ? " is-selected" : ""}`}>
-        <button className="game-pick" aria-pressed={quiz} onClick={() => configure({ game: "quiz" })}>
-          Buzzer-Quiz
-        </button>
-        {quiz && (
-          <div className="seg" role="group" aria-label="Fragen">
-            {QUIZ_MODES.map((m) => (
-              <button
-                key={m.mode}
-                className={`seg-btn${settings.quiz_mode === m.mode ? " is-selected" : ""}`}
-                aria-pressed={settings.quiz_mode === m.mode}
-                onClick={() => configure({ quiz_mode: m.mode })}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      {(["poster", "kopfnuss", "race", "bauherr", "grand_allee", "mau_mau", "schwimmen", "durak"] as const).map((game) => (
-        <div key={game} className={`game${settings.game === game ? " is-selected" : ""}`}>
-          <button className="game-pick" aria-pressed={settings.game === game} onClick={() => configure({ game })}>
-            {GAME_NAMES[game]}
+      {screen.games.map(({ kind, name }) => (
+        <div key={kind} className={`game${settings.game === kind ? " is-selected" : ""}`}>
+          <button className="game-pick" aria-pressed={settings.game === kind} onClick={() => configure({ game: kind })}>
+            {name}
           </button>
+          {quiz && kind === "quiz" && (
+            <div className="seg" role="group" aria-label="Fragen">
+              {QUIZ_MODES.map((m) => (
+                <button
+                  key={m.mode}
+                  className={`seg-btn${settings.quiz_mode === m.mode ? " is-selected" : ""}`}
+                  aria-pressed={settings.quiz_mode === m.mode}
+                  onClick={() => configure({ quiz_mode: m.mode })}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ))}
 
@@ -97,6 +92,23 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
           aria-labelledby="kids-label"
           disabled={settings.kids_locked}
           onClick={() => configure({ kids_only: !settings.kids_only })}
+        />
+      </div>
+
+      <div className="toggle-row">
+        <div>
+          <span id="adult-label">Matratzensport (ab 18)</span>
+          <p className="toggle-hint">
+            {settings.kids_only ? "Nicht im Kindermodus" : "Fragen zu Sexualität in Quiz, Kopfnuss und Dreifelder"}
+          </p>
+        </div>
+        <button
+          className="switch"
+          role="switch"
+          aria-checked={settings.adult}
+          aria-labelledby="adult-label"
+          disabled={settings.kids_only}
+          onClick={() => configure({ adult: !settings.adult })}
         />
       </div>
 

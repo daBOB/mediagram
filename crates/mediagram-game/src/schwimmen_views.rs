@@ -1,7 +1,7 @@
 //! What the phones and the TV show during Schwimmen.
 
-use crate::game::ViewCtx;
-use crate::maumau_views::{button, name};
+use crate::game::{ViewCtx, name};
+use crate::maumau_views::button;
 use crate::protocol::{
     ButtonNeeds, CardDesk, CardsBanner, CardsPile, CardsScene, CardsSeat, DeskCard, PhoneScreen, PlayerId, TvScene,
 };
@@ -36,7 +36,7 @@ impl SchwimmenGame {
                 ("Aufgedeckt".into(), format!("Dein Blatt: {worth} · {end}"), vec![])
             }
             _ if !mine => {
-                let prompt = format!("{} ist dran", name(view, self.player_at(self.turn)));
+                let prompt = format!("{} ist dran", name(view.players, self.player_at(self.turn)));
                 (prompt, format!("Dein Blatt: {worth} · {}", COINS[usize::from(self.lives[me])]), vec![])
             }
             _ => {
@@ -46,7 +46,7 @@ impl SchwimmenGame {
                     button("pass", "Schieben", ButtonNeeds::Nothing, false),
                 ];
                 let prompt = match self.knocker {
-                    Some(k) => format!("{} hat geklopft – dein letzter Zug", name(view, self.player_at(k))),
+                    Some(k) => format!("{} hat geklopft – dein letzter Zug", name(view.players, self.player_at(k))),
                     None => {
                         buttons.push(button("knock", "Klopfen", ButtonNeeds::Nothing, false));
                         "Du bist dran".into()

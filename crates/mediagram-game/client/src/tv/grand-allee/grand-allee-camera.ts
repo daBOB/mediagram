@@ -1,13 +1,19 @@
 // The board's camera: the 55-degree overview of the whole board, leaning in on what the turn is about (the pawn walking, the
 // dice with the pawn or hotel they decide on, the hotel at auction, the fields a question marks) and easing back out after.
 // On the north road it leans in further and steeper, over the tall park hotels that would hide the pawn. Every change is
-// Bauherr's critically damped glide, so the picture never jumps.
+// a critically damped glide, so the picture never jumps.
 
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
-import { glide } from "../bauherr/bauherr-camera";
 import { pawnPlace } from "./grand-allee-clock";
 import { fieldPoint, toSpot, type Board, type Spot } from "./grand-allee-layout";
 import { CAMERA, DEEP, DIE, GLIDE, LEAN } from "./grand-allee-look";
+
+/** Critically damped approach of `cur` to `target` (no overshoot, no jerk); `v` is carried between calls. */
+export function glide(cur: number, target: number, v: { v: number }, time: number, dt: number): number {
+  const w = 2 / time, x = w * dt, e = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x), d = cur - target, tmp = (v.v + w * d) * dt;
+  v.v = (v.v - w * tmp) * e;
+  return target + (d + tmp) * e;
+}
 
 export interface CameraPose {
   pos: [number, number, number];
