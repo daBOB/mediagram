@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.175.0 — the games' own app
+
+**Added**
+
+- Spieltisch, a second Android TV app (`com.mediagram.spieltisch`, launcher label "Spieltisch") that runs a game night on its own. It opens on the poster shelf; a poster opens that game's lobby on the TV page; Back steps out of a game, then to the shelf, then out of the app, which stops the host. The night is announced over NSD for the controller app, and the ceremony avatars are served from the APK's assets.
+- On Android 17 (API 37) Spieltisch asks for local network access before the night starts, so phones can find and reach it. The game page stays on the box's own host, and a keyboard, gamepad, locale or theme change no longer restarts the screen mid-night.
+- `crates/spieltisch-core`: the app's native core over `mediagram-game`, with `start_night`, `night_back`, `stop_night` and `game_catalogue`. The shelf is built from the host's catalogue, so a new game appears on it with no Kotlin change; art stays keyed by game kind.
+- `scripts/build-spieltisch-core.sh` and `scripts/generate-spieltisch-bindings.sh`; `scripts/check.sh` fails when the committed bindings no longer match the core.
+
+**Changed**
+
+- The games have their own version line, starting at 0.175.0: `crates/mediagram-game` no longer inherits the workspace version, the game client's `package.json` carries it, and the phone controller reads its version from `crates/spieltisch-core/Cargo.toml`.
+- `mediagram_game::CATALOGUE` is public, for the new core to export.
+
+**Not yet**
+
+- Spieltisch has no film titles and is always kids-locked: the media app does not answer it yet. The media app keeps its own games unchanged until it hands its Games row over.
+
 ## 0.174.0 — Sternenstaub, and Matratzensport for grown-ups
 
 **Added**

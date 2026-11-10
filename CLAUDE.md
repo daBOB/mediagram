@@ -90,15 +90,25 @@ viewer who uses both should not have to learn them twice.
 
 ## Versioning
 
-After any code changes, bump the version in every manifest, in step:
+The repo ships two version lines. After any code change, bump the line it
+belongs to, in every manifest of that line, in step; a change to both bumps both.
 
-- `Cargo.toml` (workspace root) — the uploader and `mlib-spec`, which inherit it
+**The media library**
+
+- `Cargo.toml` (workspace root) — the uploader, `mlib-spec` and `mediagram-core`, which inherit it
 - `web/package.json` — the player
-- `android/app/build.gradle.kts` — `versionName`, the Android app
+- `android/app/build.gradle.kts` — `versionName`, the media app
 
-All three carry the same number: they are three programs of one project, and a
-reader who finds them disagreeing has no way to tell which is the project's
-version.
+**Spieltisch, the games**
+
+- `crates/mediagram-game/Cargo.toml` and `crates/spieltisch-core/Cargo.toml`
+- `crates/mediagram-game/client/package.json`
+- `android/spieltisch/build.gradle.kts` — `versionName`, the Spieltisch app
+- `android/controller` reads its version from `crates/spieltisch-core/Cargo.toml`
+
+Within a line the numbers always agree, since they are programs of one product
+and a reader who finds them disagreeing has no way to tell which is its version;
+the two lines never need to agree. The rules below hold for both lines.
 
 `versionCode` beside it is never edited by hand: `android/app/build.gradle.kts`
 derives it from `versionName` as `major·1,000,000 + minor·1,000 + patch`
@@ -151,3 +161,4 @@ Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root, both created
 - 2026-09-27: Added § Agent skills (GitHub issues, default triage labels, single-context domain docs) so the engineering skills know where tickets and domain docs live.
 - 2026-09-27: § Versioning: while at `0.x`, a breaking change bumps minor, not major. Removing `push-index --merge`/`--check` would otherwise have made the project 1.0.0 as a side effect; the user chose 0.67.0 and asked for the rule to say so.
 - 2026-10-02: § Versioning: versionCode is derived from versionName instead of counted by hand. The Android app now updates itself from the channel, which Android allows only to a higher versionCode; the hand-kept counter had sat at 18 since 0.81. The user chose derivation over a counter bumped at publish time.
+- 2026-11-10: § Versioning has two lines, the media library and Spieltisch. The games moved into their own app so a game release no longer re-releases the media app; the phone controller joins the Spieltisch line (user's decisions).

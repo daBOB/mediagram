@@ -1834,7 +1834,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-game"
-version = "0.174.0"
+version = "0.175.0"
 dependencies = [
  "axum",
  "futures",
@@ -2924,6 +2924,17 @@ checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "spieltisch-core"
+version = "0.175.0"
+dependencies = [
+ "mediagram-game",
+ "serde_json",
+ "thiserror 2.0.20",
+ "tokio",
+ "uniffi",
 ]
 
 [[package]]

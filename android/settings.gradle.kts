@@ -43,6 +43,9 @@ include(":app")
 // The Spieltisch controller: a phone or tablet joining the TV's game night
 include(":controller")
 
+// Spieltisch on the TV box: hosts the game night, with its own native core
+include(":spieltisch")
+
 // Surface modules - Compose UI per form factor, both render feature UiState
 include(":ui-mobile")
 include(":ui-tv")

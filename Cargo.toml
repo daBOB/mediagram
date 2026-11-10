@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/mlib-spec", "crates/mediagram", "crates/mediagram-tmdb", "crates/mediagram-core", "crates/mediagram-cache", "crates/mediagram-game"]
+members = ["crates/mlib-spec", "crates/mediagram", "crates/mediagram-tmdb", "crates/mediagram-core", "crates/mediagram-cache", "crates/mediagram-game", "crates/spieltisch-core"]
 
 [workspace.package]
 version = "0.174.0"

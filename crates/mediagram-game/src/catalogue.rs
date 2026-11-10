@@ -23,7 +23,7 @@ pub struct GameEntry {
 }
 
 /// Every game, in the order the lobby lists them.
-pub(crate) const CATALOGUE: &[GameEntry] = &[
+pub const CATALOGUE: &[GameEntry] = &[
     entry(GameKind::Quiz),
     entry(GameKind::Poster),
     entry(GameKind::Kopfnuss),

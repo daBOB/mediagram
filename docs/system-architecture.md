@@ -23,6 +23,9 @@ crates/
 │                     the poster game, the race board game, the phone and TV
 │                     pages); depends on
 │                     nothing else in the workspace
+├── spieltisch-core/  the Spieltisch app's UniFFI surface over `mediagram-game`:
+│                     start, step back and stop a night, and the game
+│                     catalogue its shelf is built from
 ├── mediagram/        the CLI: media inspection, upload pipeline, local
 │                     index, verify, and `serve`
 └── mediagram-cache/  the LAN chunk store (§12); depends on none of the
@@ -31,7 +34,7 @@ crates/
 
 Dependencies run one way: `mediagram` → `mediagram-core` → `mediagram-tmdb`
 → `mlib-spec`, with `mediagram` also using the two below directly (and
-`mediagram-core` using `mediagram-game`); nothing
+`mediagram-core` and `spieltisch-core` using `mediagram-game`); nothing
 depends on `mediagram`. The web
 player ([§7](#7-playback-the-web-player)) lives in `web/` and depends on
 neither: it reimplements what it needs of the format in TypeScript. The
@@ -1246,6 +1249,51 @@ two lines of question and eight seats are taller than a 16:9 screen.
 
 **Tools.** `crates/mediagram-game/tools/smoke.mjs` plays a night with bot
 phones against the dev binary `game-night-dev`.
+
+### Spieltisch, the games' own app
+
+The games are becoming an Android TV app of their own, **Spieltisch**
+(`com.mediagram.spieltisch`, `android/spieltisch`), so a game release no longer
+rebuilds and re-installs the media app. It has its own version line
+(`crates/mediagram-game`, `crates/spieltisch-core`, the client's `package.json`,
+its `versionName`, and the phone controller), starting at 0.175.0. Until the
+media app hands over its Games row, both apps carry the games. Each stops its
+night when it leaves the screen, and either takes another port when 8080 is
+taken.
+
+**Its own native core.** `crates/spieltisch-core` links `mediagram-game`, not
+`mediagram-core`, and exports `start_night`, `night_back`, `stop_night` and
+`game_catalogue` (`libspieltisch_core.so`, four ABIs, `scripts/build-spieltisch-core.sh`;
+bindings by `scripts/generate-spieltisch-bindings.sh`, committed under
+`android/spieltisch/src/main/kotlin/uniffi/`). One night per process, held in a
+static slot as `Core` holds the media app's. `scripts/check.sh` regenerates the
+bindings from a host build and fails on a difference.
+
+**On its own it has no library.** A night starts kids-locked with no film titles
+and no textless posters, so the lobby blocks the games that need films. The
+games' decision log goes to the app's files folder.
+
+**The shelf comes from the host.** `game_catalogue()` lists `CATALOGUE` in the
+lobby's order (kind as the pages name it, name, seat range), so a game added
+there shows up on the shelf with no Kotlin change. Art is keyed by kind
+(`ShelfGames.kt`); a game without any shows its name. The screen is the media
+app's `TvGamesFrame`, copied and adapted: Back from a game asks the page first,
+from the lobby returns to the poster that opened it, and on the shelf leaves
+the app, which stops the host; going to the background does the same, and the
+activity handles configuration changes in place so a gamepad connecting does
+not end the night. No Hilt: `SpieltischApp` holds one `NightSession` per
+process (the core, the NSD announcer, the scope stops run on and the latest
+stop), since leaving finishes the activity while its stop may still run. A
+relaunch's night waits for that stop, and the stop withdraws the announcement
+again after cancelling the start, so a start that finished late leaves no dead
+table on the phones. On API 37 and up `MainActivity` asks for
+`ACCESS_LOCAL_NETWORK` before the night starts; without it the phones can
+neither reach nor find the host. The shelf's look (mediagram's colours, focus
+and poster row) is copied as values, since the media app's TV theme lives in
+`ui-tv`, which Spieltisch cannot depend on without the media core. Cleartext is
+allowed to 127.0.0.1 only, and the page's client refuses navigation to any
+other host; the ceremony avatars are served from the APK's assets as in the
+media app (`make-ceremony-avatars.mjs --out=android/spieltisch/src/main/assets/game-avatars`).
 
 ### Reporting a broken video
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- The generated bindings choose their cleaner at runtime: they call
+         Class.forName("java.lang.ref.Cleaner") and fall back to JNA's when it
+         throws, so java.lang.ref.Cleaner is never loaded below API 33. Lint
+         cannot see through the reflective guard. Only the generated file. -->
+    <issue id="NewApi">
+        <ignore path="src/main/kotlin/uniffi/**" />
+    </issue>
+</lint>

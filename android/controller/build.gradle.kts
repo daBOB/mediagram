@@ -6,10 +6,10 @@ plugins {
     alias(libs.plugins.app.android.application.compose)
 }
 
-/** The project's version lives in the workspace Cargo.toml; this app adds no manifest of its own. */
+/** Spieltisch's version lives in crates/spieltisch-core/Cargo.toml; this app adds no manifest of its own. */
 val projectVersion: String =
     rootProject
-        .file("../Cargo.toml")
+        .file("../crates/spieltisch-core/Cargo.toml")
         .readLines()
         .first { it.startsWith("version = ") }
         .substringAfter('"')
