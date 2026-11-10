@@ -150,6 +150,45 @@ sudo ufw allow in on waydroid0 comment "WayDroid DHCP and DNS"
 sudo ufw route allow in on waydroid0 comment "WayDroid to the internet"
 sudo systemctl enable --now waydroid-container
 
+step "Android TV runs from login on, and Bigscreen has tiles for it"
+mkdir -p ~/.config/systemd/user ~/.local/share/applications
+# No ExecStop: when start finds a session already running it exits at once, and a
+# stop hook would then end the very session it found.
+cat >~/.config/systemd/user/android-tv-session.service <<'EOF'
+[Unit]
+Description=Android TV (WayDroid session), ready before anyone opens it
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/waydroid session start
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+# WayDroid lists only phone-launcher apps; mediagram is TV-only, so it gets its own tile.
+cat >~/.local/share/applications/mediagram.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=mediagram
+Comment=Films, series and game night
+Exec=waydroid app launch com.mediagram.android
+Icon=video-television
+Categories=AudioVideo;Video;Player;
+EOF
+cat >~/.local/share/applications/android-tv.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Android TV
+Comment=The Android TV home screen
+Exec=waydroid show-full-ui
+Icon=waydroid
+Categories=AudioVideo;Video;
+EOF
+systemctl --user daemon-reload 2>/dev/null || true
+systemctl --user enable android-tv-session.service
+
 step "log $ME straight into Plasma Bigscreen"
 printf '[Autologin]\nUser=%s\nSession=plasma-bigscreen-wayland\n' "$ME" |
   sudo tee /etc/plasmalogin.conf >/dev/null
