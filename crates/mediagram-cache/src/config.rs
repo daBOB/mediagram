@@ -10,6 +10,7 @@ use serde::Deserialize;
 
 pub const DEFAULT_LISTEN: &str = "0.0.0.0:7788";
 pub const DEFAULT_BUDGET_BYTES: u64 = 64 * 1024 * 1024 * 1024;
+pub const DEFAULT_BLOB_BUDGET_BYTES: u64 = 8 * 1024 * 1024 * 1024;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
@@ -19,6 +20,9 @@ pub struct Config {
     pub root: PathBuf,
     #[serde(default = "default_budget")]
     pub budget: u64,
+    /// Separate from `budget`: TMDB answers and images never evict chunks.
+    #[serde(default = "default_blob_budget")]
+    pub blob_budget: u64,
     #[serde(default = "default_mdns")]
     pub mdns: bool,
     /// Where the pairing token lives — separate from `root` so clearing the
@@ -51,6 +55,10 @@ fn default_root() -> PathBuf {
 
 fn default_budget() -> u64 {
     DEFAULT_BUDGET_BYTES
+}
+
+fn default_blob_budget() -> u64 {
+    DEFAULT_BLOB_BUDGET_BYTES
 }
 
 fn default_mdns() -> bool {
@@ -100,6 +108,9 @@ fn apply_env(cfg: &mut Config) -> Result<()> {
     }
     if let Some(v) = env("BUDGET") {
         cfg.budget = v.parse().context("MEDIAGRAM_CACHE_BUDGET")?;
+    }
+    if let Some(v) = env("BLOB_BUDGET") {
+        cfg.blob_budget = v.parse().context("MEDIAGRAM_CACHE_BLOB_BUDGET")?;
     }
     if let Some(v) = env("MDNS") {
         cfg.mdns = v.parse().context("MEDIAGRAM_CACHE_MDNS")?;

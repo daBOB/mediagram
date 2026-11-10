@@ -5,12 +5,14 @@ use http_body_util::BodyExt;
 use tempfile::tempdir;
 
 use super::*;
+use crate::blobs::BlobStore;
 use crate::store::ChunkStore;
 
 fn state(root: &std::path::Path) -> AppState {
     let store = ChunkStore::open(root.to_path_buf(), 1 << 30).expect("open store");
     AppState {
         store: Arc::new(store),
+        blobs: Arc::new(BlobStore::open(root.to_path_buf(), 1 << 20).expect("open blobs")),
         token: Arc::from("unused: this route is not authenticated"),
     }
 }

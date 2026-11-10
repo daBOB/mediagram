@@ -1,9 +1,5 @@
-//! The HTTP surface: the five rows of the v1 API.
-//!
-//! `id` and `n` are taken as raw path segments and checked by
-//! [`crate::rules`] before either touches the store, so a bad shape is
-//! always a 404 before any filesystem call, on every row. The one row that
-//! answers for a whole set, and why it may say one exists, is `set_status`.
+//! The HTTP surface: the v1 API. Path parameters are taken raw and checked
+//! before any filesystem call, so a bad shape is always a 404.
 
 use std::sync::Arc;
 
@@ -14,20 +10,28 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
 
+use crate::blobs::BlobStore;
 use crate::rules;
 use crate::store::{ChunkStore, PutOutcome};
 use crate::token;
 
+mod blob_routes;
 mod set_status;
 
 #[derive(Clone)]
 struct AppState {
     store: Arc<ChunkStore>,
+    blobs: Arc<BlobStore>,
     token: Arc<str>,
 }
 
 /// The v1 router over `store`, PUTs authenticated against `token`.
-pub fn router(store: Arc<ChunkStore>, token: String) -> Router {
+pub fn router(store: Arc<ChunkStore>, blobs: Arc<BlobStore>, token: String) -> Router {
+    let state = AppState {
+        store,
+        blobs,
+        token: token.into(),
+    };
     Router::new()
         .route(
             "/v1/sets/{id}/chunks/{n}",
@@ -35,15 +39,14 @@ pub fn router(store: Arc<ChunkStore>, token: String) -> Router {
         )
         .route("/v1/sets/{id}", get(set_status::set_status))
         .route("/v1/status", get(status))
-        .with_state(AppState {
-            store,
-            token: token.into(),
-        })
+        .with_state(state.clone())
         // The body is buffered whole before a handler sees it — a PUT's
         // signature covers it, so streaming would mean signing before the
         // body is fully known. A chunk is at most one `CHUNK`, so this
         // never holds more than that in memory at once.
         .layer(DefaultBodyLimit::max(rules::CHUNK as usize))
+        // Merged after the chunk limit is applied: blobs carry their own.
+        .merge(blob_routes::routes().with_state(state))
 }
 
 /// Runs a blocking store call off the async executor: [`ChunkStore`] does
@@ -159,11 +162,14 @@ fn auth_signature(headers: &HeaderMap) -> Option<&str> {
 async fn status(State(state): State<AppState>) -> Response {
     let store = state.store.clone();
     let status = blocking(move || store.status()).await;
+    let (blob_bytes, blob_budget) = state.blobs.status();
     Json(serde_json::json!({
         "version": env!("CARGO_PKG_VERSION"),
         "held_bytes": status.held_bytes,
         "budget_bytes": status.budget_bytes,
         "chunks": status.chunks,
+        "blob_bytes": blob_bytes,
+        "blob_budget_bytes": blob_budget,
     }))
     .into_response()
 }
