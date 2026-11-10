@@ -4,10 +4,13 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import io.mockk.every
@@ -73,7 +76,7 @@ class TvGamesRailTest {
         compose.onNodeWithContentDescription("Buzzer-Quiz").assertExists()
         assertEquals(null, webView())
 
-        press(compose.onNodeWithContentDescription("Durak"))
+        pressPoster("Durak")
 
         assertEquals(durakPage, shownUrl())
     }
@@ -137,7 +140,7 @@ class TvGamesRailTest {
 
     private fun openDurak() {
         press(compose.onNodeWithContentDescription("Games"))
-        press(compose.onNodeWithContentDescription("Durak"))
+        pressPoster("Durak")
     }
 
     /** The URL the page's WebView loaded, waiting for the host to answer first. */
@@ -154,6 +157,18 @@ class TvGamesRailTest {
             is android.view.ViewGroup -> (0 until childCount).firstNotNullOfOrNull { getChildAt(it).findWebView() }
             else -> null
         }
+
+    /**
+     * As the remote does it: the shelf scrolls to the poster (one off screen isn't composed), focus
+     * moves onto it, then OK. The focus is what Back from the game returns to.
+     */
+    private fun pressPoster(name: String) {
+        compose.onNode(hasScrollToIndexAction() and hasAnyDescendant(hasContentDescription("Buzzer-Quiz")))
+            .performScrollToNode(hasContentDescription(name))
+        val poster = compose.onNodeWithContentDescription(name)
+        poster.performSemanticsAction(SemanticsActions.RequestFocus)
+        press(poster)
+    }
 
     private fun press(node: SemanticsNodeInteraction) {
         node.performSemanticsAction(SemanticsActions.OnClick)

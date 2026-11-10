@@ -12,7 +12,7 @@ use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
 
 pub use crate::fluechtig_config::FluechtigConfig;
-use crate::fluechtig_map::{CITY, FUGITIVE_STARTS, Field, HUNTER_STARTS};
+use crate::fluechtig_map::{FUGITIVE_STARTS, Field, HUNTER_STARTS};
 use crate::fluechtig_rules::{Chase, Move, Turn};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, FluechtigSide as Side, FluechtigTicket as Ticket, PhoneScreen, PlayerId, ServerTime, TvScene};
@@ -150,18 +150,6 @@ impl FluechtigGame {
             p.score = i32::from(won);
         }
     }
-
-    /// What plays for an absent mover: the fugitive keeps away from hunters and
-    /// saves its shadow rides; a hunter searches a possible hideout.
-    fn auto_move(&self) -> Option<Move> {
-        let moves = self.chase.moves();
-        let hunters: Vec<Field> = self.chase.hunters.iter().map(|h| h.at).collect();
-        let near = |f: Field| CITY.exits(f).iter().filter(|(to, _)| hunters.contains(to)).count();
-        match self.chase.turn {
-            Turn::Fugitive => moves.into_iter().min_by_key(|m| (near(m.to), m.ticket == Ticket::Schatten)),
-            _ => moves.into_iter().max_by_key(|m| self.chase.hideouts.contains(&m.to)),
-        }
-    }
 }
 
 impl Game for FluechtigGame {
@@ -182,7 +170,7 @@ impl Game for FluechtigGame {
         if !ctx.house_at(id, self.ask.opens_at).is_some_and(|at| ctx.now >= at) {
             return;
         }
-        if let Some(mv) = self.auto_move() {
+        if let Some(mv) = self.chase.house_move() {
             self.ask.step = Step::Ticket(mv.to);
             self.take(ctx.players, ctx.now, Pick::Ride(mv.ticket));
         }

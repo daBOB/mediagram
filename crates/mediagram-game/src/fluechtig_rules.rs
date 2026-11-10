@@ -1,9 +1,10 @@
 //! Flüchtig's rules, pure: where each piece may go with which ticket, what the
 //! room learns from a move, and when the chase ends. No players, no clock.
+//! The legal moves are in `fluechtig_moves`, playing one in `fluechtig_play`.
 
 use std::collections::BTreeSet;
 
-use crate::fluechtig_map::{CITY, FUGITIVE_STARTS, Field};
+use crate::fluechtig_map::{FUGITIVE_STARTS, Field};
 use crate::protocol::{FluechtigSide as Side, FluechtigTicket as Ticket, FluechtigTickets as Tickets};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,7 +40,7 @@ impl Tickets {
         }
     }
 
-    fn count_mut(&mut self, t: Ticket) -> &mut u8 {
+    pub(crate) fn count_mut(&mut self, t: Ticket) -> &mut u8 {
         match t {
             Ticket::Taxi => &mut self.taxi,
             Ticket::Bus => &mut self.bus,
@@ -112,67 +113,6 @@ impl Chase {
         chase
     }
 
-    /// The legal moves of whoever is on the move.
-    pub fn moves(&self) -> Vec<Move> {
-        match self.turn {
-            Turn::Fugitive => self.fugitive_moves(),
-            Turn::Hunter(i) => self.hunter_moves(i),
-            Turn::Over(_) => Vec::new(),
-        }
-    }
-
-    /// A double move's first step must leave a second: one that strands the
-    /// fugitive would tell the room his field has no way on.
-    fn fugitive_moves(&self) -> Vec<Move> {
-        let steps = self.steps_from(self.fugitive.at, self.fugitive.tickets);
-        if self.double_left < 2 {
-            return steps;
-        }
-        steps.into_iter().filter(|&m| self.leaves_a_second_step(m)).collect()
-    }
-
-    fn leaves_a_second_step(&self, Move { to, ticket }: Move) -> bool {
-        let mut left = self.fugitive.tickets;
-        *left.count_mut(ticket) -= 1;
-        !self.steps_from(to, left).is_empty()
-    }
-
-    /// Whether the fugitive may announce a double move now.
-    pub fn can_double(&self) -> bool {
-        self.turn == Turn::Fugitive
-            && self.double_left == 0
-            && self.fugitive.tickets.doppel > 0
-            && self.steps_from(self.fugitive.at, self.fugitive.tickets).into_iter().any(|m| self.leaves_a_second_step(m))
-    }
-
-    fn steps_from(&self, from: Field, tickets: Tickets) -> Vec<Move> {
-        let taken = self.hunter_fields();
-        let mut out = Vec::new();
-        let mut shadow = BTreeSet::new();
-        for &(to, kind) in CITY.exits(from) {
-            if taken.contains(&to) {
-                continue;
-            }
-            if tickets.count(kind) > 0 {
-                out.push(Move { to, ticket: kind });
-            }
-            if tickets.schatten > 0 && shadow.insert(to) {
-                out.push(Move { to, ticket: Ticket::Schatten });
-            }
-        }
-        out
-    }
-
-    fn hunter_moves(&self, i: usize) -> Vec<Move> {
-        let me = &self.hunters[i];
-        let taken = |to: Field| self.hunters.iter().enumerate().any(|(j, h)| j != i && h.at == to);
-        CITY.exits(me.at)
-            .iter()
-            .filter(|&&(to, kind)| me.tickets.count(kind) > 0 && !taken(to))
-            .map(|&(to, ticket)| Move { to, ticket })
-            .collect()
-    }
-
     pub fn winner(&self) -> Option<Side> {
         match self.turn {
             Turn::Over(side) => Some(side),
@@ -189,148 +129,6 @@ impl Chase {
     /// The fugitive's real route, start first.
     pub fn route(&self) -> Vec<Field> {
         std::iter::once(self.start).chain(self.log.iter().flat_map(|e| e.stops.iter().copied())).collect()
-    }
-
-    pub fn announce_double(&mut self) -> Result<(), &'static str> {
-        if !self.can_double() {
-            return Err("Ein Doppelzug geht gerade nicht.");
-        }
-        self.news.clear();
-        self.fugitive.tickets.doppel -= 1;
-        self.double_left = 2;
-        self.news.push("Der Flüchtige sagt einen Doppelzug an: Er fährt zweimal, bevor die Jäger ziehen.".into());
-        self.settle();
-        Ok(())
-    }
-
-    /// Moves whoever is on the move; anything but a legal move is refused unchanged.
-    pub fn play(&mut self, mv: Move) -> Result<(), &'static str> {
-        if !self.moves().contains(&mv) {
-            return Err("Dieser Zug ist nicht erlaubt.");
-        }
-        self.news.clear();
-        match self.turn {
-            Turn::Fugitive => self.move_fugitive(mv),
-            Turn::Hunter(i) => self.move_hunter(i, mv),
-            Turn::Over(_) => unreachable!("an ended chase has no moves"),
-        }
-        Ok(())
-    }
-
-    fn move_fugitive(&mut self, Move { to, ticket }: Move) {
-        self.fugitive.at = to;
-        *self.fugitive.tickets.count_mut(ticket) -= 1;
-        if self.log.last().is_none_or(|e| e.round != self.round) {
-            self.log.push(Entry { round: self.round, tickets: Vec::new(), stops: Vec::new(), seen_at: None });
-        }
-        let entry = self.log.last_mut().expect("pushed above");
-        entry.tickets.push(ticket);
-        entry.stops.push(to);
-        self.hideouts = spread(&self.hideouts, ticket, &self.hunter_fields());
-        self.news.push(match ticket {
-            Ticket::Schatten => "Der Flüchtige nimmt eine Schattenfahrt: Womit, bleibt geheim.".into(),
-            t => format!("Der Flüchtige fährt {}.", by(t)),
-        });
-        if self.double_left == 2 {
-            self.double_left = 1;
-        } else {
-            self.double_left = 0;
-            self.end_fugitive_turn();
-        }
-        self.settle();
-    }
-
-    fn end_fugitive_turn(&mut self) {
-        if self.rules.reveal_rounds.contains(&self.round) {
-            let at = self.fugitive.at;
-            if let Some(entry) = self.log.last_mut() {
-                entry.seen_at = Some(at);
-            }
-            self.hideouts = BTreeSet::from([at]);
-            self.news.push(format!("Aufgetaucht! Der Flüchtige wird an Feld {at} gesehen."));
-        }
-        self.turn = Turn::Hunter(0);
-    }
-
-    fn move_hunter(&mut self, i: usize, Move { to, ticket }: Move) {
-        let hunter = &mut self.hunters[i];
-        hunter.at = to;
-        *hunter.tickets.count_mut(ticket) -= 1;
-        if self.rules.inflow {
-            *self.fugitive.tickets.count_mut(ticket) += 1;
-        }
-        if to == self.fugitive.at {
-            return self.finish(Side::Hunters, format!("Jäger {} fährt {} nach {to} und erwischt den Flüchtigen!", i + 1, by(ticket)));
-        }
-        let searched = self.hideouts.remove(&to);
-        let found = if searched { ": Dort ist der Flüchtige nicht." } else { "." };
-        self.news.push(format!("Jäger {} fährt {} nach {to}{found}", i + 1, by(ticket)));
-        self.next_hunter();
-        self.settle();
-    }
-
-    fn next_hunter(&mut self) {
-        let Turn::Hunter(i) = self.turn else { return };
-        if i + 1 < self.hunters.len() {
-            self.turn = Turn::Hunter(i + 1);
-        } else if self.round >= self.rules.rounds {
-            self.finish(Side::Fugitive, format!("Der Flüchtige hat alle {} Runden überstanden.", self.rules.rounds));
-        } else {
-            self.round += 1;
-            self.turn = Turn::Fugitive;
-        }
-    }
-
-    fn finish(&mut self, side: Side, reason: String) {
-        self.turn = Turn::Over(side);
-        self.news.push(reason);
-    }
-
-    /// Plays the forced steps: a stuck hunter passes, a stuck fugitive loses,
-    /// hunters who all are stuck lose, until someone has a real choice.
-    fn settle(&mut self) {
-        loop {
-            match self.turn {
-                // a double move only starts where a second step exists, so this is never its middle
-                Turn::Fugitive if self.fugitive_moves().is_empty() => {
-                    let at = self.fugitive.at;
-                    return self.finish(Side::Hunters, format!("Der Flüchtige an Feld {at} ist eingekesselt: Er kann nirgendwohin."));
-                }
-                Turn::Hunter(0) if (0..self.hunters.len()).all(|i| self.hunter_moves(i).is_empty()) => {
-                    return self.finish(Side::Fugitive, "Kein Jäger kann mehr fahren: Der Flüchtige ist entkommen.".into());
-                }
-                Turn::Hunter(i) if self.hunter_moves(i).is_empty() => {
-                    self.news.push(format!("Jäger {} kann nicht fahren und setzt aus.", i + 1));
-                    self.next_hunter();
-                }
-                _ => {
-                    debug_assert!(self.winner().is_some() || self.hideouts.contains(&self.fugitive.at), "hideouts lost the real field");
-                    return;
-                }
-            }
-        }
-    }
-
-    fn hunter_fields(&self) -> Vec<Field> {
-        self.hunters.iter().map(|h| h.at).collect()
-    }
-}
-
-/// Where the fugitive may be after spending `ticket` from any of `from`.
-fn spread(from: &BTreeSet<Field>, ticket: Ticket, blocked: &[Field]) -> BTreeSet<Field> {
-    from.iter()
-        .flat_map(|&f| CITY.exits(f))
-        .filter(|&&(to, kind)| (ticket == Ticket::Schatten || kind == ticket) && !blocked.contains(&to))
-        .map(|&(to, _)| to)
-        .collect()
-}
-
-pub(crate) fn by(t: Ticket) -> &'static str {
-    match t {
-        Ticket::Taxi => "mit dem Taxi",
-        Ticket::Bus => "mit dem Bus",
-        Ticket::Ubahn => "mit der U-Bahn",
-        Ticket::Schatten => "mit einer Schattenfahrt",
     }
 }
 

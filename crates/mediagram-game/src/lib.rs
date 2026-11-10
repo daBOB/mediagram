@@ -58,6 +58,8 @@ mod quiz_views;
 mod fluechtig;
 mod fluechtig_config;
 mod fluechtig_map;
+mod fluechtig_moves;
+mod fluechtig_play;
 mod fluechtig_rules;
 mod fluechtig_views;
 mod race;
