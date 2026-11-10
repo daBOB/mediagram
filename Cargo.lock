@@ -1779,6 +1779,7 @@ dependencies = [
  "hmac",
  "http-body-util",
  "mdns-sd",
+ "mlib-spec",
  "serde",
  "serde_json",
  "sha2",
@@ -1924,6 +1925,7 @@ version = "0.163.0"
 dependencies = [
  "flate2",
  "hex",
+ "hmac",
  "regex",
  "serde",
  "serde_json",
