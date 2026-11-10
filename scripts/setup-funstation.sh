@@ -106,6 +106,8 @@ WorkingDirectory=$REPO/web
 EnvironmentFile=$PLAYER_ENV
 EnvironmentFile=/etc/mediagram-cache-client.env
 Environment=MEDIAGRAM_PLAYER_ADDR=0.0.0.0:8770
+# Profiles, Continue and My List are the household's, synced through Telegram like every player's.
+Environment=MEDIAGRAM_SYNC_STATE=1
 # Only read before the channel's index was ever installed; posters land beside it.
 Environment=MEDIAGRAM_LIBRARY_DB=$HOME/.local/share/mediagram/library.db
 ExecStart=/usr/bin/bun run src/index.ts
