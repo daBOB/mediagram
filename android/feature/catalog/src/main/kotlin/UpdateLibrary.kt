@@ -1,5 +1,6 @@
 package catalog
 
+import data.CatalogEnrichmentState
 import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.FetchStep
@@ -21,6 +22,14 @@ fun updateDisabledReason(
         isReadingChannel(state) -> "Reading the channel…"
         fetching -> progress?.let(::fetchProgressSentence) ?: "Fetching details and artwork…"
         else -> null
+    }
+
+/** What "Update library" says beneath itself: what it will skip, or where the artwork comes from instead of a TMDB key. */
+fun updateNote(fetch: CatalogEnrichmentState): String? =
+    when {
+        fetch.hasKey -> null
+        fetch.viaHomeCache -> "Artwork comes from the home cache server."
+        else -> "Artwork and descriptions need a TMDB key"
     }
 
 /** "Looking up titles · 212 of 640 · about 3 min left": the step, its count, and what its pace says is left. */

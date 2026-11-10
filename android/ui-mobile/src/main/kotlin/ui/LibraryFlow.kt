@@ -28,6 +28,7 @@ import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
 import catalog.showsPreloads
 import catalog.updateDisabledReason
+import catalog.updateNote
 import designsystem.Spacing
 import player.LibraryPlayGate
 import player.TitlePreloadViewModel
@@ -105,7 +106,7 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
         onTmdbKey = { at.openMenu(MenuScreen.TmdbKey) },
         onStartOver = onStartOver,
         updateDisabledReason = updateDisabledReason(catalogState, fetchState.running, fetchState.progress),
-        updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
+        updateNote = updateNote(fetchState),
         onPreloads = if (catalogState.showsPreloads(queueCount)) at::openPreloads else null,
         preloadCount = queueCount,
     )

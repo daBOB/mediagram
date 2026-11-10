@@ -4,4 +4,5 @@
 pub mod artwork;
 pub mod details;
 pub mod fetch;
+mod home_cache;
 pub mod progress;

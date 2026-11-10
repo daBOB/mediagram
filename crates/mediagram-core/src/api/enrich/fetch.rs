@@ -73,7 +73,7 @@ pub async fn fetch_into(
     // leaves every resolved ref undownloaded rather than panicking — the
     // catalog is the product, the artwork a convenience.
     meter.start(FetchStep::Downloading, refs.len());
-    let written = download_each(http, &refs, artwork_dir, None, |done| meter.set_done(done))
+    let written = download_each(http, &refs, artwork_dir, core.home_cache().as_deref(), |done| meter.set_done(done))
         .await
         .unwrap_or_else(|err| {
             tracing::warn!(error = %format_args!("{err:#}"), "the artwork directory is unavailable");

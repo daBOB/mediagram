@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use mediagram_game::PosterLookup;
+use mediagram_tmdb::home_cache::HomeCache;
 use mediagram_tmdb::poster_files::download_into;
 use mediagram_tmdb::posters::{PosterRef, is_image_path, kind_key};
 use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
@@ -16,9 +17,14 @@ use crate::shows::title_of;
 const WIDTH: u32 = 500;
 
 /// A lookup from a game title's key to its textless poster, cached under
-/// `cache_dir`. `None` when the HTTP client cannot be built; the games then
-/// show the normal posters.
-pub fn poster_lookup(tmdb_key: String, cache_dir: PathBuf, poster_keys: HashMap<String, String>) -> Option<PosterLookup> {
+/// `cache_dir` and read from the home cache server first. `None` when the
+/// HTTP client cannot be built; the games then show the normal posters.
+pub fn poster_lookup(
+    tmdb_key: String,
+    cache_dir: PathBuf,
+    poster_keys: HashMap<String, String>,
+    home: Option<Arc<HomeCache>>,
+) -> Option<PosterLookup> {
     let http = crate::http::client()
         .inspect_err(|err| tracing::warn!(error = %err, "textless posters unavailable"))
         .ok()?;
@@ -26,10 +32,10 @@ pub fn poster_lookup(tmdb_key: String, cache_dir: PathBuf, poster_keys: HashMap<
     let keys = Arc::new(poster_keys);
     let cache_dir = Arc::new(cache_dir);
     Some(one_at_a_time(Arc::new(move |title_key: String| {
-        let (api, http, keys, dir) = (api.clone(), http.clone(), keys.clone(), cache_dir.clone());
+        let (api, http, keys, dir, home) = (api.clone(), http.clone(), keys.clone(), cache_dir.clone(), home.clone());
         Box::pin(async move {
             let poster_key = keys.get(&title_key)?;
-            textless_poster(api.as_ref(), &http, &dir, poster_key).await
+            textless_poster(api.as_ref(), &http, home.as_deref(), &dir, poster_key).await
         })
     })))
 }
@@ -58,6 +64,7 @@ fn one_at_a_time(inner: PosterLookup) -> PosterLookup {
 pub async fn textless_poster(
     api: &impl TmdbApi,
     http: &reqwest::Client,
+    home: Option<&HomeCache>,
     cache_dir: &Path,
     poster_key: &str,
 ) -> Option<PathBuf> {
@@ -81,7 +88,7 @@ pub async fn textless_poster(
         return None;
     };
     let wanted = PosterRef { key: poster_key.to_string(), path, width: Some(WIDTH) };
-    download_into(http, &[wanted], cache_dir, None).await.ok()?;
+    download_into(http, &[wanted], cache_dir, home).await.ok()?;
     file.exists().then_some(file)
 }
 

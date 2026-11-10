@@ -22,6 +22,8 @@ import javax.inject.Singleton
 /** Shared fetch progress and result; the stored key never leaves the settings store. */
 data class CatalogEnrichmentState(
     val hasKey: Boolean = false,
+    /** The last fetch had no key and read from the home cache server instead. */
+    val viaHomeCache: Boolean = false,
     val running: Boolean = false,
     /** How far the run under way has got, once its first step has begun; `null` otherwise. */
     val progress: FetchProgress? = null,
@@ -44,6 +46,7 @@ class CatalogEnrichmentFetcher
         // `fetchMissing`; on the caller's main thread that froze the screen
         // for seconds and starved the progress poll beside it.
         private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        private val homeCache: HomeCacheServer = HomeCacheServer { false },
     ) {
         private val fallbackLanguage = Locale.getDefault().toLanguageTag()
         private val fetching = Mutex()
@@ -83,7 +86,8 @@ class CatalogEnrichmentFetcher
         /**
          * Runs one fetch and awaits its report; an active fetch is skipped
          * immediately rather than joined. `null` means that skip, a missing
-         * key, a key-read failure, or a failed core lookup/fetch.
+         * key with no home cache server, a key-read failure, or a failed core
+         * lookup/fetch.
          *
          * Quiet work preserves the displayed report/error and suppresses new
          * errors; state therefore does not distinguish every `null` outcome.
@@ -105,13 +109,17 @@ class CatalogEnrichmentFetcher
                         if (!quiet) current.update { it.copy(error = KEY_READ_ERROR) }
                         return null
                     }
-                if (key == null) {
+                val viaHomeCache = key == null && homeCache.connected()
+                if (key == null && !viaHomeCache) {
                     current.update {
-                        it.copy(hasKey = false, error = if (!quiet && it.hasKey) "No TMDB key is stored." else it.error)
+                        it.copy(hasKey = false, viaHomeCache = false, error = if (!quiet && it.hasKey) "No TMDB key is stored." else it.error)
                     }
                     return null
                 }
-                current.update { if (quiet) it.copy(hasKey = true) else it.copy(hasKey = true, report = null, error = null) }
+                current.update {
+                    val known = it.copy(hasKey = key != null, viaHomeCache = viaHomeCache)
+                    if (quiet) known else known.copy(report = null, error = null)
+                }
                 val core = coreProvider.awaitCore()
                 val report =
                     coroutineScope {
@@ -125,7 +133,8 @@ class CatalogEnrichmentFetcher
                                 }
                             }
                         try {
-                            withContext(dispatcher) { core.fetchMissing(key, fallbackLanguage, backdropWidth.pixels().toUInt()) }
+                            // An empty key reads only what the home cache server holds.
+                            withContext(dispatcher) { core.fetchMissing(key.orEmpty(), fallbackLanguage, backdropWidth.pixels().toUInt()) }
                         } finally {
                             watching.cancel()
                         }

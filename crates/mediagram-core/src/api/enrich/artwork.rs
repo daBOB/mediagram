@@ -15,7 +15,7 @@ use mlib_spec::Kind;
 use mediagram_tmdb::disk_cache::DiskCachedApi;
 use mediagram_tmdb::localized::Localized;
 use mediagram_tmdb::posters::poster_key;
-use mediagram_tmdb::tmdb_client::{HttpStatus, TmdbApi, TmdbClient};
+use mediagram_tmdb::tmdb_client::{HttpStatus, NoKey, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
 use crate::dto::FetchReport;
@@ -71,7 +71,8 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
 /// the artwork an index cannot carry, and descriptions nobody fetched.
 ///
 /// `backdrop_width` is Kotlin's own choice, by its screen class — see
-/// `fetch::fetch_into`.
+/// `fetch::fetch_into`. An empty `tmdb_key` reads only what this device and
+/// the home cache server already hold, since TMDB refuses an empty key.
 pub(in crate::api) async fn fetch_missing(
     core: &Core,
     tmdb_key: String,
@@ -79,9 +80,9 @@ pub(in crate::api) async fn fetch_missing(
     backdrop_width: u32,
 ) -> Result<FetchReport, CoreError> {
     let plan = plan_fetch(core, &language)?;
-    if plan.titles.is_empty() {
-        // Nothing the provider could answer about — no reason to spend a
-        // request validating a key that will never be used.
+    if plan.titles.is_empty() || (tmdb_key.is_empty() && core.home_cache().is_none()) {
+        // Nothing the provider could answer about, or nobody to ask — no
+        // reason to spend a request validating a key that will never be used.
         return Ok(FetchReport {
             no_provider_id: plan.without_id,
             ..FetchReport::default()
@@ -90,6 +91,9 @@ pub(in crate::api) async fn fetch_missing(
 
     // One client for both the provider and the downloads.
     let client = http::client()?;
+    if tmdb_key.is_empty() {
+        return Ok(fetch_into(core, &cached(core, NoKey, &plan), &client, &plan, backdrop_width).await);
+    }
     let api = TmdbClient::new(client.clone(), tmdb_key);
     verify_then_fetch(core, api, &client, &plan, backdrop_width).await
 }
@@ -108,8 +112,14 @@ pub async fn verify_then_fetch<A: TmdbApi>(
     backdrop_width: u32,
 ) -> Result<FetchReport, CoreError> {
     verify_key(&api).await?;
-    let cached = Localized::new(DiskCachedApi::new(api, &plan.artwork_dir), &plan.language);
-    Ok(fetch_into(core, &cached, http, plan, backdrop_width).await)
+    Ok(fetch_into(core, &cached(core, api, plan), http, plan, backdrop_width).await)
+}
+
+/// `api` behind this device's disk cache, then the home cache server, asked
+/// in the plan's language.
+fn cached<A: TmdbApi>(core: &Core, api: A, plan: &FetchPlan) -> Localized<DiskCachedApi<A>> {
+    let disk = DiskCachedApi::new(api, &plan.artwork_dir).with_home_cache(core.home_cache());
+    Localized::new(disk, &plan.language)
 }
 
 /// Splits the catalog into the titles the provider can be asked about, and
@@ -171,3 +181,7 @@ fn rejected_the_key(err: &anyhow::Error) -> bool {
 #[cfg(test)]
 #[path = "artwork_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "artwork_home_tests.rs"]
+mod home_tests;

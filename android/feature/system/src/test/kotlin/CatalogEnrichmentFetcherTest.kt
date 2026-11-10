@@ -1,6 +1,7 @@
 package system
 
 import data.CatalogEnrichmentFetcher
+import data.HomeCacheServer
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -81,5 +82,35 @@ class CatalogEnrichmentFetcherTest {
             CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") }).fetch()
 
             assertNotSame(Thread.currentThread(), core.fetchThread)
+        }
+
+    @Test
+    fun noKeyWithAServerRunsKeyless() =
+        runTest {
+            val core = FakeCore()
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings(), homeCache = HomeCacheServer { true })
+
+            enrichment.fetch()
+
+            assertEquals(1, core.fetchCalls)
+            assertEquals("", core.lastKey)
+            assertFalse(enrichment.state.value.hasKey)
+            assertTrue(enrichment.state.value.viaHomeCache)
+        }
+
+    @Test
+    fun noKeyWithoutAServerSaysSoAsToday() =
+        runTest {
+            val core = FakeCore()
+            val settings = InMemoryTmdbSettings().apply { write("key") }
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), settings, homeCache = HomeCacheServer { false })
+            enrichment.refreshKeyStatus()
+            settings.clear()
+
+            assertNull(enrichment.fetch())
+
+            assertEquals(0, core.fetchCalls)
+            assertEquals("No TMDB key is stored.", enrichment.state.value.error)
+            assertFalse(enrichment.state.value.viaHomeCache)
         }
 }

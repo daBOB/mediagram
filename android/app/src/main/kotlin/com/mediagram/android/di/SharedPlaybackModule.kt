@@ -6,6 +6,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import data.CoreProvider
+import data.HomeCacheServer
 import data.di.MainThreadScope
 import data.settings.LanCacheTokenSettings
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +26,7 @@ import playback.PlainLanCacheSettings
 import playback.PlaybackCounters
 import playback.SystemUnmeteredNetworkCheck
 import playback.UpstreamTraffic
+import playback.linkHomeCache
 import java.util.concurrent.Executors
 import javax.inject.Singleton
 
@@ -74,13 +77,25 @@ object SharedPlaybackModule {
         @ApplicationContext context: Context,
         client: LanChunkProtocol,
         settings: LanCacheSettings,
+        coreProvider: CoreProvider,
+        tokenSettings: LanCacheTokenSettings,
+        tokenStatus: LanCacheTokenStatus,
         @MainThreadScope scope: CoroutineScope,
     ): LanServerLocator =
         // One pass starts as soon as this singleton is first resolved —
-        // effectively app start, since the player and Settings both pull
-        // it in early — plus whatever further passes Settings triggers
-        // while it is open (LanCacheViewModel.refresh()).
-        LanServerLocator(context, scope, client) { settings.manualAddress() }.apply { discover() }
+        // effectively app start, since the player, Settings and the
+        // enrichment fetch all pull it in early — plus whatever further passes
+        // Settings triggers while it is open (LanCacheViewModel.refresh()).
+        // The core follows the server it finds, for TMDB answers and artwork.
+        LanServerLocator(context, scope, client) { settings.manualAddress() }.apply {
+            discover()
+            scope.linkHomeCache(coreProvider.core, server, tokenStatus.saves) { tokenSettings.read() }
+        }
+
+    /** A fetch with no TMDB key stored reads from the server this device found. */
+    @Provides
+    @Singleton
+    fun provideHomeCacheServer(locator: LanServerLocator): HomeCacheServer = HomeCacheServer { locator.server.value != null }
 
     // Upcasts to the narrow interface a Settings view model actually
     // depends on, so it can be tested against a fake without a real

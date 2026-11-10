@@ -728,6 +728,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_title_credits(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_home_cache(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_fetch_progress(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_next_library_event(
@@ -922,6 +924,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_title_credits(`ptr`: Long,`key`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_home_cache(`ptr`: Long,`url`: RustBuffer.ByValue,`token`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
     external fun uniffi_mediagram_core_fn_method_core_fetch_progress(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_next_library_event(`ptr`: Long,`handle`: RustBuffer.ByValue,`ownDevice`: RustBuffer.ByValue,
@@ -1231,6 +1235,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_title_credits() and 0xFFFF) != 3782) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_home_cache() and 0xFFFF) != 57447) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_progress() and 0xFFFF) != 14170) {
@@ -2138,6 +2145,13 @@ public interface CoreInterface {
      * (v8 and older, or none installed yet) — neither is an error.
      */
     suspend fun `titleCredits`(`key`: kotlin.String): TitleCreditsRecord
+
+    /**
+     * Names the home cache server and the pairing token that lets this
+     * device add to it; a `None` url forgets the server. Kotlin calls this on
+     * every change, so a server it has lost is never waited on.
+     */
+    fun `setHomeCache`(`url`: kotlin.String?, `token`: kotlin.String?)
 
     /**
      * How far the fetch under way has got, or `None` while none runs.
@@ -3234,6 +3248,25 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         UniffiNullRustCallStatusErrorHandler,
     )
     }
+
+
+    /**
+     * Names the home cache server and the pairing token that lets this
+     * device add to it; a `None` url forgets the server. Kotlin calls this on
+     * every change, so a server it has lost is never waited on.
+     */override fun `setHomeCache`(`url`: kotlin.String?, `token`: kotlin.String?)
+        =
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_set_home_cache(
+        it,
+
+        FfiConverterOptionalString.lower(`url`),
+        FfiConverterOptionalString.lower(`token`),_status)
+}
+    }
+
+
 
 
     /**
