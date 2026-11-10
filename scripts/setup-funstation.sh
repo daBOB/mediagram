@@ -74,22 +74,20 @@ sudo systemctl restart mediagram-cache
 step "web player on port 8770"
 (cd "$REPO/web" && bun install --frozen-lockfile)
 mkdir -p ~/.cache ~/.local/share/mediagram-player ~/.local/share/mediagram
-# The Telegram app and the library channel: asked once, kept root-only, never in the
-# (public) repo. systemd reads these files as root before dropping to $ME.
+# The player's own Telegram session and the library channel, kept root-only and never
+# in the (public) repo; systemd reads these files as root before dropping to $ME.
+# A player with neither a session nor an installed channel index cannot start, so a
+# fresh machine signs in once here (api id/hash, channel, phone, code). Afterwards
+# the installed index carries it, and Settings in the player can sign in again.
 PLAYER_ENV=/etc/mediagram-player.env
-sudo install -m 600 /dev/null "$PLAYER_ENV.new"
-sudo test -f "$PLAYER_ENV" && sudo cp "$PLAYER_ENV" "$PLAYER_ENV.new"
-setting() {
-  sudo grep -q "^$1=." "$PLAYER_ENV.new" && return
-  local value
-  read -r -p "$2: " value </dev/tty
-  echo "$1=$value" | sudo tee -a "$PLAYER_ENV.new" >/dev/null
-}
-setting MEDIAGRAM_API_ID "Telegram api_id (my.telegram.org)"
-setting MEDIAGRAM_API_HASH "Telegram api_hash"
-setting MEDIAGRAM_CHAT_ID "library channel id (-100...)"
-setting MEDIAGRAM_CHANNEL_ACCESS_HASH "library channel access hash"
-sudo mv "$PLAYER_ENV.new" "$PLAYER_ENV"
+if ! sudo grep -q '^MEDIAGRAM_SESSION=.' "$PLAYER_ENV" 2>/dev/null && [ ! -e ~/.cache/mediagram-channel-index/current ]; then
+  echo "The web player needs its own Telegram session (separate from the TV app's):"
+  settings=$(cd "$REPO/web" && bun run src/login.ts --stdout </dev/tty)
+  # Only the Telegram lines: the unit sets the address and index path itself.
+  echo "$settings" | grep -E '^MEDIAGRAM_(API_ID|API_HASH|SESSION|CHAT_ID|CHANNEL_ACCESS_HASH)=' |
+    sudo install -m 600 /dev/stdin "$PLAYER_ENV"
+  sudo grep -q '^MEDIAGRAM_SESSION=.' "$PLAYER_ENV" || { echo "sign-in did not produce a session" >&2; exit 1; }
+fi
 # The player reads and fills the same cache server as the Android app; the token lets it write.
 for _ in $(seq 1 20); do sudo test -s /var/lib/mediagram-cache/token && break; sleep 0.5; done
 {
