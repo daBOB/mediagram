@@ -16,6 +16,7 @@ to `main`. Full phase-by-phase detail lives in
 **Changed**
 
 - `LobbySettings` and the `configure` action carry `adult`. A client that leaves it out means off, so older phones and `tools/smoke.mjs` keep working.
+- Flüchtig's rules are three files, so each stays under the 200-line limit: the setup in `fluechtig_rules`, the legal moves and the house's move for an absent mover in `fluechtig_moves`, playing a move in `fluechtig_play`. No behaviour change.
 
 ## 0.173.0 — Flüchtig, the hidden-move chase
 
