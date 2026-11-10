@@ -16,8 +16,8 @@ let picked = new URLSearchParams(location.search).get("game") as GameKind | null
 export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; conn: Connection }) {
   useEffect(() => {
     if (!picked) return;
-    const { quiz_mode, kids_only } = scene.settings;
-    if (picked !== scene.settings.game) conn.send({ t: "action", action: { t: "configure", game: picked, quiz_mode, kids_only } });
+    const { quiz_mode, kids_only, adult } = scene.settings;
+    if (picked !== scene.settings.game) conn.send({ t: "action", action: { t: "configure", game: picked, quiz_mode, kids_only, adult } });
     picked = null;
   }, [conn, scene.settings]);
   const seated = view.players.filter((p) => p.connected);
@@ -43,6 +43,7 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
         <p className="badges">
           <span className="badge">{gameBadge(scene)}</span>
           {scene.settings.kids_only && <span className="badge badge-on">Nur für Kinder</span>}
+          {scene.settings.adult && <span className="badge badge-on">Matratzensport · ab 18</span>}
         </p>
       </div>
       <figure className="qr-card">

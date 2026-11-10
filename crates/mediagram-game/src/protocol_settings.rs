@@ -42,4 +42,14 @@ pub struct LobbySettings {
     pub kids_only: bool,
     /// The kids-only toggle cannot be switched off (a kids profile started it).
     pub kids_locked: bool,
+    /// *Matratzensport (ab 18)*: the quizzes also ask the adult questions about
+    /// sexuality. Never on together with `kids_only`.
+    pub adult: bool,
+}
+
+impl LobbySettings {
+    /// Whether tonight's quizzes may ask the adult questions.
+    pub fn asks_adult_questions(&self) -> bool {
+        self.adult && !self.kids_only
+    }
 }

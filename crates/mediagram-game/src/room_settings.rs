@@ -26,7 +26,7 @@ pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kinder
 pub(crate) const DREIFELDER_NOT_FOR_KIDS: &str = "Dreifelder gibt es nicht im Kindermodus.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
-    LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
+    LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked, adult: false }
 }
 
 impl Room {
@@ -41,6 +41,7 @@ impl Room {
         game: GameKind,
         quiz_mode: QuizMode,
         kids_only: bool,
+        adult: bool,
     ) -> bool {
         if !allowed || self.game.is_some() {
             return false;
@@ -48,6 +49,8 @@ impl Room {
         self.settings.game = game;
         self.settings.quiz_mode = quiz_mode;
         self.settings.kids_only = kids_only || self.settings.kids_locked;
+        // kids mode switches the adult questions off, and they stay off until switched on again
+        self.settings.adult = adult && !self.settings.kids_only;
         true
     }
 

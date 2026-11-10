@@ -47,6 +47,9 @@ pub enum Action {
         game: GameKind,
         quiz_mode: QuizMode,
         kids_only: bool,
+        /// Older clients leave it out: off.
+        #[serde(default)]
+        adult: bool,
     },
     StartGame,
     BackToLobby,

@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.174.0 — Sternenstaub, and Matratzensport for grown-ups
+
+**Added**
+
+- A thirteenth question category, "Sternenstaub": 73 questions, 36 about Star Trek and 37 about Star Wars. They cover the series and films, crews and actors, ships, planets and gadgets, with the names of the German dubs ("Pille", "Energie!", "X-Flügler"). Each is sourced, from German Wikipedia or Jedipedia (dilithium from English Wikipedia). Kopfnuss offers it as a category of its own; the general quiz and Dreifelder mix it in with the rest.
+- Five Sternenstaub fun facts for the Kopfnuss winner, as every other category has.
+- "Matratzensport (ab 18)": 62 questions about sexuality for adults, kept in their own file (`questions/matratzensport.json`). They cover the body, hormones, contraception and sexual health, research history, culture and literature, and LGBT rights, all factual, nothing explicit, each sourced from Wikipedia. They are asked only when the leader turns on the new lobby switch of that name. It is off at the start of every night. Kids mode turns it off and locks it, and a kids profile never gets it. With it on, Kopfnuss offers Matratzensport as a category, and the general quiz and Dreifelder mix the questions in. The TV lobby shows "Matratzensport · ab 18" beside the game. The fun facts stay family-friendly.
+
+**Changed**
+
+- `LobbySettings` and the `configure` action carry `adult`. A client that leaves it out means off, so older phones and `tools/smoke.mjs` keep working.
+
 ## 0.171.0 — Dreifelder, the three-field elimination quiz
 
 Built on `feat/kopfnuss` as 0.166.0 and 0.167.0, which this line had already used; merged here as one release. Dreifelder is in the game catalogue, so the phones and the TV list it from the host.

@@ -13,7 +13,42 @@ fn lobby_of(room: &mut Room, conn: ConnId) -> PhoneScreen {
 }
 
 fn configure(room: &mut Room, conn: ConnId, game: GameKind, quiz_mode: QuizMode, kids_only: bool) -> Outbox {
-    action(room, conn, Action::Configure { game, quiz_mode, kids_only })
+    action(room, conn, Action::Configure { game, quiz_mode, kids_only, adult: false })
+}
+
+fn configure_adult(room: &mut Room, conn: ConnId, kids_only: bool) -> Outbox {
+    action(room, conn, Action::Configure { game: GameKind::Quiz, quiz_mode: QuizMode::General, kids_only, adult: true })
+}
+
+#[test]
+fn adult_questions_need_the_switch_and_no_kids_mode() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    assert!(!r.settings().asks_adult_questions(), "off by default");
+    configure_adult(&mut r, 1, false);
+    assert!(r.settings().adult && r.settings().asks_adult_questions());
+    configure_adult(&mut r, 1, true);
+    assert!(!r.settings().adult, "kids mode switches it off");
+    configure(&mut r, 1, GameKind::Quiz, QuizMode::General, false);
+    assert!(!r.settings().adult, "and it stays off until switched on again");
+}
+
+#[test]
+fn a_kids_profile_never_gets_adult_questions() {
+    let mut r = room_with(RoomConfig { kids_locked: true, ..cfg(8) });
+    hello(&mut r, 1, "Ana", None);
+    configure_adult(&mut r, 1, false);
+    assert!(r.settings().kids_only && !r.settings().adult && !r.settings().asks_adult_questions());
+}
+
+#[test]
+fn a_configure_without_the_adult_field_means_off() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure_adult(&mut r, 1, false);
+    let out = r.handle(1, r#"{"t":"action","action":{"t":"configure","game":"quiz","quiz_mode":"general","kids_only":false}}"#, 0.0);
+    assert!(out.is_empty(), "accepted: {out:?}");
+    assert!(!r.settings().adult);
 }
 
 #[test]

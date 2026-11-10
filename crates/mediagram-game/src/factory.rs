@@ -10,6 +10,7 @@ use rand::rngs::StdRng;
 use crate::dreifelder::DreifelderGame;
 use crate::dreifelder_config::{DreifelderConfig, dreifelder_questions};
 use crate::game::{Game, GameFactory};
+use crate::general::adult_pack;
 use crate::kopfnuss::KopfnussGame;
 use crate::kopfnuss_config::KopfnussConfig;
 use crate::kopfnuss_supply::QuestionSupply;
@@ -33,7 +34,10 @@ use crate::titles::TitlePool;
 pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless: Option<PosterLookup>) -> GameFactory {
     // Shared with a running Kopfnuss, which marks questions as it asks them, and with Dreifelder.
     let used = Arc::new(Mutex::new(HashSet::new()));
+    // The general pack plus *Matratzensport*, for nights with the 18+ switch on.
+    let with_adult: Arc<Vec<Question>> = Arc::new(general.iter().cloned().chain(adult_pack()).collect());
     Box::new(move |ctx, settings| {
+        let general = if settings.asks_adult_questions() { &with_adult } else { &general };
         // A poisoned lock still holds a usable history; losing it only risks a repeat.
         let mut history = used.lock().unwrap_or_else(|e| e.into_inner());
         match settings.game {
@@ -77,7 +81,7 @@ pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless:
                 let cfg = QuizConfig::default();
                 let mut rng = StdRng::from_os_rng();
                 let mut questions =
-                    quiz_questions(settings.quiz_mode, &pool, settings.kids_only, &general, &mut rng, cfg.rounds, &mut history);
+                    quiz_questions(settings.quiz_mode, &pool, settings.kids_only, general, &mut rng, cfg.rounds, &mut history);
                 if questions.is_empty() {
                     // `Quiz::new` panics on an empty list; the pack is never empty.
                     questions = general.to_vec();

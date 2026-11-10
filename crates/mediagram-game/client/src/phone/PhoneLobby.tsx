@@ -46,7 +46,7 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
     const next = { ...settings, ...patch };
     conn.send({
       t: "action",
-      action: { t: "configure", game: next.game, quiz_mode: next.quiz_mode, kids_only: next.kids_only },
+      action: { t: "configure", game: next.game, quiz_mode: next.quiz_mode, kids_only: next.kids_only, adult: next.adult },
     });
   };
   const quiz = settings.game === "quiz";
@@ -92,6 +92,23 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
           aria-labelledby="kids-label"
           disabled={settings.kids_locked}
           onClick={() => configure({ kids_only: !settings.kids_only })}
+        />
+      </div>
+
+      <div className="toggle-row">
+        <div>
+          <span id="adult-label">Matratzensport (ab 18)</span>
+          <p className="toggle-hint">
+            {settings.kids_only ? "Nicht im Kindermodus" : "Fragen zu Sexualität in Quiz, Kopfnuss und Dreifelder"}
+          </p>
+        </div>
+        <button
+          className="switch"
+          role="switch"
+          aria-checked={settings.adult}
+          aria-labelledby="adult-label"
+          disabled={settings.kids_only}
+          onClick={() => configure({ adult: !settings.adult })}
         />
       </div>
 
