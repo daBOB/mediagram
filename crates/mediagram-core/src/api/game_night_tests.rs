@@ -1,4 +1,5 @@
 use std::net::TcpListener;
+use std::time::{Duration, Instant};
 
 use super::*;
 
@@ -6,8 +7,20 @@ fn port_of(urls: &GameNightUrls) -> u16 {
     urls.tv_url.rsplit(':').next().unwrap().trim_end_matches("/tv").parse().unwrap()
 }
 
+/// In a parallel test run a just-closed port can read as taken for a few
+/// microseconds (never in a serial run); a port the night really leaked
+/// stays taken past the wait.
 fn is_free(port: u16) -> bool {
-    TcpListener::bind(("0.0.0.0", port)).is_ok()
+    let deadline = Instant::now() + Duration::from_millis(500);
+    loop {
+        if TcpListener::bind(("0.0.0.0", port)).is_ok() {
+            return true;
+        }
+        if Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
 }
 
 #[tokio::test]
