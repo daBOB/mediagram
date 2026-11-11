@@ -33,8 +33,8 @@ carry their own tag (`#spieltisch-app`), which media apps ignore.
 | 1 | [Spieltisch app on its own](phase-01-spieltisch-app-on-its-own.md): crate, app module, shelf from the catalogue, version line | done |
 | 2 | [The media app answers Spieltisch](phase-02-media-app-provider.md): night, titles, images, kids lock | done: `/night` from a fingerprinted snapshot, ~1 s from a cold media app |
 | 3 | [Releases and updates per app](phase-03-releases-and-updates.md): own release tag, publish, Spieltisch updates itself | done, except the channel dry run: a real publish waits for the user's go |
-| 4 | [The media app lets go](phase-04-media-app-lets-go.md): Games row opens Spieltisch, game code and assets leave | done: APK 64.3 -> 34.8 MB |
-| 5 | [Box run](phase-05-box-run.md): both apps on the TV box, a night, an update | pending |
+| 4 | [The media app lets go](phase-04-media-app-lets-go.md): Games row opens Spieltisch, game code and assets leave | done: the Games row opens Spieltisch; the media app's APK 64.3 → 34.8 MB |
+| 5 | [Box run](phase-05-box-run.md): both apps on the TV box, a night, an update | pending: needs the games session's test night to be over, and the user's go to install on the box |
 
 The order matters. Until phase 4, the media app keeps its own games, so main stays
 shippable at every step. Phase 5 needs the box. Coordinate with the session that owns
