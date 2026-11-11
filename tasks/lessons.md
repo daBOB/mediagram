@@ -130,3 +130,24 @@ twisted, because the search swung the elbow up to 60° and held the paw at a fix
 Rule: before showing a computed correction, test the measure against rendered frames where the
 answer is known, at the places it could be wrong (here: the lower cheeks), and watch the corrected
 motion at full size for distortion. A fix that only satisfies its own number is not a fix.
+
+## 2026-11-10 — A game after a known one starts from that game's size, and its balance is measured
+
+Flüchtig follows a known hidden-move board game. I built it with 48 fields and 18 rounds, my own
+smaller numbers, and never said so. The user asked whether our board was the same and meant its
+balance: "at least use the same number of field and lines". Matching the totals was still not
+enough. A first 199-field city with identical totals gave the fugitive 26 % of bot games where the
+classic board gives 42 %; a compact street grid and many bridges brought it level.
+Rule: when a game is modelled on a known one, take that game's totals (fields, links per line,
+tickets, rounds, pieces) as the starting point and say where ours differ. Do not claim equal
+balance from equal totals: play the same bots on both boards (`tools/fluechtig-city/balance_sim.py`)
+and quote the numbers. The layout, names and art stay our own.
+
+## 2026-11-10 — A network of fields and lines is not a graphical design
+
+I showed the 199-field city as circles and lines and asked whether "this look" was acceptable. The
+user: "the graphical design ?". Then a corner panel listing the hunters' fields needed explaining,
+and went: "its not needed use the avatar head on the board".
+Rule: a board shown for a look decision is drawn as the finished thing (ground, blocks, water,
+pieces as the players' avatars), in two or three directions. Anything on the TV that needs a
+caption to be understood is a candidate for putting the fact on the board itself.

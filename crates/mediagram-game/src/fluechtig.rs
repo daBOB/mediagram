@@ -12,7 +12,7 @@ use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
 
 pub use crate::fluechtig_config::FluechtigConfig;
-use crate::fluechtig_map::{FUGITIVE_STARTS, Field, HUNTER_STARTS};
+use crate::fluechtig_map::Field;
 use crate::fluechtig_rules::{Chase, Move, Turn};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, FluechtigSide as Side, FluechtigTicket as Ticket, PhoneScreen, PlayerId, ServerTime, TvScene};
@@ -53,8 +53,8 @@ pub struct FluechtigGame {
 }
 
 impl FluechtigGame {
-    /// One player at random runs; four hunter pieces (five at six players) are
-    /// dealt round-robin to the others. The lobby starts this with two to six.
+    /// One player at random runs; the rules' hunter pieces (five at six players)
+    /// are dealt round-robin to the others. The lobby starts this with two to six.
     pub fn new(cfg: FluechtigConfig, players: &[Player], now: ServerTime) -> Self {
         let mut rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
         let ids: Vec<PlayerId> = players.iter().map(|p| p.id).collect();
@@ -64,11 +64,12 @@ impl FluechtigGame {
             // never from the lobby; a lone player hunting themself beats a crashed host
             hunters.push(fugitive);
         }
-        let pieces = if ids.len() >= 6 { 5 } else { 4 };
+        let city = cfg.rules.city.city();
+        let pieces = if ids.len() >= 6 { 5 } else { usize::from(cfg.rules.hunters) };
         let owners = (0..pieces).map(|i| hunters[i % hunters.len()]).collect();
-        let mut starts = HUNTER_STARTS;
+        let mut starts = city.hunter_starts.clone();
         starts.shuffle(&mut rng);
-        let start = FUGITIVE_STARTS[rng.random_range(0..FUGITIVE_STARTS.len())];
+        let start = city.fugitive_starts[rng.random_range(0..city.fugitive_starts.len())];
         let chase = Chase::new(cfg.rules.clone(), start, &starts[..pieces]);
         Self { cfg, chase, fugitive, owners, ask: Ask { opens_at: now, step: Step::Field } }
     }

@@ -4,11 +4,14 @@
 
 use std::collections::BTreeSet;
 
-use crate::fluechtig_map::{FUGITIVE_STARTS, Field};
+use crate::fluechtig_map::{City, CityKind, Field};
 use crate::protocol::{FluechtigSide as Side, FluechtigTicket as Ticket, FluechtigTickets as Tickets};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rules {
+    pub city: CityKind,
+    /// Hunter pieces at fewer than six players; six players always hunt with five.
+    pub hunters: u8,
     pub rounds: u8,
     /// Rounds whose fugitive move ends in plain sight.
     pub reveal_rounds: Vec<u8>,
@@ -18,15 +21,39 @@ pub struct Rules {
     pub inflow: bool,
 }
 
-impl Default for Rules {
-    fn default() -> Self {
+impl Rules {
+    /// The chase as the room plays it: the big city with the numbers of the
+    /// genre's classic, which the city's balance was measured with.
+    pub fn big() -> Self {
         Self {
+            city: CityKind::Big,
+            hunters: 5,
+            rounds: 24,
+            reveal_rounds: vec![3, 8, 13, 18, 24],
+            hunter_tickets: Tickets { taxi: 10, bus: 8, ubahn: 4, schatten: 0, doppel: 0 },
+            fugitive_tickets: Tickets { taxi: 4, bus: 3, ubahn: 3, schatten: 5, doppel: 2 },
+            inflow: true,
+        }
+    }
+
+    /// The short chase in the small city.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn small() -> Self {
+        Self {
+            city: CityKind::Small,
+            hunters: 4,
             rounds: 18,
             reveal_rounds: vec![3, 8, 13, 18],
             hunter_tickets: Tickets { taxi: 10, bus: 6, ubahn: 3, schatten: 0, doppel: 0 },
             fugitive_tickets: Tickets { taxi: 4, bus: 3, ubahn: 2, schatten: 3, doppel: 1 },
             inflow: true,
         }
+    }
+}
+
+impl Default for Rules {
+    fn default() -> Self {
+        Self::big()
     }
 }
 
@@ -81,6 +108,7 @@ pub(crate) struct Entry {
 #[derive(Debug, Clone)]
 pub(crate) struct Chase {
     pub rules: Rules,
+    pub city: &'static City,
     pub round: u8,
     pub turn: Turn,
     pub start: Field,
@@ -97,7 +125,9 @@ pub(crate) struct Chase {
 
 impl Chase {
     pub fn new(rules: Rules, fugitive: Field, hunters: &[Field]) -> Self {
+        let city = rules.city.city();
         let mut chase = Self {
+            city,
             round: 1,
             turn: Turn::Fugitive,
             start: fugitive,
@@ -105,7 +135,7 @@ impl Chase {
             double_left: 0,
             hunters: hunters.iter().map(|&at| Piece { at, tickets: rules.hunter_tickets }).collect(),
             log: Vec::new(),
-            hideouts: FUGITIVE_STARTS.iter().copied().filter(|f| !hunters.contains(f)).collect(),
+            hideouts: city.fugitive_starts.iter().copied().filter(|f| !hunters.contains(f)).collect(),
             news: Vec::new(),
             rules,
         };

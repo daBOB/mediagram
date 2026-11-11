@@ -16,8 +16,9 @@ const RUNNER_KEYS: TicketKey[] = ["taxi", "bus", "ubahn", "schatten", "doppel"];
 /**
  * Flüchtig on the TV: the city plan edge to edge, with the round, whose turn
  * and the countdown to the next sighting on top, and the fugitive's travel
- * log, their tickets and the hunters below. The fugitive's field is never in
- * the scene until a reveal or the end, so nothing here can show it early.
+ * log and tickets below. The hunters stand on the plan as their players'
+ * avatar heads. The fugitive's field is never in the scene until a reveal or
+ * the end, so nothing here can show it early.
  */
 export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; players: PlayerInfo[]; conn: Connection }) {
   const [cheered, setCheered] = useState(false);
@@ -75,7 +76,7 @@ export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; p
         </span>
       </div>
       <div className="fl-hud fl-tc" style={{ background: mover?.color }}>
-        {piece !== null ? <span className="fl-dot">{piece}</span> : mover && <Token player={mover} size="sm" />}
+        {mover && <Token player={mover} size="sm" />}
         {status}
       </div>
       {left !== null && !over && (
@@ -104,7 +105,7 @@ export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; p
         </p>
         <div className="fl-trail">
           {fugitive && <Token player={fugitive} size="sm" />}
-          <ol className="fl-rounds" aria-label="Fahrtenbuch">
+          <ol className="fl-rounds" aria-label="Fahrtenbuch" style={{ "--slot": scene.rounds > 18 ? "15px" : "18px" } as CSSProperties}>
             {Array.from({ length: scene.rounds }, (_, i) => i + 1).map((r) => {
               const e = scene.log.find((x) => x.round === r);
               const [a, b = a] = e?.tickets.map((t) => TICKET_COLOR[t]) ?? [];
@@ -123,16 +124,6 @@ export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; p
           ))}
         </div>
       </div>
-      <ol className="fl-hud fl-br" aria-label="Jäger">
-        {scene.hunters.map((h, i) => (
-          <li key={i} className={turn.turn === "hunter" && turn.index === i ? "fl-now" : undefined}>
-            <span className="fl-dot" style={{ background: byId.get(h.player)?.color }}>
-              {i + 1}
-            </span>
-            {h.at}
-          </li>
-        ))}
-      </ol>
       {settings && <TvSettingsPanel onClose={() => setSettings(false)} />}
     </section>
   );

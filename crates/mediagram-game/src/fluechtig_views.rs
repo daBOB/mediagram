@@ -2,7 +2,7 @@
 //! phone carries their field; the TV gets it on a reveal and at the end.
 
 use crate::fluechtig::{FluechtigGame, Pick, Step};
-use crate::fluechtig_map::{CITY, Field};
+use crate::fluechtig_map::{City, Field};
 use crate::fluechtig_rules::Turn;
 use crate::game::{ViewCtx, name};
 use crate::protocol::{
@@ -11,10 +11,10 @@ use crate::protocol::{
     PhoneScreen, PlayerId, TvScene,
 };
 
-/// A field's strongest line, which the plan draws as its ring.
-fn ring(field: Field) -> Ticket {
-    let exits = CITY.exits(field);
-    [Ticket::Ubahn, Ticket::Bus].into_iter().find(|&k| exits.iter().any(|&(_, t)| t == k)).unwrap_or(Ticket::Taxi)
+/// A field's strongest line, which the plan draws as its ring; `Schatten` rings a ferry pier.
+fn ring(city: &City, field: Field) -> Ticket {
+    let exits = city.exits(field);
+    [Ticket::Ubahn, Ticket::Bus, Ticket::Schatten].into_iter().find(|&k| exits.iter().any(|&(_, t)| t == k)).unwrap_or(Ticket::Taxi)
 }
 
 impl FluechtigGame {
@@ -90,7 +90,7 @@ impl FluechtigGame {
             .picks()
             .into_iter()
             .map(|pick| match pick {
-                Pick::Go(field) => FluechtigOption::Field { field, ring: ring(field), ways: self.ways(field) },
+                Pick::Go(field) => FluechtigOption::Field { field, ring: ring(self.chase.city, field), ways: self.ways(field) },
                 Pick::Ride(ticket) => FluechtigOption::Ticket { ticket, left: tickets.count(ticket) },
                 Pick::Double => FluechtigOption::Double { left: tickets.doppel },
                 Pick::Back => FluechtigOption::Back,
@@ -133,8 +133,11 @@ impl FluechtigGame {
         targets.dedup();
         let scene = FluechtigScene {
             board: FluechtigBoard {
-                spots: CITY.spots.iter().map(|&(x, y)| FluechtigSpot { x, y }).collect(),
-                links: CITY.links.iter().map(|l| FluechtigLink { a: l.a, b: l.b, kind: l.kind }).collect(),
+                width: c.city.size.0,
+                height: c.city.size.1,
+                spots: c.city.spots.iter().map(|&(x, y)| FluechtigSpot { x, y }).collect(),
+                links: c.city.links.iter().map(|l| FluechtigLink { a: l.a, b: l.b, kind: l.kind }).collect(),
+                river: c.city.river.iter().map(|&(x, y)| FluechtigSpot { x, y }).collect(),
             },
             round: c.round,
             rounds: c.rules.rounds,
