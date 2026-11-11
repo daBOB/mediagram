@@ -166,6 +166,9 @@ kwriteconfig6 --file powerdevilrc --group AC --group Display --key DimDisplayWhe
 kwriteconfig6 --file powerdevilrc --group AC --group Display --key TurnOffDisplayWhenIdle false
 kwriteconfig6 --file kscreenlockerrc --group Daemon --key Autolock false
 kwriteconfig6 --file kscreenlockerrc --group Daemon --key LockOnResume false
+# No password: nobody can type one with a TV remote, and a lock screen can still come up
+# by hand. PAM's nullok lets OK through it; SSH refuses empty passwords by default.
+sudo passwd -d "$ME" >/dev/null
 systemctl --user try-restart plasma-powerdevil 2>/dev/null || true
 # The CachyOS welcome window would cover the TV interface after every boot.
 rm -f ~/.config/autostart/cachyos-hello.desktop
@@ -184,7 +187,7 @@ sudo ufw allow in on waydroid0 comment "WayDroid DHCP and DNS"
 sudo ufw route allow in on waydroid0 comment "WayDroid to the internet"
 sudo systemctl enable --now waydroid-container
 
-step "Android TV runs from login on, and Bigscreen has tiles for it"
+step "Android TV runs from login on, and Bigscreen has tiles for it and for controllers"
 mkdir -p ~/.config/systemd/user ~/.local/share/applications
 # No ExecStop: when start finds a session already running it exits at once, and a
 # stop hook would then end the very session it found.
@@ -220,6 +223,21 @@ Exec=waydroid show-full-ui
 Icon=waydroid
 Categories=AudioVideo;Video;
 EOF
+# Bigscreen's own Bluetooth page, one tile away instead of three menus deep.
+cat >~/.local/share/applications/controllers.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Controllers
+Comment=Pair gamepads and remotes over Bluetooth
+Exec=plasma-bigscreen-settings -m kcm_mediacenter_bluetooth
+Icon=input-gamepad
+Categories=Settings;HardwareSettings;
+EOF
+# WayDroid's own tile for the TV remote service opens a translucent splash that never
+# finishes and freezes the Android TV window behind it. WayDroid keeps a NoDisplay it
+# finds when it rewrites its tiles, so this holds even before the tile first exists.
+kwriteconfig6 --file ~/.local/share/applications/waydroid.com.google.android.tv.remote.service.desktop \
+  --group "Desktop Entry" --key NoDisplay true
 systemctl --user daemon-reload 2>/dev/null || true
 systemctl --user enable android-tv-session.service
 
