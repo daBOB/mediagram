@@ -234,6 +234,61 @@ async fn a_disk_hit_uploads_only_what_the_server_lacks() {
     }
 }
 
+/// The disk as a cache with no server leaves it, holding `/movie/1`.
+async fn filled_disk(inner: &Counting) -> tempfile::TempDir {
+    let dir = tempfile::tempdir().unwrap();
+    DiskCachedApi::new(inner, dir.path())
+        .get_json("/movie/1", &[])
+        .await
+        .unwrap();
+    dir
+}
+
+#[tokio::test]
+async fn a_second_disk_hit_for_the_same_path_sends_no_second_head() {
+    let server = fake(Box::new(|_| (200, vec![]))).await;
+    let inner = Counting::new(json!({"id": 1}));
+    let dir = filled_disk(&inner).await;
+    let api = DiskCachedApi::new(&inner, dir.path())
+        .with_home_cache(Some(home(&server.url, Some(TOKEN))));
+    api.get_json("/movie/1", &[]).await.unwrap();
+    api.get_json("/movie/1", &[]).await.unwrap();
+    assert_eq!(server.count("HEAD"), 1);
+    assert_eq!(server.count("PUT"), 0);
+}
+
+#[tokio::test]
+async fn a_path_just_uploaded_is_not_asked_about_on_a_disk_hit() {
+    let server = fake(Box::new(|line| {
+        if line.starts_with("PUT") {
+            (201, vec![])
+        } else {
+            (404, vec![])
+        }
+    }))
+    .await;
+    let (dir, inner) = (
+        tempfile::tempdir().unwrap(),
+        Counting::new(json!({"id": 1})),
+    );
+    let api = DiskCachedApi::new(&inner, dir.path())
+        .with_home_cache(Some(home(&server.url, Some(TOKEN))));
+    api.get_json("/movie/1", &[]).await.unwrap();
+    api.get_json("/movie/1", &[]).await.unwrap();
+    assert_eq!(server.count("PUT"), 1);
+    assert_eq!(server.count("HEAD"), 0);
+}
+
+#[tokio::test]
+async fn without_a_token_a_disk_hit_asks_the_server_nothing() {
+    let server = fake(Box::new(|_| (404, vec![]))).await;
+    let inner = Counting::new(json!({"id": 1}));
+    let dir = filled_disk(&inner).await;
+    let api = DiskCachedApi::new(&inner, dir.path()).with_home_cache(Some(home(&server.url, None)));
+    api.get_json("/movie/1", &[]).await.unwrap();
+    assert!(server.lines().is_empty(), "{:?}", server.lines());
+}
+
 #[tokio::test]
 async fn an_empty_search_page_is_not_uploaded() {
     let server = fake(Box::new(|_| (404, vec![]))).await;

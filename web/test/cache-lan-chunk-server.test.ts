@@ -134,3 +134,18 @@ test("without a token the server is read but never written", async () => {
   expect(server.gets()).toBe(1);
   expect(server.chunks.size).toBe(0);
 });
+
+test("a write the server never answers is let go, so its bytes are not held for ever", async () => {
+  const stalled = Bun.serve({
+    port: 0,
+    fetch: (request) => (request.method === "GET" ? new Response(null, { status: 404 }) : new Promise<Response>(() => {})),
+  });
+  stops.push(() => stalled.stop(true));
+  const set = telegramSet([LAN_CHUNK]);
+  const lan = new LanChunkServer({ url: `http://127.0.0.1:${stalled.port}`, token: TOKEN }, Date.now, 50);
+
+  await lan.fetcherFor(SET, set.spans, 0, set.fetchPart)(0, 10);
+  const settled = await Promise.race([lan.settle().then(() => true), Bun.sleep(2_000).then(() => false)]);
+
+  expect(settled).toBe(true);
+});

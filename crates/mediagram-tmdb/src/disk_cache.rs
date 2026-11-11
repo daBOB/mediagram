@@ -101,6 +101,7 @@ impl<A: TmdbApi> TmdbApi for DiskCachedApi<A> {
             && self.fresh(&file)
         {
             if let Some((home, key)) = &home
+                && home.can_upload()
                 && !home.has(key).await
             {
                 home.put(key, &serde_json::to_vec(value)?).await;

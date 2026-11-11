@@ -64,7 +64,8 @@ pub struct Config {
     /// answers and artwork are read from and filled into it, so the web
     /// player and the TV app share one cache. Unset or unreachable: skipped.
     pub cache_server: Option<String>,
-    /// Bearer token for `cache_server`; never sent anywhere else.
+    /// The key that signs uploads to `cache_server`. Only signatures made
+    /// with it are sent, never the key itself.
     pub cache_server_token: Option<String>,
     /// The file this was read from. Not a key: `load` records it so a
     /// process this one starts can be given the same config, which the
@@ -133,16 +134,16 @@ impl Config {
     ///
     /// Built even with no key configured: the payloads `add` looked up are
     /// cached under the data directory, and a warm cache answers without one.
+    /// With no key, what neither that cache nor the cache server holds is an
+    /// error, never a request TMDB would refuse.
     pub fn tmdb_client(
         &self,
         http: reqwest::Client,
-    ) -> Result<Localized<DiskCachedApi<TmdbClient>>> {
+    ) -> Result<Localized<DiskCachedApi<Option<TmdbClient>>>> {
         let home = self.home_cache(&http);
-        let disk = DiskCachedApi::new(
-            TmdbClient::new(http, self.tmdb_key.as_deref().unwrap_or("")),
-            &self.data_dir()?,
-        )
-        .with_home_cache(home);
+        let key = self.tmdb_key.as_deref().filter(|k| !k.is_empty());
+        let disk = DiskCachedApi::new(key.map(|k| TmdbClient::new(http, k)), &self.data_dir()?)
+            .with_home_cache(home);
         Ok(Localized::new(disk, &self.tmdb_language))
     }
 

@@ -94,3 +94,25 @@ fn no_cache_server_means_no_home_cache() {
             .is_none()
     );
 }
+
+/// With no key there is nothing to ask TMDB with: a title neither cache
+/// holds is the keyless error, not a request TMDB would refuse.
+#[tokio::test]
+async fn a_keyless_config_asks_tmdb_nothing() {
+    use mediagram_tmdb::tmdb_client::TmdbApi;
+    for key in [None, Some(String::new())] {
+        let dir = tempfile::tempdir().unwrap();
+        let mut cfg: Config =
+            toml::from_str("api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\n").unwrap();
+        cfg.tmdb_key = key;
+        cfg.data_dir = Some(dir.path().to_path_buf());
+        let api = cfg
+            .tmdb_client(mediagram_core::http::client().unwrap())
+            .unwrap();
+        let err = api.get_json("/movie/1", &[]).await.unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "no TMDB key, and the home cache server does not hold this"
+        );
+    }
+}

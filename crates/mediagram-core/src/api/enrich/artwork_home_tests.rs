@@ -60,7 +60,9 @@ async fn fake(reply: impl Fn(&str) -> (u16, Vec<u8>) + Send + 'static) -> Fake {
             let (status, answer) = reply(&line);
             log.lock().unwrap().push((line.clone(), body));
             let answer = if line.starts_with("HEAD") { Vec::new() } else { answer };
-            let head = format!("HTTP/1.1 {status} X\r\ncontent-length: {}\r\nconnection: close\r\n\r\n", answer.len());
+            // As the real server labels them: an image not labelled one is a miss.
+            let kind = if line.contains("/v1/art/") { "image/jpeg" } else { "application/json" };
+            let head = format!("HTTP/1.1 {status} X\r\ncontent-type: {kind}\r\ncontent-length: {}\r\nconnection: close\r\n\r\n", answer.len());
             let _ = socket.write_all(head.as_bytes()).await;
             let _ = socket.write_all(&answer).await;
         }

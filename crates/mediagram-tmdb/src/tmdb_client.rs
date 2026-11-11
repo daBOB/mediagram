@@ -188,3 +188,13 @@ impl TmdbApi for NoKey {
         anyhow::bail!("no TMDB key, and the home cache server does not hold this")
     }
 }
+
+/// A client when a key is configured, else [`NoKey`]: one type for both.
+impl<A: TmdbApi> TmdbApi for Option<A> {
+    async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value> {
+        match self {
+            Some(api) => api.get_json(path, query).await,
+            None => NoKey.get_json(path, query).await,
+        }
+    }
+}

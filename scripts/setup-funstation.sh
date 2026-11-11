@@ -98,7 +98,8 @@ fi
 # though posters never use them. The key is asked once; empty means art only from the server.
 POSTERS_CONFIG=~/.config/mediagram/config.toml
 if [ ! -f "$POSTERS_CONFIG" ]; then
-  read -r -p "TMDB v3 key or v4 token for cover art (Enter to skip): " tmdb_key </dev/tty
+  read -r -s -p "TMDB v3 key or v4 token for cover art (Enter to skip): " tmdb_key </dev/tty
+  echo >&2
   install -d -m 700 ~/.config/mediagram
   # A player set up from an installed index may have no env file, or no Telegram lines in
   # it: those keys stay unfilled instead of aborting the setup, and the rest is still written.

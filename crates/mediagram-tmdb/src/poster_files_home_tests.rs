@@ -34,7 +34,12 @@ impl Fake {
     }
 }
 
+/// Answers with `content-type: image/jpeg`, as the real server does for art.
 async fn fake(reply: Reply) -> Fake {
+    fake_typed(reply, "image/jpeg").await
+}
+
+async fn fake_typed(reply: Reply, content_type: &'static str) -> Fake {
     let _ = rustls::crypto::ring::default_provider().install_default();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!("http://{}", listener.local_addr().unwrap());
@@ -71,7 +76,7 @@ async fn fake(reply: Reply) -> Fake {
             let (status, answer) = reply(&line);
             log.lock().unwrap().push((line, body));
             let head = format!(
-                "HTTP/1.1 {status} X\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
+                "HTTP/1.1 {status} X\r\ncontent-type: {content_type}\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
                 answer.len()
             );
             let _ = socket.write_all(head.as_bytes()).await;
@@ -174,20 +179,21 @@ async fn a_cdn_image_is_uploaded_to_the_server() {
     assert_eq!(server.put_body().unwrap(), b"from-cdn");
 }
 
+/// A file on disk is named by its title, not its TMDB path, so its bytes may
+/// be another resolution's (another language, an older poster); filed under
+/// this path on a write-once server, they would stay wrong for good.
 #[tokio::test]
-async fn an_image_already_on_disk_is_uploaded_only_if_the_server_lacks_it() {
+async fn a_held_image_is_never_uploaded() {
     let tmp = tempfile::tempdir().unwrap();
     std::fs::write(tmp.path().join("tmdb-movie-1.jpg"), b"on-disk").unwrap();
-    let cdn = fake(cdn_reply()).await;
+    std::fs::write(tmp.path().join("tmdb-movie-1-bg.jpg"), b"wide").unwrap();
+    std::fs::write(tmp.path().join("tmdb-movie-1-bg.width"), "1280").unwrap();
+    let (server, cdn) = (fake(server_holding(&[])).await, fake(cdn_reply()).await);
 
-    let lacking = fake(server_holding(&[])).await;
-    walk(&cdn, &home(&lacking), &[poster()], tmp.path()).await;
-    assert!(lacking.lines()[0].starts_with("HEAD /v1/art/w342/p.jpg"));
-    assert_eq!(lacking.put_body().unwrap(), b"on-disk");
+    let written = walk(&cdn, &home(&server), &[poster(), backdrop(780)], tmp.path()).await;
 
-    let holding = fake(server_holding(&["/v1/art/w342/p.jpg"])).await;
-    walk(&cdn, &home(&holding), &[poster()], tmp.path()).await;
-    assert_eq!(holding.lines().len(), 1);
+    assert_eq!(written, ["tmdb-movie-1", "tmdb-movie-1-bg"]);
+    assert!(server.lines().is_empty(), "{:?}", server.lines());
     assert!(cdn.lines().is_empty());
 }
 
@@ -254,26 +260,18 @@ async fn an_empty_server_body_is_a_miss_and_the_cdn_is_asked() {
     assert_eq!(server.put_body().unwrap(), b"from-cdn");
 }
 
+/// Another program on the server's port may answer 200 with a page of its own.
 #[tokio::test]
-async fn a_held_backdrop_is_uploaded_under_the_width_it_has() {
+async fn a_server_answer_that_is_not_an_image_is_a_miss() {
+    let server = fake_typed(server_holding(&["/v1/art/w342/p.jpg"]), "text/html").await;
+    let cdn = fake(cdn_reply()).await;
     let tmp = tempfile::tempdir().unwrap();
-    std::fs::write(tmp.path().join("tmdb-movie-1-bg.jpg"), b"wide").unwrap();
-    std::fs::write(tmp.path().join("tmdb-movie-1-bg.width"), "1280").unwrap();
-    let (server, cdn) = (fake(server_holding(&[])).await, fake(cdn_reply()).await);
 
-    walk(&cdn, &home(&server), &[backdrop(780)], tmp.path()).await;
+    walk(&cdn, &home(&server), &[poster()], tmp.path()).await;
 
-    let lines = server.lines();
-    assert!(
-        lines
-            .iter()
-            .any(|l| l.starts_with("HEAD /v1/art/w1280/b.jpg"))
+    assert_eq!(cdn.lines().len(), 1);
+    assert_eq!(
+        std::fs::read(tmp.path().join("tmdb-movie-1.jpg")).unwrap(),
+        b"from-cdn"
     );
-    assert!(
-        lines
-            .iter()
-            .any(|l| l.starts_with("PUT /v1/art/w1280/b.jpg"))
-    );
-    assert!(!lines.iter().any(|l| l.contains("w780")));
-    assert_eq!(server.put_body().unwrap(), b"wide");
 }

@@ -19,6 +19,8 @@ import type { FetchRange } from "./reader";
 export const LAN_CHUNK = 1 << 20;
 
 const GET_TIMEOUT_MS = 2_000;
+/** A stalled server must not hold a pending write's 1 MiB for ever. */
+const PUT_TIMEOUT_MS = 30_000;
 /** How long an unreachable server is skipped before it is tried again. */
 const RETRY_AFTER_MS = 30_000;
 
@@ -49,6 +51,7 @@ export class LanChunkServer {
   constructor(
     private readonly config: LanChunkServerConfig,
     private readonly now: () => number = Date.now,
+    private readonly putTimeoutMs = PUT_TIMEOUT_MS,
   ) {}
 
   /**
@@ -118,6 +121,7 @@ export class LanChunkServer {
     const write = fetch(this.config.url + path, {
       method: "PUT",
       body,
+      signal: AbortSignal.timeout(this.putTimeoutMs),
       headers: { "X-Set-Total": String(total), Authorization: `MGC1 ${lanSignature(token, path, total, body)}` },
     })
       .then((response) => response.body?.cancel())

@@ -22,9 +22,10 @@ use crate::private_files::{restrict_dir, write_private};
 /// now wants a sharper backdrop would keep the blurry one for ever.
 ///
 /// With a home cache server, an image it holds is read from it instead of the
-/// CDN, an image fetched from the CDN is uploaded to it, and an image already
-/// on disk is uploaded if the server lacks it, so one download serves every
-/// player in the house.
+/// CDN, and an image fetched from the CDN is uploaded to it, so one download
+/// serves every player in the house. An image already on disk never is: its
+/// file is named by title, not by TMDB path, so its bytes may be another
+/// resolution's, and the server keeps the first write for good.
 ///
 /// A poster that will not download is skipped rather than fatal. The catalog
 /// is the product; the artwork is a convenience, and one unreachable image
@@ -78,21 +79,6 @@ async fn fetch_each(
         let dest = dir.join(format!("{}.jpg", poster.key));
         let art = art_path(&poster.size(), &poster.path);
         if is_held(poster, dir) {
-            // Uploaded under the width the file has, not the one asked for:
-            // the server keeps the first write, so a wider image filed under
-            // a narrower name would serve there for good.
-            let held_size = match poster.width {
-                None => Some(poster.size()),
-                Some(_) => held_width(poster, dir).map(|w| format!("w{w}")),
-            };
-            if let (Some(home), Some(size)) = (home, held_size) {
-                let held_art = art_path(&size, &poster.path);
-                if !home.has(&held_art).await
-                    && let Ok(bytes) = std::fs::read(&dest)
-                {
-                    home.put(&held_art, &bytes).await;
-                }
-            }
             written.push(poster.key.clone());
             continue;
         }
@@ -159,14 +145,10 @@ fn is_held(poster: &PosterRef, dir: &Path) -> bool {
     let Some(wanted) = poster.width else {
         return true;
     };
-    held_width(poster, dir).is_some_and(|held| held >= wanted)
-}
-
-/// The width recorded for the image held, if any.
-fn held_width(poster: &PosterRef, dir: &Path) -> Option<u32> {
     std::fs::read_to_string(width_record(poster, dir))
         .ok()
-        .and_then(|held| held.trim().parse().ok())
+        .and_then(|held| held.trim().parse::<u32>().ok())
+        .is_some_and(|held| held >= wanted)
 }
 
 async fn download(http: &reqwest::Client, url: &str) -> Result<Vec<u8>> {

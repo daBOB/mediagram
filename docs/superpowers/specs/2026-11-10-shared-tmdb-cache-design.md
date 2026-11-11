@@ -72,9 +72,12 @@ server; every other player reads it from the LAN, with or without a key.
 
 - **Filling the server from caches that are already full.** Funstation's TV app
   and CLI have already answered everything from TMDB, so they would only ever
-  hit their own disks. A disk hit therefore also checks the server (a cheap
-  status request) and uploads the entry when the server lacks it. No separate
-  seed command.
+  hit their own disks. A JSON disk hit on a device with the token therefore also
+  checks the server (a cheap status request, once per path while the client
+  lives) and uploads the entry when the server lacks it. An image on disk is
+  never uploaded: its file is named by title, not TMDB path, so its bytes may be
+  another resolution's; a device that misses it fetches it from the CDN and
+  uploads that. No separate seed command.
 - **No eviction by video.** Images and JSON get their own small budget (8 GiB)
   and LRU, apart from the 128 GiB of chunks, so streaming never pushes out
   artwork that the keyed device would not upload again.
