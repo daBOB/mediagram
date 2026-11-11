@@ -241,6 +241,15 @@ kwriteconfig6 --file ~/.local/share/applications/waydroid.com.google.android.tv.
 systemctl --user daemon-reload 2>/dev/null || true
 systemctl --user enable android-tv-session.service
 
+step "Bluetooth on the USB stick only"
+# The remote and controllers pair on a USB Bluetooth stick (the user's choice). With the
+# built-in Realtek radio on as well, a pairing could land on either and be lost with it.
+# shortcut: keyed to this machine's Realtek part (0bda:c821); another radio stays on.
+sudo tee /etc/udev/rules.d/80-funstation-builtin-bluetooth-off.rules >/dev/null <<'EOF'
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="c821", ATTR{authorized}="0"
+EOF
+sudo udevadm control --reload
+
 step "log $ME straight into Plasma Bigscreen"
 printf '[Autologin]\nUser=%s\nSession=plasma-bigscreen-wayland\n' "$ME" |
   sudo tee /etc/plasmalogin.conf >/dev/null
