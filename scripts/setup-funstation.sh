@@ -172,6 +172,18 @@ sudo passwd -d "$ME" >/dev/null
 systemctl --user try-restart plasma-powerdevil 2>/dev/null || true
 # The CachyOS welcome window would cover the TV interface after every boot.
 rm -f ~/.config/autostart/cachyos-hello.desktop
+# A whole-number scale, so Android TV fills the screen: WayDroid rounds a fractional one
+# (KWin picks 1.7 for this TV) up to 2 whenever the TV reconnects, and Android then covers
+# only 85% of it. At 2 Bigscreen gets the 1080p layout it is designed for.
+# shortcut: keyed to the HDMI port; a screen on another port keeps KWin's own scale.
+mkdir -p ~/.config/autostart
+cat >~/.config/autostart/funstation-tv-scale.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=TV at scale 2
+Exec=kscreen-doctor output.HDMI-A-1.scale.2
+NoDisplay=true
+EOF
 
 step "Android TV 16 (WayDroid-ATV, with Google apps)"
 if ! sudo test -f /var/lib/waydroid/images/system.img; then
@@ -204,13 +216,20 @@ Restart=on-failure
 [Install]
 WantedBy=graphical-session.target
 EOF
+# WayDroid opens its window only when Android draws its next frame, and its own redraw
+# trick (pulling the notification shade) does nothing on Android TV, so a tile sat on
+# Bigscreen's splash until something on screen changed. SurfaceFlinger call 1004 forces
+# that frame at once.
 # WayDroid lists only phone-launcher apps; mediagram is TV-only, so it gets its own tile.
+# It opens in the full Android window too: in WayDroid's one-app-window mode an app whose
+# window was once closed stays hidden while it is still Android's top app, so the tile
+# opened nothing. Switching to the full window clears that.
 cat >~/.local/share/applications/mediagram.desktop <<'EOF'
 [Desktop Entry]
 Type=Application
 Name=mediagram
 Comment=Films, series and game night
-Exec=waydroid app launch com.mediagram.android
+Exec=sh -c "waydroid app launch com.mediagram.android; waydroid show-full-ui; sudo -n waydroid shell -- service call SurfaceFlinger 1004"
 Icon=video-television
 Categories=AudioVideo;Video;Player;
 EOF
@@ -219,7 +238,7 @@ cat >~/.local/share/applications/android-tv.desktop <<'EOF'
 Type=Application
 Name=Android TV
 Comment=The Android TV home screen
-Exec=waydroid show-full-ui
+Exec=sh -c "waydroid show-full-ui; sudo -n waydroid shell -- service call SurfaceFlinger 1004"
 Icon=waydroid
 Categories=AudioVideo;Video;
 EOF
@@ -249,6 +268,14 @@ sudo tee /etc/udev/rules.d/80-funstation-builtin-bluetooth-off.rules >/dev/null 
 ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="c821", ATTR{authorized}="0"
 EOF
 sudo udevadm control --reload
+# The Chromecast remote's OK sends Select, which Bigscreen ignores outside its lock screen;
+# it waits for Enter. Android's key map takes Enter as OK too, so OK works in both.
+sudo tee /etc/udev/hwdb.d/70-funstation-chromecast-remote.hwdb >/dev/null <<'EOF'
+evdev:input:b0005v18D1p9450*
+ KEYBOARD_KEY_c0041=enter
+EOF
+sudo systemd-hwdb update
+sudo udevadm trigger --subsystem-match=input --action=change
 
 step "log $ME straight into Plasma Bigscreen"
 printf '[Autologin]\nUser=%s\nSession=plasma-bigscreen-wayland\n' "$ME" |
