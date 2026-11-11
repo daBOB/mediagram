@@ -25,7 +25,7 @@ export function snapshot(title: string, pushedAt: number, setId = "01SET") {
 export function configIn(root: string): Config {
   return {
     apiId: 1, apiHash: "test-api-hash", session: "", chatId: -1000000000001, channelAccessHash: 1n,
-    libraryDb: join(root, "library.db"), cacheDir: join(root, "cache"), cacheMaxBytes: 0, cacheReadahead: 0,
+    libraryDb: join(root, "library.db"), cacheDir: join(root, "cache"), cacheMaxBytes: 0, cacheReadahead: 0, cacheServer: null,
     transcodeDir: join(root, "transcode"), stateDb: join(root, "state.db"), syncState: false, syncEveryMs: 60000,
     thumbsDir: join(root, "thumbs"), transcodeMaxrate: 8000000, packageUrl: null, packageKey: null,
     catalogDir: join(root, "package"), channelIndexDir: join(root, "channel"), postersCommand: "unused-posters",

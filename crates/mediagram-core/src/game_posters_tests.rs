@@ -17,7 +17,7 @@ async fn cached_textless_poster_needs_no_request() {
     let file = dir.path().join("tmdb-movie-550.jpg");
     std::fs::write(&file, b"jpg").unwrap();
     let http = crate::http::client().unwrap();
-    assert_eq!(textless_poster(&NoRequests, &http, dir.path(), "tmdb-movie-550").await, Some(file));
+    assert_eq!(textless_poster(&NoRequests, &http, None, dir.path(), "tmdb-movie-550").await, Some(file));
 }
 
 #[tokio::test]
@@ -25,14 +25,14 @@ async fn a_known_miss_is_not_asked_again() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(dir.path().join("tmdb-tv-4608.none"), b"").unwrap();
     let http = crate::http::client().unwrap();
-    assert_eq!(textless_poster(&NoRequests, &http, dir.path(), "tmdb-tv-4608").await, None);
+    assert_eq!(textless_poster(&NoRequests, &http, None, dir.path(), "tmdb-tv-4608").await, None);
 }
 
 #[tokio::test]
 async fn a_key_without_a_provider_title_makes_no_request() {
     let dir = tempfile::tempdir().unwrap();
     let http = crate::http::client().unwrap();
-    assert_eq!(textless_poster(&NoRequests, &http, dir.path(), "local-poster").await, None);
+    assert_eq!(textless_poster(&NoRequests, &http, None, dir.path(), "local-poster").await, None);
 }
 
 #[tokio::test]

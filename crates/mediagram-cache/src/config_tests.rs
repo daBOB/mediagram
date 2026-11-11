@@ -41,6 +41,7 @@ fn defaults_apply_with_no_file_and_no_env() {
     let cfg = load(None).unwrap();
     assert_eq!(cfg.listen, DEFAULT_LISTEN);
     assert_eq!(cfg.budget, DEFAULT_BUDGET_BYTES);
+    assert_eq!(cfg.blob_budget, 8 * 1024 * 1024 * 1024);
     assert!(cfg.mdns);
 }
 
@@ -82,6 +83,16 @@ fn env_overrides_apply_even_with_no_file_present() {
 
     let cfg = load(None).unwrap();
     assert_eq!(cfg.budget, 999);
+}
+
+#[test]
+fn the_blob_budget_has_its_own_env_override() {
+    let _guard = EnvGuard::new();
+    unsafe { env::set_var("MEDIAGRAM_CACHE_BLOB_BUDGET", "4242") };
+
+    let cfg = load(None).unwrap();
+    assert_eq!(cfg.blob_budget, 4242);
+    assert_eq!(cfg.budget, DEFAULT_BUDGET_BYTES);
 }
 
 #[test]

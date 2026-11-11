@@ -290,6 +290,9 @@ class FakeCore(
     var fetchThread: Thread? = null
         private set
 
+    /** Every `(url, token)` [setHomeCache] was handed, in order. */
+    val homeCacheCalls: MutableList<Pair<String?, String?>> = mutableListOf()
+
     private var readings = 0
 
     /**
@@ -442,6 +445,13 @@ class FakeCore(
     }
 
     override fun fetchProgress(): FetchProgress? = progress
+
+    override fun setHomeCache(
+        url: String?,
+        token: String?,
+    ) {
+        homeCacheCalls += url to token
+    }
 
     override suspend fun fetchMissing(tmdbKey: String, language: String, backdropWidth: UInt): FetchReport {
         fetchCalls++

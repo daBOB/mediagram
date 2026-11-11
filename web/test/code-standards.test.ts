@@ -112,6 +112,9 @@ const ROOT = join(import.meta.dir, "..");
  * Raised 2026-10-22 for `src/index.ts`, by 1, to hand the router the sources of the player
  * statistics' download rows; `src/cache/held.ts` fell under the limit the same day, once counting
  * a set's chunks moved to `held-chunks.ts`.
+ * Raised 2026-11-10 for `src/config.ts`, by 6, and `src/index.ts`, by 1, to read the LAN chunk
+ * server's address and token and hand it to the byte source; the client itself is its own file,
+ * `src/cache/lan-chunk-server.ts`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 714,
@@ -133,8 +136,8 @@ const CEILINGS: Record<string, number> = {
   "public/styles/theme.css": 209,
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
-  "src/config.ts": 265,
-  "src/index.ts": 454,
+  "src/config.ts": 271,
+  "src/index.ts": 455,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,

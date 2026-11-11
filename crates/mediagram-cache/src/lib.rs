@@ -3,6 +3,7 @@
 //! the home network read and write it so a chunk fetched from Telegram once
 //! is not fetched again by the next device.
 
+pub mod blobs;
 pub mod config;
 pub mod http;
 pub mod mdns;

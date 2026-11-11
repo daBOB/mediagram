@@ -78,6 +78,8 @@ pub struct Core {
     game_night: AsyncMutex<Option<mediagram_game::Host>>,
     /// How far the fetch under way has got — see `Core::fetch_progress`.
     fetch_meter: enrich::progress::FetchMeter,
+    /// The household's cache server Kotlin last named — see `Core::set_home_cache`.
+    home_cache: std::sync::Mutex<Option<Arc<mediagram_tmdb::home_cache::HomeCache>>>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -99,6 +101,7 @@ impl Core {
             together_heard: std::sync::Mutex::new(None),
             game_night: AsyncMutex::new(None),
             fetch_meter: enrich::progress::FetchMeter::default(),
+            home_cache: std::sync::Mutex::new(None),
         })
     }
 

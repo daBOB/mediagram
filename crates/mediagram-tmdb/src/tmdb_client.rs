@@ -67,6 +67,7 @@ pub struct TmdbClient {
     http: reqwest::Client,
     api_key: String,
     credential: Credential,
+    base_url: String,
 }
 
 impl TmdbClient {
@@ -76,7 +77,15 @@ impl TmdbClient {
             http,
             credential: classify(&api_key),
             api_key,
+            base_url: BASE_URL.to_string(),
         }
+    }
+
+    /// Asks another host than TMDB; for tests that stand one up.
+    #[must_use]
+    pub fn with_base_url(mut self, url: impl Into<String>) -> Self {
+        self.base_url = url.into();
+        self
     }
 
     /// Cached on disk and asking for one language, ready to pass to
@@ -110,7 +119,7 @@ impl TmdbApi for TmdbClient {
     async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value> {
         // Built by hand (not `RequestBuilder::query`) since the crate's `query`
         // feature isn't enabled; `reqwest::Url` re-exports the `url` crate.
-        let mut url = reqwest::Url::parse(&format!("{BASE_URL}{path}"))
+        let mut url = reqwest::Url::parse(&format!("{}{path}", self.base_url))
             .with_context(|| format!("invalid tmdb path {path}"))?;
         {
             let mut pairs = url.query_pairs_mut();
@@ -166,6 +175,26 @@ impl TmdbApi for TmdbClient {
                 .map_err(reqwest::Error::without_url)
                 .with_context(|| format!("tmdb response for {path} was not JSON"))?;
             return Ok(body);
+        }
+    }
+}
+
+/// Stands in for TMDB when there is no key: the cache server is the only
+/// source, so anything it does not hold is an error rather than a request.
+pub struct NoKey;
+
+impl TmdbApi for NoKey {
+    async fn get_json(&self, _path: &str, _query: &[(&str, String)]) -> Result<Value> {
+        anyhow::bail!("no TMDB key, and the home cache server does not hold this")
+    }
+}
+
+/// A client when a key is configured, else [`NoKey`]: one type for both.
+impl<A: TmdbApi> TmdbApi for Option<A> {
+    async fn get_json(&self, path: &str, query: &[(&str, String)]) -> Result<Value> {
+        match self {
+            Some(api) => api.get_json(path, query).await,
+            None => NoKey.get_json(path, query).await,
         }
     }
 }

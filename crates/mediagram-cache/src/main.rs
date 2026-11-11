@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use tokio::net::TcpListener;
 
-use mediagram_cache::{config, http, mdns, store, token};
+use mediagram_cache::{blobs, config, http, mdns, store, token};
 
 #[derive(Parser)]
 #[command(name = "mediagram_cache", version, about)]
@@ -51,6 +51,8 @@ async fn serve(cfg: config::Config) -> Result<()> {
     let token = token::ensure(&cfg.state_dir).context("preparing the pairing token")?;
     let chunk_store =
         store::ChunkStore::open(cfg.root.clone(), cfg.budget).context("opening the chunk store")?;
+    let blob_store = blobs::BlobStore::open(cfg.root.clone(), cfg.blob_budget)
+        .context("opening the blob store")?;
     let status = chunk_store.status();
     let store = Arc::new(chunk_store);
 
@@ -80,7 +82,7 @@ async fn serve(cfg: config::Config) -> Result<()> {
         status.chunks, status.held_bytes, status.budget_bytes
     );
 
-    axum::serve(listener, http::router(store, token))
+    axum::serve(listener, http::router(store, Arc::new(blob_store), token))
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("serving")

@@ -17,7 +17,8 @@ class FetchViewModel
         val state = enrichment.state
 
         init {
-            refreshKeyStatus()
+            // Reads the key status at once, then again whenever the home cache server comes or goes.
+            viewModelScope.launch { enrichment.followHomeCache() }
         }
 
         fun refreshKeyStatus() {

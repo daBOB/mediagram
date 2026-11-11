@@ -23,7 +23,8 @@ pub(super) fn scan(root: &Path) -> io::Result<Vec<(ChunkKey, u64, SystemTime)>> 
         let Some(entry) = log_err(entry, root) else {
             continue;
         };
-        if entry.file_name() == ".tmp" {
+        // Staged uploads and the blob store share the root but hold no sets.
+        if entry.file_name() == ".tmp" || entry.file_name() == "blobs" {
             continue;
         }
         match entry.file_type() {

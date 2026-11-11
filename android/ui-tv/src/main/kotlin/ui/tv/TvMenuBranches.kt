@@ -8,6 +8,7 @@ import catalog.CatalogViewModel
 import catalog.showsPreloads
 import catalog.MenuScreen
 import catalog.updateDisabledReason
+import catalog.updateNote
 import data.CatalogEnrichmentState
 import system.FetchViewModel
 import ui.common.LibraryPositions
@@ -53,7 +54,7 @@ internal fun tvMenuActions(
         onTmdbKey = { open(MenuScreen.TmdbKey) },
         onStartOver = onStartOver,
         updateDisabledReason = updateDisabledReason(catalogState, fetchState.running, fetchState.progress),
-        updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
+        updateNote = updateNote(fetchState),
         onPreloads =
             if (catalogState.showsPreloads(preloadCount)) {
                 {

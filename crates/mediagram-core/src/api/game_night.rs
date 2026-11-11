@@ -34,7 +34,7 @@ impl Core {
         // Without a key the poster game simply shows the normal posters.
         let textless = tmdb_key
             .filter(|key| !key.trim().is_empty())
-            .and_then(|key| poster_lookup(key, self.data_dir.join("game-posters"), poster_keys));
+            .and_then(|key| poster_lookup(key, self.data_dir.join("game-posters"), poster_keys, self.home_cache()));
         let log = Some(self.data_dir.join(GAME_LOG));
         replace(&self.game_night, titles, kids_locked, PREFERRED_PORT, textless, log).await
     }

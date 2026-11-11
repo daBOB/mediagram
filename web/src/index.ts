@@ -17,6 +17,7 @@ import { StateSync } from "./state/sync";
 import { TelegramStateChannel } from "./telegram/state-channel";
 import { listenForLibraryEvents } from "./telegram/channel-events";
 import { isExposed, reachableUrls } from "./application/listen-address";
+import { LanChunkServer } from "./cache/lan-chunk-server";
 import { CachedReader } from "./cache/reader";
 import { detectEncoder, detectPacedReads } from "./transcode/encoders";
 import { FfmpegRunner } from "./transcode/ffmpeg";
@@ -263,7 +264,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
 
     const reader = cache ? new CachedReader(cache, config.cacheReadahead) : undefined;
     resources.reader = reader;
-    const bytes = new TelegramSource(connection, reader);
+    const bytes = new TelegramSource(connection, reader, config.cacheServer ? new LanChunkServer(config.cacheServer) : undefined);
 
     // Which titles are on this disk in full, for the shelf's offline badge. The
     // expectation is folded again whenever the catalog is swapped, and the first

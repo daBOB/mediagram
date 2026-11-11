@@ -15,7 +15,8 @@
 
 import { helpers } from "teleproto";
 
-import type { CachedReader } from "../cache/reader";
+import type { LanChunkServer } from "../cache/lan-chunk-server";
+import type { CachedReader, FetchRange } from "../cache/reader";
 import type { PartLocation } from "../catalog";
 import { requestSizeFor, type Step } from "../range";
 import type { ByteSource } from "../http/stream";
@@ -41,6 +42,7 @@ export class TelegramSource implements ByteSource {
   constructor(
     private readonly connection: TelegramConnection,
     private readonly reader?: CachedReader,
+    private readonly lan?: LanChunkServer,
   ) {}
 
   /** Byte streams that failed since startup, including unavailable cached bytes. */
@@ -96,6 +98,13 @@ export class TelegramSource implements ByteSource {
     });
   }
 
+  /** Where the reader's misses come from: the LAN server when there is one, else Telegram. */
+  private upstream(setId: string, locations: PartLocation[], location: PartLocation): FetchRange {
+    const telegram = (idx: number) => connectionFetcher(this.connection, locations.find((l) => l.span.idx === idx)!.messageId);
+    const spans = locations.map((l) => l.span);
+    return this.lan ? this.lan.fetcherFor(setId, spans, location.span.idx, telegram) : telegram(location.span.idx);
+  }
+
   private async *bytesOf(
     setId: string,
     locations: PartLocation[],
@@ -119,7 +128,7 @@ export class TelegramSource implements ByteSource {
           start: step.offset + step.headDrop,
           length: step.take,
           partLength: location.span.len,
-          fetch: cacheOnly ? undefined : connectionFetcher(this.connection, location.messageId),
+          fetch: cacheOnly ? undefined : this.upstream(setId, locations, location),
         });
         continue;
       }

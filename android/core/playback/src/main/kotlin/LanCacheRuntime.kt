@@ -3,6 +3,7 @@ package playback
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 /**
  * Whether the last LAN write was rejected for a bad token — a fact
@@ -14,12 +15,24 @@ class LanCacheTokenStatus {
     private val _rejected = MutableStateFlow(false)
     val rejected: StateFlow<Boolean> = _rejected.asStateFlow()
 
+    private val _settingsChanges = MutableStateFlow(0)
+
+    /**
+     * Counts saved changes to the LAN cache's switch or token, which have no
+     * change signal of their own, so whatever acts on them reads them again.
+     */
+    val settingsChanges: StateFlow<Int> = _settingsChanges.asStateFlow()
+
     fun markRejected() {
         _rejected.value = true
     }
 
     fun clear() {
         _rejected.value = false
+    }
+
+    fun settingsChanged() {
+        _settingsChanges.update { it + 1 }
     }
 }
 

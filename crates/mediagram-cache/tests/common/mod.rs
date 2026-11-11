@@ -6,6 +6,7 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::http::{Request, header};
 use http_body_util::BodyExt;
+use mediagram_cache::blobs::BlobStore;
 use mediagram_cache::http::router;
 use mediagram_cache::store::ChunkStore;
 use mediagram_cache::token;
@@ -15,7 +16,11 @@ pub const TOKEN: &str = "00112233445566778899aabbccddeeff00112233445566778899aab
 pub fn app(budget: u64) -> (tempfile::TempDir, axum::Router) {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = ChunkStore::open(dir.path().to_path_buf(), budget).expect("open store");
-    let router = router(Arc::new(store), TOKEN.to_string());
+    let router = router(
+        Arc::new(store),
+        Arc::new(BlobStore::open(dir.path().to_path_buf(), 1 << 20).expect("open blobs")),
+        TOKEN.to_string(),
+    );
     (dir, router)
 }
 

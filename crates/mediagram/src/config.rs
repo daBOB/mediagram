@@ -2,15 +2,20 @@
 //! variables. Secrets (api_hash, tmdb_key) are never printed.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{Context, Result, bail};
 use mediagram_tmdb::disk_cache::DiskCachedApi;
+use mediagram_tmdb::home_cache::HomeCache;
 use mediagram_tmdb::localized::Localized;
 use mediagram_tmdb::tmdb_client::TmdbClient;
 use mlib_spec::part_plan::{DEFAULT_PART_SIZE, validate_part_size};
 use serde::Deserialize;
 
 use crate::paths;
+
+mod env;
+use env::apply_env;
 
 #[derive(Deserialize, Clone)]
 pub struct Config {
@@ -55,6 +60,13 @@ pub struct Config {
     /// Where `mediagram serve` listens; default: loopback, see
     /// `commands::serve::DEFAULT_ADDR`.
     pub serve_addr: Option<String>,
+    /// The household's cache server, e.g. `http://127.0.0.1:7788`. TMDB
+    /// answers and artwork are read from and filled into it, so the web
+    /// player and the TV app share one cache. Unset or unreachable: skipped.
+    pub cache_server: Option<String>,
+    /// The key that signs uploads to `cache_server`. Only signatures made
+    /// with it are sent, never the key itself.
+    pub cache_server_token: Option<String>,
     /// The file this was read from. Not a key: `load` records it so a
     /// process this one starts can be given the same config, which the
     /// environment alone does not carry.
@@ -85,6 +97,11 @@ impl std::fmt::Debug for Config {
             .field("tmp_dir", &self.tmp_dir)
             .field("data_dir", &self.data_dir)
             .field("serve_addr", &self.serve_addr)
+            .field("cache_server", &self.cache_server)
+            .field(
+                "cache_server_token",
+                &self.cache_server_token.as_ref().map(|_| "<redacted>"),
+            )
             .field("loaded_from", &self.loaded_from)
             .finish()
     }
@@ -117,16 +134,25 @@ impl Config {
     ///
     /// Built even with no key configured: the payloads `add` looked up are
     /// cached under the data directory, and a warm cache answers without one.
+    /// With no key, what neither that cache nor the cache server holds is an
+    /// error, never a request TMDB would refuse.
     pub fn tmdb_client(
         &self,
         http: reqwest::Client,
-    ) -> Result<Localized<DiskCachedApi<TmdbClient>>> {
-        Ok(TmdbClient::with_cache(
-            http,
-            self.tmdb_key.as_deref().unwrap_or(""),
-            &self.data_dir()?,
-            &self.tmdb_language,
-        ))
+    ) -> Result<Localized<DiskCachedApi<Option<TmdbClient>>>> {
+        let home = self.home_cache(&http);
+        let key = self.tmdb_key.as_deref().filter(|k| !k.is_empty());
+        let disk = DiskCachedApi::new(key.map(|k| TmdbClient::new(http, k)), &self.data_dir()?)
+            .with_home_cache(home);
+        Ok(Localized::new(disk, &self.tmdb_language))
+    }
+
+    /// The cache server named in the config, if any. An empty value counts
+    /// as unset, like the other optional keys.
+    pub fn home_cache(&self, http: &reqwest::Client) -> Option<Arc<HomeCache>> {
+        let url = self.cache_server.as_deref().filter(|u| !u.is_empty())?;
+        let token = self.cache_server_token.clone().filter(|t| !t.is_empty());
+        Some(Arc::new(HomeCache::new(http.clone(), url, token)))
     }
 }
 
@@ -156,42 +182,6 @@ pub fn load(path: Option<&Path>) -> Result<Config> {
         bail!("api_hash and channel must be set");
     }
     Ok(cfg)
-}
-
-fn apply_env(cfg: &mut Config) -> Result<()> {
-    let env = |k: &str| {
-        std::env::var(format!("MEDIAGRAM_{k}"))
-            .ok()
-            .filter(|v| !v.is_empty())
-    };
-    if let Some(v) = env("API_ID") {
-        cfg.api_id = v.parse().context("MEDIAGRAM_API_ID")?;
-    }
-    if let Some(v) = env("API_HASH") {
-        cfg.api_hash = v;
-    }
-    if let Some(v) = env("CHANNEL") {
-        cfg.channel = v;
-    }
-    if let Some(v) = env("TMDB_KEY") {
-        cfg.tmdb_key = Some(v);
-    }
-    if let Some(v) = env("TMDB_LANGUAGE") {
-        cfg.tmdb_language = v;
-    }
-    if let Some(v) = env("PACKAGE_KEY") {
-        cfg.package_key = Some(v);
-    }
-    if let Some(v) = env("PART_SIZE") {
-        cfg.part_size = v.parse().context("MEDIAGRAM_PART_SIZE")?;
-    }
-    if let Some(v) = env("DATA_DIR") {
-        cfg.data_dir = Some(PathBuf::from(v));
-    }
-    if let Some(v) = env("SERVE_ADDR") {
-        cfg.serve_addr = Some(v);
-    }
-    Ok(())
 }
 
 #[cfg(test)]

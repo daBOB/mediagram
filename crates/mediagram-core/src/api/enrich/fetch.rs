@@ -41,6 +41,7 @@ pub async fn fetch_into(
         without_id,
         language,
         custom_keys,
+        keyless,
     } = plan;
     let meter = &core.fetch_meter;
     let _run = meter.run();
@@ -73,7 +74,7 @@ pub async fn fetch_into(
     // leaves every resolved ref undownloaded rather than panicking — the
     // catalog is the product, the artwork a convenience.
     meter.start(FetchStep::Downloading, refs.len());
-    let written = download_each(http, &refs, artwork_dir, |done| meter.set_done(done))
+    let written = download_each(http, &refs, artwork_dir, core.home_cache().as_deref(), |done| meter.set_done(done))
         .await
         .unwrap_or_else(|err| {
             tracing::warn!(error = %format_args!("{err:#}"), "the artwork directory is unavailable");
@@ -95,11 +96,9 @@ pub async fn fetch_into(
         .filter(|key| !written.contains(key))
         .collect();
     let described = record_descriptions(core, api, language, titles).await;
-    for key in described.lost {
-        if !lost.contains(&key) {
-            lost.push(key);
-        }
-    }
+    // With no key, a title left undescribed needs the keyed device; nothing broke.
+    let more: Vec<String> = described.lost.into_iter().filter(|key| !keyless && !lost.contains(key)).collect();
+    lost.extend(more);
 
     FetchReport {
         posters_fetched,

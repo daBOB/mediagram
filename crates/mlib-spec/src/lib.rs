@@ -28,6 +28,7 @@ pub mod filename;
 pub mod ids;
 pub mod index_caption;
 pub mod kind_spelling;
+pub mod lan_signature;
 pub mod package;
 pub mod part_name;
 pub mod part_plan;

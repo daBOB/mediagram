@@ -1918,7 +1918,9 @@ configured just talks to Telegram directly, as it always did.
 | GET | `/v1/sets/{id}/chunks/{n}` | none | 200 bytes / 404 |
 | HEAD | same | none | 200 + `Content-Length` / 404 |
 | PUT | same, header `X-Set-Total: <bytes>` | signed, see below | 201 stored / 200 already held / 400 bad length / 401 / 409 total mismatch / 413 over one chunk |
-| GET | `/v1/status` | none | `{"version","held_bytes","budget_bytes","chunks"}` |
+| GET | `/v1/status` | none | `{"version","held_bytes","budget_bytes","chunks","blob_bytes","blob_budget_bytes"}` |
+| GET / HEAD | `/v1/tmdb/{key}`, `/v1/art/{size}/{name}` | none | 200 / 404 |
+| PUT | same | signed over the body's own length | TMDB answer: 201 / 200 replaced; image: 201 / 200 already held; 401 / 404 bad name / 413 |
 | GET | `/v1/sets/{id}` | none | 200 `{"total","chunks_held","bytes_held"}` (`total` null if unrecorded) / 404 |
 
 `id` matches `^[A-Za-z0-9]{1,64}$` — the same shape the web player's

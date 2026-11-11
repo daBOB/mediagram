@@ -68,3 +68,51 @@ fn debug_output_redacts_secrets() {
     assert!(!dbg.contains("sekrit") && !dbg.contains("k3y"));
     assert!(dbg.contains("<redacted>"));
 }
+
+#[test]
+fn the_cache_server_keys_are_read() {
+    let cfg: Config = toml::from_str(
+        "api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\ncache_server = \"http://127.0.0.1:7788\"\ncache_server_token = \"t0ken\"\n",
+    )
+    .unwrap();
+    assert_eq!(cfg.cache_server.as_deref(), Some("http://127.0.0.1:7788"));
+    assert_eq!(cfg.cache_server_token.as_deref(), Some("t0ken"));
+    assert!(
+        cfg.home_cache(&mediagram_core::http::client().unwrap())
+            .is_some()
+    );
+    assert!(!format!("{cfg:?}").contains("t0ken"));
+}
+
+#[test]
+fn no_cache_server_means_no_home_cache() {
+    let cfg: Config =
+        toml::from_str("api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\ncache_server = \"\"\n")
+            .unwrap();
+    assert!(
+        cfg.home_cache(&mediagram_core::http::client().unwrap())
+            .is_none()
+    );
+}
+
+/// With no key there is nothing to ask TMDB with: a title neither cache
+/// holds is the keyless error, not a request TMDB would refuse.
+#[tokio::test]
+async fn a_keyless_config_asks_tmdb_nothing() {
+    use mediagram_tmdb::tmdb_client::TmdbApi;
+    for key in [None, Some(String::new())] {
+        let dir = tempfile::tempdir().unwrap();
+        let mut cfg: Config =
+            toml::from_str("api_id = 1\napi_hash = \"h\"\nchannel = \"c\"\n").unwrap();
+        cfg.tmdb_key = key;
+        cfg.data_dir = Some(dir.path().to_path_buf());
+        let api = cfg
+            .tmdb_client(mediagram_core::http::client().unwrap())
+            .unwrap();
+        let err = api.get_json("/movie/1", &[]).await.unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "no TMDB key, and the home cache server does not hold this"
+        );
+    }
+}

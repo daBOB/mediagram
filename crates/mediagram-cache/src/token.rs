@@ -7,15 +7,7 @@ use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::Path;
 
-use hmac::{Hmac, KeyInit, Mac};
-use sha2::{Digest, Sha256};
-
 use crate::store::publish::{publish_new, temp_name};
-
-type HmacSha256 = Hmac<Sha256>;
-
-/// The header value's scheme: `Authorization: MGC1 <hex>`.
-pub const SCHEME: &str = "MGC1";
 
 /// Reads the token at `state_dir/token`, creating it — 32 random bytes,
 /// hex-encoded, mode 0600 — if it is not already there. Lives under
@@ -103,52 +95,7 @@ fn write_private(path: &Path, token: &str) -> io::Result<()> {
     file.write_all(token.as_bytes())
 }
 
-/// The canonical string a PUT signs: `"{method}\n{path}\n{total}\n" +
-/// hex(sha256(body))`, with no trailing newline after the body hash.
-///
-/// `path` and `total` are their canonical decimal spelling — `total` is
-/// this `u64`'s `Display` output (no leading zeros, no `+` sign, matching
-/// what a client's own `Long.toString()` produces), and `path` is rebuilt
-/// from the validated id and the parsed chunk number
-/// ([`crate::http`]'s `put_chunk`), not copied from the raw request text.
-fn canonical(method: &str, path: &str, total: u64, body: &[u8]) -> String {
-    let body_hash = hex::encode(Sha256::digest(body));
-    format!("{method}\n{path}\n{total}\n{body_hash}")
-}
-
-/// `HMAC-SHA256(token, canonical(...))`, hex-encoded — the value that goes
-/// after `MGC1 ` in the `Authorization` header.
-///
-/// The HMAC key is `token.as_bytes()`: the 64 ASCII bytes of the hex string
-/// itself, exactly as printed by `mediagram_cache token` and typed into a
-/// pairing device — **not** the 32 bytes that hex decodes to. An
-/// implementation that decodes the token first will compute a different,
-/// silently wrong, signature.
-pub fn sign(token: &str, method: &str, path: &str, total: u64, body: &[u8]) -> String {
-    let mut mac =
-        HmacSha256::new_from_slice(token.as_bytes()).expect("HMAC accepts a key of any length");
-    mac.update(canonical(method, path, total, body).as_bytes());
-    hex::encode(mac.finalize().into_bytes())
-}
-
-/// Recomputes the signature and compares it to `sig_hex` in constant time.
-/// Malformed hex is rejected the same as a mismatch, never a panic.
-pub fn verify(
-    token: &str,
-    sig_hex: &str,
-    method: &str,
-    path: &str,
-    total: u64,
-    body: &[u8],
-) -> bool {
-    let Ok(sig) = hex::decode(sig_hex) else {
-        return false;
-    };
-    let mut mac =
-        HmacSha256::new_from_slice(token.as_bytes()).expect("HMAC accepts a key of any length");
-    mac.update(canonical(method, path, total, body).as_bytes());
-    mac.verify_slice(&sig).is_ok()
-}
+pub use mlib_spec::lan_signature::{SCHEME, sign, verify};
 
 #[cfg(test)]
 #[path = "token_tests.rs"]

@@ -119,3 +119,9 @@ fn only_the_name_the_store_writes_is_a_chunk_file() {
         assert_eq!(chunk_file_num(name), None, "{name:?}");
     }
 }
+
+#[test]
+fn blobs_is_not_a_set_id() {
+    assert!(!valid_id("blobs"));
+    assert!(valid_id("blobs2"));
+}

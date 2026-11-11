@@ -6,6 +6,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import data.CoreProvider
+import data.HomeCacheServer
 import data.di.MainThreadScope
 import data.settings.LanCacheTokenSettings
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +26,7 @@ import playback.PlainLanCacheSettings
 import playback.PlaybackCounters
 import playback.SystemUnmeteredNetworkCheck
 import playback.UpstreamTraffic
+import playback.linkHomeCache
 import java.util.concurrent.Executors
 import javax.inject.Singleton
 
@@ -77,10 +80,29 @@ object SharedPlaybackModule {
         @MainThreadScope scope: CoroutineScope,
     ): LanServerLocator =
         // One pass starts as soon as this singleton is first resolved —
-        // effectively app start, since the player and Settings both pull
-        // it in early — plus whatever further passes Settings triggers
-        // while it is open (LanCacheViewModel.refresh()).
+        // effectively app start, since the player, Settings and the
+        // enrichment fetch all pull it in early — plus whatever further passes
+        // Settings triggers while it is open (LanCacheViewModel.refresh()).
         LanServerLocator(context, scope, client) { settings.manualAddress() }.apply { discover() }
+
+    /**
+     * The core follows the server this device found — while the LAN cache is
+     * switched on — for TMDB answers and artwork, and the enrichment fetch
+     * follows what the core was told.
+     */
+    @Provides
+    @Singleton
+    fun provideHomeCacheServer(
+        locator: LanServerLocator,
+        settings: LanCacheSettings,
+        coreProvider: CoreProvider,
+        tokenSettings: LanCacheTokenSettings,
+        tokenStatus: LanCacheTokenStatus,
+        @MainThreadScope scope: CoroutineScope,
+    ): HomeCacheServer =
+        HomeCacheServer().also { home ->
+            scope.linkHomeCache(coreProvider.core, locator.server, tokenStatus.settingsChanges, home, { settings.enabled() }) { tokenSettings.read() }
+        }
 
     // Upcasts to the narrow interface a Settings view model actually
     // depends on, so it can be tested against a fake without a real
