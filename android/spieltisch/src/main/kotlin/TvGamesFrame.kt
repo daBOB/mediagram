@@ -42,6 +42,7 @@ internal fun TvGamesFrame(
     leave: () -> Unit,
 ) {
     val state by model.state.collectAsState()
+    val filmsUnavailable by model.filmsUnavailable.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { model.start() }
     DisposableEffect(Unit) { onDispose { model.stop() } }
@@ -93,7 +94,8 @@ internal fun TvGamesFrame(
 
     val game = chosen
     if (game == null) {
-        TvGamesShelf(games, focused, onFocus = { focused = it }) { picked ->
+        val note = if (filmsUnavailable) "The library's films aren't available right now." else null
+        TvGamesShelf(games, focused, note, onFocus = { focused = it }) { picked ->
             // A host that failed to start gets another go with the next pick.
             if (state is GameNightUi.Failed) model.start()
             chosen = picked.kind

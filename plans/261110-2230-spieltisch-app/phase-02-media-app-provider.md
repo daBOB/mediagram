@@ -12,7 +12,7 @@
 ## Overview
 
 - Priority: second.
-- Status: pending.
+- Status: done; the night is answered from a fingerprinted snapshot (see Result).
 - What it does: Spieltisch shows the library's films (Poster-Raten, and the film rounds of
   the quiz, Kopfnuss and Dreifelder) under the active profile's kids lock, all read from the
   media app. Spieltisch holds no Telegram session, no TMDB key and no profile data.
@@ -102,11 +102,11 @@
 
 ## Todo
 
-- [ ] core exports + tests
-- [ ] provider + permission + tests
-- [ ] image fetch hook + fixture contract
-- [ ] Spieltisch bridge, fail-safe, cache
-- [ ] emulator check incl. cold-start timing → `reports/`
+- [x] core exports + tests
+- [x] provider + permission + tests
+- [x] image fetch hook + fixture contract
+- [x] Spieltisch bridge, fail-safe, cache
+- [x] emulator check incl. cold-start timing → `reports/`
 
 ## Success criteria
 
@@ -124,6 +124,75 @@
 - The signature permission is the only gate. Without it, any app on the box could read the library's titles and posters.
 - The kids lock fails closed.
 - With the lock on, only `kids_ok` titles leave the media app (the provider filters `game_night_titles`' output). The host filters again, so a title that isn't kid-safe never crosses the boundary on a kids profile.
+
+## Result (2026-11-11)
+
+Built as designed, then the risk below came true and its mitigation was built
+too (coordinator's decision, 2026-11-11). Every new test was watched failing
+against a broken version (`reports/provider-broken-versions.log`).
+
+**Before the snapshot** (`reports/provider-emulator.log`): on the emulator
+(`Google_TV_1080p`, x86, a 28,038-set library, 1,764 titles, 606 KB of JSON),
+`/night` took **3735–3885 ms cold** and 2491–2971 ms warm, so a cold night
+missed the 3 s limit and was locked. Warm, the cost was all in the media app:
+`catalog.sets()` ~0.8 s, `gameNightConfig` ~0.2 s, `Core.gameNightTitles`
+~1.2 s. Every first image fetch rebuilt the same night.
+
+**A first snapshot design** (kept up to date by a background observer) was replaced after
+review: the observer rebuilt on every progress save, and a snapshot checked only by profile
+id and kids flag could still be served after a kids profile's rules tightened.
+
+**As built: a fingerprinted night, the warm-up and an 8 s limit** (`reports/fingerprint-emulator.log`):
+
+- The fingerprint covers the chosen profile's id, kids flag, kids limit and hidden sections,
+  the kids marks, and the catalog marker. Everything is read from the core on every ask.
+- The catalog marker is `catalogFacts()`: origin, `publishedAt`, set and poster counts. It
+  costs 230–400 ms on the emulator; the profile and the marks take under 25 ms.
+- A free marker would need a new core export, the `current` link's target.
+
+| `/night` | ms |
+|---|---|
+| cold media app, with Spieltisch's warm-up | 929, 988, 1345 |
+| cold media app, no warm-up | 1084, 1104, 1872 |
+| warm media app | 427, 545, 598 |
+| first ask after a catalog-marker change, warm | 4350 (a build) |
+| first ask after a change, cold, with the warm-up | 4493 (one build, the night's ask joined it) |
+| no readable snapshot at all, both cold | 5010 (one build) |
+
+- Every case answered inside the 8 s limit.
+- After the re-review (`reports/rereview-emulator.log`):
+  - The fingerprint also carries the app version, which the snapshot's header
+    requires, and `described`, a digest of the fetched descriptions.
+  - The build lists the sets from the core in hand, and the locked work is
+    limited to 30 s.
+  - Slow textless misses are remembered too.
+  - The marker cost 224–396 ms with no description store on this emulator,
+    and 233–368 ms with a synthetic store of 2,000 described titles: no
+    measurable change (the digest takes 7 ms on the host).
+  - The first ask after the store appeared rebuilt in 4077 ms.
+  - From the snapshot: cold with the warm-up 1058–1448 ms, cold without it
+    1109–1212 ms, warm 396–541 ms.
+  - The first ask under a new app version rebuilt (5671 ms, both cold),
+    inside the limit.
+- In the media app: a build took 4.2–4.7 s, an answer from the snapshot 235–984 ms. The
+  ask after a change was served from the snapshot again (525 ms).
+- A first image check through the provider took 5–134 ms, with no build.
+- A title without a textless poster was asked about once per night.
+- The active profile is the core's own `chosen_profile`; there is no settings copy. Reading
+  it with the profile list took 2–23 ms once the core was built.
+- Still unseen on a device: an image crossing, since this library has no film posters (only
+  31 documentary artworks), so Poster-Raten says "Nicht genug Poster".
+- Media app disabled: locked in 73 ms, and the shelf says the films aren't available. The
+  shell (no permission) is refused by the manifest.
+
+**Fix verification** (`reports/code-reviewer-261111-0410-spieltisch-phase-2-fix-verification.md`):
+all six fixes hold, commit-ready. Kept as known:
+
+- The 30 s limit cuts off a build that takes longer, on every ask: such a box never gets films.
+  It fails closed and is now logged; the box run measures it (phase 5).
+- The limit can't cut in while the core itself is being built or a failed close retried.
+- A textless poster the media app's TMDB fetch timed out on is not asked for again that night:
+  the title keeps its lettered poster. Chosen over re-asking a slow fetch on every round.
 
 ## Next steps
 

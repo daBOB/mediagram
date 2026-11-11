@@ -67,6 +67,13 @@ dependencies {
     debugImplementation(libs.findLibrary("androidx.compose.ui.test.manifest").get())
 }
 
+// MediaAppContractTest reads the media app's manifest and provider; a change there alone must rerun it.
+tasks.withType<Test>().configureEach {
+    inputs
+        .files("../app/src/main/AndroidManifest.xml", "../feature/games/src/main/kotlin/GameNightProvider.kt")
+        .withPropertyName("mediaAppContract")
+}
+
 // The .so is not committed, so a clean checkout has bindings and no library behind them: the APK
 // would install and die with UnsatisfiedLinkError on its first call. This makes that a build failure.
 // It refuses rather than building the library itself, since the .so and the committed bindings are one

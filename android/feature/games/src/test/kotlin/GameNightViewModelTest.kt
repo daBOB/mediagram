@@ -1,7 +1,6 @@
 package games
 
 import data.DefaultWatchStateRepository
-import data.CatalogRepository
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -9,30 +8,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import model.MediaSet
 import org.junit.Rule
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.MainDispatcherRule
 import uniffi.mediagram_core.GameNightUrls
-import uniffi.mediagram_core.SearchHit
-import uniffi.mediagram_core.TitleInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-
-private class SetsOnly(
-    private val sets: List<MediaSet>,
-) : CatalogRepository {
-    override suspend fun refresh(): Result<Int> = Result.success(sets.size)
-
-    override suspend fun sets(): List<MediaSet> = sets
-
-    override suspend fun search(query: String): List<SearchHit> = emptyList()
-
-    override suspend fun titleInfo(posterKey: String): TitleInfo? = null
-}
 
 /** Remembers what the view model asked to announce on the network. */
 private class RecordingAnnouncer : GameNightAnnouncer {

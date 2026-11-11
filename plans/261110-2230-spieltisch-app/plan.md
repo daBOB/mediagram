@@ -31,7 +31,7 @@ carry their own tag (`#spieltisch-app`), which media apps ignore.
 | # | Phase | Status |
 |---|---|---|
 | 1 | [Spieltisch app on its own](phase-01-spieltisch-app-on-its-own.md): crate, app module, shelf from the catalogue, version line | done |
-| 2 | [The media app answers Spieltisch](phase-02-media-app-provider.md): night, titles, images, kids lock | media core side done (feat/spieltisch-media-side) |
+| 2 | [The media app answers Spieltisch](phase-02-media-app-provider.md): night, titles, images, kids lock | done: `/night` from a fingerprinted snapshot, ~1 s from a cold media app |
 | 3 | [Releases and updates per app](phase-03-releases-and-updates.md): own release tag, publish, Spieltisch updates itself | tag + publish + lookup done (feat/spieltisch-media-side) |
 | 4 | [The media app lets go](phase-04-media-app-lets-go.md): Games row opens Spieltisch, game code and assets leave | pending |
 | 5 | [Box run](phase-05-box-run.md): both apps on the TV box, a night, an update | pending |
@@ -56,4 +56,4 @@ shippable at every step. Phase 5 needs the box. Coordinate with the session that
 
 ## Unresolved
 
-None so far.
+- `feat/fluechtig-ferry` (spieltisch-ff, from main) is a Flüchtig-only change, but it bumps the media manifests to 0.175.0 under main's old one-number rule. Whichever branch reaches main second moves that bump onto the Spieltisch line, at the next free number. No file overlap otherwise (it doesn't touch host.rs, server.rs, catalogue.rs or lib.rs).

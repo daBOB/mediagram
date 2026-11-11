@@ -73,7 +73,8 @@ async fn replace(
     if let Some(running) = held.take() {
         running.stop().await;
     }
-    let host = mediagram_game::host::start_game_night(titles, kids_locked, port, textless, log)
+    // Its titles' images are this app's own files, so the host reads them directly.
+    let host = mediagram_game::host::start_game_night(titles, kids_locked, port, textless, None, log)
         .await
         .map_err(CoreError::io("starting the game night"))?;
     let urls = GameNightUrls { tv_url: host.tv_url(), join_url: host.join_url() };

@@ -246,12 +246,30 @@ class FakeCore(
 
     override suspend fun gameNightBack(): Boolean = gameNightBackAnswer
 
-    override suspend fun gameNightTitles(config: NightTitlesConfig): String = "[]"
+    /** What [gameNightTitles] answers for a config; no titles by default. */
+    var nightTitles: (NightTitlesConfig) -> String = { "[]" }
+
+    /** Every config [gameNightTitles] was asked with, in order. */
+    val nightTitlesAsked: MutableList<NightTitlesConfig> = mutableListOf()
+
+    override suspend fun gameNightTitles(config: NightTitlesConfig): String {
+        nightTitlesAsked += config
+        return nightTitles(config)
+    }
+
+    /** What [textlessPoster] answers, keyed by title key; nothing for any other. */
+    var textlessPosters: Map<String, String> = emptyMap()
+
+    /** Every title key [textlessPoster] was asked for, with the TMDB key it was given. */
+    val textlessAsked: MutableList<Pair<String, String?>> = mutableListOf()
 
     override suspend fun textlessPoster(
         titleKey: String,
         tmdbKey: String?,
-    ): String? = null
+    ): String? {
+        textlessAsked += titleKey to tmdbKey
+        return textlessPosters[titleKey]
+    }
 
     /** When set, [stopGameNight] suspends on it after counting: a stop still under way. */
     var gameNightStopGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null

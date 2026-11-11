@@ -6,10 +6,9 @@ import kotlinx.coroutines.test.runTest
 import model.Kind
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.setSummary
 import uniffi.mediagram_core.CreditRecord
 import uniffi.mediagram_core.SearchHit
-import uniffi.mediagram_core.SetSummary
-import uniffi.mediagram_core.SubtitleTrack
 import uniffi.mediagram_core.TitleCreditsRecord
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,7 +40,7 @@ class CatalogRepositoryTest {
     @Test
     fun setsMapKindFromTheCoreSurface() =
         runTest {
-            val core = FakeCore(sets = listOf(summary(kind = "ep", episodeFirst = 3, episodeLast = 3)))
+            val core = FakeCore(sets = listOf(setSummary(kind = "ep", episodeFirst = 3, episodeLast = 3)))
             val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
             assertEquals(Kind.EPISODE, repo.sets().single().kind)
         }
@@ -56,7 +55,7 @@ class CatalogRepositoryTest {
         runTest {
             val core = FakeCore(
                 sets = listOf(
-                    summary(
+                    setSummary(
                         posterPath = "/cache/tmdb-tv-1396.jpg",
                         backdropPath = "/cache/tmdb-tv-1396-bg.jpg",
                         seasonPosterPath = "/cache/tmdb-tv-1396-s2.jpg",
@@ -78,7 +77,7 @@ class CatalogRepositoryTest {
     @Test
     fun aSetKeepsTheTimeItArrived() =
         runTest {
-            val core = FakeCore(sets = listOf(summary(kind = "movie", addedAt = 1_781_568_000)))
+            val core = FakeCore(sets = listOf(setSummary(kind = "movie", addedAt = 1_781_568_000)))
             val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
             assertEquals(1_781_568_000, repo.sets().single().addedAt)
         }
@@ -90,7 +89,7 @@ class CatalogRepositoryTest {
     @Test
     fun aDocumentKeepsItsOwnKind() =
         runTest {
-            val core = FakeCore(sets = listOf(summary(kind = "doc")))
+            val core = FakeCore(sets = listOf(setSummary(kind = "doc")))
             val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
             assertEquals(Kind.DOCUMENT, repo.sets().single().kind)
         }
@@ -103,7 +102,7 @@ class CatalogRepositoryTest {
     @Test
     fun unrecognisedKindIsShelvedWithFilmsRatherThanDropped() =
         runTest {
-            val core = FakeCore(sets = listOf(summary(kind = "short-film")))
+            val core = FakeCore(sets = listOf(setSummary(kind = "short-film")))
             val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
             val set = repo.sets().single()
@@ -130,9 +129,9 @@ class CatalogRepositoryTest {
     fun mediaSetAsksTheCoreForOneSetRatherThanListingEveryOne() = runTest {
         val core = FakeCore(
             sets = listOf(
-                summary(setId = "s1", posterKey = "key-1"),
-                summary(setId = "s2", posterKey = "key-2"),
-                summary(setId = "s3", posterKey = "key-3"),
+                setSummary(setId = "s1", posterKey = "key-1"),
+                setSummary(setId = "s2", posterKey = "key-2"),
+                setSummary(setId = "s3", posterKey = "key-3"),
             ),
         )
         val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
@@ -146,7 +145,7 @@ class CatalogRepositoryTest {
 
     @Test
     fun mediaSetAnswersNothingForAnUnknownId() = runTest {
-        val core = FakeCore(sets = listOf(summary(setId = "s1")))
+        val core = FakeCore(sets = listOf(setSummary(setId = "s1")))
         val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
 
         assertEquals(null, repo.mediaSet("nobody"))
@@ -157,7 +156,7 @@ class CatalogRepositoryTest {
     fun aSetKeepsItsFranchiseAndSeriesFacts() = runTest {
         val core = FakeCore(
             sets = listOf(
-                summary(
+                setSummary(
                     setId = "dune2",
                     collectionId = 7,
                     collectionName = "Dune Collection",
@@ -178,7 +177,7 @@ class CatalogRepositoryTest {
     /** A v8 index answers none of the four — `null` throughout, not a mapping failure. */
     @Test
     fun aSetFromAV8IndexHasNoFranchiseOrSeriesFacts() = runTest {
-        val core = FakeCore(sets = listOf(summary(setId = "plain")))
+        val core = FakeCore(sets = listOf(setSummary(setId = "plain")))
         val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val set = repo.sets().single()
@@ -191,7 +190,7 @@ class CatalogRepositoryTest {
     /** The core decides the rule; this only has to carry the boolean through unchanged. */
     @Test
     fun aSetSaysWhetherItIsAnime() = runTest {
-        val core = FakeCore(sets = listOf(summary(setId = "spirited-away", anime = true), summary(setId = "dune", anime = false)))
+        val core = FakeCore(sets = listOf(setSummary(setId = "spirited-away", anime = true), setSummary(setId = "dune", anime = false)))
         val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val sets = repo.sets().associateBy { it.setId }
@@ -202,7 +201,7 @@ class CatalogRepositoryTest {
     /** The core decides which unit a set belongs to; this only has to carry its category through unchanged. */
     @Test
     fun aSetCarriesItsCategory() = runTest {
-        val core = FakeCore(sets = listOf(summary(setId = "rust-course", category = "Programming"), summary(setId = "dune")))
+        val core = FakeCore(sets = listOf(setSummary(setId = "rust-course", category = "Programming"), setSummary(setId = "dune")))
         val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val sets = repo.sets().associateBy { it.setId }
@@ -237,84 +236,3 @@ class CatalogRepositoryTest {
         assertEquals(null, repo.fetchPortrait(6))
     }
 }
-
-/** A [SetSummary] with sensible defaults, so a test only names what it cares about. */
-private fun summary(
-    setId: String = "set-1",
-    kind: String = "movie",
-    title: String? = "Title",
-    show: String? = null,
-    chap: String? = null,
-    path: String? = null,
-    season: Int? = null,
-    episodeFirst: Int? = null,
-    episodeLast: Int? = null,
-    year: Int? = null,
-    container: String = "mp4",
-    vcodec: String? = null,
-    acodec: String? = null,
-    quality: String? = null,
-    hdr: String? = null,
-    duration: Int? = null,
-    posterKey: String? = null,
-    posterPath: String? = null,
-    total: Long = 0L,
-    partCount: Int = 1,
-    addedAt: Long = 0,
-    fsk: String? = null,
-    genres: List<String> = emptyList(),
-    subtitles: List<SubtitleTrack> = emptyList(),
-    alang: List<String> = emptyList(),
-    slang: List<String> = emptyList(),
-    hasSummary: Boolean = false,
-    backdropPath: String? = null,
-    seasonPosterPath: String? = null,
-    tagline: String? = null,
-    rating: Double? = null,
-    popularity: Double? = null,
-    showStatus: String? = null,
-    collectionId: Long? = null,
-    collectionName: String? = null,
-    seriesType: String? = null,
-    anime: Boolean = false,
-    category: String? = null,
-): SetSummary = SetSummary(
-    setId = setId,
-    kind = kind,
-    title = title,
-    show = show,
-    chap = chap,
-    path = path,
-    season = season?.toUInt(),
-    episodeFirst = episodeFirst?.toUInt(),
-    episodeLast = episodeLast?.toUInt(),
-    year = year?.toUInt(),
-    container = container,
-    vcodec = vcodec,
-    acodec = acodec,
-    quality = quality,
-    hdr = hdr,
-    duration = duration?.toUInt(),
-    posterKey = posterKey,
-    posterPath = posterPath,
-    total = total.toULong(),
-    partCount = partCount.toUInt(),
-    addedAt = addedAt,
-    fsk = fsk,
-    genres = genres,
-    subtitles = subtitles,
-    alang = alang,
-    slang = slang,
-    hasSummary = hasSummary,
-    backdropPath = backdropPath,
-    seasonPosterPath = seasonPosterPath,
-    tagline = tagline,
-    rating = rating,
-    popularity = popularity,
-    showStatus = showStatus,
-    collectionId = collectionId?.toULong(),
-    collectionName = collectionName,
-    seriesType = seriesType,
-    anime = anime,
-    category = category,
-)

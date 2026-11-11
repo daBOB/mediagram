@@ -13,24 +13,34 @@ to `main`. Full phase-by-phase detail lives in
 - On Android 17 (API 37) Spieltisch asks for local network access before the night starts, so phones can find and reach it. The game page stays on the box's own host, and a keyboard, gamepad, locale or theme change no longer restarts the screen mid-night.
 - `crates/spieltisch-core`: the app's native core over `mediagram-game`, with `start_night`, `night_back`, `stop_night` and `game_catalogue`. The shelf is built from the host's catalogue, so a new game appears on it with no Kotlin change; art stays keyed by game kind.
 - `scripts/build-spieltisch-core.sh` and `scripts/generate-spieltisch-bindings.sh`; `scripts/check.sh` fails when the committed bindings no longer match the core.
+- Spieltisch reads each night from the media app: the active profile's kids lock and the films it may see, for Poster-Raten and the film rounds of the quiz, Kopfnuss and Dreifelder. Posters, stills and textless posters are copied out of the media app into Spieltisch's cache the first time the host asks for them. No media app, a refusal, an answer that isn't a night, or no answer within 8 s all mean kids-locked with no films, and the shelf says the library's films aren't available. Spieltisch holds no Telegram session, TMDB key or profile.
+- Spieltisch asks the media app once as it starts, without waiting for the answer, so the media app is already up when a night asks.
+- A title found to have no textless poster is not asked about again that night, however late the answer came.
 
 **Changed**
 
 - The games have their own version line, starting at 0.175.0: `crates/mediagram-game` no longer inherits the workspace version, the game client's `package.json` carries it, and the phone controller reads its version from `crates/spieltisch-core/Cargo.toml`.
 - `mediagram_game::CATALOGUE` is public, for the new core to export.
+- `start_night` takes the media app's titles as JSON and a `MediaImages` (implemented in Kotlin) that fetches their images; JSON it cannot read means a night with no films.
+- `mediagram_game::start_game_night` takes an image hook (`ImageLookup`): when the image route cannot read a title's own file it asks the embedder for a copy, and a copy named without an extension is typed by its first bytes. The media app's own night passes none and is unchanged.
 
 **Not yet**
 
-- Spieltisch has no film titles and is always kids-locked: the media app does not answer it yet. The media app keeps its own games unchanged until it hands its Games row over.
+- The media app keeps its own games unchanged until it hands its Games row over.
 
 ## 0.175.0 — The media app can hand a night to the games app
 
-The games are moving into their own Android app, Spieltisch. This is the media library's side: what Spieltisch will read from the media app, and release posts kept apart per app. Nothing changes for a viewer yet.
+The games are moving into their own Android app, Spieltisch. This is the media library's side: what Spieltisch reads from the media app, and release posts kept apart per app. Nothing changes for a viewer yet.
 
 **Added**
 
 - `game_night_titles`: the titles a night may show, as JSON in the shape the game host reads, under the profile's kids and section rules. On a kids night only kid-safe titles leave the media app at all; the host filters by the same flag again. A fixture shared by the core and the game crate keeps the two sides to one shape.
 - `textless_poster`: a title's textless poster as a file in the media app's cache, fetched from TMDB on a first ask. The TMDB key stays in the media app.
+- `CatalogFacts.described`: a digest of the descriptions this device fetched for itself; any write to that store moves it.
+- `GameNightProvider` (authority `com.mediagram.android.games`), the media app's answer to Spieltisch, read-only and guarded by the signature permission `com.mediagram.android.permission.GAME_NIGHT`, which both apps declare. `/night` is one row, the active profile's kids lock and its titles, built by the same rules as a night hosted here. `/image/{key}/{poster|still}` and `/textless/{key}` hand out a title's file only while that profile's night holds it. No profile, no core yet, or any failure answers locked with no titles.
+- The last night built is kept, in memory and in a file, with a fingerprint of everything that decides it: the chosen profile, its kids flag, limit and hidden sections, the kids marks, the installed catalog's version, the descriptions this device fetched (which can move a title into Anime), and this app's version (an update's rule changes apply at once). Spieltisch's ask is served from it only while the fingerprint is unchanged (about 1 s from a cold media app on the emulator, instead of about 4 s); otherwise the night is built once, however many asks come together, and a build whose inputs moved meanwhile is not kept. A failure answers locked with no titles, never the night from before. Nothing is rebuilt in the background.
+- Image checks use the night last handed to Spieltisch, so a running night keeps its titles.
+- The media app can see Spieltisch's package, to open it later.
 - Release posts per app: Spieltisch's go out under their own tag, `#spieltisch-app`, with `spieltisch-{v}` file names. `mediagram publish-app` reads the app from the APK's package. Each app's "newer than the newest" check and the unpinning of its old release look at its own posts only. Media apps already installed read only `#mlib-app`, so a Spieltisch post can never become their update.
 
 **Changed**

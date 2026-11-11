@@ -50,7 +50,7 @@ class TvGamesFrameTest {
 
     @Before
     fun open() {
-        val model = GameNightViewModel(NightSession(core, RecordingAnnouncer(), CoroutineScope(Dispatchers.Unconfined), ""))
+        val model = GameNightViewModel(NightSession(core, RecordingAnnouncer(), CoroutineScope(Dispatchers.Unconfined), "", NoMediaApp, NoImages))
         compose.setContent {
             // Leaving takes the frame away, as finishing the activity does.
             var shown by remember { mutableStateOf(true) }

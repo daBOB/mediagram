@@ -46,11 +46,13 @@ import designsystem.tvDp
 /**
  * The games as a row of posters, the film shelves' plate width and gap, over the focused game's
  * backdrop. [focused] is held by the caller so coming back from a game lands on the poster that opened it.
+ * [note], when there is one, is a line under the game's name about the night as a whole.
  */
 @Composable
 internal fun TvGamesShelf(
     games: List<ShelfGame>,
     focused: Int,
+    note: String?,
     onFocus: (Int) -> Unit,
     onPick: (ShelfGame) -> Unit,
 ) {
@@ -70,6 +72,7 @@ internal fun TvGamesShelf(
             Text("Game night", style = TvType.Eyebrow, color = OnImage.copy(alpha = 0.8f))
             Text(game.name, style = TvType.headlineSmall.copy(fontSize = TvTypeScale.FranchiseTitle), color = OnImage)
             Text(game.players, style = TvType.bodyMedium, color = OnImage.copy(alpha = 0.8f), modifier = Modifier.padding(top = 6.tvDp))
+            note?.let { Text(it, style = TvType.bodyMedium, color = OnImage.copy(alpha = 0.8f), modifier = Modifier.padding(top = 12.tvDp)) }
         }
         BoxWithConstraints(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical + 12.tvDp),

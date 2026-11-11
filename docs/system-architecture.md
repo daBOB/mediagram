@@ -1262,16 +1262,136 @@ night when it leaves the screen, and either takes another port when 8080 is
 taken.
 
 **Its own native core.** `crates/spieltisch-core` links `mediagram-game`, not
-`mediagram-core`, and exports `start_night`, `night_back`, `stop_night` and
+`mediagram-core`, and exports `start_night(config, images)`, `night_back`, `stop_night` and
 `game_catalogue` (`libspieltisch_core.so`, four ABIs, `scripts/build-spieltisch-core.sh`;
 bindings by `scripts/generate-spieltisch-bindings.sh`, committed under
 `android/spieltisch/src/main/kotlin/uniffi/`). One night per process, held in a
 static slot as `Core` holds the media app's. `scripts/check.sh` regenerates the
 bindings from a host build and fails on a difference.
 
-**On its own it has no library.** A night starts kids-locked with no film titles
-and no textless posters, so the lobby blocks the games that need films. The
-games' decision log goes to the app's files folder.
+**The library is the media app's.** Spieltisch holds no Telegram session, TMDB
+key or profile; the games' decision log goes to its files folder. At each
+night's start `MediaLibraryBridge` reads `content://com.mediagram.android.games/night`
+from the media app's `GameNightProvider` (`android/feature/games`), off the
+main thread and for at most 8 s: one row, `kids_locked` (1 or 0) and `titles`,
+JSON in `GameTitle`'s shape (`crates/mediagram-game/tests/fixtures/night-titles.json`
+holds both sides to it). The provider answers for the active profile under the
+in-app night's rules (`gameNightConfig`, then `Core::game_night_titles`, which
+leaves out every title that is not kid-safe when the lock is on); no core yet,
+nobody chosen, or any failure answers locked with `[]`. To Spieltisch a missing
+media app, a refusal, a row that is not a night, or no answer within 8 s are
+one answer: locked, no films, and a line on the shelf that the library's films
+aren't available. Only an explicit `0` unlocks, and a locked host drops every
+title that is not kid-safe again. JSON the core cannot read means no films,
+never no night.
+
+```text
+Spieltisch                                  media app (signature permission)
+MediaLibraryBridge --query /night---------> GameNightProvider -> GameNightExport
+  -> start_night(titles, kids_locked)          files/game-night/night.snapshot, if built for
+                                               the active profile; else gameNightConfig +
+                                               Core::game_night_titles, and kept
+host /img/{i}/{which} -- own path unreadable
+  -> ImageLookup / textless PosterLookup
+  -> MediaImages.fetch (spawn_blocking)
+  -> MediaImageCache --openFile----------> /image/{key}/{poster|still}, /textless/{key}
+     copy in cache/media-images/                         only titles tonight's night holds
+```
+
+**Images cross as files.** The titles' poster and still paths point into the
+media app's storage, which Spieltisch cannot open. When the `/img` route cannot
+read a title's own file it asks the embedder's `ImageLookup`
+(`mediagram-game/src/image_files.rs`; the media app's own night passes none and
+reads its files directly), and the textless lookup takes the same way:
+`spieltisch-core` turns both into the Kotlin `MediaImages.fetch(key, poster|still|textless)`,
+called on `spawn_blocking` since Kotlin blocks on the provider. `MediaImageCache`
+opens `/image/{key}/{poster|still}` or `/textless/{key}`, copies the file once
+into `cache/media-images/` (named by kind and the encoded key, moved into place
+whole) and answers the copy's path; the route types a copy without an
+extension by its first bytes. The provider hands out a file only while the
+active profile's night holds that title, so a key cannot fetch a picture the
+profile may not see. It is read-only.
+
+**One permission guards it.** `com.mediagram.android.permission.GAME_NIGHT`,
+`protectionLevel="signature"`, declared by both apps, so Spieltisch holds it
+whichever is installed first; the provider requires it in the media app's
+manifest and checks it again in code. For Android 11+ package visibility,
+Spieltisch queries the provider's authority. The provider reaches the repositories through a
+Hilt `@EntryPoint`, since a provider is created before `Application.onCreate`;
+a Spieltisch ask may be what starts the media app's process.
+
+**The night is answered from a snapshot, by its fingerprint.** Building it
+lists the whole library and builds every title, 2.5–4.7 s on the emulator with
+a 28,038-set library (1,764 titles, 606 KB of JSON). So the media app keeps
+the last night built, in memory and in `files/game-night/night.snapshot`
+(`NightSnapshotStore`: a header line, `app_version`, `fingerprint` and
+`kids_locked`, then the titles' JSON, written to a temp file and renamed into
+place; a file another version of the app wrote is not read, since an update
+may change the rules). The fingerprint (`NightInputs`) is a SHA-256 over
+everything that decides a night, read from the core itself on every ask, not
+from a repository's memory:
+- the chosen profile's id, kids flag, kids limit and hidden sections (as
+  `hiddenFrom` applies them)
+- the household's kids marks (`snapshot(id)`)
+- a catalog marker from `catalogFacts()`: the installed index's origin and
+  `publishedAt`, its set and poster counts, and `described`
+- the app's `longVersionCode`
+
+The marker's parts each cover something:
+- **The index:** it is opened read-only, and every install moves `current` to a
+  version directory of its own, so a new set or a changed rating always comes
+  with a new version.
+- **The poster count:** notices artwork that arrived.
+- **`described`:** a digest of every row and column of this device's fetched
+  descriptions (`details.db`). Those fill in genres and original language
+  where the index has none, so they can move a title into Anime without a new
+  index; a row corrected in place moves the digest as much as a new one.
+- **An unreadable version:** an installed catalog whose version cannot be read
+  has no fingerprint and answers locked.
+
+The marker is the costly part of a fingerprint: 225–400 ms on the emulator,
+mostly counting the playable sets. The description digest adds no measurable
+time with 2,000 described titles (7 ms on the host); the profile and the marks
+take under 25 ms.
+
+An equal fingerprint serves the snapshot. Anything else builds the night:
+- **Single-flight:** under one `Mutex` with the fingerprint, read and write, so
+  asks that come together build once.
+- **The core in hand:** the build lists the sets from the core the inputs were
+  read from; looking it up again could wait for the next sign-in.
+- **Time limit:** the locked work gets 30 s, after which the ask answers
+  locked and lets the next one in.
+- **Kept only if unchanged:** a build is kept only if the fingerprint, read
+  again afterwards, still equals the one it started from. Otherwise the ask is
+  answered locked with `[]`.
+- **Failure:** any failure, including a build that fails after the rules
+  tightened, answers locked with `[]`, never the night held from before. Nothing rebuilds in the background:
+progress and other watch state are not inputs, and a night is built only when
+an ask finds the inputs changed. Image and textless checks use the night
+`/night` last served, recorded under the same lock and held in memory, so a running night keeps the titles it
+started with, as a night hosted here does; a process with none serves one
+first. Spieltisch also asks for `/night` once as its process starts
+(`NightSession`, the answer dropped), so the media app is up, and a build
+already under way, when the night's own ask comes; each night still asks for
+itself. The host remembers, per night, the titles found to have no textless
+poster (`spieltisch-core/src/media_images.rs`), since every poster request
+asks for one first; the asking runs in a task of its own, so a miss that
+answers after the image route stopped waiting (300 ms) is remembered too.
+
+Measured on the emulator (`plans/261110-2230-spieltisch-app/phase-02-media-app-provider.md`,
+Result): served from the snapshot, a warm media app answers `/night` in
+0.40–0.60 s, a cold one in 0.93–1.34 s with Spieltisch's warm-up and
+1.08–1.87 s without it. The first ask after an input changed builds: 4.2 s
+warm, 4.5 s cold with the warm-up (the night's ask joins the warm-up's build),
+5.0 s with no readable snapshot at all, all inside the 8 s limit. A first image
+check answers in 5–134 ms.
+
+**Signing keys.** Both apps declare the permission, which works in either
+install order when both are signed with the same key. An app signed with
+another key than the one that declared the permission first fails to install
+with `INSTALL_FAILED_DUPLICATE_PERMISSION` rather than being refused by the
+provider. It cannot happen on this machine: its debug and release builds use
+the same key, `~/.android/debug.keystore`.
 
 **The shelf comes from the host.** `game_catalogue()` lists `CATALOGUE` in the
 lobby's order (kind as the pages name it, name, seat range), so a game added

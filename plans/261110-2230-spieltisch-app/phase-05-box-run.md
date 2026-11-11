@@ -29,7 +29,8 @@
 - [ ] installs; handoff and Back
 - [ ] posters, Kopfnuss, frame times
 - [ ] kids lock across apps
-- [ ] cold-start timing
+- [ ] cold-start timing; the first night after a library change must build in under 30 s, or every ask on that box answers locked (the media app logs "took longer than")
+- [ ] a Poster-Raten round with library posters (no film posters on the emulator, so the image path is still unseen)
 - [ ] Spieltisch-only update on the box
 - [ ] report with screenshots
 

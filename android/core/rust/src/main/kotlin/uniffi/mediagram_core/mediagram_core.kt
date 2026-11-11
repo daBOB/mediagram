@@ -5144,6 +5144,13 @@ data class CatalogFacts (
      * installed, or the name cannot be read.
      */
     var `publishedAt`: kotlin.Long?
+    ,
+    /**
+     * A digest of every description this device fetched for itself, which
+     * fill in genres and original language where the index has none: any
+     * write to that store moves it. 0 when there is no store.
+     */
+    var `described`: kotlin.ULong = 0uL
 
 ){
 
@@ -5165,6 +5172,7 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterOptionalLong.read(buf),
+            FfiConverterULong.read(buf),
         )
     }
 
@@ -5173,7 +5181,8 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
             FfiConverterULong.allocationSize(value.`sets`) +
             FfiConverterULong.allocationSize(value.`posters`) +
             FfiConverterUInt.allocationSize(value.`schema`) +
-            FfiConverterOptionalLong.allocationSize(value.`publishedAt`)
+            FfiConverterOptionalLong.allocationSize(value.`publishedAt`) +
+            FfiConverterULong.allocationSize(value.`described`)
     )
 
     override fun write(value: CatalogFacts, buf: ByteBuffer) {
@@ -5182,6 +5191,7 @@ public object FfiConverterTypeCatalogFacts: FfiConverterRustBuffer<CatalogFacts>
             FfiConverterULong.write(value.`posters`, buf)
             FfiConverterUInt.write(value.`schema`, buf)
             FfiConverterOptionalLong.write(value.`publishedAt`, buf)
+            FfiConverterULong.write(value.`described`, buf)
     }
 }
 

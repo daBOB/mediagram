@@ -105,3 +105,28 @@ fn an_injection_payload_is_refused_against_the_sidecar_too() {
 
     assert!(title_info(&core, format!("tmdb-{kind}-550")).is_none());
 }
+
+/// The game night is kept as long as nothing it was built from moves, and a
+/// fetched description can move a title into a section (Anime, through its
+/// genres and language) without the index changing: every write must move
+/// the digest, a corrected row as much as a new one.
+#[test]
+fn every_description_written_moves_the_digest() {
+    let data = tempfile::tempdir().unwrap();
+    let core = Core::at(data.path());
+    assert_eq!(digest(&core), 0, "no store yet");
+
+    let conn = open_or_create(&core).unwrap();
+    upsert(&conn, &described(Kind::Movie, 550, "Ein Kellner")).unwrap();
+    let one = digest(&core);
+    assert_eq!(digest(&core), one, "nothing written, nothing moved");
+
+    let mut japanese = described(Kind::Movie, 550, "Ein Kellner");
+    japanese.original_language = Some("ja".into());
+    upsert(&conn, &japanese).unwrap();
+    let corrected = digest(&core);
+    assert_ne!(corrected, one, "the same row, corrected in place");
+
+    upsert(&conn, &described(Kind::Movie, 680, "Drachen")).unwrap();
+    assert_ne!(digest(&core), corrected, "another title described");
+}

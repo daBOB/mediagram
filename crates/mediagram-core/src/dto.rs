@@ -75,6 +75,11 @@ pub struct CatalogFacts {
     /// read from the installed version's own name. `None` when nothing is
     /// installed, or the name cannot be read.
     pub published_at: Option<i64>,
+    /// A digest of every description this device fetched for itself, which
+    /// fill in genres and original language where the index has none: any
+    /// write to that store moves it. 0 when there is no store.
+    #[uniffi(default = 0)]
+    pub described: u64,
 }
 
 /// What one fetch did, for the screen that reports it.

@@ -17,6 +17,19 @@
     <!-- No CHANGE_WIFI_MULTICAST_STATE: the system's mDNS responder sends the NSD announcement; the
          media app holds that permission only for its own discovery of the LAN cache server. -->
 
+    <!-- The media app's game night: its profile's kids lock, its films and their images. Declared here
+         as well as there, so Spieltisch holds it whichever app is installed first; only apps signed
+         with the same key can. -->
+    <permission
+        android:name="com.mediagram.android.permission.GAME_NIGHT"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.mediagram.android.permission.GAME_NIGHT" />
+
+    <!-- Android 11+ hides other apps' providers unless asked for. -->
+    <queries>
+        <provider android:authorities="com.mediagram.android.games" />
+    </queries>
+
     <application
         android:name=".SpieltischApp"
         android:allowBackup="false"

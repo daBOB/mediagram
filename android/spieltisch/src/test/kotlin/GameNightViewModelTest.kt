@@ -16,6 +16,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -28,17 +29,46 @@ class GameNightViewModelTest {
 
     @AfterTest fun resetMain() = Dispatchers.resetMain()
 
-    private fun model(scope: CoroutineScope) = GameNightViewModel(NightSession(core, announcer, scope, "/data/spieltisch"))
+    private fun model(
+        scope: CoroutineScope,
+        media: MediaLibrary = NoMediaApp,
+    ) = GameNightViewModel(NightSession(core, announcer, scope, "/data/spieltisch", media, NoImages))
 
     @Test
-    fun startIsKidsLockedAndShowsTheTvPage() =
+    fun theMediaAppsAnswerIsWhatTheNightStartsWith() =
+        runTest {
+            val model = model(backgroundScope) { MediaNight(kidsLocked = false, titles = "[{\"key\":\"A\"}]") }
+
+            model.start()
+
+            assertEquals(GameNightUi.Ready("http://127.0.0.1:8080/tv"), model.state.first { it !is GameNightUi.Starting })
+            assertEquals(SpieltischConfig(kidsLocked = false, dataDir = "/data/spieltisch", titles = "[{\"key\":\"A\"}]"), core.starts.single())
+            assertEquals(NoImages, core.startImages.single(), "the media app's images, for the host to fetch")
+            assertFalse(model.filmsUnavailable.value)
+        }
+
+    @Test
+    fun aKidsProfilesAnswerStartsLocked() =
+        runTest {
+            val model = model(backgroundScope) { MediaNight(kidsLocked = true, titles = "[]") }
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            assertTrue(core.starts.single().kidsLocked)
+            assertFalse(model.filmsUnavailable.value, "answered, with nothing a kid may see")
+        }
+
+    @Test
+    fun noAnswerStartsLockedWithNoFilmsAndSaysSo() =
         runTest {
             val model = model(backgroundScope)
 
             model.start()
 
             assertEquals(GameNightUi.Ready("http://127.0.0.1:8080/tv"), model.state.first { it !is GameNightUi.Starting })
-            assertEquals(SpieltischConfig(kidsLocked = true, dataDir = "/data/spieltisch"), core.starts.single())
+            assertEquals(SpieltischConfig(kidsLocked = true, dataDir = "/data/spieltisch", titles = "[]"), core.starts.single())
+            assertTrue(model.filmsUnavailable.value)
         }
 
     @Test

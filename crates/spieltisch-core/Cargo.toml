@@ -23,9 +23,11 @@ required-features = ["cli"]
 mediagram-game = { path = "../mediagram-game" }
 serde_json.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, features = ["sync"] }
+tokio = { workspace = true, features = ["sync", "rt"] }
+tracing.workspace = true
 # The same version and features as mediagram-core's, so both libraries' bindings come from one generator.
 uniffi = { version = "0.32.0", features = ["tokio"] }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "net", "io-util"] }
+tempfile.workspace = true

@@ -4,8 +4,10 @@
 
 uniffi::setup_scaffolding!();
 
+mod media_images;
 mod night;
 
+pub use media_images::{MediaImageKind, MediaImages};
 pub use night::{NightError, NightUrls, SpieltischConfig, night_back, start_night, stop_night};
 
 /// One game on the shelf, as the host's lobby lists it.

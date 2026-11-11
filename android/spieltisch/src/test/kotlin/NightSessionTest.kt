@@ -29,7 +29,7 @@ class NightSessionTest {
     fun aStartThatFinishesAfterTheStopLeavesNothingAnnounced() =
         runTest {
             // The stop's own work waits until the test lets the session's scope run.
-            val session = NightSession(core, announcer, CoroutineScope(StandardTestDispatcher(testScheduler)), "")
+            val session = NightSession(core, announcer, CoroutineScope(StandardTestDispatcher(testScheduler)), "", NoMediaApp, NoImages)
             val gate = CompletableDeferred<Unit>()
             core.startGate = gate
             val model = GameNightViewModel(session)
@@ -48,7 +48,7 @@ class NightSessionTest {
     @Test
     fun aNewScreensNightWaitsForTheLastScreensStop() =
         runTest {
-            val session = NightSession(core, announcer, CoroutineScope(UnconfinedTestDispatcher(testScheduler)), "")
+            val session = NightSession(core, announcer, CoroutineScope(UnconfinedTestDispatcher(testScheduler)), "", NoMediaApp, NoImages)
             val left = GameNightViewModel(session)
             left.start()
             left.state.first { it !is GameNightUi.Starting }
@@ -65,5 +65,32 @@ class NightSessionTest {
             assertEquals(GameNightUi.Ready("http://127.0.0.1:8080/tv"), next.state.first { it !is GameNightUi.Starting })
             assertEquals(2, core.starts.size)
             assertEquals("http://192.168.0.2:8080/", announcer.live)
+        }
+
+    @Test
+    fun aSessionWakesTheMediaAppOnceAndEveryNightStillAsksForItself() =
+        runTest {
+            var warmUps = 0
+            var asked = 0
+            val media =
+                object : MediaLibrary {
+                    override suspend fun night(): MediaNight = MediaNight(kidsLocked = asked++ > 0, titles = "[]")
+
+                    override fun warmUp() {
+                        warmUps++
+                    }
+                }
+            val session = NightSession(core, announcer, CoroutineScope(UnconfinedTestDispatcher(testScheduler)), "", media, NoImages)
+            assertEquals(1, warmUps, "woken as the session is made, before any night")
+            val model = GameNightViewModel(session)
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+            model.stop()
+            model.start()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(1, warmUps)
+            assertEquals(listOf(false, true), core.starts.map { it.kidsLocked }, "each night takes its own answer")
         }
 }

@@ -11,6 +11,7 @@ use tokio::task::JoinHandle;
 use crate::factory::game_factory;
 use crate::game::GameFactory;
 use crate::general::general_pack;
+use crate::image_files::ImageLookup;
 use crate::lan::lan_ip;
 use crate::poster_config::poster_ready;
 use crate::poster_lookup::PosterLookup;
@@ -35,6 +36,8 @@ pub struct HostConfig {
     pub pool: Arc<TitlePool>,
     /// Textless poster files, asked for by title key; `None` serves the pool's own.
     pub textless: Option<PosterLookup>,
+    /// Copies of title images the host cannot read at their own paths; `None` serves only those.
+    pub images: Option<ImageLookup>,
     /// Where games append their log lines, also served at `/grand-allee-log`; `None` keeps no log.
     pub log: Option<PathBuf>,
 }
@@ -50,6 +53,7 @@ impl Default for HostConfig {
             readiness: Readiness { poster: false, poster_kids: false },
             pool: Arc::default(),
             textless: None,
+            images: None,
             log: None,
         }
     }
@@ -57,12 +61,15 @@ impl Default for HostConfig {
 
 /// Hosts the games over `titles`. The one `kids_locked` decides both which
 /// titles exist and whether the toggle is locked, so the two cannot disagree.
-/// `log` is the file games append their log lines to, across nights.
+/// `images` supplies the titles' images from elsewhere when their paths
+/// can't be read here. `log` is the file games append their log lines to,
+/// across nights.
 pub async fn start_game_night(
     titles: Vec<GameTitle>,
     kids_locked: bool,
     preferred_port: u16,
     textless: Option<PosterLookup>,
+    images: Option<ImageLookup>,
     log: Option<PathBuf>,
 ) -> std::io::Result<Host> {
     let pool = Arc::new(TitlePool::new(titles, kids_locked));
@@ -75,6 +82,7 @@ pub async fn start_game_night(
         },
         pool: pool.clone(),
         textless: textless.clone(),
+        images,
         log,
         ..HostConfig::default()
     };
@@ -121,6 +129,7 @@ impl Host {
             join_url: join_url.as_str().into(),
             pool: cfg.pool,
             textless: cfg.textless,
+            images: cfg.images,
             log: cfg.log,
         };
         let (shutdown, stopped) = oneshot::channel::<()>();

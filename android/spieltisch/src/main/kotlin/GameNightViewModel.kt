@@ -34,6 +34,11 @@ class GameNightViewModel(
     private val _state = MutableStateFlow<GameNightUi>(GameNightUi.Starting)
     val state: StateFlow<GameNightUi> = _state.asStateFlow()
 
+    private val _filmsUnavailable = MutableStateFlow(false)
+
+    /** True once the media app has not answered for this night: the shelf says why there are no films. */
+    val filmsUnavailable: StateFlow<Boolean> = _filmsUnavailable.asStateFlow()
+
     private var startJob: Job? = null
 
     fun start() {
@@ -46,8 +51,11 @@ class GameNightViewModel(
             stopping?.join()
             _state.value =
                 try {
-                    // Locked, with no film titles: on its own the app cannot tell whose night it is.
-                    val urls = night.core.startNight(SpieltischConfig(kidsLocked = true, dataDir = night.dataDir))
+                    // The media app says whose night it is; with no answer the night is locked, with no films.
+                    val media = night.media.night()
+                    _filmsUnavailable.value = !media.answered
+                    val config = SpieltischConfig(kidsLocked = media.kidsLocked, dataDir = night.dataDir, titles = media.titles)
+                    val urls = night.core.startNight(config, night.images)
                     night.announcer.announce(urls.joinUrl)
                     GameNightUi.Ready(urls.tvUrl)
                 } catch (e: CancellationException) {

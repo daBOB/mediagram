@@ -2,6 +2,8 @@ package com.mediagram.spieltisch
 
 import kotlinx.coroutines.CompletableDeferred
 import uniffi.spieltisch_core.GameEntry
+import uniffi.spieltisch_core.MediaImageKind
+import uniffi.spieltisch_core.MediaImages
 import uniffi.spieltisch_core.NightUrls
 import uniffi.spieltisch_core.SpieltischConfig
 
@@ -14,6 +16,9 @@ class FakeSpieltischCore : SpieltischCore {
 
     /** Every config [startNight] was started with, in order. */
     val starts = mutableListOf<SpieltischConfig>()
+
+    /** The images every start was handed, in order. */
+    val startImages = mutableListOf<MediaImages>()
 
     /** When set, [startNight] suspends on it after recording the config: a start still in flight. */
     var startGate: CompletableDeferred<Unit>? = null
@@ -31,8 +36,12 @@ class FakeSpieltischCore : SpieltischCore {
     /** When set, [stopNight] suspends on it after counting: a stop still under way. */
     var stopGate: CompletableDeferred<Unit>? = null
 
-    override suspend fun startNight(config: SpieltischConfig): NightUrls {
+    override suspend fun startNight(
+        config: SpieltischConfig,
+        images: MediaImages,
+    ): NightUrls {
         starts += config
+        startImages += images
         startGate?.await()
         startFailure?.let { throw it }
         return urls
@@ -47,6 +56,17 @@ class FakeSpieltischCore : SpieltischCore {
         stops++
         stopGate?.await()
     }
+}
+
+/** No media app on the box: every night is unanswered. */
+val NoMediaApp = MediaLibrary { MediaNight.Unanswered }
+
+/** A media app that hands out no images. */
+object NoImages : MediaImages {
+    override fun fetch(
+        key: String,
+        kind: MediaImageKind,
+    ): String? = null
 }
 
 /** Remembers what the view model asked to announce on the network, and what is announced now. */
