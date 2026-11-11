@@ -808,8 +808,10 @@ GET|HEAD|PUT /v1/art/{size}/{name}  size: w or h and 2-4 digits (w342, h632), or
 ```
 
 Reads are open. A PUT is signed like a chunk PUT, with the body's own
-length as `{len}` (there is no `X-Set-Total`); unsigned is a 401, a name of
-any other shape a 404 before anything else is checked. An answer PUT
+length as `{len}` (there is no `X-Set-Total`). It is checked cheapest
+first: a name of any other shape answers 404 and an oversize body 413, both
+before the signature is looked at; only then does a missing or wrong
+signature answer 401. An answer PUT
 replaces the stored one (201 new, 200 replaced); an image is write-once
 (201 stored, 200 already held), so two devices uploading the same poster
 both succeed and nobody is ever served half a file. A JSON body over 2 MiB,
@@ -836,8 +838,11 @@ signature: e1919b6ff65a768f6d2bc1b80f88296901cbb04fe0a0f74736e2ff0e8b7cdf65
 
 `mediagram posters` reads and fills the server named by `cache_server` and
 `cache_server_token` in `~/.config/mediagram/config.toml`;
-`scripts/setup-funstation.sh` writes both, pointing at the funstation's own
-server, even when no TMDB key was given. The Android app uses the server it
+`scripts/setup-funstation.sh` rewrites both on every run, pointing at the
+funstation's own server with its current token, even when no TMDB key was
+given. It also sets `tmdb_language` (`TMDB_LANGUAGE`, default `de-DE`) when
+the file has none: answers are shared per language, and the TV apps ask in
+the library's (else their device's). The Android app uses the server it
 found for chunks, with the same token; with no TMDB key stored, its Library
 update card says "Artwork comes from the home cache server.", and turning
 the LAN cache switch off stops that too.

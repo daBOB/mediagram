@@ -18,6 +18,9 @@ REPO_URL=https://github.com/daBOB/mediagram.git
 REPO="$HOME/mediagram"
 # shortcut: follows feat/funstation until it is merged; switch to main then.
 REPO_BRANCH=feat/funstation
+# The TV apps ask TMDB in the library's language (else the device's); posters must ask in
+# the same one to share their cache server entries.
+TMDB_LANGUAGE="${TMDB_LANGUAGE:-de-DE}"
 
 if [ "$ME" = root ]; then
   echo "run as the TV user, not root" >&2
@@ -97,10 +100,15 @@ POSTERS_CONFIG=~/.config/mediagram/config.toml
 if [ ! -f "$POSTERS_CONFIG" ]; then
   read -r -p "TMDB v3 key or v4 token for cover art (Enter to skip): " tmdb_key </dev/tty
   install -d -m 700 ~/.config/mediagram
-  sudo sed -n -E 's/^MEDIAGRAM_API_ID=(.*)/api_id = \1/p; s/^MEDIAGRAM_API_HASH=(.*)/api_hash = "\1"/p; s/^MEDIAGRAM_CHAT_ID=(.*)/channel = "\1"/p' "$PLAYER_ENV" |
+  # A player set up from an installed index may have no env file, or no Telegram lines in
+  # it: those keys stay unfilled instead of aborting the setup, and the rest is still written.
+  { sudo sed -n -E 's/^MEDIAGRAM_API_ID=(.*)/api_id = \1/p; s/^MEDIAGRAM_API_HASH=(.*)/api_hash = "\1"/p; s/^MEDIAGRAM_CHAT_ID=(.*)/channel = "\1"/p' "$PLAYER_ENV" 2>/dev/null || true; } |
     install -m 600 /dev/stdin "$POSTERS_CONFIG"
   [ -z "$tmdb_key" ] || echo "tmdb_key = \"$tmdb_key\"" >>"$POSTERS_CONFIG"
 fi
+# Only when absent, so a language set by hand survives a re-run.
+grep -Eq '^tmdb_language[[:space:]]*=' "$POSTERS_CONFIG" ||
+  echo "tmdb_language = \"$TMDB_LANGUAGE\"" >>"$POSTERS_CONFIG"
 # The player reads and fills the same cache server as the Android app; the token lets it write.
 for _ in $(seq 1 20); do sudo test -s /var/lib/mediagram-cache/token && break; sleep 0.5; done
 CACHE_TOKEN=$(sudo cat /var/lib/mediagram-cache/token)
@@ -108,12 +116,15 @@ CACHE_TOKEN=$(sudo cat /var/lib/mediagram-cache/token)
   echo "MEDIAGRAM_CACHE_SERVER=http://127.0.0.1:7788"
   echo "MEDIAGRAM_CACHE_SERVER_TOKEN=$CACHE_TOKEN"
 } | sudo install -m 600 /dev/stdin /etc/mediagram-cache-client.env
-# Posters too, so art one player fetched is every player's. Added only when missing:
-# a second copy of a key would make the whole file unreadable TOML.
-grep -Eq '^cache_server[[:space:]]*=' "$POSTERS_CONFIG" ||
-  echo 'cache_server = "http://127.0.0.1:7788"' >>"$POSTERS_CONFIG"
-grep -Eq '^cache_server_token[[:space:]]*=' "$POSTERS_CONFIG" ||
-  echo "cache_server_token = \"$CACHE_TOKEN\"" >>"$POSTERS_CONFIG"
+# Posters too, so art one player fetched is every player's. Replaced on every run: a
+# recreated server token would leave posters signing with the old one and getting 401s.
+# 600 first, so the copy sed writes is never readable by others either.
+chmod 600 "$POSTERS_CONFIG"
+sed -i -E '/^cache_server(_token)?[[:space:]]*=/d' "$POSTERS_CONFIG"
+{
+  echo 'cache_server = "http://127.0.0.1:7788"'
+  echo "cache_server_token = \"$CACHE_TOKEN\""
+} >>"$POSTERS_CONFIG"
 sudo tee /etc/systemd/system/mediagram-player.service >/dev/null <<EOF
 [Unit]
 Description=mediagram web player
