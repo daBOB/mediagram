@@ -51,6 +51,11 @@
         android:name="com.mediagram.android.permission.GAME_NIGHT"
         android:protectionLevel="signature" />
 
+    <!-- Android 11+ hides other apps unless asked for; the Games row launches Spieltisch. -->
+    <queries>
+        <package android:name="com.mediagram.spieltisch" />
+    </queries>
+
     <application
         android:name=".MediagramApp"
         android:allowBackup="false"

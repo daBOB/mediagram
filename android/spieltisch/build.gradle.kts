@@ -1,16 +1,11 @@
 // Spieltisch: the game night on the TV box as an app of its own. It hosts the
 // night in its own native core (crates/spieltisch-core), shows the games as a
 // poster shelf and each game's TV page in a web view. No library, no Telegram.
+import convention.versionCodeOf
+
 plugins {
     alias(libs.plugins.app.android.application)
     alias(libs.plugins.app.android.application.compose)
-}
-
-/** Same derivation as the media app's: 0.175.0 → 175000. */
-fun versionCodeOf(name: String): Int {
-    val (major, minor, patch) = name.split(".").map { it.toInt() }
-    require(minor < 1000 && patch < 1000) { "versionName $name: minor and patch must stay below 1000" }
-    return major * 1_000_000 + minor * 1_000 + patch
 }
 
 /** This machine's release key, from ~/.gradle/gradle.properties; absent elsewhere, so a release built there is unsigned. */

@@ -5,7 +5,7 @@ import model.Profile
 import model.forKidsProfile
 import model.hiddenFrom
 import model.sectionKey
-import uniffi.mediagram_core.GameNightConfig
+import uniffi.mediagram_core.NightTitlesConfig
 
 /** The FSK a grown-up's game night counts as kid-safe when "Nur für Kinder" is switched on. */
 const val GAME_NIGHT_KIDS_LIMIT = 12
@@ -16,19 +16,18 @@ const val GAME_NIGHT_KIDS_LIMIT = 12
  * profile is held to its own limit; a grown-up starts at
  * [GAME_NIGHT_KIDS_LIMIT] with the toggle free. The rules themselves are
  * [forKidsProfile] and [hiddenFrom], as the library applies them — never
- * repeated in the core. The TMDB key is the view model's to add.
+ * repeated in the core.
  */
 fun gameNightConfig(
     sets: List<MediaSet>,
     profile: Profile,
     marks: Map<String, Int>,
-): GameNightConfig {
+): NightTitlesConfig {
     val limit = if (profile.kids) profile.kidsLimit else GAME_NIGHT_KIDS_LIMIT
     val hidden = profile.hiddenFrom
-    return GameNightConfig(
+    return NightTitlesConfig(
         kidsSetIds = forKidsProfile(sets, marks, limit).map { it.setId },
         visibleSetIds = sets.filter { it.sectionKey() !in hidden }.map { it.setId },
         kidsLocked = profile.kids,
-        tmdbKey = null,
     )
 }

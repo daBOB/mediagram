@@ -34,7 +34,7 @@ crates/
 
 Dependencies run one way: `mediagram` → `mediagram-core` → `mediagram-tmdb`
 → `mlib-spec`, with `mediagram` also using the two below directly (and
-`mediagram-core` and `spieltisch-core` using `mediagram-game`); nothing
+`spieltisch-core` using `mediagram-game`); nothing
 depends on `mediagram`. The web
 player ([§7](#7-playback-the-web-player)) lives in `web/` and depends on
 neither: it reimplements what it needs of the format in TypeScript. The
@@ -374,6 +374,7 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:designsystem` | theme and spacing |
 | `core:testing` | `FakeCore`, the one fake of the generated core's `CoreInterface`, and the contract suite run against it and against the real core |
 | `feature:{catalog,player,setup,stats,system}` | view models and UI state, surface-independent |
+| `feature:games` | no UI: a game night's kids and section rules, the `GameNightProvider` Spieltisch reads (night, images, release), and the night snapshot |
 | `ui-mobile` | every screen the phone has |
 | `ui-common` | composables and pure rules shared by phone and TV (formatters, position model, player lifecycle) |
 | `ui-tv` | television surface: rail, departments bar, home, catalog, player, system and settings, driven by remote |
@@ -954,31 +955,31 @@ AirPlay code.
 
 The TV box hosts party games for phones on the same network: a buzzer quiz, a
 poster-guessing game, two board games (Heimlauf, Grand Allee) and three card games
-(Mau-Mau, Schwimmen, Durak). It is a feature of the TV app only, and it is the one
-place the app serves something rather than only fetching.
+(Mau-Mau, Schwimmen, Durak). It is a feature of the TV only, and it is the one
+place the box serves something rather than only fetching. Since Spieltisch
+([below](#spieltisch-the-games-own-app)) the games are an app of their own: the
+media app's Games row only opens `com.mediagram.spieltisch`, and says "Spieltisch
+ist nicht installiert" when it is not there. The media app holds no game code,
+game client or avatars, and `mediagram-core` does not depend on `mediagram-game`;
+it keeps what Spieltisch reads from the library (the provider, `game_titles.rs`
+and `game_posters.rs`, below).
 
-**The host lives in the core.** `mediagram-game` is a self-contained crate (an
-axum server with the React phone and TV pages embedded in the binary) that
-`mediagram-core` links; Kotlin starts and stops it through
-`Core::start_game_night`, `game_night_back` and `stop_game_night`
-(`crates/mediagram-core/src/api/game_night.rs`). Starting binds port 8080, or
+**The host lives in Spieltisch's core.** `mediagram-game` is a self-contained
+crate (an axum server with the React phone and TV pages embedded in the binary)
+that `spieltisch-core` links; Kotlin starts and stops it through
+`start_night`, `night_back` and `stop_night`. Starting binds port 8080, or
 any free port when that is taken, and returns the TV page's address
 (`http://127.0.0.1:<port>/tv`) and the join address with the box's current LAN
 IP, since DHCP moves it. A second start stops the first, so the port is free.
 A stop gives open requests 2 s and then cuts them off (`host.rs`): axum sets
 no header-read timeout, and one connection stalled mid-request would otherwise
 hold the stop, and with it every later night, which waits on the same slot.
-Nothing runs in the background: the Games screen opening starts the host,
-leaving it, or the app going to the background, stops it
-(`android/ui-tv/.../games/TvGamesFrame.kt`, a full-screen WebView of the
-loopback TV page that keeps the screen on). The background stop is called from
-the lifecycle's ON_STOP itself, since Compose draws no frame while the app is
-stopped and the screen's dispose may only run on return. `GameNightViewModel`
-runs the start off the main thread (UniFFI runs it on the calling thread, and
-it reads the whole catalog), and a start waits out any stop still under way,
-so leaving and coming straight back never has the old night's stop end the new
-one or show its page. Back first steps a running game to the lobby and leaves
-only when there was nothing to step back from.
+Nothing runs in the background: opening Spieltisch starts the host, leaving it,
+or the app going to the background, stops it (a full-screen WebView of the
+loopback TV page that keeps the screen on). A start waits out any stop still
+under way, so leaving and coming straight back never has the old night's stop
+end the new one or show its page. Back first steps a running game to the lobby
+and leaves only when there was nothing to step back from.
 
 **Phones join by browser; the TV page is the box's alone.** The lobby's QR code
 (`/qr.svg`) points at the join address; a phone types a name and gets a seat
@@ -1000,8 +1001,7 @@ safe half. *Nur für Kinder* is decided in Kotlin, never in Rust
 (`android/feature/games/.../GameNightConfig.kt`, using `forKidsProfile`): a kids
 profile gets its own limit with the toggle locked on, since kids profiles have
 no PIN and an open toggle would be a way past it; a grown-up gets limit 12 with
-the toggle free and off to start. A profile that is missing after a reload is
-treated as locked at 12. Core receives the set ids that pass and a locked flag,
+the toggle free and off to start. No profile chosen, or the media app not ready, answers locked with no titles. The core receives the set ids that pass and a locked flag,
 and with the toggle on every title used (answers, wrong options, images) is
 one of them. Sections the profile hides stay hidden here too: Kotlin passes
 the set ids in the sections it sees (`sectionKey()` against `hiddenFrom`, as
@@ -1206,9 +1206,9 @@ Meshy's thousands of edge-to-edge islands bled into each other at every
 smaller mip level). Each normal is turned into the new chart's frame, the frame
 three.js derives on screen for a mesh without tangents. The output is a 2048
 WebP colour map and a 1024 normal map, with meshopt: 40 MB in all, into
-`android/app/src/main/assets/game-avatars/` — generated,
-not committed, like the native libraries — and the TV app's WebView answers
-`/game-avatars/<id>.glb` from its APK assets (`TvGamesFrame.kt`), so they are
+`android/spieltisch/src/main/assets/game-avatars/` — generated,
+not committed, like the native libraries — and Spieltisch's WebView answers
+`/game-avatars/<id>.glb` from its APK assets (`GamePageClient.kt`), so they are
 in the app once instead of in the core per ABI, and the phones and the Rust
 host never see them. Quality comes first, with 30 fps as the floor (the
 user's call). The canvas draws at full resolution with MSAA, and the camera
@@ -1256,17 +1256,19 @@ The games are becoming an Android TV app of their own, **Spieltisch**
 (`com.mediagram.spieltisch`, `android/spieltisch`), so a game release no longer
 rebuilds and re-installs the media app. It has its own version line
 (`crates/mediagram-game`, `crates/spieltisch-core`, the client's `package.json`,
-its `versionName`, and the phone controller), starting at 0.175.0. Until the
-media app hands over its Games row, both apps carry the games. Each stops its
-night when it leaves the screen, and either takes another port when 8080 is
-taken.
+its `versionName`, and the phone controller), starting at 0.175.0. The media
+app's Games row opens it (the leanback launch intent, else the normal one; the
+manifest declares `<queries>` for the package) and carries no game code. The
+phone's rail has no Games row, as before: Spieltisch is a television app
+(`leanback` required), so there would be nothing for it to open. A night stops
+when Spieltisch leaves the screen, and takes another port when 8080 is taken.
 
 **Its own native core.** `crates/spieltisch-core` links `mediagram-game`, not
 `mediagram-core`, and exports `start_night(config, images)`, `night_back`, `stop_night` and
 `game_catalogue` (`libspieltisch_core.so`, four ABIs, `scripts/build-spieltisch-core.sh`;
 bindings by `scripts/generate-spieltisch-bindings.sh`, committed under
 `android/spieltisch/src/main/kotlin/uniffi/`). One night per process, held in a
-static slot as `Core` holds the media app's. `scripts/check.sh` regenerates the
+static slot. `scripts/check.sh` regenerates the
 bindings from a host build and fails on a difference.
 
 **The library is the media app's.** Spieltisch holds no Telegram session, TMDB
@@ -1275,8 +1277,8 @@ night's start `MediaLibraryBridge` reads `content://com.mediagram.android.games/
 from the media app's `GameNightProvider` (`android/feature/games`), off the
 main thread and for at most 8 s: one row, `kids_locked` (1 or 0) and `titles`,
 JSON in `GameTitle`'s shape (`crates/mediagram-game/tests/fixtures/night-titles.json`
-holds both sides to it). The provider answers for the active profile under the
-in-app night's rules (`gameNightConfig`, then `Core::game_night_titles`, which
+holds both sides to it). The provider answers for the active profile under its
+kids and section rules (`gameNightConfig`, then `Core::game_night_titles`, which
 leaves out every title that is not kid-safe when the lock is on); no core yet,
 nobody chosen, or any failure answers locked with `[]`. To Spieltisch a missing
 media app, a refusal, a row that is not a night, or no answer within 8 s are
@@ -1301,8 +1303,8 @@ host /img/{i}/{which} -- own path unreadable
 **Images cross as files.** The titles' poster and still paths point into the
 media app's storage, which Spieltisch cannot open. When the `/img` route cannot
 read a title's own file it asks the embedder's `ImageLookup`
-(`mediagram-game/src/image_files.rs`; the media app's own night passes none and
-reads its files directly), and the textless lookup takes the same way:
+(`mediagram-game/src/image_files.rs`; the media app passes titles as JSON
+and hands files over through its provider), and the textless lookup takes the same way:
 `spieltisch-core` turns both into the Kotlin `MediaImages.fetch(key, poster|still|textless)`,
 called on `spawn_blocking` since Kotlin blocks on the provider. `MediaImageCache`
 opens `/image/{key}/{poster|still}` or `/textless/{key}`, copies the file once
@@ -1397,7 +1399,7 @@ the same key, `~/.android/debug.keystore`.
 lobby's order (kind as the pages name it, name, seat range), so a game added
 there shows up on the shelf with no Kotlin change. Art is keyed by kind
 (`ShelfGames.kt`); a game without any shows its name. The screen is the media
-app's `TvGamesFrame`, copied and adapted: Back from a game asks the page first,
+app's former games page, moved here: Back from a game asks the page first,
 from the lobby returns to the poster that opened it, and on the shelf leaves
 the app, which stops the host; going to the background does the same, and the
 activity handles configuration changes in place so a gamepad connecting does
@@ -1412,8 +1414,8 @@ neither reach nor find the host. The shelf's look (mediagram's colours, focus
 and poster row) is copied as values, since the media app's TV theme lives in
 `ui-tv`, which Spieltisch cannot depend on without the media core. Cleartext is
 allowed to 127.0.0.1 only, and the page's client refuses navigation to any
-other host; the ceremony avatars are served from the APK's assets as in the
-media app (`make-ceremony-avatars.mjs --out=android/spieltisch/src/main/assets/game-avatars`).
+other host; the ceremony avatars are served from the APK's assets
+(`make-ceremony-avatars.mjs --out=android/spieltisch/src/main/assets/game-avatars`).
 
 ### Reporting a broken video
 
@@ -1863,7 +1865,7 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   `plans/260929-0215-tv-web-look-chrome-home-departments/phase-04-tv-home-kept-alive-measure-docs.md`.
 - **Game night is television only.** The box hosts it, phones join through a browser
   page, and the web player never hosts one: it is not the table in the living room. The
-  Games entry sits on the television rail; the `Games` label is English like the rest of
+  Games entry sits on the television rail and opens the Spieltisch app; the `Games` label is English like the rest of
   the app, and everything inside a game is German.
 
 ## 9. Backend portability

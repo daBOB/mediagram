@@ -27,15 +27,15 @@ to `main`. Full phase-by-phase detail lives in
 - `core:update` no longer depends on Hilt or `:core:data`: `AppUpdater` takes a `ReleaseSource` (the media app's is `CoreReleaseSource` in the app module, Spieltisch's reads the media app's provider), so Spieltisch's APK carries neither `:core:data` nor `:core:rust`. The media app's behaviour is unchanged, except that an install is skipped (and kept ready for the next background) when the app is back in front at the moment it would start.
 - `mediagram_game::CATALOGUE` is public, for the new core to export.
 - `start_night` takes the media app's titles as JSON and a `MediaImages` (implemented in Kotlin) that fetches their images; JSON it cannot read means a night with no films.
-- `mediagram_game::start_game_night` takes an image hook (`ImageLookup`): when the image route cannot read a title's own file it asks the embedder for a copy, and a copy named without an extension is typed by its first bytes. The media app's own night passes none and is unchanged.
+- `mediagram_game::start_game_night` takes an image hook (`ImageLookup`): when the image route cannot read a title's own file it asks the embedder for a copy, and a copy named without an extension is typed by its first bytes.
 
 **Not yet**
 
-- The media app keeps its own games unchanged until it hands its Games row over.
+- Install Spieltisch on a box before the media app version that drops the in-app games reaches it (the box run).
 
 ## 0.175.0 — The media app can hand a night to the games app
 
-The games are moving into their own Android app, Spieltisch. This is the media library's side: what Spieltisch reads from the media app, and release posts kept apart per app. Nothing changes for a viewer yet.
+The games are moving into their own Android app, Spieltisch. This is the media library's side: what Spieltisch reads from the media app, and release posts kept apart per app. Its Games row now opens Spieltisch (see Removed).
 
 **Added**
 
@@ -45,12 +45,18 @@ The games are moving into their own Android app, Spieltisch. This is the media l
 - `GameNightProvider` (authority `com.mediagram.android.games`), the media app's answer to Spieltisch, read-only and guarded by the signature permission `com.mediagram.android.permission.GAME_NIGHT`, which both apps declare. `/night` is one row, the active profile's kids lock and its titles, built by the same rules as a night hosted here. `/image/{key}/{poster|still}` and `/textless/{key}` hand out a title's file only while that profile's night holds it. No profile, no core yet, or any failure answers locked with no titles.
 - The last night built is kept, in memory and in a file, with a fingerprint of everything that decides it: the chosen profile, its kids flag, limit and hidden sections, the kids marks, the installed catalog's version, the descriptions this device fetched (which can move a title into Anime), and this app's version (an update's rule changes apply at once). Spieltisch's ask is served from it only while the fingerprint is unchanged (about 1 s from a cold media app on the emulator, instead of about 4 s); otherwise the night is built once, however many asks come together, and a build whose inputs moved meanwhile is not kept. A failure answers locked with no titles, never the night from before. Nothing is rebuilt in the background.
 - Image checks use the night last handed to Spieltisch, so a running night keeps its titles.
-- The media app can see Spieltisch's package, to open it later.
 - Release posts per app: Spieltisch's go out under their own tag, `#spieltisch-app`, with `spieltisch-{v}` file names. `mediagram publish-app` reads the app from the APK's package. Each app's "newer than the newest" check and the unpinning of its old release look at its own posts only. Media apps already installed read only `#mlib-app`, so a Spieltisch post can never become their update.
+
+**Removed**
+
+- The in-app game night. The Games row on the television rail opens Spieltisch (`com.mediagram.spieltisch`: its leanback launch intent, else the normal one) and says "Spieltisch ist nicht installiert" when it is missing; the media app declares `<queries>` for the package, which it could not see before. The phone's rail has no Games row, as before: Spieltisch is a television app. Gone from the media app: `ui-tv/games` and the games page's frame, `GameNightViewModel` and the NSD announcer, the core's `start_game_night`, `game_night_back` and `stop_game_night` (with `GameNightConfig` and `GameNightUrls`) and `Core.game_night`, `mediagram-core`'s dependency on `mediagram-game`, the game client build in `scripts/build-android-core.sh`, the avatar step in `scripts/release-android.sh`, `noCompress glb` and the avatars' gitignore line, the game fakes in `FakeCore` and `TvAppFixture`. Kept, because Spieltisch reads them: the provider, `game_night_titles`, `textless_poster`, the night snapshot and the release export.
+- Permissions: none removed. `INTERNET` (Telegram, TMDB, updates), `ACCESS_LOCAL_NETWORK` and `CHANGE_WIFI_MULTICAST_STATE` (the LAN cache's discovery, `LanServerLocator`) and the cleartext network config (the LAN cache server speaks plain HTTP) are all still used. The network config no longer mentions the game page.
+- Sizes, release build before -> after: APK 64,271,399 -> 34,825,001 bytes; `libmediagram_core.so` (on disk) arm64-v8a 39,153,888 -> 23,785,000, armeabi-v7a 31,802,224 -> 17,356,552, x86 39,250,672 -> 23,606,140, x86_64 38,677,088 -> 23,235,488. Spieltisch's 40 MB of avatars never shipped in the media app in this measurement (they are generated, not committed), so a release that had them is smaller by that much more.
+- `versionCodeOf` lives once, in `android/build-logic`, and the media app, Spieltisch and the controller use it; every versionCode is unchanged (175000).
 
 **Changed**
 
-- A night's titles are built once, in a shape the core owns; nights hosted in the media app use the same builder.
+- A night's titles are built once, in a shape the core owns.
 - Textless poster downloads are serialised per poster file for the whole process and give up after 20 s, so a request that hangs can't block that poster for good.
 
 ## 0.174.0 — Sternenstaub, and Matratzensport for grown-ups

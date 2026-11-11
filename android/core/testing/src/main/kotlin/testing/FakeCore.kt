@@ -14,8 +14,6 @@ import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.FranchiseRecord
-import uniffi.mediagram_core.GameNightConfig
-import uniffi.mediagram_core.GameNightUrls
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
@@ -218,34 +216,6 @@ class FakeCore(
     /** Every id [mediaSet] was asked for, in order. */
     val mediaSetCalls: MutableList<String> = mutableListOf()
 
-    /** What [startGameNight] answers. */
-    var gameNightUrls: GameNightUrls = GameNightUrls("http://127.0.0.1:8080/tv", "http://192.168.0.2:8080/")
-
-    /** Raised by [startGameNight] instead of answering, or `null` to answer [gameNightUrls]. */
-    var gameNightStartFailure: Throwable? = null
-
-    /** Every config [startGameNight] was started with, in order. */
-    val gameNightStarts: MutableList<GameNightConfig> = mutableListOf()
-
-    /** What [gameNightBack] answers: whether a game was running. */
-    var gameNightBackAnswer: Boolean = false
-
-    /** How many times [stopGameNight] ran. */
-    var gameNightStops: Int = 0
-        private set
-
-    /** When set, [startGameNight] suspends on it after recording the config: a start still in flight. */
-    var gameNightStartGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
-
-    override suspend fun startGameNight(config: GameNightConfig): GameNightUrls {
-        gameNightStarts += config
-        gameNightStartGate?.await()
-        gameNightStartFailure?.let { throw it }
-        return gameNightUrls
-    }
-
-    override suspend fun gameNightBack(): Boolean = gameNightBackAnswer
-
     /** What [gameNightTitles] answers for a config; no titles by default. */
     var nightTitles: (NightTitlesConfig) -> String = { "[]" }
 
@@ -269,14 +239,6 @@ class FakeCore(
     ): String? {
         textlessAsked += titleKey to tmdbKey
         return textlessPosters[titleKey]
-    }
-
-    /** When set, [stopGameNight] suspends on it after counting: a stop still under way. */
-    var gameNightStopGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
-
-    override suspend fun stopGameNight() {
-        gameNightStops++
-        gameNightStopGate?.await()
     }
 
     /** Every offset [read] was actually asked for, in order — what a chunk-alignment test checks against. */

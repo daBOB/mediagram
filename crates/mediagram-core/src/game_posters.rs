@@ -3,10 +3,11 @@
 //! lettering is used when it has one.
 
 use std::collections::HashMap;
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::{Arc, LazyLock, Mutex};
 
-use mediagram_game::PosterLookup;
 use mediagram_tmdb::poster_files::download_into;
 use mediagram_tmdb::posters::{PosterRef, is_image_path, kind_key};
 use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
@@ -15,8 +16,10 @@ use crate::shows::title_of;
 
 const WIDTH: u32 = 500;
 
-/// The cache under the data folder, shared by a night hosted here and the
-/// posters handed to a games app.
+/// A title key's textless poster file, if there is one.
+type PosterLookup = Arc<dyn Fn(String) -> Pin<Box<dyn Future<Output = Option<PathBuf>> + Send>> + Send + Sync>;
+
+/// The cache under the data folder, holding the posters handed to the games app.
 pub const CACHE_DIR: &str = "game-posters";
 
 /// A lookup from a game title's key to its textless poster, cached under
@@ -49,7 +52,7 @@ pub fn poster_lookup(tmdb_key: String, cache_dir: PathBuf, poster_keys: HashMap<
 const LOOKUP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20);
 
 /// Runs `inner` for one poster key at a time: the key names the cached file,
-/// which two sets of one film share. The prefetch and the image route usually
+/// which two sets of one film share. Concurrent `/textless` calls from the games app can
 /// ask for the same poster together; unserialised they would both download it
 /// into one temporary file, and a truncated image could be renamed into the
 /// cache for good. The second caller waits, then finds the first one's file

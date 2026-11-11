@@ -10,7 +10,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import uniffi.mediagram_core.CoreInterface
-import uniffi.mediagram_core.NightTitlesConfig
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,8 +27,8 @@ data class ExportedNight(
 }
 
 /**
- * What this app hands Spieltisch: the active profile's night under the rules a night hosted here
- * follows ([gameNightConfig]), and the images of the titles that night holds — no others. A night
+ * What this app hands Spieltisch: the active profile's night under its kids and section rules
+ * ([gameNightConfig]), and the images of the titles that night holds — no others. A night
  * is served only for the [NightInputs] it was built from; when they differ it is built again.
  */
 @Singleton
@@ -136,7 +135,7 @@ class GameNightExport
         ): NightSnapshot {
             val config = gameNightConfig(core.listSets().map { it.toMediaSet() }, inputs.profile, inputs.marks)
             // With the lock on, the core leaves out every title that is not kid-safe.
-            val titles = core.gameNightTitles(NightTitlesConfig(config.kidsSetIds, config.visibleSetIds, config.kidsLocked))
+            val titles = core.gameNightTitles(config)
             return NightSnapshot(inputs.fingerprint, config.kidsLocked, titles)
         }
 

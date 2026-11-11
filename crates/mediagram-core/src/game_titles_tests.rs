@@ -1,5 +1,3 @@
-use mediagram_game::{GameTitle, TitlePool};
-
 use super::*;
 use crate::catalog::PlayableSet;
 use crate::credits::Credited;
@@ -122,16 +120,15 @@ fn series_have_no_directors() {
 }
 
 #[test]
-fn kids_locked_keeps_only_kids_titles() {
+fn only_marked_titles_are_kids_ok() {
     let sets = [
         set("A", "movie", Some("Alien"), None, 1979),
         set("B", "movie", Some("Bambi"), None, 1942),
         set("E1", "ep", None, Some("Dark"), 2017),
     ];
-    let json = serde_json::to_value(build(&sets, &["B"])).unwrap();
-    let pool = TitlePool::new(serde_json::from_value::<Vec<GameTitle>>(json).unwrap(), true);
-    assert_eq!(pool.eligible(false).len(), 1);
-    assert_eq!(pool.get(0).key, "B");
+    let titles = build(&sets, &["B"]);
+    let kids_ok: Vec<&str> = titles.iter().filter(|t| t.kids_ok).map(|t| t.key.as_str()).collect();
+    assert_eq!(kids_ok, ["B"]);
 }
 
 #[test]

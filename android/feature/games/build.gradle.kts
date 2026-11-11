@@ -1,5 +1,4 @@
-// The game night's ViewModel and the kids decision, no composables — the TV
-// screen renders the finished state — and the provider Spieltisch reads the night from.
+// The kids and section rules of a game night, and the provider Spieltisch reads the night from.
 plugins {
     alias(libs.plugins.app.android.library)
     alias(libs.plugins.app.hilt)

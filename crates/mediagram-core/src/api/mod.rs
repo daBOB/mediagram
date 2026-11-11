@@ -11,7 +11,6 @@ mod channel;
 mod credits;
 pub mod enrich;
 mod events;
-mod game_night;
 mod game_night_export;
 mod preferences;
 mod read;
@@ -74,9 +73,6 @@ pub struct Core {
     /// The newest watch-together message the listener heard, apart from
     /// `events` so reading it never waits on a listen.
     together_heard: std::sync::Mutex<Option<together::TogetherMessage>>,
-    /// The game night this device hosts, if one runs; apart from `state` so
-    /// a night never blocks a read.
-    game_night: AsyncMutex<Option<mediagram_game::Host>>,
     /// How far the fetch under way has got — see `Core::fetch_progress`.
     fetch_meter: enrich::progress::FetchMeter,
 }
@@ -98,7 +94,6 @@ impl Core {
             sync_memo: AsyncMutex::new(crate::state::sync::SyncMemo::default()),
             search_cache: std::sync::Mutex::new(search::cache::SearchCache::default()),
             together_heard: std::sync::Mutex::new(None),
-            game_night: AsyncMutex::new(None),
             fetch_meter: enrich::progress::FetchMeter::default(),
         })
     }

@@ -16,7 +16,7 @@ use super::{Core, store};
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
     /// The titles a night may show, as a JSON array of [`NightTitle`]s.
-    /// The caller decides the kids and section rules, as for a night hosted here.
+    /// The caller decides the kids and section rules; the core only applies them.
     pub async fn game_night_titles(self: Arc<Self>, config: NightTitlesConfig) -> Result<String, CoreError> {
         let NightTitlesConfig { kids_set_ids, visible_set_ids, kids_locked } = config;
         let kids: HashSet<String> = kids_set_ids.into_iter().collect();

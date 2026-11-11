@@ -1,21 +1,10 @@
+import convention.versionCodeOf
+
 plugins {
     alias(libs.plugins.app.android.application)
     alias(libs.plugins.app.android.application.compose)
     alias(libs.plugins.app.hilt)
     alias(libs.plugins.androidx.baselineprofile)
-}
-
-/**
- * The versionCode Android compares before installing an update, derived from
- * versionName so a release can never forget to raise it and two machines
- * can never hand out the same one: 0.93.0 → 93000.
- */
-fun versionCodeOf(name: String): Int {
-    val parts = name.split(".").map { it.toIntOrNull() ?: error("versionName $name is not major.minor.patch") }
-    require(parts.size == 3) { "versionName $name is not major.minor.patch" }
-    val (major, minor, patch) = parts
-    require(minor < 1000 && patch < 1000) { "versionName $name: minor and patch must stay below 1000" }
-    return major * 1_000_000 + minor * 1_000 + patch
 }
 
 /** This machine's release key, from ~/.gradle/gradle.properties; absent elsewhere, so a release built there is unsigned. */
@@ -36,9 +25,6 @@ android {
 
     // CoreReleaseSource logs a failure it catches; a plain JVM test must survive that call.
     testOptions.unitTests.isReturnDefaultValues = true
-
-    // game-avatars/*.glb are already compressed (meshopt, KTX2): store them, read them as they are
-    androidResources { noCompress += listOf("glb") }
 
     signingConfigs {
         if (releaseStoreFile != null) {

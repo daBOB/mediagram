@@ -20,7 +20,6 @@ import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey
 import ui.tv.catalog.TvMoviesPageEntryKey
 import ui.tv.catalog.TvSearchEntryKey
-import ui.tv.catalog.TvGamesRailKey
 import ui.tv.catalog.TvStatsRailKey
 import ui.tv.chrome.LocalNewAchievement
 import ui.tv.player.TvCastOver
@@ -86,6 +85,7 @@ internal fun TvLibraryHomeFrame(
     onPendingRailHandled: () -> Unit,
     pendingTab: String?,
     onPendingTabHandled: () -> Unit,
+    onOpenGames: () -> Unit,
     onOpenMenu: () -> Unit,
 ) {
     // Worked out where the rail is drawn — here and [TvFrameChrome] — so nothing reads while a title plays.
@@ -136,10 +136,7 @@ internal fun TvLibraryHomeFrame(
                     restore.opened(here, TvStatsRailKey)
                     at.openStats()
                 },
-                onOpenGames = {
-                    restore.opened(here, TvGamesRailKey)
-                    at.openGames()
-                },
+                onOpenGames = onOpenGames,
                 onEntryRestored = { restore.forget(here) },
                 onFinish = catalogViewModel::markFinished,
                 onOpenGenre = { name ->

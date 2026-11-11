@@ -55,7 +55,6 @@ class GameNightConfigTest {
 
         assertEquals(listOf("f0", "f6", "marked"), config.kidsSetIds)
         assertTrue(config.kidsLocked)
-        assertEquals(null, config.tmdbKey)
     }
 
     @Test
