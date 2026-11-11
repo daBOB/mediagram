@@ -6,6 +6,7 @@ import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -28,7 +29,10 @@ class CatalogEnrichmentFetcherTest {
             val gate = CompletableDeferred<Unit>()
             val report = FetchReport(1u, 2u, 0u, 0u, 3u, 4u, 5u, 6u)
             val core = FakeCore(report = report, gate = gate)
-            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
+            // The core call runs on the test's clock, so `runCurrent` has reached it before the asserts.
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val settings = InMemoryTmdbSettings().apply { write("key") }
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), settings, dispatcher = dispatcher)
             val accepted = async { enrichment.fetch() }
             runCurrent()
 
