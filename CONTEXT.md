@@ -80,15 +80,21 @@ Seated, but without a connection from the player's phone right now.
 _Avoid_: offline, idle (Grand Allee's idle means a clock ran out, not absence)
 
 **House**:
-The bot that decides for an absent player, or when a decision's clock runs out.
+The bot that decides for an absent player, or when an ask's clock runs out.
 It plays cautiously on purpose, because the player did not choose.
 _Avoid_: AI, auto-player, computer
 
 **Grace**:
 How long the house waits before deciding for an absent player, counted from
-the later of the player leaving and the question opening. The same at every
+the later of the player leaving and the ask opening. The same at every
 table.
 _Avoid_: timeout, delay
+
+**Ask**:
+One thing the host wants one player to decide on their phone. It opens at a
+moment the host names, may run on a clock, and takes one answer.
+_Avoid_: question (a quiz's content), prompt (only the ask's words), decision
+(the answer given, as in Grand Allee's decision log)
 
 **Bot**:
 A seat played by a strategy in the simulator. Unlike the house, it plays to win.
