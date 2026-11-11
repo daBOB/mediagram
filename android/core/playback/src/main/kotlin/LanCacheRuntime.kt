@@ -15,10 +15,13 @@ class LanCacheTokenStatus {
     private val _rejected = MutableStateFlow(false)
     val rejected: StateFlow<Boolean> = _rejected.asStateFlow()
 
-    private val _saves = MutableStateFlow(0)
+    private val _settingsChanges = MutableStateFlow(0)
 
-    /** Counts [clear]s — the token saves — so a copy of the token held elsewhere is read again. */
-    val saves: StateFlow<Int> = _saves.asStateFlow()
+    /**
+     * Counts saved changes to the LAN cache's switch or token, which have no
+     * change signal of their own, so whatever acts on them reads them again.
+     */
+    val settingsChanges: StateFlow<Int> = _settingsChanges.asStateFlow()
 
     fun markRejected() {
         _rejected.value = true
@@ -26,7 +29,10 @@ class LanCacheTokenStatus {
 
     fun clear() {
         _rejected.value = false
-        _saves.update { it + 1 }
+    }
+
+    fun settingsChanged() {
+        _settingsChanges.update { it + 1 }
     }
 }
 

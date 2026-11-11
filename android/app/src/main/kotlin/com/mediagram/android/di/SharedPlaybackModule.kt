@@ -77,25 +77,32 @@ object SharedPlaybackModule {
         @ApplicationContext context: Context,
         client: LanChunkProtocol,
         settings: LanCacheSettings,
-        coreProvider: CoreProvider,
-        tokenSettings: LanCacheTokenSettings,
-        tokenStatus: LanCacheTokenStatus,
         @MainThreadScope scope: CoroutineScope,
     ): LanServerLocator =
         // One pass starts as soon as this singleton is first resolved —
         // effectively app start, since the player, Settings and the
         // enrichment fetch all pull it in early — plus whatever further passes
         // Settings triggers while it is open (LanCacheViewModel.refresh()).
-        // The core follows the server it finds, for TMDB answers and artwork.
-        LanServerLocator(context, scope, client) { settings.manualAddress() }.apply {
-            discover()
-            scope.linkHomeCache(coreProvider.core, server, tokenStatus.saves) { tokenSettings.read() }
-        }
+        LanServerLocator(context, scope, client) { settings.manualAddress() }.apply { discover() }
 
-    /** A fetch with no TMDB key stored reads from the server this device found. */
+    /**
+     * The core follows the server this device found — while the LAN cache is
+     * switched on — for TMDB answers and artwork, and the enrichment fetch
+     * follows what the core was told.
+     */
     @Provides
     @Singleton
-    fun provideHomeCacheServer(locator: LanServerLocator): HomeCacheServer = HomeCacheServer { locator.server.value != null }
+    fun provideHomeCacheServer(
+        locator: LanServerLocator,
+        settings: LanCacheSettings,
+        coreProvider: CoreProvider,
+        tokenSettings: LanCacheTokenSettings,
+        tokenStatus: LanCacheTokenStatus,
+        @MainThreadScope scope: CoroutineScope,
+    ): HomeCacheServer =
+        HomeCacheServer().also { home ->
+            scope.linkHomeCache(coreProvider.core, locator.server, tokenStatus.settingsChanges, home, { settings.enabled() }) { tokenSettings.read() }
+        }
 
     // Upcasts to the narrow interface a Settings view model actually
     // depends on, so it can be tested against a fake without a real

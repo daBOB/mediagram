@@ -193,6 +193,24 @@ class LanCacheViewModelTest {
             }
         }
 
+    @Test
+    fun theSwitchAndATokenSaveEachSignalAChange() =
+        runTest {
+            val tokenStatus = LanCacheTokenStatus()
+            val vm = viewModel(tokenStatus = tokenStatus)
+            try {
+                vm.setEnabled(false)
+                runCurrent()
+                assertEquals(1, tokenStatus.settingsChanges.value)
+
+                vm.saveToken("ab".repeat(32))
+                runCurrent()
+                assertEquals(2, tokenStatus.settingsChanges.value)
+            } finally {
+                vm.viewModelScope.cancel()
+            }
+        }
+
     private fun grantLocalNetworkPermission() {
         val app = ApplicationProvider.getApplicationContext<Context>()
         Shadows.shadowOf(app as android.app.Application).grantPermissions("android.permission.ACCESS_LOCAL_NETWORK")

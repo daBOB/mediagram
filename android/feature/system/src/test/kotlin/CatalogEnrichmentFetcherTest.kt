@@ -5,6 +5,7 @@ import data.HomeCacheServer
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -87,13 +88,15 @@ class CatalogEnrichmentFetcherTest {
     @Test
     fun noKeyWithAServerRunsKeyless() =
         runTest {
-            val core = FakeCore()
-            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings(), homeCache = HomeCacheServer { true })
+            val report = FetchReport(3u, 0u, 0u, 0u, 3u, 0u, 0u, 0u)
+            val core = FakeCore(report = report)
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings(), homeCache = linkedHomeCache())
 
-            enrichment.fetch()
+            assertEquals(report, enrichment.fetch())
 
             assertEquals(1, core.fetchCalls)
             assertEquals("", core.lastKey)
+            assertEquals(report, enrichment.state.value.report)
             assertFalse(enrichment.state.value.hasKey)
             assertTrue(enrichment.state.value.viaHomeCache)
         }
@@ -103,7 +106,7 @@ class CatalogEnrichmentFetcherTest {
         runTest {
             val core = FakeCore()
             val settings = InMemoryTmdbSettings().apply { write("key") }
-            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), settings, homeCache = HomeCacheServer { false })
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), settings, homeCache = HomeCacheServer())
             enrichment.refreshKeyStatus()
             settings.clear()
 
@@ -113,4 +116,41 @@ class CatalogEnrichmentFetcherTest {
             assertEquals("No TMDB key is stored.", enrichment.state.value.error)
             assertFalse(enrichment.state.value.viaHomeCache)
         }
+
+    @Test
+    fun aKeylessRunTheServerCouldNotAnswerEndsAsWithoutAServer() =
+        runTest {
+            val core = FakeCore(report = FetchReport(0u, 4u, 0u, 0u, 0u, 4u, 1u, 0u))
+            val settings = InMemoryTmdbSettings().apply { write("key") }
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), settings, homeCache = linkedHomeCache())
+            enrichment.refreshKeyStatus()
+            settings.clear()
+
+            assertNull(enrichment.fetch())
+
+            assertEquals(1, core.fetchCalls)
+            assertNull(enrichment.state.value.report)
+            assertEquals("No TMDB key is stored.", enrichment.state.value.error)
+            assertFalse(enrichment.state.value.hasKey)
+        }
+
+    @Test
+    fun theUpdateNoteFollowsTheServerWithoutAFetch() =
+        runTest {
+            val home = HomeCacheServer()
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings(), homeCache = home)
+            backgroundScope.launch { enrichment.followHomeCache() }
+            runCurrent()
+            assertFalse(enrichment.state.value.viaHomeCache)
+
+            home.linked(true)
+            runCurrent()
+            assertTrue(enrichment.state.value.viaHomeCache)
+
+            home.linked(false)
+            runCurrent()
+            assertFalse(enrichment.state.value.viaHomeCache)
+        }
+
+    private fun linkedHomeCache() = HomeCacheServer().apply { linked(true) }
 }

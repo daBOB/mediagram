@@ -94,7 +94,11 @@ class LanCacheViewModel
             requests.update { it + 1 }
         }
 
-        fun setEnabled(value: Boolean) = act { settings.setEnabled(value) }
+        fun setEnabled(value: Boolean) =
+            act {
+                settings.setEnabled(value)
+                tokenStatus.settingsChanged()
+            }
 
         /** Saves [address] if it parses; `false` when it was refused and [LanCacheUiState.addressError] says why. */
         fun setManualAddress(address: String): Boolean =
@@ -121,6 +125,7 @@ class LanCacheViewModel
                     act {
                         tokenSettings.write(normalized)
                         tokenStatus.clear()
+                        tokenStatus.settingsChanged()
                     }
                     true
                 },

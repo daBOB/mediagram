@@ -36,6 +36,9 @@ pub struct FetchPlan {
     /// Keys the library's own `artwork` table holds an image for, which a
     /// fetch must not download over.
     pub custom_keys: HashSet<String>,
+    /// Asked with no TMDB key: a title the home cache server cannot describe
+    /// waits for the keyed device instead of counting as failed.
+    pub keyless: bool,
 }
 
 /// Reads the installed catalog and works out what a fetch would do with it.
@@ -64,6 +67,7 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
         without_id,
         language,
         custom_keys,
+        keyless: false,
     })
 }
 
@@ -71,16 +75,18 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
 /// the artwork an index cannot carry, and descriptions nobody fetched.
 ///
 /// `backdrop_width` is Kotlin's own choice, by its screen class — see
-/// `fetch::fetch_into`. An empty `tmdb_key` reads only what this device and
-/// the home cache server already hold, since TMDB refuses an empty key.
+/// `fetch::fetch_into`. An empty `tmdb_key` never asks the TMDB API: answers
+/// come from this device's disk and the home cache server, and only images
+/// the server lacks come from TMDB's image CDN, which needs no key.
 pub(in crate::api) async fn fetch_missing(
     core: &Core,
     tmdb_key: String,
     language: String,
     backdrop_width: u32,
 ) -> Result<FetchReport, CoreError> {
-    let plan = plan_fetch(core, &language)?;
-    if plan.titles.is_empty() || (tmdb_key.is_empty() && core.home_cache().is_none()) {
+    let mut plan = plan_fetch(core, &language)?;
+    plan.keyless = tmdb_key.is_empty();
+    if plan.titles.is_empty() || (plan.keyless && core.home_cache().is_none()) {
         // Nothing the provider could answer about, or nobody to ask — no
         // reason to spend a request validating a key that will never be used.
         return Ok(FetchReport {
@@ -91,7 +97,7 @@ pub(in crate::api) async fn fetch_missing(
 
     // One client for both the provider and the downloads.
     let client = http::client()?;
-    if tmdb_key.is_empty() {
+    if plan.keyless {
         return Ok(fetch_into(core, &cached(core, NoKey, &plan), &client, &plan, backdrop_width).await);
     }
     let api = TmdbClient::new(client.clone(), tmdb_key);

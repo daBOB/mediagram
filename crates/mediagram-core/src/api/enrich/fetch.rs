@@ -41,6 +41,7 @@ pub async fn fetch_into(
         without_id,
         language,
         custom_keys,
+        keyless,
     } = plan;
     let meter = &core.fetch_meter;
     let _run = meter.run();
@@ -95,11 +96,9 @@ pub async fn fetch_into(
         .filter(|key| !written.contains(key))
         .collect();
     let described = record_descriptions(core, api, language, titles).await;
-    for key in described.lost {
-        if !lost.contains(&key) {
-            lost.push(key);
-        }
-    }
+    // With no key, a title left undescribed needs the keyed device; nothing broke.
+    let more: Vec<String> = described.lost.into_iter().filter(|key| !keyless && !lost.contains(key)).collect();
+    lost.extend(more);
 
     FetchReport {
         posters_fetched,

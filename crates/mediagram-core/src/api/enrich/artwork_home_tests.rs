@@ -137,6 +137,27 @@ async fn keyless_without_a_home_cache_fetches_nothing() {
     assert!(!store::artwork_dir(&core).join("tmdb-movie-550.jpg").exists());
 }
 
+/// The server has not been filled yet, or has gone to sleep: a title it
+/// cannot answer waits for the keyed device, so a keyless run reports what a
+/// device with no key reported before there was a server — nothing, and no
+/// failure. Nothing goes to the TMDB API: with no key the run has nothing to
+/// ask it with, only the server.
+#[tokio::test]
+async fn keyless_titles_the_server_lacks_are_not_failures() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = library(dir.path());
+    let server = fake(|_| (404, Vec::new())).await;
+    core.set_home_cache(Some(server.url.clone()), None);
+
+    let report = fetch_missing(&core, String::new(), "en-US".into(), 780)
+        .await
+        .expect("a keyless run the server cannot answer still ends cleanly");
+
+    assert_eq!(report, FetchReport { no_provider_id: 1, ..FetchReport::default() });
+    let asked = server.seen();
+    assert!(asked.iter().any(|(line, _)| line.starts_with("GET /v1/tmdb/")), "the server was asked: {asked:?}");
+}
+
 /// Answers the key check and every title the way TMDB answers Fight Club.
 struct Tmdb;
 
