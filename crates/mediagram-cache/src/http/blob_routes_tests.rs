@@ -177,3 +177,51 @@ async fn status_counts_blob_bytes() {
     assert_eq!(json["blob_bytes"], 4);
     assert_eq!(json["blob_budget_bytes"], 777);
 }
+
+/// Sends `head` over a real socket and withholds the body it announces, so
+/// an answer that arrives at all was given without reading that body.
+async fn answer_before_the_body(app: Router, head: String) -> Option<String> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await });
+    let mut socket = tokio::net::TcpStream::connect(addr).await.unwrap();
+    socket.write_all(head.as_bytes()).await.unwrap();
+    let mut answer = [0u8; 64];
+    let read = tokio::time::timeout(std::time::Duration::from_secs(2), socket.read(&mut answer));
+    let n = read.await.ok()?.ok()?;
+    Some(String::from_utf8_lossy(&answer[..n]).into_owned())
+}
+
+#[tokio::test]
+async fn an_unsigned_put_is_refused_before_its_body_is_read() {
+    let (_dir, app) = app(1 << 20);
+    let head = format!("PUT /v1/tmdb/{KEY} HTTP/1.1\r\nhost: x\r\ncontent-length: 100\r\n\r\n");
+    let answer = answer_before_the_body(app, head).await;
+    assert!(
+        answer
+            .as_deref()
+            .is_some_and(|a| a.starts_with("HTTP/1.1 401")),
+        "{answer:?}"
+    );
+}
+
+#[tokio::test]
+async fn an_oversize_put_is_refused_before_its_body_is_read() {
+    let (_dir, app) = app(1 << 30);
+    for (path, len) in [
+        (format!("/v1/tmdb/{KEY}"), 2 * 1024 * 1024 + 1),
+        ("/v1/art/w92/big.jpg".to_string(), 16 * 1024 * 1024 + 1),
+    ] {
+        let head = format!(
+            "PUT {path} HTTP/1.1\r\nhost: x\r\nauthorization: MGC1 00\r\ncontent-length: {len}\r\n\r\n"
+        );
+        let answer = answer_before_the_body(app.clone(), head).await;
+        assert!(
+            answer
+                .as_deref()
+                .is_some_and(|a| a.starts_with("HTTP/1.1 413")),
+            "{path}: {answer:?}"
+        );
+    }
+}

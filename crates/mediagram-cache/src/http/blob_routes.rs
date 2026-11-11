@@ -4,8 +4,8 @@
 //! length. A malformed name is a 404 before the store is asked anything.
 
 use axum::Router;
-use axum::body::{Body, Bytes};
-use axum::extract::{DefaultBodyLimit, Path, State};
+use axum::body::{Body, to_bytes};
+use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::Response;
 use axum::routing::get;
@@ -27,9 +27,6 @@ pub(super) fn routes() -> Router<AppState> {
             "/v1/art/{size}/{name}",
             get(get_art).head(head_art).put(put_art),
         )
-        // Overrides the chunk routes' smaller limit; the JSON cap is
-        // enforced per kind in the handler.
-        .layer(DefaultBodyLimit::max(MAX_IMAGE))
 }
 
 /// `(kind, store name, canonical path)` once the shape checks out.
@@ -84,7 +81,7 @@ async fn put_tmdb(
     State(state): State<AppState>,
     Path(key): Path<String>,
     headers: HeaderMap,
-    body: Bytes,
+    body: Body,
 ) -> Response {
     write(state, tmdb_target(&key), MAX_JSON, headers, body).await
 }
@@ -93,7 +90,7 @@ async fn put_art(
     State(state): State<AppState>,
     Path((size, name)): Path<(String, String)>,
     headers: HeaderMap,
-    body: Bytes,
+    body: Body,
 ) -> Response {
     write(state, art_target(&size, &name), MAX_IMAGE, headers, body).await
 }
@@ -137,22 +134,32 @@ async fn probe(state: AppState, target: Option<Target>) -> Response {
 }
 
 /// Checked cheapest first — shape, size, then the signature — so a request
-/// that can never be accepted is not charged an HMAC over its body.
+/// that can never be accepted is not charged an HMAC over its body. The
+/// body is read only once its declared length fits and it names a
+/// signature, so an unsigned or oversize request is never buffered.
 async fn write(
     state: AppState,
     target: Option<Target>,
     max: usize,
     headers: HeaderMap,
-    body: Bytes,
+    body: Body,
 ) -> Response {
     let Some((kind, name, path)) = target else {
         return empty(StatusCode::NOT_FOUND);
     };
-    if body.len() > max || body.len() as u64 > state.blobs.status().1 {
+    let cap = max.min(usize::try_from(state.blobs.status().1).unwrap_or(usize::MAX));
+    let declared = headers
+        .get(header::CONTENT_LENGTH)
+        .and_then(|v| v.to_str().ok()?.parse::<u64>().ok());
+    if declared.is_some_and(|len| len > cap as u64) {
         return empty(StatusCode::PAYLOAD_TOO_LARGE);
     }
     let Some(sig) = auth_signature(&headers) else {
         return empty(StatusCode::UNAUTHORIZED);
+    };
+    // Bounded again while reading: a body may carry no length, or a false one.
+    let Ok(body) = to_bytes(body, cap).await else {
+        return empty(StatusCode::PAYLOAD_TOO_LARGE);
     };
     if !token::verify(&state.token, sig, "PUT", &path, body.len() as u64, &body) {
         return empty(StatusCode::UNAUTHORIZED);
