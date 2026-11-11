@@ -227,4 +227,31 @@ step "log $ME straight into Plasma Bigscreen"
 printf '[Autologin]\nUser=%s\nSession=plasma-bigscreen-wayland\n' "$ME" |
   sudo tee /etc/plasmalogin.conf >/dev/null
 
+# Last, because the switch drops the wired link and any SSH session running over it.
+step "Android TV on the home network, so phones can join its game night"
+# Behind WayDroid's own NAT bridge only this machine reaches Android: a phone can't open
+# its game night (port 8080) or find it over mDNS. On a bridge over the wired port
+# Android gets an address from the home router like any other device, and WayDroid's
+# network script steps aside for any bridge that isn't its own waydroid0.
+# shortcut: wired only, since a Wi-Fi client can't carry another device's MAC; a
+# Wi-Fi-only funstation keeps the NAT bridge, and phones can't join its game night.
+LXC=/var/lib/waydroid/lxc/waydroid/config
+WIRED=$(nmcli -t -f DEVICE,TYPE,STATE device | awk -F: '$2 == "ethernet" && $3 == "connected" {print $1; exit}')
+if [ -n "$WIRED" ] && ! nmcli -t -f NAME con show | grep -qx br0; then
+  OLD=$(nmcli -g GENERAL.CONNECTION device show "$WIRED")
+  # The bridge carries the port's MAC, so the router hands this machine its old address.
+  sudo nmcli con add type bridge ifname br0 con-name br0 bridge.stp no \
+    bridge.mac-address "$(cat "/sys/class/net/$WIRED/address")" >/dev/null
+  sudo nmcli con add type ethernet ifname "$WIRED" master br0 con-name "br0-$WIRED" >/dev/null
+  # In a unit of its own, so it finishes even when it cuts off the SSH session that started it.
+  sudo systemd-run --quiet --wait --collect --unit funstation-bridge sh -c \
+    "nmcli con mod '$OLD' connection.autoconnect no; nmcli con up 'br0-$WIRED'; nmcli con up br0"
+fi
+if nmcli -t -f NAME con show | grep -qx br0 && ! sudo grep -qx 'lxc.net.0.link = br0' "$LXC"; then
+  sudo sed -i 's/^lxc\.net\.0\.link = .*/lxc.net.0.link = br0/' "$LXC"
+  sudo systemctl restart waydroid-container
+  # The session ends with the container; without a TV session yet it starts at the next login.
+  systemctl --user restart android-tv-session 2>/dev/null || true
+fi
+
 printf '\nfunstation ready: reboot to start the TV interface\n'
