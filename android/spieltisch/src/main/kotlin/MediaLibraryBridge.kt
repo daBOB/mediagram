@@ -49,6 +49,21 @@ object MediaApp {
     /** One row: [KIDS_LOCKED] and [TITLES]. */
     val night: Uri = "content://$AUTHORITY/night".toUri()
 
+    /** The release row's columns: Spieltisch's newest release, or no row. */
+    const val VERSION_NAME = "version_name"
+    const val VERSION_CODE = "version_code"
+    const val BYTES = "bytes"
+    const val SHA256 = "sha256"
+
+    /** The paths the release is asked for at. */
+    const val RELEASE = "release"
+    const val RELEASE_APK = "release.apk"
+
+    val release: Uri = "content://$AUTHORITY/$RELEASE".toUri()
+
+    /** That release's APK, once the media app has downloaded and verified it. */
+    val releaseApk: Uri = "content://$AUTHORITY/$RELEASE_APK".toUri()
+
     /** `/image/{key}/{poster|still}`, or `/textless/{key}`. */
     fun image(
         key: String,
@@ -88,7 +103,7 @@ class MediaLibraryBridge(
     override fun warmUp() {
         val began = System.nanoTime()
         CoroutineScope(io).launch {
-            runCatching { resolver.query(MediaApp.night, null, null, null, null)?.close() }
+            runCatching { resolver.withMediaApp { it.query(MediaApp.night, null, null, null, null)?.close() } }
             Log.i(TAG, "warmed the media app in ${(System.nanoTime() - began) / 1_000_000} ms")
         }
     }
@@ -96,13 +111,15 @@ class MediaLibraryBridge(
     @Suppress("TooGenericExceptionCaught") // Whatever fails, the answer is the same: locked, no films.
     private fun read(): MediaNight? =
         try {
-            resolver.query(MediaApp.night, null, null, null, null)?.use { row ->
-                if (!row.moveToFirst()) return null
-                val locked = row.getColumnIndexOrThrow(MediaApp.KIDS_LOCKED)
-                val titles = row.getString(row.getColumnIndexOrThrow(MediaApp.TITLES))
-                JSONArray(titles) // only a list of titles is an answer
-                // Unlocked only by an explicit 0.
-                MediaNight(kidsLocked = row.getType(locked) != Cursor.FIELD_TYPE_INTEGER || row.getInt(locked) != 0, titles = titles)
+            resolver.withMediaApp { client ->
+                client.query(MediaApp.night, null, null, null, null)?.use { row ->
+                    if (!row.moveToFirst()) return null
+                    val locked = row.getColumnIndexOrThrow(MediaApp.KIDS_LOCKED)
+                    val titles = row.getString(row.getColumnIndexOrThrow(MediaApp.TITLES))
+                    JSONArray(titles) // only a list of titles is an answer
+                    // Unlocked only by an explicit 0.
+                    MediaNight(kidsLocked = row.getType(locked) != Cursor.FIELD_TYPE_INTEGER || row.getInt(locked) != 0, titles = titles)
+                }
             }
         } catch (e: Exception) {
             Log.w(TAG, "the media app's night could not be read", e)

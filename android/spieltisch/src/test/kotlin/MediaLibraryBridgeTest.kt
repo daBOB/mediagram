@@ -25,6 +25,8 @@ import kotlin.time.Duration.Companion.seconds
 /** The media app as a test sets it up: [night] answers the night row, [files] the images by URI path. */
 class FakeMediaApp : ContentProvider() {
     var night: () -> Cursor? = { null }
+    var release: () -> Cursor? = { null }
+    val queried = mutableListOf<String>()
     var files: Map<String, File> = emptyMap()
     val opened = mutableListOf<String>()
 
@@ -36,7 +38,10 @@ class FakeMediaApp : ContentProvider() {
         selection: String?,
         selectionArgs: Array<out String>?,
         sortOrder: String?,
-    ): Cursor? = night()
+    ): Cursor? {
+        queried += uri.path.orEmpty()
+        return if (uri.path == "/${MediaApp.RELEASE}") release() else night()
+    }
 
     override fun openFile(
         uri: Uri,

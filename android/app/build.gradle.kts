@@ -34,6 +34,9 @@ android {
 
     buildFeatures { resValues = true }
 
+    // CoreReleaseSource logs a failure it catches; a plain JVM test must survive that call.
+    testOptions.unitTests.isReturnDefaultValues = true
+
     // game-avatars/*.glb are already compressed (meshopt, KTX2): store them, read them as they are
     androidResources { noCompress += listOf("glb") }
 
@@ -122,4 +125,6 @@ dependencies {
     // profiling; a direct dependency so the version is pinned here.
     implementation(libs.findLibrary("androidx.profileinstaller").get())
     baselineProfile(project(":baselineprofile"))
+
+    testImplementation(project(":core:testing"))
 }

@@ -1,7 +1,6 @@
 package com.mediagram.android.di
 
 import android.content.Context
-import android.os.Build
 import androidx.media3.common.Player
 import com.mediagram.android.R
 import dagger.Lazy
@@ -10,12 +9,17 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import data.di.AppScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import player.PlayerHandle
+import update.ApkInstaller
+import update.AppUpdater
+import update.PackageApkInstaller
 import update.PlaybackActivity
 import update.UpdateConfig
-import java.io.File
+import update.updateConfig
 import javax.inject.Singleton
 
 @Module
@@ -31,17 +35,23 @@ object UpdateModule {
     @Singleton
     fun config(
         @ApplicationContext context: Context,
-    ): UpdateConfig {
-        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+    ): UpdateConfig = updateConfig(context, enabled = context.resources.getBoolean(R.bool.self_update))
 
-        @Suppress("DEPRECATION")
-        val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
-        return UpdateConfig(
-            enabled = context.resources.getBoolean(R.bool.self_update),
-            installedVersionCode = code,
-            updatesDir = File(context.cacheDir, "updates"),
-        )
-    }
+    @Provides
+    @Singleton
+    fun installer(
+        @ApplicationContext context: Context,
+    ): ApkInstaller = PackageApkInstaller(context)
+
+    @Provides
+    @Singleton
+    fun updater(
+        config: UpdateConfig,
+        source: CoreReleaseSource,
+        playback: PlaybackActivity,
+        installer: ApkInstaller,
+        @AppScope scope: CoroutineScope,
+    ): AppUpdater = AppUpdater(config, source, playback, installer, scope)
 
     /**
      * ExoPlayer is read on the main thread only. The handle is [Lazy] so a

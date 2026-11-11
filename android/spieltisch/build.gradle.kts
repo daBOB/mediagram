@@ -23,7 +23,11 @@ android {
         applicationId = "com.mediagram.spieltisch"
         versionName = "0.175.0"
         versionCode = versionCodeOf(versionName!!)
+        // Only a release build updates itself; debug builds are installed by adb.
+        resValue("bool", "self_update", "false")
     }
+
+    buildFeatures { resValues = true }
 
     // game-avatars/*.glb are already compressed (meshopt, KTX2): store them, read them as they are
     androidResources { noCompress += listOf("glb") }
@@ -48,6 +52,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // The TV boxes' ABIs: arm64, and armv7 for the boxes that run a 32-bit userspace.
             ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+            resValue("bool", "self_update", "true")
             if (releaseStoreFile != null) signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -55,6 +60,8 @@ android {
 
 dependencies {
     implementation(project(":core:designsystem"))
+    // Self-update, with a source of its own: this module has no Hilt, no :core:data and no media core.
+    implementation(project(":core:update"))
     implementation(libs.findLibrary("androidx.tv.material").get())
     implementation(libs.findLibrary("coil.compose").get())
     implementation(libs.findLibrary("androidx.lifecycle.runtime.compose").get())

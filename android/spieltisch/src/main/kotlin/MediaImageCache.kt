@@ -1,6 +1,7 @@
 package com.mediagram.spieltisch
 
 import android.content.ContentResolver
+import android.os.ParcelFileDescriptor
 import android.util.Log
 import uniffi.spieltisch_core.MediaImageKind
 import uniffi.spieltisch_core.MediaImages
@@ -30,8 +31,9 @@ class MediaImageCache(
             dir.mkdirs()
             val part = File.createTempFile(copy.name, ".part", dir)
             try {
-                val input = resolver.openInputStream(MediaApp.image(key, kind)) ?: return null
-                input.use { from -> part.outputStream().use { from.copyTo(it) } }
+                // The descriptor stands alone once opened, so the client is not held for the copy.
+                val file = resolver.withMediaApp { it.openFile(MediaApp.image(key, kind), "r") } ?: return null
+                ParcelFileDescriptor.AutoCloseInputStream(file).use { from -> part.outputStream().use { from.copyTo(it) } }
                 // Moved into place whole, so a request meanwhile never reads half a file.
                 if (part.renameTo(copy)) copy.path.also { Log.i(TAG, "copied $kind for $key from the media app in ${ms()} ms") } else null
             } finally {

@@ -370,7 +370,7 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:playback` | `MlibDataSource`, `CacheProvider`, `PlayerFactory` |
 | `core:ffmpeg` | Media3's FFmpeg audio decoder, vendored, for DTS and TrueHD |
 | `core:model` | `MediaSet` and `Kind`, shared by every surface |
-| `core:update` | self-update from the channel's pinned `#mlib-app` release (every release build; phones and tablets need Play Protect's app scan off) |
+| `core:update` | self-update (every release build; phones and tablets need Play Protect's app scan off). Plain Android library: no Hilt, no `:core:data`, no media core. The app gives `AppUpdater` a `ReleaseSource` (where the newest release is and how it is fetched, verified) and a `PlaybackActivity`. The media app's source is the core on the channel's pinned `#mlib-app` release (`CoreReleaseSource`, app module). Spieltisch's is `MediaReleaseSource`: it asks the media app's `GameNightProvider` (`/release` row, `/release.apk` file, behind the `GAME_NIGHT` signature permission), copies the APK, checks size and sha256 against the row, and waits out a night's stop under way before an install (a check or download may run during a night). The media app's provider reads the channel's `#spieltisch-app` posts (`SpieltischReleaseExport`); `/release.apk` waits for the core's download, and a cancelling caller (CancellationSignal) ends it |
 | `core:designsystem` | theme and spacing |
 | `core:testing` | `FakeCore`, the one fake of the generated core's `CoreInterface`, and the contract suite run against it and against the real core |
 | `feature:{catalog,player,setup,stats,system}` | view models and UI state, surface-independent |

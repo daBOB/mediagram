@@ -1,5 +1,7 @@
 package update
 
+import android.content.Context
+import android.os.Build
 import java.io.File
 
 /**
@@ -16,4 +18,16 @@ data class UpdateConfig(
 /** Whether the player is playing right now. Reads the player on its own thread. */
 fun interface PlaybackActivity {
     suspend fun isPlaying(): Boolean
+}
+
+/** The config of this build of the app owning [context]: [enabled], the installed versionCode, and downloads under the cache. */
+fun updateConfig(
+    context: Context,
+    enabled: Boolean,
+): UpdateConfig {
+    val info = context.packageManager.getPackageInfo(context.packageName, 0)
+
+    @Suppress("DEPRECATION")
+    val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
+    return UpdateConfig(enabled, code, File(context.cacheDir, "updates"))
 }

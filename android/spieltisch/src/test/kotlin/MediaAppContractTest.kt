@@ -38,6 +38,13 @@ class MediaAppContractTest {
         assertEquals(MediaApp.AUTHORITY, provider["AUTHORITY"])
         assertEquals(MediaApp.KIDS_LOCKED, provider["KIDS_LOCKED"])
         assertEquals(MediaApp.TITLES, provider["TITLES"])
+        assertEquals(MediaApp.VERSION_NAME, provider["VERSION_NAME"])
+        assertEquals(MediaApp.VERSION_CODE, provider["VERSION_CODE"])
+        assertEquals(MediaApp.BYTES, provider["BYTES"])
+        assertEquals(MediaApp.SHA256, provider["SHA256"])
+        val source = File("../feature/games/src/main/kotlin/GameNightProvider.kt").readText()
+        assertTrue("""listOf("${MediaApp.RELEASE}")""" in source, "the provider answers the release row where Spieltisch asks for it")
+        assertTrue("""listOf("${MediaApp.RELEASE_APK}")""" in source, "the provider serves the APK where Spieltisch asks for it")
 
         val media = "../app/src/main/AndroidManifest.xml"
         val declared = elements(media, "provider").single { it.attr("name") == "games.GameNightProvider" }

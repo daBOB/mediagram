@@ -2,8 +2,11 @@ package games
 
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import data.settings.InMemoryLibrarySettings
 import data.settings.InMemoryTmdbSettings
+import kotlinx.coroutines.runBlocking
 import org.robolectric.Robolectric
+import org.robolectric.RuntimeEnvironment
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.setSummary
@@ -33,6 +36,7 @@ internal class NightFixture(
         }
     var coreProvider = FakeCoreProvider(core)
     val tmdb = InMemoryTmdbSettings()
+    val library = InMemoryLibrarySettings().also { runBlocking { it.write("library") } }
     val snapshots = File(root, "game-night")
     val alien = title("A", poster = file("alien.jpg", "alien"), still = file("alien-still.jpg", "alien still"), kidsOk = false)
     val bambi = title("B", poster = file("bambi.jpg", "bambi"), still = null, kidsOk = true)
@@ -57,9 +61,14 @@ internal class NightFixture(
     /** As one process of this app at [version] holds it: its own memory, the snapshot on disk shared with every other. */
     fun export(version: Long = 1) = GameNightExport(coreProvider, tmdb, NightSnapshotStore(snapshots, version))
 
+    fun releases() = SpieltischReleaseExport(coreProvider, library, RuntimeEnvironment.getApplication())
+
     /** A provider in a fresh process, unless it is handed [export] to share one. */
     fun provider(export: GameNightExport = export()) =
-        Robolectric.buildContentProvider(GameNightProvider::class.java).create(GameNightProvider.AUTHORITY).get().also { it.export = export }
+        Robolectric.buildContentProvider(GameNightProvider::class.java).create(GameNightProvider.AUTHORITY).get().also {
+            it.export = export
+            it.releases = releases()
+        }
 
     fun uri(path: String): Uri = Uri.parse("content://${GameNightProvider.AUTHORITY}/$path")
 

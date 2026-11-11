@@ -15,12 +15,12 @@
 ## Steps
 
 1. Coordinate with the games session; agree a time on the box.
-2. Install Spieltisch by `adb` (first install, like the media app at device setup). Install the media app build from phase 4.
+2. Install Spieltisch by `adb` (first install, like the media app at device setup). Install the media app build from phase 4. Box setup needs "install unknown apps" allowed for Spieltisch (`REQUEST_INSTALL_PACKAGES` was `granted=false` on the emulator); that is the user's step at setup, not ours.
 3. From the media app's Games row: Spieltisch opens, and Back on its shelf returns to the media app.
 4. A Poster-Raten round and a Kopfnuss game with two phones. Library posters show. Measure frame times against the last Kopfnuss box run (2.5 % slow frames, 99th percentile 36 ms).
 5. Kids profile in the media app means locked titles in Spieltisch.
 6. Time a night's start with the media app's process killed first.
-7. Publish a Spieltisch patch release. The box installs it in the background without touching the media app, and the media app's pinned release stays.
+7. Publish a Spieltisch patch release. Measure frame times during its download, with a night running (a download runs during a night; only the install waits for the night's stop). The box installs it in the background without touching the media app, and the media app's pinned release stays.
 8. Screenshots and numbers go into `reports/box-run-report.md`.
 
 ## Todo
@@ -31,7 +31,8 @@
 - [ ] kids lock across apps
 - [ ] cold-start timing; the first night after a library change must build in under 30 s, or every ask on that box answers locked (the media app logs "took longer than")
 - [ ] a Poster-Raten round with library posters (no film posters on the emulator, so the image path is still unseen)
-- [ ] Spieltisch-only update on the box
+- [ ] "install unknown apps" allowed for Spieltisch at setup (the user's step)
+- [ ] Spieltisch-only update on the box, with frame times measured during its download
 - [ ] report with screenshots
 
 ## Success criteria

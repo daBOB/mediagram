@@ -35,6 +35,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        val updater = (application as SpieltischApp).updater
+        updater.onForeground()
+        // A confirm screen Android asked for while the app was in the background (installs from this app not allowed yet, or Android 10-11).
+        updater.takeConfirmIntent()?.let { runCatching { startActivity(it) } }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // After the super call: the screen's own stop, which ends the night, has run by now, so the install may go ahead.
+        (application as SpieltischApp).updater.onBackground()
+    }
+
     private fun showNight() {
         val games = shelfGames(gameCatalogue())
         setContent { SpieltischTheme { TvGamesFrame(model, games, leave = ::finish) } }
