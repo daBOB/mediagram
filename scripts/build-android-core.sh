@@ -5,10 +5,6 @@
 # have a 64-bit CPU but run a 32-bit userspace, and load only 32-bit
 # libraries. Requires ANDROID_NDK_HOME and cargo-ndk.
 set -euo pipefail
-# The game night's web client is embedded into the core at compile time, so it
-# must be built before cargo runs.
-command -v bun >/dev/null || { echo "bun is required to build the game night client" >&2; exit 1; }
-(cd crates/mediagram-game/client && bun install --frozen-lockfile && bun run build)
 ABIS="arm64-v8a armeabi-v7a x86_64 x86"
 OUT="${1:-android/core/rust/src/main/jniLibs}"
 for abi in $ABIS; do

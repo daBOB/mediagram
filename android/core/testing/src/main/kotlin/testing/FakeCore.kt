@@ -14,16 +14,16 @@ import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.FranchiseRecord
-import uniffi.mediagram_core.GameNightConfig
-import uniffi.mediagram_core.GameNightUrls
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.NightTitlesConfig
 import uniffi.mediagram_core.PeopleHitRecord
 import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.ProfileOutcome
+import uniffi.mediagram_core.ReleaseApp
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
@@ -216,40 +216,29 @@ class FakeCore(
     /** Every id [mediaSet] was asked for, in order. */
     val mediaSetCalls: MutableList<String> = mutableListOf()
 
-    /** What [startGameNight] answers. */
-    var gameNightUrls: GameNightUrls = GameNightUrls("http://127.0.0.1:8080/tv", "http://192.168.0.2:8080/")
+    /** What [gameNightTitles] answers for a config; no titles by default. */
+    var nightTitles: (NightTitlesConfig) -> String = { "[]" }
 
-    /** Raised by [startGameNight] instead of answering, or `null` to answer [gameNightUrls]. */
-    var gameNightStartFailure: Throwable? = null
+    /** Every config [gameNightTitles] was asked with, in order. */
+    val nightTitlesAsked: MutableList<NightTitlesConfig> = mutableListOf()
 
-    /** Every config [startGameNight] was started with, in order. */
-    val gameNightStarts: MutableList<GameNightConfig> = mutableListOf()
-
-    /** What [gameNightBack] answers: whether a game was running. */
-    var gameNightBackAnswer: Boolean = false
-
-    /** How many times [stopGameNight] ran. */
-    var gameNightStops: Int = 0
-        private set
-
-    /** When set, [startGameNight] suspends on it after recording the config: a start still in flight. */
-    var gameNightStartGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
-
-    override suspend fun startGameNight(config: GameNightConfig): GameNightUrls {
-        gameNightStarts += config
-        gameNightStartGate?.await()
-        gameNightStartFailure?.let { throw it }
-        return gameNightUrls
+    override suspend fun gameNightTitles(config: NightTitlesConfig): String {
+        nightTitlesAsked += config
+        return nightTitles(config)
     }
 
-    override suspend fun gameNightBack(): Boolean = gameNightBackAnswer
+    /** What [textlessPoster] answers, keyed by title key; nothing for any other. */
+    var textlessPosters: Map<String, String> = emptyMap()
 
-    /** When set, [stopGameNight] suspends on it after counting: a stop still under way. */
-    var gameNightStopGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+    /** Every title key [textlessPoster] was asked for, with the TMDB key it was given. */
+    val textlessAsked: MutableList<Pair<String, String?>> = mutableListOf()
 
-    override suspend fun stopGameNight() {
-        gameNightStops++
-        gameNightStopGate?.await()
+    override suspend fun textlessPoster(
+        titleKey: String,
+        tmdbKey: String?,
+    ): String? {
+        textlessAsked += titleKey to tmdbKey
+        return textlessPosters[titleKey]
     }
 
     /** Every offset [read] was actually asked for, in order — what a chunk-alignment test checks against. */
@@ -379,6 +368,9 @@ class FakeCore(
     var releaseFailure: Throwable? = null
     var releaseChecks = 0
 
+    /** Which app the last [latestAppRelease] asked about. */
+    var releaseApp: ReleaseApp? = null
+
     /** Bytes [downloadAppRelease] writes to the path it is given, or the failure it throws instead. */
     var releaseApk: ByteArray = ByteArray(0)
     var downloadFailure: Throwable? = null
@@ -387,8 +379,12 @@ class FakeCore(
     /** When set, [downloadAppRelease] suspends on it before writing, so a test can cancel a download in flight. */
     var downloadGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
 
-    override suspend fun latestAppRelease(handle: String): AppRelease? {
+    override suspend fun latestAppRelease(
+        handle: String,
+        app: ReleaseApp,
+    ): AppRelease? {
         releaseChecks++
+        releaseApp = app
         releaseFailure?.let { throw it }
         return latestRelease
     }

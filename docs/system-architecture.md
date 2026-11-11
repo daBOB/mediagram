@@ -23,6 +23,9 @@ crates/
 │                     the poster game, the race board game, the phone and TV
 │                     pages); depends on
 │                     nothing else in the workspace
+├── spieltisch-core/  the Spieltisch app's UniFFI surface over `mediagram-game`:
+│                     start, step back and stop a night, and the game
+│                     catalogue its shelf is built from
 ├── mediagram/        the CLI: media inspection, upload pipeline, local
 │                     index, verify, and `serve`
 └── mediagram-cache/  the LAN chunk store (§12); depends on none of the
@@ -31,7 +34,7 @@ crates/
 
 Dependencies run one way: `mediagram` → `mediagram-core` → `mediagram-tmdb`
 → `mlib-spec`, with `mediagram` also using the two below directly (and
-`mediagram-core` using `mediagram-game`); nothing
+`spieltisch-core` using `mediagram-game`); nothing
 depends on `mediagram`. The web
 player ([§7](#7-playback-the-web-player)) lives in `web/` and depends on
 neither: it reimplements what it needs of the format in TypeScript. The
@@ -367,10 +370,11 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:playback` | `MlibDataSource`, `CacheProvider`, `PlayerFactory` |
 | `core:ffmpeg` | Media3's FFmpeg audio decoder, vendored, for DTS and TrueHD |
 | `core:model` | `MediaSet` and `Kind`, shared by every surface |
-| `core:update` | self-update from the channel's pinned `#mlib-app` release (every release build; phones and tablets need Play Protect's app scan off) |
+| `core:update` | self-update (every release build; phones and tablets need Play Protect's app scan off). Plain Android library: no Hilt, no `:core:data`, no media core. The app gives `AppUpdater` a `ReleaseSource` (where the newest release is and how it is fetched, verified) and a `PlaybackActivity`. The media app's source is the core on the channel's pinned `#mlib-app` release (`CoreReleaseSource`, app module). Spieltisch's is `MediaReleaseSource`: it asks the media app's `GameNightProvider` (`/release` row, `/release.apk` file, behind the `GAME_NIGHT` signature permission), copies the APK, checks size and sha256 against the row, and waits out a night's stop under way before an install (a check or download may run during a night). The media app's provider reads the channel's `#spieltisch-app` posts (`SpieltischReleaseExport`); `/release.apk` waits for the core's download, and a cancelling caller (CancellationSignal) ends it |
 | `core:designsystem` | theme and spacing |
 | `core:testing` | `FakeCore`, the one fake of the generated core's `CoreInterface`, and the contract suite run against it and against the real core |
 | `feature:{catalog,player,setup,stats,system}` | view models and UI state, surface-independent |
+| `feature:games` | no UI: a game night's kids and section rules, the `GameNightProvider` Spieltisch reads (night, images, release), and the night snapshot |
 | `ui-mobile` | every screen the phone has |
 | `ui-common` | composables and pure rules shared by phone and TV (formatters, position model, player lifecycle) |
 | `ui-tv` | television surface: rail, departments bar, home, catalog, player, system and settings, driven by remote |
@@ -951,31 +955,31 @@ AirPlay code.
 
 The TV box hosts party games for phones on the same network: a buzzer quiz, a
 poster-guessing game, two board games (Heimlauf, Grand Allee) and three card games
-(Mau-Mau, Schwimmen, Durak). It is a feature of the TV app only, and it is the one
-place the app serves something rather than only fetching.
+(Mau-Mau, Schwimmen, Durak). It is a feature of the TV only, and it is the one
+place the box serves something rather than only fetching. Since Spieltisch
+([below](#spieltisch-the-games-own-app)) the games are an app of their own: the
+media app's Games row only opens `com.mediagram.spieltisch`, and says "Spieltisch
+ist nicht installiert" when it is not there. The media app holds no game code,
+game client or avatars, and `mediagram-core` does not depend on `mediagram-game`;
+it keeps what Spieltisch reads from the library (the provider, `game_titles.rs`
+and `game_posters.rs`, below).
 
-**The host lives in the core.** `mediagram-game` is a self-contained crate (an
-axum server with the React phone and TV pages embedded in the binary) that
-`mediagram-core` links; Kotlin starts and stops it through
-`Core::start_game_night`, `game_night_back` and `stop_game_night`
-(`crates/mediagram-core/src/api/game_night.rs`). Starting binds port 8080, or
+**The host lives in Spieltisch's core.** `mediagram-game` is a self-contained
+crate (an axum server with the React phone and TV pages embedded in the binary)
+that `spieltisch-core` links; Kotlin starts and stops it through
+`start_night`, `night_back` and `stop_night`. Starting binds port 8080, or
 any free port when that is taken, and returns the TV page's address
 (`http://127.0.0.1:<port>/tv`) and the join address with the box's current LAN
 IP, since DHCP moves it. A second start stops the first, so the port is free.
 A stop gives open requests 2 s and then cuts them off (`host.rs`): axum sets
 no header-read timeout, and one connection stalled mid-request would otherwise
 hold the stop, and with it every later night, which waits on the same slot.
-Nothing runs in the background: the Games screen opening starts the host,
-leaving it, or the app going to the background, stops it
-(`android/ui-tv/.../games/TvGamesFrame.kt`, a full-screen WebView of the
-loopback TV page that keeps the screen on). The background stop is called from
-the lifecycle's ON_STOP itself, since Compose draws no frame while the app is
-stopped and the screen's dispose may only run on return. `GameNightViewModel`
-runs the start off the main thread (UniFFI runs it on the calling thread, and
-it reads the whole catalog), and a start waits out any stop still under way,
-so leaving and coming straight back never has the old night's stop end the new
-one or show its page. Back first steps a running game to the lobby and leaves
-only when there was nothing to step back from.
+Nothing runs in the background: opening Spieltisch starts the host, leaving it,
+or the app going to the background, stops it (a full-screen WebView of the
+loopback TV page that keeps the screen on). A start waits out any stop still
+under way, so leaving and coming straight back never has the old night's stop
+end the new one or show its page. Back first steps a running game to the lobby
+and leaves only when there was nothing to step back from.
 
 **Phones join by browser; the TV page is the box's alone.** The lobby's QR code
 (`/qr.svg`) points at the join address; a phone types a name and gets a seat
@@ -997,8 +1001,7 @@ safe half. *Nur für Kinder* is decided in Kotlin, never in Rust
 (`android/feature/games/.../GameNightConfig.kt`, using `forKidsProfile`): a kids
 profile gets its own limit with the toggle locked on, since kids profiles have
 no PIN and an open toggle would be a way past it; a grown-up gets limit 12 with
-the toggle free and off to start. A profile that is missing after a reload is
-treated as locked at 12. Core receives the set ids that pass and a locked flag,
+the toggle free and off to start. No profile chosen, or the media app not ready, answers locked with no titles. The core receives the set ids that pass and a locked flag,
 and with the toggle on every title used (answers, wrong options, images) is
 one of them. Sections the profile hides stay hidden here too: Kotlin passes
 the set ids in the sections it sees (`sectionKey()` against `hiddenFrom`, as
@@ -1203,9 +1206,9 @@ Meshy's thousands of edge-to-edge islands bled into each other at every
 smaller mip level). Each normal is turned into the new chart's frame, the frame
 three.js derives on screen for a mesh without tangents. The output is a 2048
 WebP colour map and a 1024 normal map, with meshopt: 40 MB in all, into
-`android/app/src/main/assets/game-avatars/` — generated,
-not committed, like the native libraries — and the TV app's WebView answers
-`/game-avatars/<id>.glb` from its APK assets (`TvGamesFrame.kt`), so they are
+`android/spieltisch/src/main/assets/game-avatars/` — generated,
+not committed, like the native libraries — and Spieltisch's WebView answers
+`/game-avatars/<id>.glb` from its APK assets (`GamePageClient.kt`), so they are
 in the app once instead of in the core per ABI, and the phones and the Rust
 host never see them. Quality comes first, with 30 fps as the floor (the
 user's call). The canvas draws at full resolution with MSAA, and the camera
@@ -1246,6 +1249,173 @@ two lines of question and eight seats are taller than a 16:9 screen.
 
 **Tools.** `crates/mediagram-game/tools/smoke.mjs` plays a night with bot
 phones against the dev binary `game-night-dev`.
+
+### Spieltisch, the games' own app
+
+The games are becoming an Android TV app of their own, **Spieltisch**
+(`com.mediagram.spieltisch`, `android/spieltisch`), so a game release no longer
+rebuilds and re-installs the media app. It has its own version line
+(`crates/mediagram-game`, `crates/spieltisch-core`, the client's `package.json`,
+its `versionName`, and the phone controller), starting at 0.175.0. The media
+app's Games row opens it (the leanback launch intent, else the normal one; the
+manifest declares `<queries>` for the package) and carries no game code. The
+phone's rail has no Games row, as before: Spieltisch is a television app
+(`leanback` required), so there would be nothing for it to open. A night stops
+when Spieltisch leaves the screen, and takes another port when 8080 is taken.
+
+**Its own native core.** `crates/spieltisch-core` links `mediagram-game`, not
+`mediagram-core`, and exports `start_night(config, images)`, `night_back`, `stop_night` and
+`game_catalogue` (`libspieltisch_core.so`, four ABIs, `scripts/build-spieltisch-core.sh`;
+bindings by `scripts/generate-spieltisch-bindings.sh`, committed under
+`android/spieltisch/src/main/kotlin/uniffi/`). One night per process, held in a
+static slot. `scripts/check.sh` regenerates the
+bindings from a host build and fails on a difference.
+
+**The library is the media app's.** Spieltisch holds no Telegram session, TMDB
+key or profile; the games' decision log goes to its files folder. At each
+night's start `MediaLibraryBridge` reads `content://com.mediagram.android.games/night`
+from the media app's `GameNightProvider` (`android/feature/games`), off the
+main thread and for at most 8 s: one row, `kids_locked` (1 or 0) and `titles`,
+JSON in `GameTitle`'s shape (`crates/mediagram-game/tests/fixtures/night-titles.json`
+holds both sides to it). The provider answers for the active profile under its
+kids and section rules (`gameNightConfig`, then `Core::game_night_titles`, which
+leaves out every title that is not kid-safe when the lock is on); no core yet,
+nobody chosen, or any failure answers locked with `[]`. To Spieltisch a missing
+media app, a refusal, a row that is not a night, or no answer within 8 s are
+one answer: locked, no films, and a line on the shelf that the library's films
+aren't available. Only an explicit `0` unlocks, and a locked host drops every
+title that is not kid-safe again. JSON the core cannot read means no films,
+never no night.
+
+```text
+Spieltisch                                  media app (signature permission)
+MediaLibraryBridge --query /night---------> GameNightProvider -> GameNightExport
+  -> start_night(titles, kids_locked)          files/game-night/night.snapshot, if built for
+                                               the active profile; else gameNightConfig +
+                                               Core::game_night_titles, and kept
+host /img/{i}/{which} -- own path unreadable
+  -> ImageLookup / textless PosterLookup
+  -> MediaImages.fetch (spawn_blocking)
+  -> MediaImageCache --openFile----------> /image/{key}/{poster|still}, /textless/{key}
+     copy in cache/media-images/                         only titles tonight's night holds
+```
+
+**Images cross as files.** The titles' poster and still paths point into the
+media app's storage, which Spieltisch cannot open. When the `/img` route cannot
+read a title's own file it asks the embedder's `ImageLookup`
+(`mediagram-game/src/image_files.rs`; the media app passes titles as JSON
+and hands files over through its provider), and the textless lookup takes the same way:
+`spieltisch-core` turns both into the Kotlin `MediaImages.fetch(key, poster|still|textless)`,
+called on `spawn_blocking` since Kotlin blocks on the provider. `MediaImageCache`
+opens `/image/{key}/{poster|still}` or `/textless/{key}`, copies the file once
+into `cache/media-images/` (named by kind and the encoded key, moved into place
+whole) and answers the copy's path; the route types a copy without an
+extension by its first bytes. The provider hands out a file only while the
+active profile's night holds that title, so a key cannot fetch a picture the
+profile may not see. It is read-only.
+
+**One permission guards it.** `com.mediagram.android.permission.GAME_NIGHT`,
+`protectionLevel="signature"`, declared by both apps, so Spieltisch holds it
+whichever is installed first; the provider requires it in the media app's
+manifest and checks it again in code. For Android 11+ package visibility,
+Spieltisch queries the provider's authority. The provider reaches the repositories through a
+Hilt `@EntryPoint`, since a provider is created before `Application.onCreate`;
+a Spieltisch ask may be what starts the media app's process.
+
+**The night is answered from a snapshot, by its fingerprint.** Building it
+lists the whole library and builds every title, 2.5–4.7 s on the emulator with
+a 28,038-set library (1,764 titles, 606 KB of JSON). So the media app keeps
+the last night built, in memory and in `files/game-night/night.snapshot`
+(`NightSnapshotStore`: a header line, `app_version`, `fingerprint` and
+`kids_locked`, then the titles' JSON, written to a temp file and renamed into
+place; a file another version of the app wrote is not read, since an update
+may change the rules). The fingerprint (`NightInputs`) is a SHA-256 over
+everything that decides a night, read from the core itself on every ask, not
+from a repository's memory:
+- the chosen profile's id, kids flag, kids limit and hidden sections (as
+  `hiddenFrom` applies them)
+- the household's kids marks (`snapshot(id)`)
+- a catalog marker from `catalogFacts()`: the installed index's origin and
+  `publishedAt`, its set and poster counts, and `described`
+- the app's `longVersionCode`
+
+The marker's parts each cover something:
+- **The index:** it is opened read-only, and every install moves `current` to a
+  version directory of its own, so a new set or a changed rating always comes
+  with a new version.
+- **The poster count:** notices artwork that arrived.
+- **`described`:** a digest of every row and column of this device's fetched
+  descriptions (`details.db`). Those fill in genres and original language
+  where the index has none, so they can move a title into Anime without a new
+  index; a row corrected in place moves the digest as much as a new one.
+- **An unreadable version:** an installed catalog whose version cannot be read
+  has no fingerprint and answers locked.
+
+The marker is the costly part of a fingerprint: 225–400 ms on the emulator,
+mostly counting the playable sets. The description digest adds no measurable
+time with 2,000 described titles (7 ms on the host); the profile and the marks
+take under 25 ms.
+
+An equal fingerprint serves the snapshot. Anything else builds the night:
+- **Single-flight:** under one `Mutex` with the fingerprint, read and write, so
+  asks that come together build once.
+- **The core in hand:** the build lists the sets from the core the inputs were
+  read from; looking it up again could wait for the next sign-in.
+- **Time limit:** the locked work gets 30 s, after which the ask answers
+  locked and lets the next one in.
+- **Kept only if unchanged:** a build is kept only if the fingerprint, read
+  again afterwards, still equals the one it started from. Otherwise the ask is
+  answered locked with `[]`.
+- **Failure:** any failure, including a build that fails after the rules
+  tightened, answers locked with `[]`, never the night held from before. Nothing rebuilds in the background:
+progress and other watch state are not inputs, and a night is built only when
+an ask finds the inputs changed. Image and textless checks use the night
+`/night` last served, recorded under the same lock and held in memory, so a running night keeps the titles it
+started with, as a night hosted here does; a process with none serves one
+first. Spieltisch also asks for `/night` once as its process starts
+(`NightSession`, the answer dropped), so the media app is up, and a build
+already under way, when the night's own ask comes; each night still asks for
+itself. The host remembers, per night, the titles found to have no textless
+poster (`spieltisch-core/src/media_images.rs`), since every poster request
+asks for one first; the asking runs in a task of its own, so a miss that
+answers after the image route stopped waiting (300 ms) is remembered too.
+
+Measured on the emulator (`plans/261110-2230-spieltisch-app/phase-02-media-app-provider.md`,
+Result): served from the snapshot, a warm media app answers `/night` in
+0.40–0.60 s, a cold one in 0.93–1.34 s with Spieltisch's warm-up and
+1.08–1.87 s without it. The first ask after an input changed builds: 4.2 s
+warm, 4.5 s cold with the warm-up (the night's ask joins the warm-up's build),
+5.0 s with no readable snapshot at all, all inside the 8 s limit. A first image
+check answers in 5–134 ms.
+
+**Signing keys.** Both apps declare the permission, which works in either
+install order when both are signed with the same key. An app signed with
+another key than the one that declared the permission first fails to install
+with `INSTALL_FAILED_DUPLICATE_PERMISSION` rather than being refused by the
+provider. It cannot happen on this machine: its debug and release builds use
+the same key, `~/.android/debug.keystore`.
+
+**The shelf comes from the host.** `game_catalogue()` lists `CATALOGUE` in the
+lobby's order (kind as the pages name it, name, seat range), so a game added
+there shows up on the shelf with no Kotlin change. Art is keyed by kind
+(`ShelfGames.kt`); a game without any shows its name. The screen is the media
+app's former games page, moved here: Back from a game asks the page first,
+from the lobby returns to the poster that opened it, and on the shelf leaves
+the app, which stops the host; going to the background does the same, and the
+activity handles configuration changes in place so a gamepad connecting does
+not end the night. No Hilt: `SpieltischApp` holds one `NightSession` per
+process (the core, the NSD announcer, the scope stops run on and the latest
+stop), since leaving finishes the activity while its stop may still run. A
+relaunch's night waits for that stop, and the stop withdraws the announcement
+again after cancelling the start, so a start that finished late leaves no dead
+table on the phones. On API 37 and up `MainActivity` asks for
+`ACCESS_LOCAL_NETWORK` before the night starts; without it the phones can
+neither reach nor find the host. The shelf's look (mediagram's colours, focus
+and poster row) is copied as values, since the media app's TV theme lives in
+`ui-tv`, which Spieltisch cannot depend on without the media core. Cleartext is
+allowed to 127.0.0.1 only, and the page's client refuses navigation to any
+other host; the ceremony avatars are served from the APK's assets
+(`make-ceremony-avatars.mjs --out=android/spieltisch/src/main/assets/game-avatars`).
 
 ### Reporting a broken video
 
@@ -1695,7 +1865,7 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   `plans/260929-0215-tv-web-look-chrome-home-departments/phase-04-tv-home-kept-alive-measure-docs.md`.
 - **Game night is television only.** The box hosts it, phones join through a browser
   page, and the web player never hosts one: it is not the table in the living room. The
-  Games entry sits on the television rail; the `Games` label is English like the rest of
+  Games entry sits on the television rail and opens the Spieltisch app; the `Games` label is English like the rest of
   the app, and everything inside a game is German.
 
 ## 9. Backend portability

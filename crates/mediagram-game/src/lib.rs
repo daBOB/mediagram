@@ -22,6 +22,7 @@ mod kopfnuss_views;
 pub mod game;
 mod game_log;
 pub mod general;
+mod image_files;
 pub mod grand_allee;
 pub mod host;
 pub mod lan;
@@ -80,8 +81,10 @@ mod schwimmen_views;
 mod server;
 mod titles;
 
+pub use catalogue::CATALOGUE;
 pub use game::{ActionError, Game, GameCtx, GameFactory, ViewCtx};
 pub use host::{Host, HostConfig, start_game_night};
+pub use image_files::ImageLookup;
 pub use poster::PosterGame;
 pub use poster_config::{PosterConfig, poster_ready};
 pub use poster_lookup::PosterLookup;

@@ -1,8 +1,11 @@
 package games
 
+import data.CatalogRepository
 import model.Kind
 import model.MediaSet
 import model.Profile
+import uniffi.mediagram_core.SearchHit
+import uniffi.mediagram_core.TitleInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -28,6 +31,19 @@ internal fun film(
     fsk = fsk,
 )
 
+/** A catalog of [sets] and nothing else. */
+internal class SetsOnly(
+    private val sets: List<MediaSet>,
+) : CatalogRepository {
+    override suspend fun refresh(): Result<Int> = Result.success(sets.size)
+
+    override suspend fun sets(): List<MediaSet> = sets
+
+    override suspend fun search(query: String): List<SearchHit> = emptyList()
+
+    override suspend fun titleInfo(posterKey: String): TitleInfo? = null
+}
+
 class GameNightConfigTest {
     private val sets = listOf(film("f0", "0"), film("f6", "6"), film("f12", "12"), film("f16", "16"), film("marked", null), film("loose", null))
 
@@ -39,7 +55,6 @@ class GameNightConfigTest {
 
         assertEquals(listOf("f0", "f6", "marked"), config.kidsSetIds)
         assertTrue(config.kidsLocked)
-        assertEquals(null, config.tmdbKey)
     }
 
     @Test

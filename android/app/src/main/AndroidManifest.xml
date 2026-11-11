@@ -44,6 +44,18 @@
          only if a future notification genuinely needs to reach someone who
          is not looking at the app. -->
 
+    <!-- Only apps signed with this app's key hold it: Spieltisch, which reads the game night
+         through GameNightProvider. Spieltisch declares it too, so it holds it whichever app
+         is installed first. -->
+    <permission
+        android:name="com.mediagram.android.permission.GAME_NIGHT"
+        android:protectionLevel="signature" />
+
+    <!-- Android 11+ hides other apps unless asked for; the Games row launches Spieltisch. -->
+    <queries>
+        <package android:name="com.mediagram.spieltisch" />
+    </queries>
+
     <application
         android:name=".MediagramApp"
         android:allowBackup="false"
@@ -66,6 +78,13 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- The game night, the titles and their images for Spieltisch; read-only. -->
+        <provider
+            android:name="games.GameNightProvider"
+            android:authorities="com.mediagram.android.games"
+            android:exported="true"
+            android:permission="com.mediagram.android.permission.GAME_NIGHT" />
     </application>
 
 </manifest>

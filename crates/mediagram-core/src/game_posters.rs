@@ -3,10 +3,11 @@
 //! lettering is used when it has one.
 
 use std::collections::HashMap;
+use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::pin::Pin;
+use std::sync::{Arc, LazyLock, Mutex};
 
-use mediagram_game::PosterLookup;
 use mediagram_tmdb::home_cache::HomeCache;
 use mediagram_tmdb::poster_files::download_into;
 use mediagram_tmdb::posters::{PosterRef, is_image_path, kind_key};
@@ -15,6 +16,12 @@ use mediagram_tmdb::tmdb_client::{TmdbApi, TmdbClient};
 use crate::shows::title_of;
 
 const WIDTH: u32 = 500;
+
+/// A title key's textless poster file, if there is one.
+type PosterLookup = Arc<dyn Fn(String) -> Pin<Box<dyn Future<Output = Option<PathBuf>> + Send>> + Send + Sync>;
+
+/// The cache under the data folder, holding the posters handed to the games app.
+pub const CACHE_DIR: &str = "game-posters";
 
 /// A lookup from a game title's key to its textless poster, cached under
 /// `cache_dir` and read from the home cache server first. `None` when the
@@ -29,28 +36,41 @@ pub fn poster_lookup(
         .inspect_err(|err| tracing::warn!(error = %err, "textless posters unavailable"))
         .ok()?;
     let api = Arc::new(TmdbClient::new(http.clone(), tmdb_key));
-    let keys = Arc::new(poster_keys);
     let cache_dir = Arc::new(cache_dir);
-    Some(one_at_a_time(Arc::new(move |title_key: String| {
-        let (api, http, keys, dir, home) = (api.clone(), http.clone(), keys.clone(), cache_dir.clone(), home.clone());
+    let fetch = one_at_a_time(Arc::new(move |poster_key: String| {
+        let (api, http, dir, home) = (api.clone(), http.clone(), cache_dir.clone(), home.clone());
         Box::pin(async move {
-            let poster_key = keys.get(&title_key)?;
-            textless_poster(api.as_ref(), &http, home.as_deref(), &dir, poster_key).await
+            let fetch = textless_poster(api.as_ref(), &http, home.as_deref(), &dir, &poster_key);
+            tokio::time::timeout(LOOKUP_TIMEOUT, fetch).await.ok().flatten()
         })
-    })))
+    }));
+    let keys = Arc::new(poster_keys);
+    // Only the catalog's poster keys reach the locks, so their map stays as small as the catalog
+    // however many unknown keys a caller sends.
+    Some(Arc::new(move |title_key: String| {
+        let (keys, fetch) = (keys.clone(), fetch.clone());
+        Box::pin(async move { fetch(keys.get(&title_key)?.clone()).await })
+    }))
 }
 
-/// Runs `inner` for one title key at a time. The prefetch and the image
-/// route usually ask for the same poster together; unserialised they would
-/// both download it into one temporary file, and a truncated image could be
-/// renamed into the cache for good. The second caller waits, then finds the
-/// first one's file (or miss marker) in the cache.
+/// Longest one lookup may take, TMDB's answer and the download together. A request that
+/// hangs (the Wi-Fi gone mid-call) would otherwise hold its poster's lock for good.
+const LOOKUP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20);
+
+/// Runs `inner` for one poster key at a time: the key names the cached file,
+/// which two sets of one film share. Concurrent `/textless` calls from the games app can
+/// ask for the same poster together; unserialised they would both download it
+/// into one temporary file, and a truncated image could be renamed into the
+/// cache for good. The second caller waits, then finds the first one's file
+/// (or miss marker) in the cache. The locks are the process's, not the
+/// lookup's: a games app's requests each build a lookup of their own over the
+/// same cache.
 fn one_at_a_time(inner: PosterLookup) -> PosterLookup {
-    let locks: Arc<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> = Arc::default();
+    static LOCKS: LazyLock<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> = LazyLock::new(Mutex::default);
     Arc::new(move |key: String| {
-        let (inner, locks) = (inner.clone(), locks.clone());
+        let inner = inner.clone();
         Box::pin(async move {
-            let lock = locks.lock().unwrap_or_else(|e| e.into_inner()).entry(key.clone()).or_default().clone();
+            let lock = LOCKS.lock().unwrap_or_else(|e| e.into_inner()).entry(key.clone()).or_default().clone();
             let _held = lock.lock().await;
             inner(key).await
         })

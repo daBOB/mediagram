@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launcher's tile: the icon's die, centred on the same felt green. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#0F5A43"
+        android:pathData="M0,0h320v180h-320z" />
+    <group
+        android:translateX="106"
+        android:translateY="36">
+        <path
+            android:fillColor="#FBF8F1"
+            android:pathData="M40,32h28a8,8 0 0 1 8,8v28a8,8 0 0 1 -8,8h-28a8,8 0 0 1 -8,-8v-28a8,8 0 0 1 8,-8z" />
+        <path
+            android:fillColor="#0C2A22"
+            android:pathData="M43,43m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M65,43m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M54,54m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M43,65m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M65,65m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0" />
+    </group>
+</vector>

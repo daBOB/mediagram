@@ -54,8 +54,6 @@ import setup.SettingsUiState
 import setup.SettingsViewModel
 import setup.SetupViewModel
 import setup.login.LoginViewModel
-import games.GameNightAnnouncer
-import games.GameNightViewModel
 import stats.AchievementDotViewModel
 import stats.InMemoryAchievementsSeen
 import stats.NO_ACHIEVEMENTS
@@ -156,9 +154,6 @@ internal class TvAppFixture(
 
     /** The Stats page's ViewModel — relaxed, so a test can verify what the page asked of it. */
     val stats = mockk<StatsViewModel>(relaxed = true)
-
-    /** The core game night talks to: a test sets what Back answers and counts the stops. */
-    val gameCore = FakeCore()
 
     val system = mockk<SystemViewModel>(relaxed = true)
     /** Exposed so a test can restub a single call — `searchPeople`, for a grouped-search test naming a person the query matches. */
@@ -343,8 +338,6 @@ internal class TvAppFixture(
                 // A film's own TvTitlePage resolves TitlePreloadViewModel through hiltViewModel() too, films only.
                 TitlePreloadViewModel::class.java to titlePreload,
                 StatsViewModel::class.java to stats,
-                // TvGamesFrame resolves it through hiltViewModel(); a core of its own, so a test can steer Back.
-                GameNightViewModel::class.java to GameNightViewModel(FakeCoreProvider(gameCore), viewer.repository, repository, InMemoryTmdbSettings(), Dispatchers.Unconfined, CoroutineScope(Dispatchers.Unconfined), SilentAnnouncer),
                 // The library's daily-limit door, resolved beside the catalog on every draw.
                 LibraryPlayGate::class.java to LibraryPlayGate(viewer.repository, together),
                 // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(); every library test reaches it.
@@ -391,11 +384,4 @@ private class HeldIds(
     override suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String> = sets.map { it.first }.filterTo(HashSet()) { it in held }
 
     override suspend fun heldBytes(setId: String, totalBytes: Long): Long = if (setId in held) totalBytes else 0L
-}
-
-/** The TV tests drive game night without a network; nothing is announced. */
-private object SilentAnnouncer : GameNightAnnouncer {
-    override fun announce(joinUrl: String) = Unit
-
-    override fun withdraw() = Unit
 }

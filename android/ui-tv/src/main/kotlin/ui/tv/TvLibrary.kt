@@ -44,7 +44,6 @@ import ui.common.settings.SettingsOutcomes
 import designsystem.LocalTvStyle
 import ui.common.RailItem
 import ui.tv.catalog.TvFetchResultDialog
-import ui.tv.games.TvGamesFrame
 import ui.tv.catalog.TvPillEntryKey
 import ui.tv.catalog.TvProfileEntryKey
 import ui.tv.chrome.LocalTvMenu
@@ -161,13 +160,17 @@ internal fun TvLibrary(
     // Ambient's colour of the moment, kept across pages so a title glows on from the wall that opened it.
     val ambientTint = remember { AmbientTint() }.takeIf { LocalTvStyle.current == TvStyle.AMBIENT }
 
+    // Games opens another app, so the page under the rail stays where it is.
+    val games = rememberTvGamesRow()
     // A rail row that moves the catalogue — My List, Continue, Latest, Genres, Stats — chosen
     // over a page or from the avatar's menu: back to the catalogue, which runs it as its own rail would.
     val runRail = { item: RailItem ->
         menuOpen = false
-        restore.forget(0)
-        pendingRail = item
-        at.toCatalog()
+        if (item == RailItem.GAMES) games.open() else {
+            restore.forget(0)
+            pendingRail = item
+            at.toCatalog()
+        }
     }
     // A pill pressed over a page: the catalogue opens on that tab with the remote kept on the pill.
     val runPill = { tab: CatalogTab ->
@@ -223,14 +226,11 @@ internal fun TvLibrary(
                 // The TV is what a remote drives; it never opens one.
                 top == FrameKind.REMOTE -> Unit
 
-                // Full-screen like the player: the page is the game's own, not a catalogue page.
-                top == FrameKind.GAMES -> TvGamesFrame(leave)
-
                 // Nothing open: the shelves.
                 top == null ->
                     TvLibraryHomeFrame(
                         saved, catalogState, profile, fetchState.running, fetchState.progress, restore, here, at, catalogViewModel, menu,
-                        pendingRail, { pendingRail = null }, pendingTab, { pendingTab = null },
+                        pendingRail, { pendingRail = null }, pendingTab, { pendingTab = null }, games.open,
                     ) { menuOpen = true }
 
                 // Every other page sits in the catalogue's own rail and bar, as every web page sits in its shell.
@@ -290,13 +290,13 @@ internal fun TvLibrary(
                             FrameKind.STATS -> TvStatsFrame(leave)
 
                             // Drawn outside the chrome, above.
-                            FrameKind.PLAYER, FrameKind.MENU, FrameKind.REMOTE, FrameKind.GAMES -> Unit
+                            FrameKind.PLAYER, FrameKind.MENU, FrameKind.REMOTE -> Unit
                         }
                     }
             }
         }
         // The pill watch together's notices use, over the page: words to read, no focus, so the remote stays where it was.
-        TvTogetherNotice(limitNotice, Modifier.align(Alignment.BottomCenter).padding(bottom = Overscan.vertical + Spacing.large))
+        TvTogetherNotice(limitNotice ?: games.notice, Modifier.align(Alignment.BottomCenter).padding(bottom = Overscan.vertical + Spacing.large))
     }
 
     // Every branch but the player, for the phone's reason: a result held

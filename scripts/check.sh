@@ -31,6 +31,20 @@ if ! git diff --exit-code -- crates/mediagram-game/client/src/protocol ||
   exit 1
 fi
 
+step "Spieltisch's Kotlin bindings match its core"
+# Generated from a host build, which carries the same uniffi metadata as the Android libraries; a diff means
+# the app was built against a stale surface.
+bindings="$(mktemp -d)"
+trap 'rm -rf "$bindings"' EXIT
+cargo build -q -p spieltisch-core
+cargo run -q -p spieltisch-core --features cli --bin uniffi-bindgen -- generate \
+  --library "${CARGO_TARGET_DIR:-target}/debug/libspieltisch_core.so" --language kotlin --no-format --out-dir "$bindings"
+if ! sed 's/[[:blank:]]*$//' "$bindings/uniffi/spieltisch_core/spieltisch_core.kt" |
+  diff -q - android/spieltisch/src/main/kotlin/uniffi/spieltisch_core/spieltisch_core.kt >/dev/null; then
+  echo "Spieltisch's bindings are stale: run scripts/generate-spieltisch-bindings.sh"
+  exit 1
+fi
+
 step "bun test"
 # Skipped rather than failed when the player's dependencies are not installed:
 # the uploader is usable without them, and an absent node_modules is a setup
@@ -61,7 +75,8 @@ if [ -n "${ANDROID_HOME:-}" ]; then
   # connected — testDebugUnitTest and lint never touch the androidTest source set.
   # That includes core:rust's RealCoreContractTest, which holds the real core to
   # core:testing's CoreContract, and core:data's EncryptedSettingsTest; running
-  # them still takes a device (connectedDebugAndroidTest).
+  # them still takes a device (connectedDebugAndroidTest). testDebugUnitTest and lint run in every
+  # module, Spieltisch's (:spieltisch) and the controller's included.
   (cd android && ./gradlew testDebugUnitTest :core:model:test lint :ui-tv:compileDebugAndroidTestKotlin :core:ffmpeg:compileDebugAndroidTestKotlin \
     :core:rust:compileDebugAndroidTestKotlin :core:data:compileDebugAndroidTestKotlin)
 else

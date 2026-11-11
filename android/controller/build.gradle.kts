@@ -1,26 +1,21 @@
 // Spieltisch: the game-night controller for phones and tablets. A web view on
 // the TV box's phone page plus what a browser cannot do: keep the screen on,
 // vibrate, find the box on the Wi-Fi. No Telegram, no Rust core, no library.
+import convention.versionCodeOf
+
 plugins {
     alias(libs.plugins.app.android.application)
     alias(libs.plugins.app.android.application.compose)
 }
 
-/** The project's version lives in the workspace Cargo.toml; this app adds no manifest of its own. */
+/** Spieltisch's version lives in crates/spieltisch-core/Cargo.toml; this app adds no manifest of its own. */
 val projectVersion: String =
     rootProject
-        .file("../Cargo.toml")
+        .file("../crates/spieltisch-core/Cargo.toml")
         .readLines()
         .first { it.startsWith("version = ") }
         .substringAfter('"')
         .substringBefore('"')
-
-/** Same derivation as the media app's: 0.153.0 → 153000. */
-fun versionCodeOf(name: String): Int {
-    val (major, minor, patch) = name.split(".").map { it.toInt() }
-    require(minor < 1000 && patch < 1000) { "versionName $name: minor and patch must stay below 1000" }
-    return major * 1_000_000 + minor * 1_000 + patch
-}
 
 /** This machine's release key, from ~/.gradle/gradle.properties; absent elsewhere, so a release built there is unsigned. */
 val releaseStoreFile: String? = providers.gradleProperty("mediagram.signing.storeFile").orNull

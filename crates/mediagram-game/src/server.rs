@@ -16,6 +16,7 @@ use rust_embed::RustEmbed;
 use tokio::sync::mpsc;
 
 use crate::game_log::serve_log;
+use crate::image_files::{ImageLookup, content_type, title_image};
 use crate::poster_lookup::{PosterLookup, textless_file};
 use crate::room_loop::Event;
 use crate::titles::{ImageKind, TitlePool};
@@ -34,6 +35,7 @@ pub(crate) struct AppState {
     pub(crate) join_url: Arc<str>,
     pub(crate) pool: Arc<TitlePool>,
     pub(crate) textless: Option<PosterLookup>,
+    pub(crate) images: Option<ImageLookup>,
     pub(crate) log: Option<PathBuf>,
 }
 
@@ -134,21 +136,15 @@ pub(crate) async fn image(
         (Some(lookup), ImageKind::Poster, Some(key)) => textless_file(lookup, key).await,
         _ => None,
     };
-    let Some(path) = textless.as_deref().or_else(|| state.pool.image_path(i, kind)) else {
-        return StatusCode::NOT_FOUND.into_response();
+    let file = match textless {
+        Some(path) => tokio::fs::read(&path).await.ok().map(|bytes| (path, bytes)),
+        None => title_image(&state.pool, state.images.as_ref(), i, kind).await,
     };
-    let content_type = match path.extension().and_then(|e| e.to_str()) {
-        Some("png") => "image/png",
-        Some("jpg" | "jpeg") => "image/jpeg",
-        Some("webp") => "image/webp",
-        _ => return StatusCode::NOT_FOUND.into_response(),
-    };
-    match tokio::fs::read(path).await {
-        Ok(bytes) => {
-            ([(header::CONTENT_TYPE, content_type), (header::CACHE_CONTROL, "no-store")], bytes)
-                .into_response()
+    match file.and_then(|(path, bytes)| Some((content_type(&path, &bytes)?, bytes))) {
+        Some((content_type, bytes)) => {
+            ([(header::CONTENT_TYPE, content_type), (header::CACHE_CONTROL, "no-store")], bytes).into_response()
         }
-        Err(_) => StatusCode::NOT_FOUND.into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
     }
 }
 
@@ -195,3 +191,7 @@ async fn static_handler(uri: Uri) -> Response {
 #[cfg(test)]
 #[path = "server_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "server_image_tests.rs"]
+mod image_tests;

@@ -3,9 +3,11 @@
 //! answers first, and what this device fetched fills the gaps. The store
 //! itself is [`crate::shows::sidecar`].
 
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::PathBuf;
 
 use mediagram_tmdb::details::TitleDetailsRow;
+use rusqlite::types::ValueRef;
 use rusqlite::{Connection, OpenFlags};
 
 use crate::dto::TitleInfo;
@@ -62,6 +64,38 @@ fn read_logged(conn: &Connection, poster_key: &str, store: &str) -> Option<Title
 /// read-only and only once the file exists, so a lookup never creates it.
 fn fetched(core: &Core, poster_key: &str) -> Option<TitleDetailsRow> {
     read_logged(&open_fetched_ro(core)?, poster_key, "the description store")
+}
+
+/// A digest of every row and column this device fetched, so any write, a
+/// corrected row included, moves it. A store that cannot be opened counts
+/// as none (0), since the night reads neither; one that opens but cannot be
+/// read has a value of its own. Stable within one build, which is all its
+/// readers need.
+pub(in crate::api) fn digest(core: &Core) -> u64 {
+    let Some(conn) = open_fetched_ro(core) else { return 0 };
+    let mut hasher = DefaultHasher::new();
+    let read = (|| -> rusqlite::Result<()> {
+        let mut stmt = conn.prepare("SELECT * FROM shows ORDER BY source, kind, id")?;
+        let columns = stmt.column_count();
+        let mut rows = stmt.query([])?;
+        while let Some(row) = rows.next()? {
+            for i in 0..columns {
+                match row.get_ref(i)? {
+                    ValueRef::Null => 0u8.hash(&mut hasher),
+                    ValueRef::Integer(n) => (1u8, n).hash(&mut hasher),
+                    ValueRef::Real(x) => (2u8, x.to_bits()).hash(&mut hasher),
+                    ValueRef::Text(t) => (3u8, t).hash(&mut hasher),
+                    ValueRef::Blob(b) => (4u8, b).hash(&mut hasher),
+                }
+            }
+        }
+        Ok(())
+    })();
+    if let Err(err) = read {
+        tracing::warn!(error = %err, "the description store could not be digested");
+        return u64::MAX;
+    }
+    hasher.finish()
 }
 
 /// This device's fetched-description sidecar, opened read-only — or `None`

@@ -20,6 +20,7 @@ android/captures/
 android/.cxx/
 android/**/jniLibs/
 android/app/src/main/assets/game-avatars/
+android/spieltisch/src/main/assets/game-avatars/
 *.apk
 *.aab
 *.jks

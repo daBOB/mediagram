@@ -4,19 +4,19 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+
+/** The application class of an app that updates itself: the receiver below reaches its updater through it. */
+interface UpdaterHost {
+    val updater: AppUpdater
+}
 
 /** Where PackageInstaller reports how a self-update ended. */
-@AndroidEntryPoint
 class InstallResultReceiver : BroadcastReceiver() {
-    @Inject
-    lateinit var updater: AppUpdater
-
     override fun onReceive(
         context: Context,
         intent: Intent,
     ) {
+        val updater = (context.applicationContext as? UpdaterHost)?.updater ?: return
         @Suppress("DEPRECATION")
         val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
         updater.onInstallResult(

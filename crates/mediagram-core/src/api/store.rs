@@ -150,6 +150,7 @@ pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
         posters: count_posters(&dir, &artwork_dir(core)),
         schema: mlib_spec::schema::SCHEMA_VERSION as u32,
         published_at,
+        described: crate::api::enrich::details::digest(core),
     }
 }
 

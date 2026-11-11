@@ -12,15 +12,12 @@ import model.Kind
 import model.MediaSet
 import model.Person
 import model.PersonHit
-import model.SubtitleTrackInfo
 import model.TitleCredits
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.CreditRecord
 import uniffi.mediagram_core.PeopleHitRecord
 import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.SearchHit
-import uniffi.mediagram_core.SetSummary
-import uniffi.mediagram_core.SubtitleTrack
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -148,7 +145,7 @@ class DefaultCatalogRepository(
     // already made, not one more per set.
     override suspend fun sets(): List<MediaSet> {
         val core = coreProvider.awaitCore()
-        return withContext(dispatcher) { core.listSets().map(::toMediaSet) }
+        return withContext(dispatcher) { core.listSets().map { it.toMediaSet() } }
     }
 
     override suspend fun search(query: String): List<SearchHit> = coreProvider.awaitCore().search(query)
@@ -167,70 +164,9 @@ class DefaultCatalogRepository(
     override suspend fun mediaSet(setId: String): MediaSet? = withContext(dispatcher) {
         val startedAt = System.nanoTime()
         val core = coreProvider.awaitCore()
-        val found = core.mediaSet(setId)?.let(::toMediaSet)
+        val found = core.mediaSet(setId)?.toMediaSet()
         Log.d(TAG, "mediaSet($setId): ${(System.nanoTime() - startedAt) / 1_000_000}ms")
         found
-    }
-
-    /**
-     * One index row, as a set the shelves can place.
-     *
-     * A kind this does not recognise is shelved with the films rather than
-     * dropped. A viewer who notices something in the wrong place can act on
-     * it; a title that silently vanishes looks like a failed upload, and the
-     * library holds four kinds today against a parser that may learn a
-     * fifth before this app is rebuilt.
-     */
-    private fun toMediaSet(summary: SetSummary): MediaSet {
-        val kind =
-            when (summary.kind) {
-                "ep" -> Kind.EPISODE
-                "tut" -> Kind.TUTORIAL
-                "doc" -> Kind.DOCUMENT
-                "docu" -> Kind.DOCUMENTARY
-                else -> Kind.MOVIE
-            }
-        return MediaSet(
-            setId = summary.setId,
-            kind = kind,
-            title = summary.title ?: summary.show ?: summary.setId,
-            rawTitle = summary.title,
-            show = summary.show,
-            chapter = summary.chap,
-            path = summary.path,
-            season = summary.season?.toInt(),
-            episodeFirst = summary.episodeFirst?.toInt(),
-            episodeLast = summary.episodeLast?.toInt(),
-            year = summary.year?.toInt(),
-            durationSecs = summary.duration?.toInt(),
-            posterPath = summary.posterPath,
-            totalBytes = summary.total.toLong(),
-            container = summary.container,
-            vcodec = summary.vcodec,
-            acodec = summary.acodec,
-            quality = summary.quality,
-            hdr = summary.hdr,
-            partCount = summary.partCount.toInt(),
-            posterKey = summary.posterKey,
-            addedAt = summary.addedAt,
-            fsk = summary.fsk,
-            genres = summary.genres,
-            subtitles = summary.subtitles.map { it.toSubtitleTrackInfo() },
-            alang = summary.alang,
-            slang = summary.slang,
-            hasSummary = summary.hasSummary,
-            backdropPath = summary.backdropPath,
-            seasonPosterPath = summary.seasonPosterPath,
-            tagline = summary.tagline,
-            rating = summary.rating,
-            popularity = summary.popularity,
-            collectionId = summary.collectionId?.toLong(),
-            collectionName = summary.collectionName,
-            seriesType = summary.seriesType,
-            showStatus = summary.showStatus,
-            anime = summary.anime,
-            category = summary.category,
-        )
     }
 
     // Every portrait below rides in already resolved — the core attaches it
@@ -255,9 +191,6 @@ class DefaultCatalogRepository(
     override suspend fun fetchPortrait(personId: Long): String? = coreProvider.awaitCore().fetchPortrait(personId.toULong())
 
     override suspend fun holdCourseSubtitles(setId: String) = coreProvider.awaitCore().holdCourseSubtitles(setId)
-
-    private fun SubtitleTrack.toSubtitleTrackInfo(): SubtitleTrackInfo =
-        SubtitleTrackInfo(track.toInt(), lang, forced, sdh, label)
 
     private fun CreditRecord.toCredit(): Credit = Credit(personId.toLong(), name, role, portraitPath)
 
