@@ -26,18 +26,28 @@ Installed with `waydroid shell -- pm install -r` (no adb on funstation; Android'
 | Spieltisch frames during a round (gfxinfo) | 17 frames (the page redraws only on each sharpness step); p50 6 ms, p90 23 ms; 4 slow ones are "slow issue draw commands" (poster changes); no slow UI thread, no missed vsync |
 | ARM-only Spieltisch under translation | runs: JNA and the Rust host load and serve |
 
+## Second run: phones on the LAN (09:21)
+
+The funstation session put WayDroid on the home network (bridge `br0`; Android at 192.168.0.44, the host keeps .43) and re-pointed the media app's LAN cache address to .43.
+
+| Check | Result |
+|---|---|
+| Night address | mDNS and the QR now carry `http://192.168.0.44:8080/`; the dev machine reaches it over the LAN (200), no tunnel |
+| Kopfnuss, two phones | Anna over the LAN, Testa through a tunnel (a second origin, since the browser tool has one localStorage per origin); started from the remote, played to round 3 with points. `funstation-kopfnuss-*.png` |
+| Frames over about a minute of Kopfnuss (gfxinfo) | 2,421 frames, 0.37 % janky, p50 5 ms, p90 15 ms, p99 36 ms, 1 missed vsync, 0 slow UI thread (last Kopfnuss box run: 2.5 % slow, p99 36 ms) |
+| Leaving | Back ×3: game → lobby → shelf → out; host closed |
+
 ## Not done here
 
 - Kids profile switch: "TV kids" (FSK 12) exists, but switching back out may need a grown-up's PIN; not risked on someone else's box. The lock's "on" path stays covered by tests.
 - Frame times during a Spieltisch download: needs a real `#spieltisch-app` publish (user's go).
-- Kopfnuss with two phones; the Mali box run (phase 5 proper).
+- The Mali box run (phase 5 proper).
 
 ## Found
 
-1. **Phones can't join a night on funstation.** The night advertises and shows WayDroid's bridge address, `192.168.240.112:8080`; the LAN has no route to it (curl from the dev machine fails, from the funstation host gives 200). The same held for the old in-app night (same host code), so this branch did not cause it. Fixing it is funstation setup: forward 8080 from the funstation's LAN address into WayDroid and make the QR/URL carry the LAN address (Android inside WayDroid does not know it), or give WayDroid a LAN address of its own. The test played through an SSH tunnel.
+1. **Phones couldn't join a night on funstation (fixed in funstation's setup, 09:17).** The night showed WayDroid's NAT address, `192.168.240.112:8080`, which the LAN had no route to. Not from this branch: the old in-app night had it too. The funstation session bridged WayDroid onto the LAN; see the second run.
 2. **Funstation's media app lost feat/funstation's keyless artwork.** This branch predates that merge. Artwork still works because the stored TMDB key was kept. Goes away when this branch takes main.
 
 ## Unresolved
 
-- Who fixes the join address on funstation (its setup script belongs to the funstation work), and which of the two ways.
 - Whether Spieltisch's release should also ship x86_64 for funstations (it runs translated today; the media app on funstation is a benchmark build with all ABIs).

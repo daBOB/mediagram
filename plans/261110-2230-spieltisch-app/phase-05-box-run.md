@@ -40,8 +40,8 @@
 The user asked for a run on funstation (WayDroid Android TV 16, x86_64); details in [reports/tester-261111-0901-spieltisch-on-funstation-report.md](reports/tester-261111-0901-spieltisch-on-funstation-report.md).
 
 - Works there: the Games row opens Spieltisch; the night from a cold media app (about 1 s); the update check through the media app; Poster-Raten with library posters (the image path, unseen on the emulator); library titles on the phone; Back from the game to the lobby, the shelf, then the media app; the night ends on leaving. The ARM-only release runs under translation.
-- Not covered there: the kids profile switch (switching back may need a PIN); a download during a night (needs a publish); Kopfnuss with two phones.
-- Found: phones on the LAN can't reach a night on funstation (it shows WayDroid's bridge address). This is not from this branch, but funstation's setup must fix it before a real night there.
+- Not covered there: the kids profile switch (switching back may need a PIN); a download during a night (needs a publish).
+- Phones on the LAN couldn't reach a night there at first (WayDroid's NAT address, not from this branch). The funstation session bridged WayDroid onto the LAN; after that, Kopfnuss with two phones ran with 0.37 % janky frames, p99 36 ms.
 - The box steps above all still stand: the box is a different device (Mali, armv7), and frame times there are the ones that count.
 
 ## Success criteria

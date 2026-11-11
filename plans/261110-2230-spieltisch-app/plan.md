@@ -34,7 +34,7 @@ carry their own tag (`#spieltisch-app`), which media apps ignore.
 | 2 | [The media app answers Spieltisch](phase-02-media-app-provider.md): night, titles, images, kids lock | done: `/night` from a fingerprinted snapshot, ~1 s from a cold media app |
 | 3 | [Releases and updates per app](phase-03-releases-and-updates.md): own release tag, publish, Spieltisch updates itself | done, except the channel dry run: a real publish waits for the user's go |
 | 4 | [The media app lets go](phase-04-media-app-lets-go.md): Games row opens Spieltisch, game code and assets leave | done: the Games row opens Spieltisch; the media app's APK 64.3 → 34.8 MB |
-| 5 | [Box run](phase-05-box-run.md): both apps on the TV box, a night, an update | pending: needs the games session's test night to be over, and the user's go to install on the box. Run on funstation first (2026-11-11): handoff, night, posters and Back work there |
+| 5 | [Box run](phase-05-box-run.md): both apps on the TV box, a night, an update | pending: needs the games session's test night to be over, and the user's go to install on the box. Run on funstation first (2026-11-11): handoff, night, posters, Back, and Kopfnuss with two phones on the LAN work there |
 
 The order matters. Until phase 4, the media app keeps its own games, so main stays
 shippable at every step. Phase 5 needs the box. Coordinate with the session that owns
@@ -57,5 +57,4 @@ shippable at every step. Phase 5 needs the box. Coordinate with the session that
 ## Unresolved
 
 - Main is 0.175.0 since feat/funstation merged (2026-11-11, `d50edee9`). This branch takes the media line's next number, 0.176.0, when it merges, and Spieltisch's line moves with it or stays (Spieltisch has never been released). On the merge, `crates/mediagram-core/src/api/game_night_tests.rs` (changed on main, deleted here) stays deleted; its port-wait fix is already in `spieltisch-core`'s `night_tests.rs`.
-- Phones can't join a night on funstation (WayDroid's bridge address); see phase 5.
 - `feat/fluechtig-ferry` (spieltisch-ff, from main) is a Flüchtig-only change, but it bumps the media manifests to 0.175.0 under main's old one-number rule. Whichever branch reaches main second moves that bump onto the Spieltisch line, at the next free number. No file overlap otherwise (it doesn't touch host.rs, server.rs, catalogue.rs or lib.rs).
