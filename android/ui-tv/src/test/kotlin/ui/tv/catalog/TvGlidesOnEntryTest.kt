@@ -134,7 +134,7 @@ class TvGlidesOnEntryTest : TvScreenStateTest() {
     }
 
     private fun showUnderTheBar(page: @Composable () -> Unit) {
-        val padding = TvPagePadding(TvContentGutter, TvDepartmentsBarHeight + Overscan.vertical, TvContentGutter, Overscan.vertical)
+        val padding = TvPagePadding(TvContentGutter, TvDepartmentsBarHeight, TvContentGutter, Overscan.vertical)
         show {
             val bar = remember { FocusRequester() }
             val content = remember { FocusRequester() }

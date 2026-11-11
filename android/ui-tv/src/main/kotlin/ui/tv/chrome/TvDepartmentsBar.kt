@@ -15,7 +15,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.tv.material3.MaterialTheme
 import com.mediagram.android.core.designsystem.R
-import designsystem.Overscan
 import designsystem.tvDp
 import dev.chrisbanes.haze.HazeState
 import ui.common.chrome.frostBlurStyle
@@ -92,11 +91,11 @@ internal fun TvDepartmentsBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(TvDepartmentsBarHeight + Overscan.vertical)
+                .height(TvDepartmentsBarHeight)
                 .frostedBackdrop(frost, TvFrostStyle)
                 .background(color = barBackground(blend, frosted = frost != null))
                 .frostHairline(MaterialTheme.colorScheme.onBackground, blend, frost)
-                .padding(top = Overscan.vertical, start = TvContentGutter - PillRingRoom, end = TvContentGutter),
+                .padding(start = TvContentGutter - PillRingRoom, end = TvContentGutter),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Filling, so search and the avatar stand at the bar's far end, as the

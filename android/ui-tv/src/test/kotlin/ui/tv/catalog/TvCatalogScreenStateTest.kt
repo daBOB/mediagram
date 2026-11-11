@@ -26,7 +26,6 @@ import catalog.factsLine
 import catalog.resumeLine
 import catalog.shelvesOf
 import designsystem.COUNTDOWN_LEADER_TEST_TAG
-import designsystem.Overscan
 import designsystem.TvStyle
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -202,7 +201,7 @@ class TvCatalogScreenStateTest {
     @Test
     fun theFetchLineAndItsBarSitBelowTheTopBar() {
         show(ready(films(1)), fetching = true, fetchProgress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL))
-        val barFoot = TvDepartmentsBarHeight + Overscan.vertical
+        val barFoot = TvDepartmentsBarHeight
         val line = compose.onNodeWithText("Downloading artwork · 300 of 900 · about 2 min left").getBoundsInRoot()
         val rule = compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).getBoundsInRoot()
         assertTrue(line.top >= barFoot, "line top ${line.top} is under the bar, which ends at $barFoot")

@@ -12,7 +12,6 @@ import catalog.Shelf
 import catalog.heroArtOf
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
-import designsystem.Overscan
 import model.MediaSet
 import model.WatchSnapshot
 import ui.common.catalog.DepartmentScrollStates
@@ -52,7 +51,7 @@ internal fun rememberTvCatalogBlend(
             !soldOut && department != null && heroArtOf(department, shelves, byId, watch ?: WatchSnapshot.Empty) != null
         }
     val density = LocalDensity.current
-    val barHeightPx = remember(density) { with(density) { (TvDepartmentsBarHeight + Overscan.vertical).toPx() } }
+    val barHeightPx = remember(density) { with(density) { TvDepartmentsBarHeight.toPx() } }
     val deptHeroHeightPx = remember(density) { with(density) { TvDepartmentHeroHeight.toPx() } }
     val blend by remember(selected, homeHasCover, hasHeroArt) {
         derivedStateOf {

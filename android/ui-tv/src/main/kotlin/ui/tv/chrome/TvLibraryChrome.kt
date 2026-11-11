@@ -53,7 +53,11 @@ internal val LocalTvMenu = compositionLocalOf<TvMenuSlot?> { null }
 /** Over the page while the menu is open: the page stays, set back behind it. */
 private val MenuScrim = Color.Black.copy(alpha = 0.55f)
 
-/** The bar's own row height, before its top inset: the web's `--masthead-height` (`theme.css:114`). */
+/**
+ * The bar's height: the web's `--masthead-height` (`theme.css:114`). It has no top overscan inset:
+ * the TVs it runs on show the whole picture, and an extra 27dp band made the bar
+ * a sixth of the screen.
+ */
 internal val TvDepartmentsBarHeight = 76.tvDp
 
 /** The page's and the bar's side gutter, off the collapsed rail's edge at the start and off the screen's at the end: the web's `--gutter`, 3.2vw at 1280px (`theme.css:112`), the same on both sides as the web's `main` and `.masthead`. */
@@ -162,7 +166,7 @@ internal fun TvLibraryChrome(
     // scrolling up into it are blurred behind the bar's frost.
     val padding =
         remember(hasRail) {
-            val top = TvDepartmentsBarHeight + Overscan.vertical
+            val top = TvDepartmentsBarHeight
             // With no rail to stand off, the page keeps the screen's own overscan on both sides.
             if (hasRail) {
                 TvPagePadding(start = TvContentGutter, top = top, end = TvContentGutter, bottom = Overscan.vertical)

@@ -49,9 +49,9 @@ internal fun TvCentredTabBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(TvDepartmentsBarHeight + Overscan.vertical)
+                .height(TvDepartmentsBarHeight)
                 .background(barBackground(blend))
-                .padding(top = Overscan.vertical, start = Overscan.horizontal, end = Overscan.horizontal),
+                .padding(start = Overscan.horizontal, end = Overscan.horizontal),
         contentAlignment = Alignment.Center,
     ) {
         Row(
