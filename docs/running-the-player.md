@@ -675,7 +675,9 @@ the routes, not of the proxy, and it holds however the player is exposed.
 `mediagram_cache` (`crates/mediagram-cache`) is a separate, optional process
 on the same home box: a dumb LAN chunk store Android devices read and write
 so a chunk fetched from Telegram once is not fetched again by the next
-device. It has no Telegram session and no index of its own. The player above
+device. It keeps TMDB answers and artwork the same way (see
+[TMDB answers and artwork](#tmdb-answers-and-artwork)). It has no Telegram
+session, no TMDB key and no index of its own. The player above
 reads and fills it too when `MEDIAGRAM_CACHE_SERVER` points at it, so a chunk
 either one fetched serves both; still, the two run independently and neither
 depends on the other being up.
@@ -786,6 +788,59 @@ Rust (`the_shared_test_vector_signs_to_the_published_signature` and
 `the_shared_test_vector_verifies`); an Android-side test asserting them too
 is how the two implementations are checked against each other rather than
 against themselves.
+
+### TMDB answers and artwork
+
+The same server keeps what players fetched from TMDB, so the TV app, the
+web player's `mediagram posters` and every other device ask TMDB once per
+answer and once per image. A player looks in its own disk cache first, then
+here, then at TMDB itself, and only that last step needs a TMDB key: a
+device without one still gets every answer and image some other player
+fetched. The key never reaches this server, a stored answer or a server key.
+
+```
+GET|HEAD|PUT /v1/tmdb/{key}         key:  64 lowercase hex, the SHA-256 of the TMDB
+                                          request; its language counts as its primary
+                                          subtag, so de-DE and de share one entry
+GET|HEAD|PUT /v1/art/{size}/{name}  size: w or h and 2-4 digits (w342, h632), or original
+                                    name: [A-Za-z0-9_-]{1,64}.(jpg|png|svg), the file
+                                          name of the TMDB image path
+```
+
+Reads are open. A PUT is signed like a chunk PUT, with the body's own
+length as `{len}` (there is no `X-Set-Total`); unsigned is a 401, a name of
+any other shape a 404 before anything else is checked. An answer PUT
+replaces the stored one (201 new, 200 replaced); an image is write-once
+(201 stored, 200 already held), so two devices uploading the same poster
+both succeed and nobody is ever served half a file. A JSON body over 2 MiB,
+an image over 16 MiB, or anything bigger than the whole budget is a 413.
+
+These blobs have their own budget, `MEDIAGRAM_CACHE_BLOB_BUDGET` (bytes,
+default 8 GiB = `8589934592`), separate from the chunks'
+`MEDIAGRAM_CACHE_BUDGET`: evicting chunks never removes a blob, and the
+reverse. `GET /v1/status` reports both, `blob_bytes` and
+`blob_budget_bytes` beside `held_bytes` and `budget_bytes`.
+
+The blob vector, asserted in `crates/mlib-spec/src/lan_signature_tests.rs`
+(`blob_vector_signs_with_the_body_length`) beside the chunk one above:
+
+```
+token:     00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff
+method:    PUT
+path:      /v1/art/w342/abc.jpg
+len:       5
+body:      "hello"                 (5 ASCII bytes)
+
+signature: e1919b6ff65a768f6d2bc1b80f88296901cbb04fe0a0f74736e2ff0e8b7cdf65
+```
+
+`mediagram posters` reads and fills the server named by `cache_server` and
+`cache_server_token` in `~/.config/mediagram/config.toml`;
+`scripts/setup-funstation.sh` writes both, pointing at the funstation's own
+server, even when no TMDB key was given. The Android app uses the server it
+found for chunks, with the same token; with no TMDB key stored, its Library
+update card says "Artwork comes from the home cache server.", and turning
+the LAN cache switch off stops that too.
 
 ### Finding it: mDNS, with an avahi fallback
 

@@ -90,24 +90,30 @@ if ! sudo grep -q '^MEDIAGRAM_SESSION=.' "$PLAYER_ENV" 2>/dev/null && [ ! -e ~/.
     sudo install -m 600 /dev/stdin "$PLAYER_ENV"
   sudo grep -q '^MEDIAGRAM_SESSION=.' "$PLAYER_ENV" || { echo "sign-in did not produce a session" >&2; exit 1; }
 fi
-# Cover art: `mediagram posters` needs a TMDB key, and its config wants the Telegram app
-# and channel too even though posters never use them. Asked once; empty means no art.
+# Cover art: `mediagram posters` reads it from the cache server below and, with a TMDB key,
+# fetches what the server lacks. Its config wants the Telegram app and channel too even
+# though posters never use them. The key is asked once; empty means art only from the server.
 POSTERS_CONFIG=~/.config/mediagram/config.toml
 if [ ! -f "$POSTERS_CONFIG" ]; then
   read -r -p "TMDB v3 key or v4 token for cover art (Enter to skip): " tmdb_key </dev/tty
-  if [ -n "$tmdb_key" ]; then
-    install -d -m 700 ~/.config/mediagram
-    sudo sed -n -E 's/^MEDIAGRAM_API_ID=(.*)/api_id = \1/p; s/^MEDIAGRAM_API_HASH=(.*)/api_hash = "\1"/p; s/^MEDIAGRAM_CHAT_ID=(.*)/channel = "\1"/p' "$PLAYER_ENV" |
-      install -m 600 /dev/stdin "$POSTERS_CONFIG"
-    echo "tmdb_key = \"$tmdb_key\"" >>"$POSTERS_CONFIG"
-  fi
+  install -d -m 700 ~/.config/mediagram
+  sudo sed -n -E 's/^MEDIAGRAM_API_ID=(.*)/api_id = \1/p; s/^MEDIAGRAM_API_HASH=(.*)/api_hash = "\1"/p; s/^MEDIAGRAM_CHAT_ID=(.*)/channel = "\1"/p' "$PLAYER_ENV" |
+    install -m 600 /dev/stdin "$POSTERS_CONFIG"
+  [ -z "$tmdb_key" ] || echo "tmdb_key = \"$tmdb_key\"" >>"$POSTERS_CONFIG"
 fi
 # The player reads and fills the same cache server as the Android app; the token lets it write.
 for _ in $(seq 1 20); do sudo test -s /var/lib/mediagram-cache/token && break; sleep 0.5; done
+CACHE_TOKEN=$(sudo cat /var/lib/mediagram-cache/token)
 {
   echo "MEDIAGRAM_CACHE_SERVER=http://127.0.0.1:7788"
-  echo "MEDIAGRAM_CACHE_SERVER_TOKEN=$(sudo cat /var/lib/mediagram-cache/token)"
+  echo "MEDIAGRAM_CACHE_SERVER_TOKEN=$CACHE_TOKEN"
 } | sudo install -m 600 /dev/stdin /etc/mediagram-cache-client.env
+# Posters too, so art one player fetched is every player's. Added only when missing:
+# a second copy of a key would make the whole file unreadable TOML.
+grep -Eq '^cache_server[[:space:]]*=' "$POSTERS_CONFIG" ||
+  echo 'cache_server = "http://127.0.0.1:7788"' >>"$POSTERS_CONFIG"
+grep -Eq '^cache_server_token[[:space:]]*=' "$POSTERS_CONFIG" ||
+  echo "cache_server_token = \"$CACHE_TOKEN\"" >>"$POSTERS_CONFIG"
 sudo tee /etc/systemd/system/mediagram-player.service >/dev/null <<EOF
 [Unit]
 Description=mediagram web player
