@@ -127,7 +127,7 @@ internal fun TvLibraryRail(
                 }
                 .focusGroup()
                 .verticalScroll(rememberScrollState())
-                // Top and bottom on the screen's vertical overscan, the bar's own top line, not the web's 26 / 28.
+                // Top and bottom on the screen's vertical overscan, not the web's 26 / 28.
                 .padding(start = RailSide, end = RailSide, top = Overscan.vertical, bottom = Overscan.vertical),
     ) {
         // Laid out either way, and only hidden while collapsed, so the rows land at the same height.

@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import designsystem.Overscan
 import designsystem.Spacing
 import ui.tv.chrome.TvDepartmentsBarHeight
 
@@ -20,7 +19,7 @@ import ui.tv.chrome.TvDepartmentsBarHeight
  * the focused one's own top behind the bar the same way an un-cleared cover
  * once did.
  */
-internal val TvBarClearance = TvDepartmentsBarHeight + Overscan.vertical + Spacing.medium
+internal val TvBarClearance = TvDepartmentsBarHeight + Spacing.medium
 
 /**
  * Pretends the scrollable's own leading edge sits [clearancePx] further in

@@ -1,0 +1,1 @@
+- [Robolectric misses TV bring-into-view](robolectric-misses-tv-bring-into-view.md) — no leanback pivot rule in tests; compute TV scroll landings by hand; tiny fixtures hide focus steals

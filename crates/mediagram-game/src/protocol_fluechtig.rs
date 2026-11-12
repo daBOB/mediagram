@@ -32,12 +32,16 @@ pub struct FluechtigScene {
     pub route: Option<Vec<u8>>,
 }
 
-/// The city: `spots[field - 1]` on a 960×540 plan, and its links.
+/// The city on a plan `width` by `height`: `spots[field - 1]`, its links, and
+/// the middle of its river from west to east, past both edges of the plan.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct FluechtigBoard {
+    pub width: i16,
+    pub height: i16,
     pub spots: Vec<FluechtigSpot>,
     pub links: Vec<FluechtigLink>,
+    pub river: Vec<FluechtigSpot>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
@@ -52,7 +56,7 @@ pub struct FluechtigSpot {
 pub struct FluechtigLink {
     pub a: u8,
     pub b: u8,
-    /// Never `schatten`: that ticket rides any link.
+    /// `schatten` is the ferry: the shadow ride rides any link, and only it this one.
     pub kind: FluechtigTicket,
 }
 

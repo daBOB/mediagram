@@ -3,6 +3,6 @@ import type { FluechtigTicket } from "./FluechtigTicket";
 
 export type FluechtigLink = { a: number, b: number, 
 /**
- * Never `schatten`: that ticket rides any link.
+ * `schatten` is the ferry: the shadow ride rides any link, and only it this one.
  */
 kind: FluechtigTicket, };

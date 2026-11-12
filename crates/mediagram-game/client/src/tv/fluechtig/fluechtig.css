@@ -1,4 +1,4 @@
-/* Flüchtig on the TV: the plan edge to edge, the panels on felt pills over it. */
+/* Flüchtig on the TV: the city plan edge to edge, the panels on felt pills over it. */
 
 .fl {
   /* the plan's line colours; the phones take theirs from ui/fluechtig-tickets.ts */
@@ -6,9 +6,10 @@
   --bus: #0f766e;
   --ubahn: #6d28d9;
   --schatten: #1f2937;
+  --river: #a9cfe4;
   position: fixed;
   inset: 0;
-  background: var(--card);
+  background: #f3ecdc;
   color: var(--card);
 }
 
@@ -18,25 +19,51 @@
   height: 100%;
 }
 
-/* ---- the plan */
+/* ---- the plan: a daylight city map. `--u` is the plan's unit, 1 in the big city. */
 
-.fl-river { fill: none; stroke: #c9dfeb; stroke-width: 34; stroke-linecap: round; }
-.fl-link { fill: none; }
-.fl-link-taxi { stroke: var(--taxi); stroke-width: 2; }
-.fl-link-bus { stroke: var(--bus); stroke-width: 4; opacity: 0.75; }
-.fl-link-ubahn { stroke: var(--ubahn); stroke-width: 5; stroke-dasharray: 11 6; opacity: 0.8; }
-.fl-field { fill: #fff; stroke: var(--taxi); stroke-width: 1.5; }
-.fl-field-bus { stroke: var(--bus); stroke-width: 3; }
-.fl-field-ubahn { stroke: var(--ubahn); stroke-width: 4; }
+.sp-block, .sp-yard, .sp-park { stroke-linejoin: round; stroke-width: calc(3px * var(--u)); }
+.sp-tone-0 { fill: #e6dcc6; stroke: #e6dcc6; }
+.sp-tone-1 { fill: #eadfcf; stroke: #eadfcf; }
+.sp-tone-2 { fill: #e2d9c8; stroke: #e2d9c8; }
+.sp-tone-3 { fill: #ece3d0; stroke: #ece3d0; }
+.sp-yard { fill: #efe7d6; stroke: #efe7d6; }
+.sp-park { fill: #bfd9a8; stroke: #bfd9a8; }
+.sp-tree { fill: #8fbb7a; }
+.sp-bank, .sp-water, .sp-ferry, .sp-jetty, .sp-casing, .sp-street, .sp-ubahn, .sp-bus, .sp-sign { fill: none; stroke-linecap: round; }
+.sp-bank { stroke: #8dbbd6; stroke-width: calc(34px * var(--u)); }
+.sp-water { stroke: var(--river); stroke-width: calc(30px * var(--u)); }
+/* the ferry, in the shadow ride's colour: the only ticket that boards it */
+.sp-ferry, .sp-jetty { stroke: var(--schatten); stroke-width: calc(3px * var(--u)); opacity: 0.85; }
+.sp-ferry { stroke-dasharray: 9 6; }
+/* the name sits on the lane, on a patch of river */
+.sp-ferry-name { font: 800 calc(11px * var(--u)) var(--body); text-anchor: middle; letter-spacing: 0.04em; fill: var(--schatten); stroke: var(--river); stroke-width: calc(6px * var(--u)); paint-order: stroke; }
+.sp-sign { stroke: #b3a688; stroke-width: 1.6; stroke-linejoin: round; }
+.sp-casing { stroke: #cbbfa5; stroke-width: calc(7.6px * var(--u)); }
+.sp-street { stroke: #fffdf8; stroke-width: calc(5.2px * var(--u)); }
+.sp-name { font: 800 calc(14px * var(--u)) var(--display); letter-spacing: calc(3.5px * var(--u)); text-anchor: middle; fill: #6f6552; stroke: #e6dcc6; stroke-width: calc(4px * var(--u)); paint-order: stroke; opacity: 0.85; }
+.sp-ubahn { stroke: var(--ubahn); stroke-width: calc(4.5px * var(--u)); stroke-dasharray: 11 6; opacity: 0.8; }
+.sp-bus { stroke: var(--bus); stroke-width: calc(3.4px * var(--u)); opacity: 0.85; }
+
+.fl-field { fill: #fff; stroke: var(--taxi); stroke-width: 1.4; }
+.fl-field-bus { stroke: var(--bus); stroke-width: 2.8; }
+.fl-field-ubahn { stroke: var(--ubahn); stroke-width: 3.6; }
+.fl-field-schatten { stroke: var(--schatten); stroke-width: 2.8; }
 .fl-target { fill: #fff1d6; stroke: var(--mover); stroke-width: 4; }
-.fl-hideout { fill: none; stroke: var(--orange); stroke-width: 2.5; stroke-dasharray: 4 3; }
-.fl-num { font: 700 12px var(--body); text-anchor: middle; fill: var(--ink); }
-.fl-seen { font: 800 12px var(--body); text-anchor: middle; fill: var(--orange-edge); }
+.fl-hideout { fill: none; stroke: var(--orange); stroke-width: 2.4; stroke-dasharray: 4 3; }
+.fl-num { font-family: var(--body); font-weight: 800; text-anchor: middle; fill: var(--ink); }
 .fl-route { fill: none; stroke: #111; stroke-width: 4; stroke-dasharray: 2 7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* a piece: its player's avatar figure on a base in their colour */
 .fl-pawn { transition: transform 600ms ease; }
-.fl-pawn circle { stroke: #fff; stroke-width: 2; }
-.fl-pawn text { font: 800 12px var(--body); text-anchor: middle; fill: #fff; }
-.fl-runner circle { fill: #111; }
+.fl-pawn-base, .fl-pawn-head { stroke: #fff; stroke-width: 1.4; }
+.fl-pawn-now .fl-pawn-base { stroke: var(--yellow); stroke-width: 3.5; }
+.fl-pawn-initial, .fl-badge-text { font-family: var(--body); font-weight: 800; text-anchor: middle; }
+.fl-pawn-initial { fill: var(--ink); }
+.fl-badge { fill: var(--ink); stroke: #fff; stroke-width: 1.2; }
+.fl-badge-text { fill: #fff; }
+/* where the fugitive was last seen: their figure, faded, with the round */
+.fl-pawn-seen { opacity: 0.6; }
+.fl-pawn-seen .fl-badge { fill: var(--orange-edge); }
 
 /* ---- the panels over the plan */
 
@@ -71,27 +98,15 @@
 .fl-tr { right: 14px; top: 12px; padding: 4px 14px; display: flex; gap: 10px; align-items: center; font-size: 12px; line-height: 1.15; color: var(--muted); }
 .fl-tr b { font: 800 30px var(--display); color: var(--yellow); }
 
-.fl-dot {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  color: #fff;
-  font: 800 13px var(--body);
-  background: rgba(0, 0, 0, 0.18);
-}
-
-.fl-bl { left: 14px; bottom: 12px; max-width: 600px; padding: 6px 12px 7px; }
+.fl-bl { left: 14px; bottom: 12px; max-width: 700px; padding: 6px 12px 7px; }
 .fl-news { margin: 0 0 5px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fl-trail { display: flex; gap: 8px; align-items: center; }
 .fl-rounds { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }
 
+/* `--slot`: a round's dot, smaller when the chase has many rounds */
 .fl-rounds li {
-  width: 18px;
-  height: 18px;
+  width: var(--slot, 18px);
+  height: var(--slot, 18px);
   border-radius: 50%;
   background: var(--felt-line);
   display: grid;
@@ -103,7 +118,3 @@
 .fl-rounds .fl-reveal { outline: 2px dashed var(--yellow); outline-offset: 1px; }
 .fl-rounds .fl-current { outline: 2px solid var(--card); outline-offset: 1px; }
 .fl-mini { min-width: 18px; padding: 0 3px; border-radius: 3px; color: #fff; font: 700 11px var(--body); text-align: center; }
-
-.fl-br { right: 14px; bottom: 12px; padding: 7px 10px; list-style: none; display: flex; gap: 10px; }
-.fl-br li { display: flex; gap: 4px; align-items: center; font-weight: 700; font-size: 14px; border-radius: 999px; padding-right: 6px; }
-.fl-br .fl-now { background: rgba(255, 255, 255, 0.2); }

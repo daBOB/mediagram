@@ -2,6 +2,8 @@ import { useState, type CSSProperties } from "react";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 
 export const avatarHeadUrl = (id: string) => `/avatars/${id}-head.webp`;
+/** The avatar's whole figure, standing, on a clear ground. */
+export const avatarFigureUrl = (id: string) => `/avatars/${id}-figure.webp`;
 
 /** A player's pawn: their colour with their avatar's head, or the initial without one. */
 export function Token({ player, size = "md" }: { player: PlayerInfo; size?: "sm" | "md" | "lg" }) {

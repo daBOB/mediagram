@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Flüchtig look prototype</title>
+<!--
+  PROTOTYPE, throwaway. Question: what should Flüchtig look like on the TV and on the phones?
+  Three looks, switchable with ?variant=A|B|C, the arrows in the bottom bar, or the ← → keys.
+  Data: a real round-5 scene captured from game-night-dev; the four hunter pieces are re-seated
+  over three hunters (Ben, Cem, Dana) so the colours show. Ana is the fugitive, hiding on 11.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --felt: #0f5a43; --felt-deep: #0a4433; --felt-line: #1c7258; --ink: #0c2a22;
+  --card: #fbf8f1; --card-edge: #ddd3bd; --muted: #a9cdbf;
+  --blue: #2c6bed; --blue-edge: #1b4cb3; --orange: #f2862e; --orange-edge: #b95f17;
+  --yellow: #f6c731; --yellow-edge: #b98f0d; --pink: #e5487f; --pink-edge: #a92d5a;
+  --taxi: #8b95a1; --bus: #0f766e; --ubahn: #6d28d9; --schatten: #1f2937;
+  --display: "Bricolage Grotesque", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1e1e1e; color: #eee; font-family: var(--body); padding: 24px 24px 90px; width: 1312px; }
+.v-head h1 { font: 800 30px var(--display); }
+.v-head p { color: #bbb; max-width: 1240px; margin: 6px 0 18px; font-size: 15px; line-height: 1.45; }
+.top { display: flex; gap: 24px; align-items: flex-start; }
+.notes { width: 280px; font-size: 14px; line-height: 1.45; color: #ccc; }
+.notes li { margin: 0 0 10px 18px; }
+.notes h2 { font: 800 16px var(--display); color: #eee; margin-bottom: 10px; }
+.phones { display: flex; gap: 24px; margin-top: 22px; }
+.phone { width: 292px; }
+.screen { width: 390px; height: 780px; zoom: 0.75; border-radius: 30px; overflow: hidden; background: var(--felt); color: var(--card); position: relative; }
+figcaption { text-align: center; font: 700 14px var(--body); margin-top: 8px; }
+.tvf { width: 960px; height: 540px; flex: none; background: var(--felt); border-radius: 12px; overflow: hidden; position: relative; color: var(--card); }
+.tvf.pad { padding: 19px 38px 20px; }
+.tok { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; font: 800 13px var(--body); border: 2px solid #fff; flex: none; }
+.stub { display: inline-block; border-radius: 3px; padding: 0 4px; font: 700 10px var(--body); color: #fff; }
+
+/* ---- the plan, shared by every TV and the map phones */
+.bd { display: block; width: 100%; height: 100%; }
+.bd-river { fill: none; stroke: #c9dfeb; stroke-width: 34; stroke-linecap: round; }
+.bd-link { fill: none; }
+.bd-taxi { stroke: var(--taxi); stroke-width: 2; }
+.bd-bus { stroke: var(--bus); stroke-width: 4; opacity: 0.75; }
+.bd-ubahn { stroke: var(--ubahn); stroke-width: 5; stroke-dasharray: 11 6; opacity: 0.8; }
+.bd-field { fill: #fff; stroke: var(--taxi); stroke-width: 1.5; }
+.bd-f-bus { stroke: var(--bus); stroke-width: 3; }
+.bd-f-ubahn { stroke: var(--ubahn); stroke-width: 4; }
+.bd-target { fill: #fff1d6; stroke: var(--mover); stroke-width: 4; }
+.bd-hide { fill: none; stroke: var(--orange); stroke-width: 2.5; stroke-dasharray: 4 3; }
+.bd-num { font-family: var(--body); font-weight: 700; text-anchor: middle; fill: var(--ink); }
+.bd-seen { font-family: var(--body); font-weight: 800; text-anchor: middle; fill: var(--orange-edge); }
+.bd-pawn { font-family: var(--body); font-weight: 800; text-anchor: middle; fill: #fff; }
+
+/* ---- A: as built */
+.tvA { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 210px; grid-template-rows: minmax(0, 1fr) auto; gap: 8px 16px; }
+.a-plan { background: var(--card); border-radius: 16px; padding: 6px; box-shadow: 0 7px 0 var(--card-edge); min-height: 0; }
+.a-side { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.a-side h1 { font: 800 26px var(--display); }
+.a-round { color: var(--muted); font-size: 13px; }
+.a-status { font: 800 17px var(--display); }
+.a-runner { background: var(--felt-deep); border-radius: 10px; padding: 10px; display: flex; gap: 10px; align-items: center; font-size: 11px; color: var(--muted); }
+.a-runner b, .a-hunters b { display: block; font-size: 14px; color: var(--card); }
+.a-hunters { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.a-hunters li { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--muted); }
+.a-news { margin-top: auto; background: var(--felt-deep); border-radius: 8px; padding: 8px; font-size: 11px; }
+.a-log { list-style: none; display: grid; grid-template-columns: repeat(18, 1fr); gap: 5px; }
+.a-log li { height: 40px; background: var(--felt-line); border-radius: 5px; font: 700 10px var(--body); text-align: center; padding-top: 3px; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.a-log li.rev { outline: 2px dashed var(--yellow); outline-offset: -2px; }
+.a-log li.now { background: #3f8c73; color: var(--card); }
+.a-log b { color: var(--yellow); font-size: 11px; }
+.sh { padding: 24px 20px; display: flex; flex-direction: column; gap: 16px; }
+.sh-head { display: flex; justify-content: space-between; gap: 12px; }
+.sh-big { font: 800 34px var(--display); line-height: 1.05; }
+.sh-big small { display: block; font: 800 17px var(--display); color: var(--muted); margin-top: 4px; }
+.sh-lines { text-align: right; font-size: 14px; color: var(--muted); line-height: 1.5; }
+.sh-lines b { color: var(--card); }
+.sh-prompt { font: 800 26px var(--display); }
+.sh-btn { border-radius: 22px; padding: 18px 20px; font: 800 19px var(--display); color: var(--ink); display: flex; gap: 14px; align-items: center; }
+.sh-btn i { font-style: normal; font-size: 14px; opacity: 0.7; }
+.sh-blue { background: var(--blue); box-shadow: 0 6px 0 var(--blue-edge); }
+.sh-orange { background: var(--orange); box-shadow: 0 6px 0 var(--orange-edge); }
+.sh-yellow { background: var(--yellow); box-shadow: 0 6px 0 var(--yellow-edge); }
+.sh-pink { background: var(--pink); box-shadow: 0 6px 0 var(--pink-edge); }
+.sh-wait { font: 800 24px var(--display); margin-top: 40px; text-align: center; }
+
+/* ---- B: tickets and numbers */
+.tvB { height: 100%; display: grid; grid-template-columns: 206px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px 16px; }
+.b-book { grid-row: 1 / span 3; background: var(--felt-deep); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.b-who { display: flex; gap: 10px; align-items: center; }
+.b-who small { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.b-who b { font: 800 18px var(--display); }
+.b-wallet { display: flex; gap: 4px; }
+.b-wallet .w { flex: 1; border-radius: 6px; color: #fff; text-align: center; font-size: 9px; font-weight: 700; padding: 2px 0; }
+.b-wallet .w b { display: block; font: 800 15px var(--display); }
+.b-rows { list-style: none; display: flex; flex-direction: column; gap: 2px; flex: 1; justify-content: space-between; }
+.b-rows li { display: flex; gap: 6px; align-items: center; height: 19px; font-size: 11px; color: var(--muted); border-radius: 4px; padding: 0 4px; }
+.b-rows li.future { opacity: 0.45; }
+.b-rows li.rev { background: rgba(246, 199, 49, 0.14); opacity: 1; }
+.b-rows li.now { outline: 2px solid var(--card); }
+.b-rows .r { width: 18px; text-align: right; font-weight: 700; }
+.b-rows em { font-style: normal; color: var(--yellow); font-weight: 700; margin-left: auto; }
+.b-top { display: flex; align-items: center; gap: 14px; }
+.b-round { font: 800 18px var(--display); }
+.b-round b { font-size: 34px; }
+.b-round small { color: var(--muted); font: 700 14px var(--body); margin-left: 4px; }
+.b-status { display: flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 16px 6px 6px; color: var(--ink); font: 800 18px var(--display); }
+.b-count { margin-left: auto; text-align: right; color: var(--muted); font-size: 12px; line-height: 1.1; }
+.b-count b { display: block; color: var(--yellow); font: 800 26px var(--display); }
+.b-plan { background: var(--card); border-radius: 14px; padding: 4px; box-shadow: 0 6px 0 var(--card-edge); min-height: 0; }
+.b-hunters { list-style: none; display: flex; gap: 8px; }
+.b-hunters li { flex: 1; display: flex; gap: 8px; align-items: center; background: var(--felt-deep); border-radius: 10px; padding: 6px 8px; font-size: 11px; color: var(--muted); }
+.b-hunters li.on { outline: 2px solid var(--card); }
+.b-hunters b { display: block; color: var(--card); font-size: 13px; }
+.mini { display: inline-block; min-width: 16px; border-radius: 3px; color: #fff; font-size: 10px; font-weight: 700; text-align: center; margin-right: 2px; }
+.pb { padding: 22px 20px; display: flex; flex-direction: column; gap: 14px; height: 100%; }
+.pb-head { display: flex; gap: 14px; align-items: center; }
+.pb-head small { display: block; color: var(--muted); font-size: 14px; }
+.pb-head b { display: block; font: 800 24px var(--display); line-height: 1.1; }
+.pb-head em { display: block; font-style: normal; color: var(--yellow); font-size: 14px; font-weight: 700; margin-top: 2px; }
+.pb-ring { width: 70px; height: 70px; flex: none; border-radius: 50%; background: #fff; color: var(--ink); display: grid; place-items: center; font: 800 30px var(--display); outline: 3px dashed var(--orange); outline-offset: 4px; }
+.pb-big { width: 64px; height: 64px; font-size: 28px; }
+.pb-wallet { display: flex; gap: 6px; }
+.tix { flex: 1; background: var(--c); color: #fff; border-radius: 8px; padding: 5px 2px; text-align: center; font-size: 11px; font-weight: 700; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22); }
+.tix b { display: block; font: 800 19px var(--display); }
+.pb h2 { font: 800 24px var(--display); }
+.pb h3 { font: 800 15px var(--display); color: var(--muted); }
+.pb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 16px; }
+.pb-tile { aspect-ratio: 1; border-radius: 50%; background: #fff; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; border: 6px solid var(--t); box-shadow: 0 6px 0 var(--card-edge); }
+.pb-tile b { font: 800 36px var(--display); line-height: 1; }
+.pb-tile span { display: flex; gap: 3px; margin-top: 5px; }
+.pb-tile i { font-style: normal; font-size: 10px; font-weight: 700; color: #fff; border-radius: 4px; padding: 1px 4px; }
+.pb-wide { background: var(--orange); color: var(--ink); border-radius: 18px; padding: 12px 18px; font: 800 19px var(--display); box-shadow: 0 6px 0 var(--orange-edge); margin-top: auto; }
+.pb-wide small { display: block; font: 400 13px var(--body); }
+.pb-tickets { display: flex; flex-direction: column; gap: 14px; }
+.pb-ticket { background: var(--c); color: #fff; border-radius: 16px; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto; box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35); border-left: 10px dotted rgba(255, 255, 255, 0.35); }
+.pb-ticket b { font: 800 26px var(--display); }
+.pb-ticket span { font-weight: 700; align-self: center; }
+.pb-ticket small { grid-column: 1 / -1; opacity: 0.9; font-size: 14px; }
+.pb-back { border: 2px solid var(--muted); color: var(--muted); border-radius: 16px; text-align: center; padding: 12px; font-weight: 700; font-size: 16px; margin-top: auto; }
+.pb-maybe { background: var(--felt-deep); border-radius: 12px; padding: 10px 12px; font-size: 14px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pb-maybe span { width: 32px; height: 32px; border-radius: 50%; background: #fff; color: var(--ink); display: grid; place-items: center; font-weight: 800; outline: 2px dashed var(--orange); outline-offset: 2px; }
+.pb-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.pb-list li { display: flex; gap: 10px; align-items: center; background: var(--felt-deep); border-radius: 12px; padding: 8px 10px; font-size: 13px; color: var(--muted); }
+.pb-list b { display: block; color: var(--card); font-size: 16px; }
+.pb-book { list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.pb-book li { background: var(--felt-line); border-radius: 6px; height: 44px; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding-top: 3px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.pb-book li.rev { outline: 2px dashed var(--yellow); outline-offset: -2px; }
+.pb-book li b { color: var(--yellow); }
+.pb-note { color: var(--muted); font-size: 14px; text-align: center; }
+
+/* ---- C: map in the hand */
+.tvC { width: 100%; height: 100%; background: var(--card); position: relative; }
+.c-hud { position: absolute; background: var(--felt); color: var(--card); border-radius: 14px; box-shadow: 0 4px 0 var(--felt-deep); }
+.c-tl { left: 14px; top: 12px; padding: 6px 14px; display: flex; gap: 12px; align-items: baseline; }
+.c-tl b { font: 800 22px var(--display); }
+.c-tl span { color: var(--muted); font-weight: 700; }
+.c-tc { left: 50%; top: 12px; transform: translateX(-50%); padding: 5px 18px 5px 6px; display: flex; gap: 8px; align-items: center; font: 800 20px var(--display); color: var(--ink); }
+.c-tr { right: 14px; top: 12px; padding: 4px 14px; display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); line-height: 1.15; }
+.c-tr b { font: 800 30px var(--display); color: var(--yellow); }
+.c-bl { left: 14px; bottom: 12px; padding: 7px 12px; display: flex; gap: 10px; align-items: center; font-size: 12px; }
+.c-dots { display: flex; gap: 4px; }
+.c-dots i { width: 18px; height: 18px; border-radius: 50%; background: var(--felt-line); display: grid; place-items: center; font: 800 9px var(--body); font-style: normal; color: #fff; }
+.c-dots i.rev { outline: 2px dashed var(--yellow); outline-offset: 1px; }
+.c-dots i.now { outline: 2px solid var(--card); outline-offset: 1px; }
+.c-br { right: 14px; bottom: 12px; padding: 7px 10px; list-style: none; display: flex; gap: 10px; }
+.c-br li { display: flex; gap: 4px; align-items: center; font-weight: 700; font-size: 13px; }
+.pc { display: flex; flex-direction: column; height: 100%; }
+.pc-head { padding: 20px 20px 12px; }
+.pc-head b { font: 800 26px var(--display); display: block; }
+.pc-head span { color: var(--muted); font-size: 14px; }
+.pc-map { position: relative; height: 430px; background: var(--card); flex: none; }
+.pc-seg { display: flex; gap: 8px; padding: 14px 16px 0; }
+.pc-seg span { flex: 1; border-radius: 14px; background: var(--felt-deep); text-align: center; padding: 7px 2px; font-weight: 700; font-size: 12px; color: var(--muted); }
+.pc-seg span b { display: block; font: 800 22px var(--display); color: var(--card); }
+.pc-seg span.on { background: var(--c); color: #fff; box-shadow: 0 5px 0 rgba(0, 0, 0, 0.4); }
+.pc-seg span.off { opacity: 0.35; }
+.pc-hint { color: var(--muted); text-align: center; font-size: 14px; padding: 14px 16px 0; }
+.pc-btn { margin: auto 16px 18px; background: var(--orange); color: var(--ink); border-radius: 18px; padding: 14px 18px; font: 800 18px var(--display); box-shadow: 0 6px 0 var(--orange-edge); text-align: center; }
+.pc-bubble { position: absolute; left: 16px; right: 16px; transform: translateY(calc(-100% - 30px)); background: var(--ink); color: #fff; border-radius: 14px; padding: 10px 12px; font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3); }
+.pc-bubble b { background: var(--orange); color: var(--ink); border-radius: 10px; padding: 7px 14px; font-family: var(--display); }
+.pc-bubble i { position: absolute; bottom: -8px; width: 0; height: 0; border: 8px solid transparent; border-top-color: var(--ink); border-bottom: 0; transform: translateX(-50%); }
+.pc-band { padding: 10px 16px; display: flex; gap: 10px; align-items: center; font: 800 20px var(--display); color: var(--ink); }
+.pc-whole { height: 219px; background: var(--card); }
+.pc-rows { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; color: var(--muted); }
+.pc-rows b { color: var(--card); }
+
+#switch { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; background: #fff; color: #111; border-radius: 999px; padding: 6px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); font: 700 15px system-ui, sans-serif; z-index: 10; }
+#switch button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: #111; color: #fff; font-size: 18px; cursor: pointer; }
+#switch span { padding: 0 10px; min-width: 220px; text-align: center; }
+#switch[hidden] { display: none; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav id="switch"><button id="prev" aria-label="Vorige Variante">‹</button><span id="label"></span><button id="next" aria-label="Nächste Variante">›</button></nav>
+<script>
+const VIEW = {"join_url":"http://192.168.0.118:8197/","players":[{"id":0,"name":"Ana","color":"#ef476f","score":0,"connected":false,"leader":false,"avatar":"fox"},{"id":1,"name":"Ben","color":"#06d6a0","score":0,"connected":false,"leader":false,"avatar":"dark-knight"}],"scene":{"kind":"fluechtig","scene":{"board":{"spots":[{"x":76,"y":44},{"x":188,"y":46},{"x":300,"y":48},{"x":412,"y":50},{"x":545,"y":52},{"x":657,"y":54},{"x":769,"y":56},{"x":881,"y":58},{"x":78,"y":131},{"x":190,"y":133},{"x":302,"y":135},{"x":414,"y":137},{"x":547,"y":139},{"x":659,"y":141},{"x":771,"y":143},{"x":883,"y":145},{"x":80,"y":218},{"x":192,"y":220},{"x":304,"y":222},{"x":416,"y":224},{"x":528,"y":226},{"x":661,"y":228},{"x":773,"y":230},{"x":885,"y":232},{"x":61,"y":322},{"x":194,"y":307},{"x":306,"y":309},{"x":418,"y":311},{"x":530,"y":313},{"x":663,"y":315},{"x":775,"y":317},{"x":887,"y":319},{"x":63,"y":409},{"x":196,"y":394},{"x":308,"y":396},{"x":420,"y":398},{"x":532,"y":400},{"x":665,"y":402},{"x":777,"y":404},{"x":889,"y":406},{"x":65,"y":496},{"x":177,"y":498},{"x":310,"y":483},{"x":422,"y":485},{"x":534,"y":487},{"x":646,"y":489},{"x":779,"y":491},{"x":891,"y":493}],"links":[{"a":1,"b":2,"kind":"taxi"},{"a":1,"b":9,"kind":"taxi"},{"a":2,"b":3,"kind":"taxi"},{"a":2,"b":10,"kind":"taxi"},{"a":3,"b":4,"kind":"taxi"},{"a":3,"b":11,"kind":"taxi"},{"a":4,"b":5,"kind":"taxi"},{"a":4,"b":12,"kind":"taxi"},{"a":5,"b":6,"kind":"taxi"},{"a":6,"b":7,"kind":"taxi"},{"a":6,"b":14,"kind":"taxi"},{"a":7,"b":8,"kind":"taxi"},{"a":7,"b":15,"kind":"taxi"},{"a":8,"b":16,"kind":"taxi"},{"a":9,"b":10,"kind":"taxi"},{"a":9,"b":17,"kind":"taxi"},{"a":10,"b":11,"kind":"taxi"},{"a":10,"b":18,"kind":"taxi"},{"a":11,"b":19,"kind":"taxi"},{"a":12,"b":13,"kind":"taxi"},{"a":12,"b":20,"kind":"taxi"},{"a":13,"b":14,"kind":"taxi"},{"a":13,"b":21,"kind":"taxi"},{"a":14,"b":15,"kind":"taxi"},{"a":14,"b":22,"kind":"taxi"},{"a":15,"b":16,"kind":"taxi"},{"a":15,"b":23,"kind":"taxi"},{"a":16,"b":24,"kind":"taxi"},{"a":17,"b":18,"kind":"taxi"},{"a":18,"b":19,"kind":"taxi"},{"a":18,"b":26,"kind":"taxi"},{"a":19,"b":20,"kind":"taxi"},{"a":21,"b":22,"kind":"taxi"},{"a":21,"b":29,"kind":"taxi"},{"a":22,"b":23,"kind":"taxi"},{"a":23,"b":24,"kind":"taxi"},{"a":23,"b":31,"kind":"taxi"},{"a":25,"b":26,"kind":"taxi"},{"a":25,"b":33,"kind":"taxi"},{"a":26,"b":27,"kind":"taxi"},{"a":26,"b":34,"kind":"taxi"},{"a":27,"b":28,"kind":"taxi"},{"a":27,"b":35,"kind":"taxi"},{"a":28,"b":29,"kind":"taxi"},{"a":28,"b":36,"kind":"taxi"},{"a":29,"b":30,"kind":"taxi"},{"a":29,"b":37,"kind":"taxi"},{"a":30,"b":31,"kind":"taxi"},{"a":30,"b":38,"kind":"taxi"},{"a":31,"b":32,"kind":"taxi"},{"a":31,"b":39,"kind":"taxi"},{"a":32,"b":40,"kind":"taxi"},{"a":33,"b":34,"kind":"taxi"},{"a":33,"b":41,"kind":"taxi"},{"a":34,"b":35,"kind":"taxi"},{"a":34,"b":42,"kind":"taxi"},{"a":35,"b":36,"kind":"taxi"},{"a":35,"b":43,"kind":"taxi"},{"a":36,"b":44,"kind":"taxi"},{"a":37,"b":38,"kind":"taxi"},{"a":37,"b":45,"kind":"taxi"},{"a":38,"b":39,"kind":"taxi"},{"a":39,"b":40,"kind":"taxi"},{"a":39,"b":47,"kind":"taxi"},{"a":40,"b":48,"kind":"taxi"},{"a":41,"b":42,"kind":"taxi"},{"a":42,"b":43,"kind":"taxi"},{"a":43,"b":44,"kind":"taxi"},{"a":44,"b":45,"kind":"taxi"},{"a":45,"b":46,"kind":"taxi"},{"a":46,"b":47,"kind":"taxi"},{"a":47,"b":48,"kind":"taxi"},{"a":2,"b":11,"kind":"taxi"},{"a":14,"b":23,"kind":"taxi"},{"a":27,"b":36,"kind":"taxi"},{"a":31,"b":40,"kind":"taxi"},{"a":35,"b":44,"kind":"taxi"},{"a":9,"b":11,"kind":"bus"},{"a":11,"b":13,"kind":"bus"},{"a":13,"b":15,"kind":"bus"},{"a":34,"b":36,"kind":"bus"},{"a":36,"b":38,"kind":"bus"},{"a":38,"b":40,"kind":"bus"},{"a":4,"b":21,"kind":"bus"},{"a":21,"b":37,"kind":"bus"},{"a":2,"b":18,"kind":"bus"},{"a":18,"b":26,"kind":"bus"},{"a":26,"b":42,"kind":"bus"},{"a":7,"b":23,"kind":"bus"},{"a":23,"b":31,"kind":"bus"},{"a":31,"b":47,"kind":"bus"},{"a":9,"b":21,"kind":"ubahn"},{"a":21,"b":47,"kind":"ubahn"},{"a":7,"b":21,"kind":"ubahn"},{"a":21,"b":42,"kind":"ubahn"}]},"round":5,"rounds":18,"reveal_rounds":[3,8,13,18],"next_reveal":8,"fugitive":0,"hunters":[{"player":1,"at":4,"tickets":{"taxi":9,"bus":3,"ubahn":2,"schatten":0,"doppel":0}},{"player":1,"at":38,"tickets":{"taxi":9,"bus":3,"ubahn":3,"schatten":0,"doppel":0}},{"player":1,"at":46,"tickets":{"taxi":6,"bus":6,"ubahn":3,"schatten":0,"doppel":0}},{"player":1,"at":12,"tickets":{"taxi":6,"bus":6,"ubahn":3,"schatten":0,"doppel":0}}],"fugitive_tickets":{"taxi":9,"bus":9,"ubahn":3,"schatten":3,"doppel":1},"turn":{"turn":"hunter","index":1},"targets":[30,36,37,39,40],"log":[{"round":1,"tickets":["taxi"],"seen_at":null},{"round":2,"tickets":["taxi"],"seen_at":null},{"round":3,"tickets":["taxi"],"seen_at":4},{"round":4,"tickets":["taxi"],"seen_at":null},{"round":5,"tickets":["taxi"],"seen_at":null}],"hideouts":[2,6,11],"news":["Jäger 1 fährt mit dem Bus nach 4: Dort ist der Flüchtige nicht."],"route":null}}};
+const S = VIEW.scene.scene;
+const B = S.board;
+const PLAYERS = [
+  { name: "Ana", color: "#ef476f" },
+  { name: "Ben", color: "#06d6a0" },
+  { name: "Cem", color: "#118ab2" },
+  { name: "Dana", color: "#ffd166" },
+];
+const OWNERS = [1, 2, 3, 1]; // pieces dealt round-robin over the three hunters
+const HUNTERS = S.hunters.map((h, i) => ({ ...h, player: OWNERS[i], n: i + 1 }));
+const MOVER = HUNTERS[S.turn.index];
+const HIDING = 11; // where Ana really is; only her phone knows
+const SEEN = [...S.log].reverse().find((e) => e.seen_at !== null);
+const FT = S.fugitive_tickets;
+const TK = { taxi: ["Taxi", "#8b95a1"], bus: ["Bus", "#0f766e"], ubahn: ["U-Bahn", "#6d28d9"], schatten: ["Schattenfahrt", "#1f2937"], doppel: ["Doppelzug", "#b95f17"] };
+const SHORT = { taxi: "Taxi", bus: "Bus", ubahn: "U-Bahn", schatten: "Schatten", doppel: "Doppel" };
+const color = (p) => PLAYERS[p].color;
+const name = (p) => PLAYERS[p].name;
+const spot = (f) => B.spots[f - 1];
+const tok = (p, label = name(p)[0], size = 26) => `<span class="tok" style="background:${color(p)};width:${size}px;height:${size}px;font-size:${size / 2}px">${label}</span>`;
+const tokN = (h, size) => tok(h.player, h.n, size);
+const stub = (k) => `<span class="stub" style="background:${TK[k][1]}">${k === "schatten" ? "?" : TK[k][0]}</span>`;
+const mini = (k, n) => `<span class="mini" style="background:${TK[k][1]}">${n}</span>`;
+
+function exits(from, blocked) {
+  const by = new Map();
+  for (const l of B.links) {
+    const to = l.a === from ? l.b : l.b === from ? l.a : 0;
+    if (!to || blocked.has(to)) continue;
+    if (!by.has(to)) by.set(to, []);
+    if (!by.get(to).includes(l.kind)) by.get(to).push(l.kind);
+  }
+  return [...by].map(([to, kinds]) => ({ to, kinds })).sort((a, b) => a.to - b.to);
+}
+const RUN = exits(HIDING, new Set(HUNTERS.map((h) => h.at)));
+const HUNT = exits(MOVER.at, new Set(HUNTERS.filter((h) => h !== MOVER).map((h) => h.at)));
+const reach = (list, k) => list.filter((e) => e.kinds.includes(k)).map((e) => e.to);
+
+// ---- the plan, as the TV draws it
+const BEND = { taxi: 0, bus: 22, ubahn: 42 };
+const RIVER = "M-600 270 L0 268 C 160 246, 320 294, 480 270 S 800 246, 960 272 L1600 272";
+function linkPath(a, b, bend) {
+  if (!bend) return `M${a.x} ${a.y}L${b.x} ${b.y}`;
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+  return `M${a.x} ${a.y}Q${(a.x + b.x) / 2 - (dy / len) * bend} ${(a.y + b.y) / 2 + (dx / len) * bend} ${b.x} ${b.y}`;
+}
+const RING = new Map();
+for (const l of B.links) for (const f of [l.a, l.b]) if (l.kind === "ubahn" || (l.kind === "bus" && RING.get(f) !== "ubahn")) RING.set(f, l.kind);
+
+// u = board units per screen pixel on a phone crop; 0 keeps the TV's own sizes
+function board({ vb = "0 0 960 540", u = 0, hideouts = S.hideouts, targets = [], tcolor = "#888", hunters = HUNTERS, runner = null, seen = SEEN } = {}) {
+  const z = u || 1;
+  const r = u ? 14 * u : 14, rt = u ? 22 * u : 14, font = u ? 14 * u : 12, pr = u ? 11 * u : 9, off = u ? 16 * u : 12;
+  let o = `<svg class="bd" viewBox="${vb}" preserveAspectRatio="xMidYMid meet"><rect x="-2000" y="-2000" width="5000" height="5000" fill="#fbf8f1"/><path class="bd-river" d="${RIVER}"/>`;
+  for (const k of ["ubahn", "bus", "taxi"]) for (const l of B.links) if (l.kind === k) o += `<path class="bd-link bd-${k}" d="${linkPath(spot(l.a), spot(l.b), BEND[k])}"/>`;
+  B.spots.forEach((s, i) => {
+    const f = i + 1, t = targets.includes(f);
+    if (hideouts.includes(f)) o += `<circle class="bd-hide" cx="${s.x}" cy="${s.y}" r="${(t ? rt : r) + 7 * z}"/>`;
+    o += `<circle class="bd-field bd-f-${RING.get(f) ?? "taxi"}${t ? " bd-target" : ""}" ${t ? `style="--mover:${tcolor}"` : ""} cx="${s.x}" cy="${s.y}" r="${t ? rt : r}"/>`;
+    o += `<text class="bd-num" x="${s.x}" y="${s.y + font / 3}" style="font-size:${font}px">${f}</text>`;
+    if (seen && f === seen.seen_at) o += `<text class="bd-seen" x="${s.x}" y="${s.y - r - 8 * z}" style="font-size:${font}px">gesehen R${seen.round}</text>`;
+  });
+  for (const h of hunters) {
+    const s = spot(h.at);
+    o += `<g transform="translate(${s.x + off} ${s.y - off})"><circle r="${pr}" fill="${color(h.player)}" stroke="#fff" stroke-width="${2 * z}"/><text class="bd-pawn" y="${pr * 0.42}" style="font-size:${pr * 1.25}px">${h.n}</text></g>`;
+  }
+  if (runner) {
+    const s = spot(runner);
+    o += `<g transform="translate(${s.x - off} ${s.y - off})"><circle r="${pr * 1.15}" fill="#111" stroke="#fff" stroke-width="${2 * z}"/><text class="bd-pawn" y="${pr * 0.45}" style="font-size:${pr * 1.25}px">F</text></g>`;
+  }
+  return o + "</svg>";
+}
+
+// a crop of the plan that holds these fields, sized for a W×H phone map
+function fit(fields, W = 390, H = 430, pad = 64, min = 300) {
+  const p = fields.map(spot);
+  const x0 = Math.min(...p.map((q) => q.x)) - pad, x1 = Math.max(...p.map((q) => q.x)) + pad;
+  const y0 = Math.min(...p.map((q) => q.y)) - pad, y1 = Math.max(...p.map((q) => q.y)) + pad;
+  let w = Math.max(x1 - x0, min), h = y1 - y0;
+  if (w / h < W / H) w = h * (W / H); else h = w / (W / H);
+  const left = (x0 + x1) / 2 - w / 2, top = (y0 + y1) / 2 - h / 2;
+  return { vb: `${left} ${top} ${w} ${h}`, u: w / W, px: (f) => [((spot(f).x - left) / w) * W, ((spot(f).y - top) / h) * H] };
+}
+
+// ---- A · as built
+const SHEET = ["blue", "orange", "yellow", "pink"], GLYPH = ["●", "▲", "■", "◆"];
+function sheet({ head, lines, prompt, options = [], wait }) {
+  return `<div class="sh">
+    <header class="sh-head"><div class="sh-big">${head[0]}<small>${head[1]}</small></div>
+      <div class="sh-lines">${lines.map(([k, v]) => `${k} <b>${v}</b>`).join("<br>")}</div></header>
+    ${prompt ? `<h2 class="sh-prompt">${prompt}</h2>` : ""}
+    ${options.map((o, i) => `<div class="sh-btn sh-${SHEET[i % 4]}"><i>${GLYPH[i % 4]}</i>${o}</div>`).join("")}
+    ${wait ? `<p class="sh-wait">${wait}</p>` : ""}
+  </div>`;
+}
+function tvA() {
+  const log = Array.from({ length: S.rounds }, (_, i) => {
+    const r = i + 1, e = S.log.find((x) => x.round === r);
+    const cls = [S.reveal_rounds.includes(r) && "rev", r === S.round && "now"].filter(Boolean).join(" ");
+    return `<li class="${cls}"><span>${r}</span>${e ? e.tickets.map(stub).join("") : ""}${e?.seen_at ? `<b>${e.seen_at}</b>` : ""}</li>`;
+  }).join("");
+  return `<div class="tvf pad"><div class="tvA">
+    <div class="a-plan">${board({ targets: S.targets, tcolor: color(MOVER.player) })}</div>
+    <aside class="a-side">
+      <h1>Flüchtig</h1>
+      <p class="a-round">Runde ${S.round} von ${S.rounds} · auftauchen in Runde ${S.next_reveal}</p>
+      <p class="a-status">Jäger ${MOVER.n} ist dran: ${name(MOVER.player)}</p>
+      <div class="a-runner">${tok(0)}<div><b>Ana flieht</b>Taxi ${FT.taxi} · Bus ${FT.bus} · U-Bahn ${FT.ubahn} · Schatten ${FT.schatten} · Doppelzug ${FT.doppel}</div></div>
+      <ul class="a-hunters">${HUNTERS.map((h) => `<li>${tokN(h)}<div><b>${name(h.player)} · Feld ${h.at}</b>Taxi ${h.tickets.taxi} · Bus ${h.tickets.bus} · U-Bahn ${h.tickets.ubahn}</div></li>`).join("")}</ul>
+      <p class="a-news">${S.news[S.news.length - 1]}</p>
+    </aside>
+    <ol class="a-log">${log}</ol>
+  </div></div>`;
+}
+function phonesA() {
+  const runLines = [["Runde", "6 von 18"], ["Auftauchen", "in Runde 8"]];
+  const ticketOpts = ["taxi", "bus", "ubahn"].filter((k) => reach(RUN, k).length).map((k) => `${TK[k][0]} · noch ${FT[k]}`);
+  const huntOpts = ["taxi", "bus", "ubahn"].filter((k) => reach(HUNT, k).length).map((k) => `${TK[k][0]} · noch ${MOVER.tickets[k]}`);
+  const seen = `Feld ${SEEN.seen_at} (R${SEEN.round})`;
+  return [
+    ["1 · Ana flieht: womit?", sheet({ head: [`Feld ${HIDING}`, "Dein Versteck"], lines: runLines, prompt: "Womit fährst du?", options: [...ticketOpts, `Schattenfahrt · noch ${FT.schatten}`, `Doppelzug ansagen · noch ${FT.doppel}`] })],
+    ["2 · Ana flieht: wohin?", sheet({ head: [`Feld ${HIDING}`, "Dein Versteck"], lines: runLines, prompt: "Mit dem Bus wohin?", options: [...reach(RUN, "bus").map((f) => `Nach Feld ${f}`), "Zurück"] })],
+    ["3 · Cem zieht Jäger 2", sheet({ head: ["Jäger 2", "Du jagst als"], lines: [["Jäger 2", `Feld ${MOVER.at}`], ["Zuletzt gesehen", seen], ["Runde", "5 von 18"], ["Auftauchen", "in Runde 8"]], prompt: "Jäger 2: Womit fährst du?", options: huntOpts })],
+    ["4 · Ben wartet", sheet({ head: ["Jäger 1, 4", "Du jagst als"], lines: [["Jäger 1", `Feld ${HUNTERS[0].at}`], ["Jäger 4", `Feld ${HUNTERS[3].at}`], ["Zuletzt gesehen", seen], ["Runde", "5 von 18"]], wait: "Cem zieht Jäger 2." })],
+  ];
+}
+
+// ---- B · tickets and numbers
+function tvB() {
+  const rows = Array.from({ length: S.rounds }, (_, i) => {
+    const r = i + 1, e = S.log.find((x) => x.round === r), rev = S.reveal_rounds.includes(r);
+    const tail = e?.seen_at ? `<em>gesehen: ${e.seen_at}</em>` : rev ? `<em>taucht auf</em>` : "";
+    return `<li class="${e ? "past" : "future"}${rev ? " rev" : ""}${r === S.round ? " now" : ""}"><span class="r">${r}</span>${e ? e.tickets.map(stub).join("") : ""}${tail}</li>`;
+  }).join("");
+  const wallet = ["taxi", "bus", "ubahn", "schatten", "doppel"].map((k) => `<span class="w" style="background:${TK[k][1]}"><b>${FT[k]}</b>${SHORT[k]}</span>`).join("");
+  return `<div class="tvf pad"><div class="tvB">
+    <aside class="b-book"><div class="b-who">${tok(0, "A", 34)}<div><small>Fahrtenbuch</small><b>Ana flieht</b></div></div><div class="b-wallet">${wallet}</div><ol class="b-rows">${rows}</ol></aside>
+    <header class="b-top"><span class="b-round">Runde <b>${S.round}</b><small>von ${S.rounds}</small></span>
+      <span class="b-status" style="background:${color(MOVER.player)}">${tokN(MOVER, 30)}${name(MOVER.player)} zieht Jäger ${MOVER.n}</span>
+      <span class="b-count">auftauchen in<b>${S.next_reveal - S.round} Runden</b></span></header>
+    <div class="b-plan">${board({ targets: S.targets, tcolor: color(MOVER.player) })}</div>
+    <ul class="b-hunters">${HUNTERS.map((h) => `<li class="${h === MOVER ? "on" : ""}">${tokN(h)}<div><b>${name(h.player)} · Feld ${h.at}</b>${mini("taxi", h.tickets.taxi)}${mini("bus", h.tickets.bus)}${mini("ubahn", h.tickets.ubahn)}</div></li>`).join("")}</ul>
+  </div></div>`;
+}
+const walletB = (t, keys) => `<div class="pb-wallet">${keys.map((k) => `<span class="tix" style="--c:${TK[k][1]}"><b>${t[k]}</b>${SHORT[k]}</span>`).join("")}</div>`;
+const tileB = (e) => `<div class="pb-tile" style="--t:${TK[RING.get(e.to) ?? "taxi"][1]}"><b>${e.to}</b><span>${e.kinds.map((k) => `<i style="background:${TK[k][1]}">${TK[k][0]}</i>`).join("")}</span></div>`;
+const hideB = `<div class="pb-maybe">Ana kann sein auf ${S.hideouts.map((f) => `<span>${f}</span>`).join("")}</div>`;
+function phonesB() {
+  const head = `<header class="pb-head"><div class="pb-ring">${HIDING}</div><div><small>Dein Versteck</small><b>Runde 6 von 18</b><em>In Runde 8 wirst du gesehen</em></div></header>`;
+  const to = 13, ways = [...RUN.find((e) => e.to === to).kinds, "schatten"];
+  const book = Array.from({ length: 6 }, (_, i) => {
+    const r = i + 1, e = S.log.find((x) => x.round === r);
+    return `<li class="${S.reveal_rounds.includes(r) ? "rev" : ""}">${r}${e ? e.tickets.map(stub).join("") : ""}${e?.seen_at ? `<b>${e.seen_at}</b>` : ""}</li>`;
+  }).join("");
+  return [
+    ["1 · Ana flieht: wohin?", `<div class="pb">${head}${walletB(FT, ["taxi", "bus", "ubahn", "schatten", "doppel"])}<h2>Wohin fährst du?</h2><div class="pb-grid">${RUN.map(tileB).join("")}</div><div class="pb-wide">Doppelzug ansagen<small>noch ${FT.doppel} · zwei Fahrten hintereinander</small></div></div>`],
+    ["2 · Ana flieht: womit?", `<div class="pb">${head}<h2>Nach Feld ${to} – womit?</h2><div class="pb-tickets">${ways.map((k) => `<div class="pb-ticket" style="--c:${TK[k][1]}"><b>${TK[k][0]}</b><span>noch ${FT[k]}</span><small>${k === "schatten" ? "Niemand sieht, womit du fährst" : `Alle sehen: ${TK[k][0]}`}</small></div>`).join("")}</div><div class="pb-back">Zurück</div></div>`],
+    ["3 · Cem zieht Jäger 2", `<div class="pb"><header class="pb-head">${tokN(MOVER, 64)}<div><small>Du ziehst</small><b>Jäger 2 · Feld ${MOVER.at}</b><em>Zuletzt gesehen: Feld ${SEEN.seen_at} (Runde ${SEEN.round})</em></div></header>${hideB}${walletB(MOVER.tickets, ["taxi", "bus", "ubahn"])}<h2>Wohin fährt Jäger 2?</h2><div class="pb-grid">${HUNT.map(tileB).join("")}</div><p class="pb-note">Ein Tipp, und Jäger 2 fährt.</p></div>`],
+    ["4 · Ben wartet", `<div class="pb"><header class="pb-head">${tokN(MOVER, 64)}<div><small>Gerade dran</small><b>Cem zieht Jäger 2</b><em>Danach Dana, dann du mit Jäger 4</em></div></header><h3>Deine Jäger</h3><ul class="pb-list">${[HUNTERS[0], HUNTERS[3]].map((h) => `<li>${tokN(h, 34)}<div><b>Jäger ${h.n} · Feld ${h.at}</b>${mini("taxi", h.tickets.taxi)}${mini("bus", h.tickets.bus)}${mini("ubahn", h.tickets.ubahn)}</div></li>`).join("")}</ul><h3>Anas Fahrtenbuch</h3><ol class="pb-book">${book}</ol>${hideB}</div>`],
+  ];
+}
+
+// ---- C · map in the hand
+function tvC() {
+  const dots = Array.from({ length: S.rounds }, (_, i) => {
+    const r = i + 1, e = S.log.find((x) => x.round === r), rev = S.reveal_rounds.includes(r);
+    return `<i class="${rev ? "rev" : ""}${r === S.round ? " now" : ""}" style="${e ? `background:${TK[e.tickets[0]][1]}` : ""}">${e?.seen_at ?? ""}</i>`;
+  }).join("");
+  return `<div class="tvf"><div class="tvC">
+    ${board({ vb: "-10 -64 980 668", targets: S.targets, tcolor: color(MOVER.player) })}
+    <div class="c-hud c-tl"><b>Flüchtig</b><span>Runde ${S.round} / ${S.rounds}</span></div>
+    <div class="c-hud c-tc" style="background:${color(MOVER.player)}">${tokN(MOVER, 32)}${name(MOVER.player)} zieht Jäger ${MOVER.n}</div>
+    <div class="c-hud c-tr"><b>${S.next_reveal - S.round}</b><span>Runden, dann<br>taucht Ana auf</span></div>
+    <div class="c-hud c-bl">${tok(0)}<div class="c-dots">${dots}</div>${mini("taxi", FT.taxi)}${mini("bus", FT.bus)}${mini("ubahn", FT.ubahn)}${mini("schatten", FT.schatten)}</div>
+    <ul class="c-hud c-br">${HUNTERS.map((h) => `<li>${tokN(h, 24)}${h.at}</li>`).join("")}</ul>
+  </div></div>`;
+}
+function phoneC({ head, sub, around, targets, tcolor, runner = null, seg, on, bubble, foot = "" }) {
+  const f = fit([...around, ...targets]);
+  let bub = "";
+  if (bubble) {
+    const [x, y] = f.px(bubble.at);
+    bub = `<div class="pc-bubble" style="top:${y}px">${bubble.text}<b>Fahren</b><i style="left:${x - 16}px"></i></div>`;
+  }
+  return `<div class="pc"><header class="pc-head"><b>${head}</b><span>${sub}</span></header>
+    <div class="pc-map">${board({ vb: f.vb, u: f.u, targets, tcolor, runner, hideouts: runner ? [] : S.hideouts })}${bub}</div>
+    <div class="pc-seg">${seg.map(([k, n, off]) => `<span class="${k === on ? "on" : ""}${off ? " off" : ""}" style="--c:${TK[k][1]}"><b>${n}</b>${SHORT[k]}</span>`).join("")}</div>${foot}</div>`;
+}
+function phonesC() {
+  const runSeg = [["taxi", FT.taxi], ["bus", FT.bus], ["ubahn", FT.ubahn, !reach(RUN, "ubahn").length], ["schatten", FT.schatten]];
+  const huntSeg = ["taxi", "bus", "ubahn"].map((k) => [k, MOVER.tickets[k], !reach(HUNT, k).length]);
+  const ana = { head: `Feld ${HIDING}`, sub: "Dein Versteck · Runde 6 · in Runde 8 wirst du gesehen", around: [HIDING], tcolor: "#f2862e", runner: HIDING, seg: runSeg };
+  const wait = `<div class="pc"><div class="pc-band" style="background:${color(MOVER.player)}">${tokN(MOVER, 34)}Cem zieht Jäger 2</div>
+    <div class="pc-whole">${board({ targets: S.targets, tcolor: color(MOVER.player) })}</div>
+    <div class="pc-rows"><span>Deine Jäger: ${tokN(HUNTERS[0], 24)} <b>Feld ${HUNTERS[0].at}</b> · ${tokN(HUNTERS[3], 24)} <b>Feld ${HUNTERS[3].at}</b></span>
+    <span>Zuletzt gesehen: <b>Feld ${SEEN.seen_at}</b> (Runde ${SEEN.round})</span><span>Ana kann sein auf <b>${S.hideouts.join(" · ")}</b></span>
+    <span>Danach Dana, dann du mit Jäger 4.</span></div></div>`;
+  return [
+    ["1 · Ana flieht: Taxi gewählt", phoneC({ ...ana, targets: reach(RUN, "taxi"), on: "taxi", foot: `<p class="pc-hint">Tippe ein leuchtendes Feld an.</p><div class="pc-btn">Doppelzug ansagen · noch ${FT.doppel}</div>` })],
+    ["2 · Ana flieht: Bus, Feld 13 angetippt", phoneC({ ...ana, targets: reach(RUN, "bus"), on: "bus", bubble: { at: 13, text: "Mit dem Bus nach 13?" }, foot: `<div class="pc-btn">Doppelzug ansagen · noch ${FT.doppel}</div>` })],
+    ["3 · Cem zieht Jäger 2", phoneC({ head: `Jäger 2 · Feld ${MOVER.at}`, sub: `Zuletzt gesehen auf ${SEEN.seen_at} (R${SEEN.round}) · Verstecke ${S.hideouts.join(", ")}`, around: [MOVER.at], targets: reach(HUNT, "taxi"), tcolor: color(MOVER.player), seg: huntSeg, on: "taxi", foot: `<p class="pc-hint">Tippe ein Feld an, Jäger 2 fährt hin.</p>` })],
+    ["4 · Ben wartet", wait],
+  ];
+}
+
+// ---- the page and the switcher
+const VARIANTS = [
+  {
+    key: "A", name: "Wie gebaut", tv: tvA, phones: phonesA,
+    title: "A · As built (0.171.0)",
+    desc: "What the branch ships now. The plan on a card with a side panel and the travel log along the bottom. The phones use the shared button sheet: ticket first, then the destination from a list of “Nach Feld N”. The button colours cycle and say nothing about the ticket, and the field numbers have to be found on the TV.",
+    notes: ["Phone: two taps, ticket then field", "Destinations are numbers only; you look them up on the TV", "Button colours (blue, orange…) do not match the TV’s lines", "TV: plan about 70 %, side panel, log strip"],
+  },
+  {
+    key: "B", name: "Fahrkarten und Nummern", tv: tvB, phones: phonesB,
+    title: "B · Tickets and numbers",
+    desc: "Destination first. The phone shows the fields you can reach as round number tiles like the TV’s fields, each marked with the tickets that get there. A hunter’s tap moves at once; the fugitive’s second tap picks the ticket and says what everyone will see. Ticket colours are the TV’s line colours. The TV leads with the fugitive’s travel log down the left and the hunters along the bottom.",
+    notes: ["Phone: hunter one tap, fugitive two (field, then ticket)", "Every ticket button says what it gives away", "Same ticket colours on phone and TV", "TV: travel log is the hero; whose turn as a big pill in their colour"],
+  },
+  {
+    key: "C", name: "Stadtplan in der Hand", tv: tvC, phones: phonesC,
+    title: "C · Map in the hand",
+    desc: "Each phone carries the part of the city around its piece. Pick a ticket at the bottom, the fields it reaches light up on the map, tap one and confirm. The map zooms to what you can reach. The TV gives the whole screen to the plan, with the round, whose turn and the countdown floating over it.",
+    notes: ["Phone: ticket, field, confirm (taxi is preselected)", "No numbers to look up: you see where you are going", "Targets are smaller than buttons; a confirm stops mis-taps", "TV: plan edge to edge, HUD pills on top"],
+  },
+];
+function render(v) {
+  return `<section class="v-head"><h1>${v.title}</h1><p>${v.desc}</p></section>
+    <div class="top">${v.tv()}<div class="notes"><h2>TV: Runde ${S.round}, ${name(MOVER.player)} zieht Jäger ${MOVER.n}</h2><ul>${v.notes.map((n) => `<li>${n}</li>`).join("")}</ul></div></div>
+    <div class="phones">${v.phones().map(([cap, html]) => `<figure class="phone"><div class="screen">${html}</div><figcaption>${cap}</figcaption></figure>`).join("")}</div>`;
+}
+const params = new URLSearchParams(location.search);
+let cur = Math.max(0, VARIANTS.findIndex((v) => v.key === params.get("variant")));
+function show() {
+  const v = VARIANTS[cur];
+  document.getElementById("app").innerHTML = render(v);
+  document.getElementById("label").textContent = `${v.key} (${v.name})`;
+  params.set("variant", v.key);
+  try { history.replaceState(null, "", `?${params}`); } catch {}
+}
+const step = (d) => { cur = (cur + d + VARIANTS.length) % VARIANTS.length; show(); };
+document.getElementById("prev").onclick = () => step(-1);
+document.getElementById("next").onclick = () => step(1);
+addEventListener("keydown", (e) => {
+  if (e.target.closest?.("input, textarea, [contenteditable]")) return;
+  if (e.key === "ArrowLeft") step(-1);
+  if (e.key === "ArrowRight") step(1);
+});
+if (params.has("shot")) document.getElementById("switch").hidden = true;
+show();
+</script>
+</body>
+</html>

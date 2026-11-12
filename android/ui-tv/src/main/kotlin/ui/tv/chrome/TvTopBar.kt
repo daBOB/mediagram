@@ -47,9 +47,9 @@ internal fun TvTopBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(TvDepartmentsBarHeight + Overscan.vertical)
+                .height(TvDepartmentsBarHeight)
                 .background(barBackground(blend))
-                .padding(top = Overscan.vertical, start = Overscan.horizontal, end = Overscan.horizontal),
+                .padding(start = Overscan.horizontal, end = Overscan.horizontal),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.tvDp),
     ) {

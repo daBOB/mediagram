@@ -5,7 +5,7 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Spieltisch 0.177.0 — Preisfrage
+## Spieltisch 0.178.0 — Preisfrage
 
 **Added**
 
@@ -16,6 +16,22 @@ to `main`. Full phase-by-phase detail lives in
 - The TV page in the shop-window look the user picked from three renders: the photo large on the left, the name and who has guessed on the right, a clock ring; at the reveal the price, the date it was read, and a line from 0 to twice the price with every guess as an avatar pin (close ones stacked) and the price as a flag. The phone has a calculator keypad (digits, comma, delete) that shows the price as typed, sends once and then shows the guess. No sound yet.
 - `tools/smoke.mjs --game preisfrage --articles DIR`: three scripted phones play a whole game against the dev host and check the scores against the rules prototype's formula.
 
+**Changed**
+
+- `game_factory` takes the night's `ArticleList` last.
+- The TV view's types moved to `protocol_tv.rs`.
+- `tools/preisfrage-articles`: the top price band (150-500 €) reads page 1 by relevance; newest-first and deeper pages there came back empty.
+
+## Spieltisch 0.177.1 — posters for Kopfnuss, Dreifelder, Heimlauf and Flüchtig
+
+**Added**
+
+- Kopfnuss, Dreifelder, Heimlauf and Flüchtig have their posters and backdrops on the shelf (`game_{poster,backdrop}_{kopfnuss,dreifelder,race,fluechtig}.webp`), made by the user with GPT Image from `plans/261107-1509-games-poster-overview/image-prompts.md`; they no longer show a name tile. Still owed: Grand Allee.
+
+## Spieltisch 0.177.0 — Preisfrage's articles reach the night
+
+**Added**
+
 - Spieltisch reads Preisfrage's article list as a night starts, from the home cache server the media app names in its `/night` row (`cache_server`), and hands it to the core (`SpieltischConfig.articles`). No server, no list or a slow one (2.5 s to connect, 2.5 s to read, after the media app's answer) means no list; the night and its films start as before. A media app without the column reads as no server.
 - `/img/article/{asin}`: an article's photo, for tonight's articles only and, unlike film artwork, for phones too. Spieltisch fetches it once from the cache server into `cache/articles/` (`MediaImageKind::Article`); the host logs how many articles a night holds.
 - `game-night-dev --articles DIR` hosts a night over a folder that `bun run fetch --dry-run DIR` wrote.
@@ -23,10 +39,9 @@ to `main`. Full phase-by-phase detail lives in
 **Changed**
 
 - Spieltisch allows plain http to the whole home network, as the media app does: the cache server's address is whatever the router hands out.
-- `start_game_night` takes an `ArticleList` after the titles, `game_factory` the same list last.
-- The TV view's types moved to `protocol_tv.rs`.
+- `start_game_night` takes an `ArticleList` after the titles.
 
-## 0.177.0 — The home cache server keeps a game's own data
+## 0.178.0 — The home cache server keeps a game's own data
 
 **Added**
 
@@ -35,6 +50,20 @@ to `main`. Full phase-by-phase detail lives in
 - `GET|HEAD|PUT /v1/game/{game}/{name}` on the home cache server: a third blob kind beside TMDB answers and artwork, for data a game needs that no player fetches, starting with Preisfrage's article list and photos. Reads are open, a PUT is signed like the other blobs, a newer write replaces the older one; `.json` up to 2 MiB, `.jpg`/`.png` up to 16 MiB, under the blob budget. See `docs/running-the-player.md` § Game data.
 - `tools/preisfrage-articles`: `bun run fetch` on a PC reads 16 amazon.de search pages with Playwright (one every 4-8 s, stopping at a robot check), keeps odd articles across four price bands (sponsored results, books and films, adult titles, slogan shirts and second copies skipped) and stores the list and 800 px photos on the home cache server; `--dry-run DIR` writes them to a folder. Not part of any app. See `docs/running-the-player.md` § Preisfrage articles.
 
+## Spieltisch 0.176.0 — Flüchtig's big city, as a city map
+
+**Added**
+
+- Flüchtig is played in a big city of our own: 199 fields, 346 taxi links, 99 bus links on 62 stations, 20 U-Bahn links on 14 stations and a ferry of 3 links on 4 piers, the totals of the genre's classic board. The city is a data file (`crates/mediagram-game/cities/fluechtig-big-city.json`) made by `tools/fluechtig-city/generate_city.py`.
+- The chase takes the classic's numbers with it: 24 rounds, the fugitive seen after rounds 3, 8, 13, 18 and 24, five hunter pieces with 10 taxi, 8 bus and 4 U-Bahn tickets each, the fugitive with 4, 3 and 3 plus five Schattenfahrten and two double moves.
+- The city was chosen by measurement (`tools/fluechtig-city/balance_sim.py`): with the same two kinds of bots, the fugitive wins 45 % (43 %) of the chases here against 42 % (38 %) on the classic board with its own rules. Equal totals alone gave 26 %; a compact street grid and sixteen bridges made the difference.
+- A ferry runs down the river, in both cities. Only a Schattenfahrt boards it, so only the fugitive rides it, and the travel log shows a shadow ride like any other.
+
+**Changed**
+
+- The TV draws the city as a daylight city map: blocks between the streets, courtyards, parks with trees, the river with its banks, landmark signs and district names, all worked out from the city itself.
+- Hunters stand on the plan as their players' avatar figures on a base in their colour, each with its piece's number, beside their field. The fugitive's last sighting is their own figure, faded, with the round. The hunters' panel in the corner is gone.
+- The 48-field city and its 18-round rules stay in the code as the short chase; the lobby does not offer it yet.
 ## Spieltisch 0.175.0 — the games' own app
 
 **Added**

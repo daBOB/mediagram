@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flüchtig Regel-Prototyp</title>
+<style>
+  :root {
+    --bg: #f6f4ef; --panel: #ffffff; --line: #e3dfd5; --ink: #1c2229; --muted: #5d6772;
+    --accent: #c2410c; --accent-soft: #fdebdd; --bad: #b91c1c; --bad-soft: #fde8e8;
+    --taxi: #8b95a1; --bus: #0f766e; --ubahn: #6d28d9; --schatten: #1f2937; --river: #c9dfeb;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1320px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 17px; margin: 0 0 12px; }
+  h3 { font-size: 13px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  p { margin: 0 0 8px; max-width: 78ch; }
+  .intro .question { font-size: 16px; }
+  .intro .note { color: var(--muted); font-size: 14px; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: 1px 9px; margin-bottom: 8px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .top { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 16px; margin: 20px 0 16px; align-items: start; }
+  @media (max-width: 1000px) { .top { grid-template-columns: 1fr; } }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.on, button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .viewnote { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+  svg { width: 100%; height: auto; display: block; background: #fbfaf7; border-radius: 8px; }
+  .river { fill: none; stroke: var(--river); stroke-width: 34; stroke-linecap: round; }
+  .edge { fill: none; }
+  .edge.taxi { stroke: var(--taxi); stroke-width: 2; }
+  .edge.bus { stroke: var(--bus); stroke-width: 4; opacity: .75; }
+  .edge.ubahn { stroke: var(--ubahn); stroke-width: 5; stroke-dasharray: 11 6; opacity: .8; }
+  .node { fill: #fff; stroke: var(--taxi); stroke-width: 1.5; }
+  .node.bus { stroke: var(--bus); stroke-width: 3; }
+  .node.ubahn { stroke: var(--ubahn); stroke-width: 4; }
+  .node.target { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
+  .hideout { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+  .label { font-size: 12px; font-weight: 600; text-anchor: middle; fill: var(--ink); pointer-events: none; }
+  .pawn text { font-size: 11px; font-weight: 700; text-anchor: middle; fill: #fff; }
+  .pawn.fugitive circle { fill: #111; stroke: #fff; stroke-width: 1.5; }
+  .seen { font-size: 11px; font-weight: 700; text-anchor: middle; fill: var(--accent); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .legend .l { width: 22px; height: 0; border-top: 2px solid var(--taxi); }
+  .legend .l.bus { border-top: 4px solid var(--bus); }
+  .legend .l.ubahn { border-top: 4px dashed var(--ubahn); }
+  .legend .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .legend .ring { width: 14px; height: 14px; border-radius: 50%; border: 2px dashed var(--accent); }
+  .status { font-size: 15px; }
+  .status b { color: var(--accent); }
+  .banner { border-radius: 10px; padding: 10px 12px; margin: 10px 0 0; font-weight: 600; }
+  .banner.hunters { background: #e7effe; color: #1e3a8a; }
+  .banner.fugitive { background: #ececec; color: #111; }
+  .news { margin: 0; padding-left: 18px; }
+  .news li { margin-bottom: 4px; }
+  .news li.fresh { color: var(--ink); }
+  .error { background: var(--bad-soft); color: var(--bad); border-radius: 8px; padding: 8px 10px; font-weight: 600; margin-bottom: 6px; }
+  .log { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 4px; }
+  .cell { border: 1px solid var(--line); border-radius: 6px; padding: 3px 5px; min-height: 46px; font-size: 11px; }
+  .cell.reveal { border: 1.5px dashed var(--accent); }
+  .cell.now { background: var(--accent-soft); }
+  .cell .rn { display: block; color: var(--muted); font-weight: 600; }
+  .cell .at { display: block; color: var(--accent); font-weight: 700; }
+  .tk { display: inline-block; color: #fff; border-radius: 4px; padding: 0 4px; margin: 1px 2px 1px 0; font-weight: 600; }
+  .tk.taxi { background: var(--taxi); } .tk.bus { background: var(--bus); } .tk.ubahn { background: var(--ubahn); } .tk.schatten { background: var(--schatten); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  td, th { text-align: left; padding: 3px 6px 3px 0; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .secret { background: #111; color: #fff; border-radius: 8px; padding: 8px 10px; }
+  .secret.hidden { background: #eceae4; color: var(--muted); }
+  .play .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .play .row .to { width: 64px; font-weight: 600; }
+  .knobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 16px; margin-top: 8px; }
+  .knobs label { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+  .knobs input[type=number], .knobs input[type=text] { font: inherit; font-size: 14px; color: var(--ink); padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; width: 100%; }
+  .knobs .trio { display: flex; gap: 4px; }
+  .check { flex-direction: row !important; align-items: center; gap: 8px !important; color: var(--ink) !important; }
+  section.panel { margin-bottom: 16px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .steps { list-style: none; padding: 0; margin: 10px 0 0; }
+  .steps li { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .steps .n { width: 22px; color: var(--muted); font-size: 13px; text-align: right; }
+  .steps .done { color: var(--muted); text-decoration: line-through; }
+  .steps .expect { font-size: 12px; color: var(--bad); }
+  .questions li { margin-bottom: 6px; max-width: 90ch; }
+</style>
+</head>
+<body>
+<main>
+  <header class="intro">
+    <span class="tag">Wegwerf-Prototyp</span>
+    <h1>Flüchtig: Regel-Prototyp</h1>
+    <p class="question"><strong>Die Frage:</strong> Tragen diese Regeln eine Verfolgungsjagd mit einem unsichtbaren Flüchtigen? Haben die Jäger mit Fahrscheinen, Auftauchrunden, Schattenfahrt und Doppelzug genug, woraus sie etwas schließen können, und hat der Flüchtige trotzdem Luft? Und zeigt der Fernseher genau das, was alle sehen dürfen, aber nicht mehr?</p>
+    <p class="note">Bisher gibt es zu Flüchtig nur einen Absatz Regeln (Plan „Board games“, Abschnitt 6): keine Zahlen, keine Karte, kein Aussehen. Darum prüft dieser Prototyp zuerst die Regeln. Karte, Zahlen und Darstellung sind Platzhalter. Die Karte ist eine eigene Stadt mit 48 Feldern, einem Fluss mit drei Brücken und einem U-Bahn-Kreuz an Feld 21.</p>
+  </header>
+
+  <div class="top">
+    <div class="panel">
+      <div class="seg" id="views"></div>
+      <p class="viewnote" id="viewnote"></p>
+      <svg id="board" viewBox="0 0 960 540" role="img" aria-label="Stadtplan mit Feldern, Verbindungen und Figuren"></svg>
+      <div class="legend">
+        <span><i class="l"></i>Taxi</span>
+        <span><i class="l bus"></i>Bus</span>
+        <span><i class="l ubahn"></i>U-Bahn</span>
+        <span><i class="dot" style="background:#2563eb"></i>Jäger (Nummer)</span>
+        <span><i class="dot" style="background:#111"></i>Flüchtiger (F)</span>
+        <span><i class="ring"></i>mögliches Versteck</span>
+        <span><i class="dot" style="background:var(--accent-soft);border:2px solid var(--accent)"></i>erlaubtes Ziel</span>
+      </div>
+    </div>
+    <aside class="panel" id="state" aria-live="polite"></aside>
+  </div>
+
+  <section class="panel play">
+    <h2>Freies Spiel</h2>
+    <div id="play"></div>
+    <h3>Regeln für eine neue Partie</h3>
+    <div class="knobs">
+      <label>Runden<input type="number" id="k-rounds" min="1" max="40"></label>
+      <label>Auftauchen in Runde<input type="text" id="k-reveal"></label>
+      <label>Anzahl Jäger (1–5)<input type="number" id="k-hunters" min="1" max="5"></label>
+      <label>Fahrscheine je Jäger: Taxi · Bus · U-Bahn<span class="trio"><input type="number" id="k-ht" min="0"><input type="number" id="k-hb" min="0"><input type="number" id="k-hu" min="0"></span></label>
+      <label>Flüchtiger: Taxi · Bus · U-Bahn<span class="trio"><input type="number" id="k-ft" min="0"><input type="number" id="k-fb" min="0"><input type="number" id="k-fu" min="0"></span></label>
+      <label>Flüchtiger: Schattenfahrten · Doppelzüge<span class="trio"><input type="number" id="k-fs" min="0"><input type="number" id="k-fd" min="0"></span></label>
+      <label>Startwurf (gleiche Zahl, gleiche Startfelder)<input type="number" id="k-seed" min="1"></label>
+      <label class="check"><input type="checkbox" id="k-inflow">Verbrauchte Fahrscheine der Jäger gehen an den Flüchtigen</label>
+      <label class="check"><input type="checkbox" id="helper">Fernseher zeigt mögliche Verstecke (wirkt sofort)</label>
+    </div>
+    <p style="margin-top:12px"><button class="primary" data-act="new">Neue Partie mit diesen Regeln</button></p>
+  </section>
+
+  <section class="panel">
+    <h2>Geführte Szenarien</h2>
+    <p class="note">Jedes Szenario startet von einer festen Aufstellung neu. Die Knöpfe sind die Schritte in Reihenfolge. Rot markierte Schritte sollen abgelehnt werden.</p>
+    <div id="tour"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Was dieser Prototyp offen lässt</h2>
+    <ul class="questions">
+      <li><strong>Doppelzug in einer Auftauchrunde:</strong> Hier zählen beide Schritte als eine Runde, und gesehen wird nur das Ziel. Sollen beide Halte sichtbar werden?</li>
+      <li><strong>Mögliche Verstecke am Fernseher:</strong> Eine Hilfe, die es nur digital gibt. Vor dem ersten Auftauchen umfasst sie nach zwei Runden fast die ganze Stadt. Hilft sie, oder nimmt sie den Jägern das Kombinieren ab?</li>
+      <li><strong>Fahrscheine des Flüchtigen:</strong> Hier sind seine Vorräte öffentlich, wie Karten auf dem Tisch. Sollen sie geheim bleiben?</li>
+      <li><strong>Jäger nacheinander oder gleichzeitig:</strong> Am Handy wäre gleichzeitiges Ziehen schneller, aber zwei Jäger könnten dasselbe Feld wählen.</li>
+      <li><strong>2 bis 6 Spieler:</strong> Bei weniger Spielern führt ein Mensch mehrere Jäger. Wer welchen Jäger führt, prüft dieser Prototyp nicht.</li>
+    </ul>
+  </section>
+</main>
+<script>
+// ===== BEGIN RULES MODULE (pure: no DOM; the page only calls in) =====
+const TRANSPORT = ['taxi', 'bus', 'ubahn'];
+const TICKET_LABEL = { taxi: 'Taxi', bus: 'Bus', ubahn: 'U-Bahn', schatten: 'Schattenfahrt', doppel: 'Doppelzug' };
+const BY = { taxi: 'mit dem Taxi', bus: 'mit dem Bus', ubahn: 'mit der U-Bahn', schatten: 'mit einer Schattenfahrt' };
+const NO_LINK = { taxi: 'fährt kein Taxi', bus: 'fährt kein Bus', ubahn: 'fährt keine U-Bahn' };
+
+const DEFAULTS = {
+  rounds: 18,
+  revealRounds: [3, 8, 13, 18],
+  hunterCount: 4,
+  hunterTickets: { taxi: 10, bus: 6, ubahn: 3 },
+  fugitiveTickets: { taxi: 4, bus: 3, ubahn: 2, schatten: 3, doppel: 1 },
+  spentGoToFugitive: true,
+  showHideouts: true,
+};
+
+const MAP = buildMap();
+
+function buildMap() {
+  const COLS = 8, ROWS = 6, id = (r, c) => r * COLS + c + 1;
+  const nodes = {};
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const n = id(r, c);
+    nodes[n] = { id: n, x: 70 + c * 117 + ((n * 37) % 21) - 10, y: 50 + r * 88 + ((n * 53) % 17) - 8 };
+  }
+  const edges = [];
+  const noTaxi = new Set(['11-12', '36-37', '5-13', '38-46', '20-21']);
+  const bridgeCols = new Set([1, 4, 6]); // the river runs between rows 3 and 4; taxis cross only on bridges
+  const taxi = (a, b) => { if (!noTaxi.has(`${a}-${b}`)) edges.push({ a, b, type: 'taxi' }); };
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    if (c < COLS - 1) taxi(id(r, c), id(r, c + 1));
+    if (r < ROWS - 1 && (r !== 2 || bridgeCols.has(c))) taxi(id(r, c), id(r + 1, c));
+  }
+  for (const [a, b] of [[2, 11], [14, 23], [27, 36], [31, 40], [35, 44]]) taxi(a, b);
+  const line = (type, stops) => stops.slice(1).forEach((b, i) => edges.push({ a: stops[i], b, type }));
+  [[9, 11, 13, 15], [34, 36, 38, 40], [4, 21, 37], [2, 18, 26, 42], [7, 23, 31, 47]].forEach(s => line('bus', s));
+  [[9, 21, 47], [7, 21, 42]].forEach(s => line('ubahn', s));
+  const adj = {};
+  for (const n in nodes) adj[n] = [];
+  for (const e of edges) { adj[e.a].push({ to: e.b, type: e.type }); adj[e.b].push({ to: e.a, type: e.type }); }
+  return {
+    nodes, edges, adj,
+    hunterStarts: [3, 14, 19, 28, 35, 44, 16, 41],
+    fugitiveStarts: [6, 10, 24, 27, 33, 46, 39, 12],
+  };
+}
+
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffled(list, rand) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+/** A new game. `setup` may pin start nodes ({ fugitive, hunters }) or give a seed. */
+function newGame(options = {}, setup = {}) {
+  const config = { ...DEFAULTS, ...options };
+  const rand = rng(setup.seed ?? 1);
+  const hunters = setup.hunters ?? shuffled(MAP.hunterStarts, rand).slice(0, config.hunterCount);
+  const fugitiveAt = setup.fugitive ?? shuffled(MAP.fugitiveStarts, rand)[0];
+  return settle({
+    config, round: 1, phase: 'fugitive', hunterTurn: 0,
+    fugitive: { at: fugitiveAt, tickets: { ...config.fugitiveTickets }, doubleStepsLeft: 0 },
+    hunters: hunters.map(at => ({ at, tickets: { ...config.hunterTickets } })),
+    log: [],
+    // Every node the fugitive could be on, from public information only.
+    hideouts: MAP.fugitiveStarts.filter(n => !hunters.includes(n)),
+    winner: null, reason: '', error: null,
+    news: [`Neue Partie: ${hunters.length} Jäger, ${config.rounds} Runden. Der Flüchtige startet auf einem der Startfelder.`],
+  });
+}
+
+function movesFor(s) {
+  if (s.phase === 'fugitive') return fugitiveMoves(s);
+  if (s.phase === 'hunter') return hunterMoves(s, s.hunterTurn);
+  return [];
+}
+
+function fugitiveMoves(s) {
+  const taken = new Set(s.hunters.map(h => h.at));
+  const { tickets } = s.fugitive;
+  const out = [], shadow = new Set();
+  for (const { to, type } of MAP.adj[s.fugitive.at]) {
+    if (taken.has(to)) continue;
+    if (tickets[type] > 0) out.push({ to, ticket: type });
+    if (tickets.schatten > 0 && !shadow.has(to)) { shadow.add(to); out.push({ to, ticket: 'schatten' }); }
+  }
+  return out;
+}
+
+function hunterMoves(s, i) {
+  const h = s.hunters[i];
+  const taken = new Set(s.hunters.filter((_, j) => j !== i).map(o => o.at));
+  return MAP.adj[h.at].filter(e => !taken.has(e.to) && h.tickets[e.type] > 0).map(e => ({ to: e.to, ticket: e.type }));
+}
+
+/** (state, action) => state. Illegal actions return the old state with `error` set. */
+function apply(state, action) {
+  const refuse = msg => ({ ...state, news: [], error: msg });
+  if (state.phase === 'over') return refuse('Die Partie ist schon vorbei.');
+  const turn = state.phase === 'fugitive' ? 'F' : state.hunterTurn;
+  if (action.by !== turn) return refuse(`Jetzt ist ${actorName(turn)} dran, nicht ${actorName(action.by)}.`);
+  const s = structuredClone(state);
+  s.news = []; s.error = null;
+  if (action.type === 'double') {
+    if (s.fugitive.doubleStepsLeft > 0) return refuse('Der Doppelzug läuft schon.');
+    if (s.fugitive.tickets.doppel < 1) return refuse('Der Flüchtige hat keine Doppelzug-Karte mehr.');
+    s.fugitive.tickets.doppel--;
+    s.fugitive.doubleStepsLeft = 2;
+    s.news.push('Der Flüchtige sagt einen Doppelzug an: Er fährt zweimal, bevor die Jäger ziehen.');
+    return settle(s);
+  }
+  if (action.type !== 'move') return refuse('Unbekannte Aktion.');
+  if (!movesFor(s).some(m => m.to === action.to && m.ticket === action.ticket)) return refuse(whyNot(s, action));
+  return s.phase === 'fugitive' ? moveFugitive(s, action) : moveHunter(s, action);
+}
+
+function moveFugitive(s, { to, ticket }) {
+  s.fugitive.at = to;
+  s.fugitive.tickets[ticket]--;
+  let entry = s.log.find(e => e.round === s.round);
+  if (!entry) s.log.push(entry = { round: s.round, tickets: [], shownAt: null });
+  entry.tickets.push(ticket);
+  s.hideouts = spread(s.hideouts, ticket, new Set(s.hunters.map(h => h.at)));
+  s.news.push(ticket === 'schatten'
+    ? 'Der Flüchtige nimmt eine Schattenfahrt. Am Fernseher steht nur „Schattenfahrt“: Welches Verkehrsmittel, bleibt geheim.'
+    : `Der Flüchtige fährt ${BY[ticket]}. Am Fernseher steht nur „${TICKET_LABEL[ticket]}“.`);
+  if (s.fugitive.doubleStepsLeft === 2) { s.fugitive.doubleStepsLeft = 1; return settle(s); }
+  s.fugitive.doubleStepsLeft = 0;
+  return settle(endFugitiveTurn(s));
+}
+
+function endFugitiveTurn(s) {
+  if (s.config.revealRounds.includes(s.round)) {
+    s.log.at(-1).shownAt = s.fugitive.at;
+    s.hideouts = [s.fugitive.at];
+    s.news.push(`Auftauchen! In Runde ${s.round} wird der Flüchtige an ${s.fugitive.at} gesehen.`);
+  }
+  s.phase = 'hunter';
+  s.hunterTurn = 0;
+  return s;
+}
+
+function moveHunter(s, { to, ticket }) {
+  const i = s.hunterTurn, h = s.hunters[i];
+  h.at = to;
+  h.tickets[ticket]--;
+  if (s.config.spentGoToFugitive) s.fugitive.tickets[ticket]++;
+  if (to === s.fugitive.at) return finish(s, 'hunters', `Jäger ${i + 1} fährt ${BY[ticket]} nach ${to} und erwischt den Flüchtigen.`);
+  const searched = s.hideouts.includes(to);
+  s.hideouts = s.hideouts.filter(n => n !== to);
+  s.news.push(`Jäger ${i + 1} fährt ${BY[ticket]} nach ${to}${searched ? ': Dort ist der Flüchtige nicht.' : '.'}`
+    + (s.config.spentGoToFugitive ? ` Der Fahrschein geht an den Flüchtigen.` : ''));
+  return settle(nextHunter(s));
+}
+
+function nextHunter(s) {
+  s.hunterTurn++;
+  if (s.hunterTurn < s.hunters.length) return s;
+  if (s.round >= s.config.rounds) return finish(s, 'fugitive', `Der Flüchtige hat alle ${s.config.rounds} Runden überstanden.`);
+  s.round++;
+  s.phase = 'fugitive';
+  s.hunterTurn = 0;
+  return s;
+}
+
+function finish(s, winner, reason) {
+  s.phase = 'over';
+  s.winner = winner;
+  s.reason = reason;
+  s.news.push(reason);
+  return s;
+}
+
+// Resolves the forced steps: a stuck mover passes or loses, until someone has a real choice.
+function settle(s) {
+  for (;;) {
+    if (s.phase === 'fugitive' && fugitiveMoves(s).length === 0) {
+      if (s.fugitive.doubleStepsLeft === 1) {
+        s.fugitive.doubleStepsLeft = 0;
+        s.news.push('Für den zweiten Schritt gibt es keinen Weg: Der Doppelzug endet nach einem Schritt.');
+        endFugitiveTurn(s);
+        continue;
+      }
+      return finish(s, 'hunters', `Der Flüchtige an ${s.fugitive.at} ist eingekesselt: Er kann nirgendwohin fahren.`);
+    }
+    if (s.phase === 'hunter') {
+      if (s.hunterTurn === 0 && s.hunters.every((_, i) => hunterMoves(s, i).length === 0)) {
+        return finish(s, 'fugitive', 'Kein Jäger kann mehr fahren. Der Flüchtige ist entkommen.');
+      }
+      if (hunterMoves(s, s.hunterTurn).length === 0) {
+        s.news.push(`Jäger ${s.hunterTurn + 1} kann nicht fahren und setzt aus.`);
+        nextHunter(s);
+        if (s.phase === 'over') return s;
+        continue;
+      }
+    }
+    // Self-check: the public hideout list must always contain the real position.
+    console.assert(s.phase === 'over' || s.hideouts.includes(s.fugitive.at), 'Versteckliste ohne echten Standort', s);
+    return s;
+  }
+}
+
+function spread(hideouts, ticket, blocked) {
+  const types = ticket === 'schatten' ? TRANSPORT : [ticket];
+  const next = new Set();
+  for (const n of hideouts) for (const e of MAP.adj[n]) if (types.includes(e.type) && !blocked.has(e.to)) next.add(e.to);
+  return [...next].sort((a, b) => a - b);
+}
+
+function actorName(by) {
+  return by === 'F' ? 'der Flüchtige' : `Jäger ${by + 1}`;
+}
+
+function whyNot(s, { to, ticket }) {
+  const fugitive = s.phase === 'fugitive';
+  const who = fugitive ? 'Der Flüchtige' : `Jäger ${s.hunterTurn + 1}`;
+  const me = fugitive ? s.fugitive : s.hunters[s.hunterTurn];
+  if (!fugitive && ticket === 'schatten') return 'Schattenfahrten hat nur der Flüchtige.';
+  if (!(me.tickets[ticket] > 0)) return `${who} hat keinen ${TICKET_LABEL[ticket]}-Fahrschein mehr.`;
+  const links = MAP.adj[me.at].filter(e => e.to === to);
+  if (!links.length) return `Von ${me.at} gibt es keine Verbindung nach ${to}.`;
+  if (ticket !== 'schatten' && !links.some(e => e.type === ticket)) return `Von ${me.at} ${NO_LINK[ticket]} nach ${to}.`;
+  if (fugitive && s.hunters.some(h => h.at === to)) return `An ${to} steht ein Jäger. Dorthin fährt der Flüchtige nicht.`;
+  if (!fugitive && s.hunters.some((h, i) => i !== s.hunterTurn && h.at === to)) return `An ${to} steht schon ein anderer Jäger.`;
+  return 'Dieser Zug ist nicht erlaubt.';
+}
+
+/** What the shared TV may show: never the fugitive's node, except on a reveal or at the end. */
+function tvView(s) {
+  const seen = s.log.filter(e => e.shownAt).at(-1);
+  return {
+    round: s.round, rounds: s.config.rounds, phase: s.phase, hunterTurn: s.hunterTurn,
+    nextReveal: s.config.revealRounds.find(r => r > s.round || (r === s.round && s.phase === 'fugitive')) ?? null,
+    hunters: s.hunters.map(h => ({ at: h.at, tickets: { ...h.tickets } })),
+    fugitiveTickets: { ...s.fugitive.tickets },
+    doubleRunning: s.fugitive.doubleStepsLeft > 0,
+    log: s.log.map(e => ({ round: e.round, tickets: [...e.tickets], shownAt: e.shownAt })),
+    lastSeen: seen ? { round: seen.round, at: seen.shownAt } : null,
+    hideouts: s.config.showHideouts ? [...s.hideouts] : null,
+    fugitiveAt: s.phase === 'over' ? s.fugitive.at : null,
+    winner: s.winner, reason: s.reason,
+  };
+}
+
+/** What only the fugitive's phone shows. */
+function fugitivePhoneView(s) {
+  return {
+    at: s.fugitive.at, tickets: { ...s.fugitive.tickets }, doubleStepsLeft: s.fugitive.doubleStepsLeft,
+    myTurn: s.phase === 'fugitive', moves: s.phase === 'fugitive' ? fugitiveMoves(s) : [],
+  };
+}
+// ===== END RULES MODULE =====
+// ===== BEGIN SCENARIOS (data only) =====
+const F = (to, ticket) => ({ type: 'move', by: 'F', to, ticket });
+const J = (n, to, ticket) => ({ type: 'move', by: n - 1, to, ticket });
+const SCENARIOS = [
+  {
+    title: 'Auftauchen',
+    view: 'tv',
+    setup: { fugitive: 12, hunters: [3, 44] },
+    lage: 'Zwei Jäger, Standardregeln. Der Flüchtige startet geheim auf einem der acht Startfelder (hier 12). Der Fernseher weiß am Anfang nur: eines der Startfelder.',
+    achten: 'Nach jedem Zug des Flüchtigen zeigt der Fernseher nur das Verkehrsmittel, und die gestrichelten Ringe (mögliche Verstecke) breiten sich aus. In Runde 3 taucht er auf: Die Ringe schrumpfen auf ein Feld und wachsen danach nur von dort aus.',
+    steps: [
+      ['Flüchtiger (geheim): Taxi nach 13', F(13, 'taxi')],
+      ['Jäger 1: Taxi nach 4', J(1, 4, 'taxi')],
+      ['Jäger 2: Taxi nach 36', J(2, 36, 'taxi')],
+      ['Flüchtiger (geheim): Bus nach 15', F(15, 'bus')],
+      ['Jäger 1: Bus nach 21', J(1, 21, 'bus')],
+      ['Jäger 2: Bus nach 38', J(2, 38, 'bus')],
+      ['Flüchtiger: Taxi nach 16, Runde 3, er wird gesehen', F(16, 'taxi')],
+      ['Jäger 1: U-Bahn nach 7', J(1, 7, 'ubahn')],
+      ['Jäger 2: Taxi nach 39', J(2, 39, 'taxi')],
+    ],
+  },
+  {
+    title: 'Schattenfahrt',
+    view: 'tv',
+    options: { revealRounds: [2, 8, 13, 18] },
+    setup: { fugitive: 12, hunters: [3, 44] },
+    lage: 'In diesem Szenario taucht der Flüchtige schon in Runde 2 auf, und zwar an 21, dem U-Bahn-Kreuz. Danach nimmt er eine Schattenfahrt.',
+    achten: 'Nach der Schattenfahrt steht im Fahrtenbuch nur „Schattenfahrt“. Die möglichen Verstecke springen auf alle Nachbarn von 21 über Taxi, Bus und U-Bahn, quer durch die Stadt. Die Jäger durchsuchen danach zwei davon vergeblich.',
+    steps: [
+      ['Flüchtiger (geheim): Taxi nach 13', F(13, 'taxi')],
+      ['Jäger 1: Taxi nach 4', J(1, 4, 'taxi')],
+      ['Jäger 2: Taxi nach 45', J(2, 45, 'taxi')],
+      ['Flüchtiger: Taxi nach 21, Runde 2, er wird gesehen', F(21, 'taxi')],
+      ['Jäger 1: Taxi nach 12', J(1, 12, 'taxi')],
+      ['Jäger 2: Taxi nach 37', J(2, 37, 'taxi')],
+      ['Flüchtiger (geheim): Schattenfahrt nach 42, eigentlich U-Bahn', F(42, 'schatten')],
+      ['Jäger 1: Taxi nach 13', J(1, 13, 'taxi')],
+      ['Jäger 2: Taxi nach 29', J(2, 29, 'taxi')],
+    ],
+  },
+  {
+    title: 'Doppelzug',
+    view: 'leiter',
+    setup: { fugitive: 12, hunters: [3, 44] },
+    lage: 'Der Flüchtige spart seinen Doppelzug für Runde 3 auf, eine Auftauchrunde.',
+    achten: 'Beide Fahrten stehen in Runde 3 im Fahrtenbuch (Taxi und Bus), gesehen wird nur das Ziel 31. Der Zwischenhalt 23 bleibt geheim. Offene Frage: Soll ein Doppelzug in einer Auftauchrunde beide Halte zeigen?',
+    steps: [
+      ['Flüchtiger: Taxi nach 13', F(13, 'taxi')],
+      ['Jäger 1: Taxi nach 4', J(1, 4, 'taxi')],
+      ['Jäger 2: Taxi nach 45', J(2, 45, 'taxi')],
+      ['Flüchtiger: Taxi nach 14', F(14, 'taxi')],
+      ['Jäger 1: Taxi nach 5', J(1, 5, 'taxi')],
+      ['Jäger 2: Taxi nach 46', J(2, 46, 'taxi')],
+      ['Flüchtiger sagt einen Doppelzug an', { type: 'double', by: 'F' }],
+      ['Flüchtiger, 1. Schritt: Taxi nach 23', F(23, 'taxi')],
+      ['Flüchtiger, 2. Schritt: Bus nach 31', F(31, 'bus')],
+      ['Jäger 1: Taxi nach 6', J(1, 6, 'taxi')],
+      ['Jäger 2: Taxi nach 47', J(2, 47, 'taxi')],
+    ],
+  },
+  {
+    title: 'Erwischt',
+    view: 'leiter',
+    setup: { fugitive: 10, hunters: [3, 19] },
+    lage: 'Der Flüchtige flieht in die Ecke an Feld 1, eine Sackgasse mit nur zwei Ausgängen.',
+    achten: 'Jäger 1 fährt auf das Feld des Flüchtigen: Die Partie endet sofort, die Jäger gewinnen, und der Fernseher zeigt jetzt den Standort.',
+    steps: [
+      ['Flüchtiger: Taxi nach 9', F(9, 'taxi')],
+      ['Jäger 1: Taxi nach 2', J(1, 2, 'taxi')],
+      ['Jäger 2: Taxi nach 18', J(2, 18, 'taxi')],
+      ['Flüchtiger: Taxi nach 1', F(1, 'taxi')],
+      ['Jäger 1: Taxi nach 1, er erwischt ihn', J(1, 1, 'taxi')],
+    ],
+  },
+  {
+    title: 'Eingekesselt',
+    view: 'leiter',
+    setup: { fugitive: 10, hunters: [3, 17, 19] },
+    lage: 'Drei Jäger. Der Flüchtige läuft wieder nach 1, die Jäger besetzen beide Ausgänge 2 und 9.',
+    achten: 'Niemand fährt auf das Feld des Flüchtigen, trotzdem gewinnen die Jäger: Zu Beginn von Runde 3 kann der Flüchtige nirgendwohin fahren, auch nicht mit einer Schattenfahrt.',
+    steps: [
+      ['Flüchtiger: Taxi nach 9', F(9, 'taxi')],
+      ['Jäger 1: Taxi nach 2', J(1, 2, 'taxi')],
+      ['Jäger 2: Taxi nach 18', J(2, 18, 'taxi')],
+      ['Jäger 3: Taxi nach 11', J(3, 11, 'taxi')],
+      ['Flüchtiger: Taxi nach 1', F(1, 'taxi')],
+      ['Jäger 1: Taxi nach 10', J(1, 10, 'taxi')],
+      ['Jäger 2: Bus nach 2', J(2, 2, 'bus')],
+      ['Jäger 3: Bus nach 9, der Kessel ist zu', J(3, 9, 'bus')],
+    ],
+  },
+  {
+    title: 'Fahrscheine gehen aus',
+    view: 'leiter',
+    options: { hunterTickets: { taxi: 1, bus: 1, ubahn: 0 } },
+    setup: { fugitive: 12, hunters: [3, 44] },
+    lage: 'Jeder Jäger hat nur ein Taxi und einen Bus. Das ist absichtlich knapp, um den Rand der Regeln zu zeigen.',
+    achten: 'In Runde 2 hat Jäger 2 keinen passenden Fahrschein und setzt aus (das geschieht von selbst). In Runde 3 kann kein Jäger mehr fahren: Der Flüchtige ist entkommen, lange vor der letzten Runde.',
+    steps: [
+      ['Flüchtiger: Taxi nach 13', F(13, 'taxi')],
+      ['Jäger 1: Taxi nach 4', J(1, 4, 'taxi')],
+      ['Jäger 2: Taxi nach 45', J(2, 45, 'taxi')],
+      ['Flüchtiger: Taxi nach 14', F(14, 'taxi')],
+      ['Jäger 1: Bus nach 21, danach setzt Jäger 2 aus', J(1, 21, 'bus')],
+      ['Flüchtiger: Taxi nach 15, und kein Jäger kann mehr fahren', F(15, 'taxi')],
+    ],
+  },
+  {
+    title: 'Durchgehalten',
+    view: 'leiter',
+    options: { rounds: 2, revealRounds: [2] },
+    setup: { fugitive: 12, hunters: [3, 44] },
+    lage: 'Eine verkürzte Partie mit nur 2 Runden.',
+    achten: 'Wenn der letzte Jäger in der letzten Runde gezogen hat und niemand den Flüchtigen erwischt hat, gewinnt der Flüchtige.',
+    steps: [
+      ['Flüchtiger: Taxi nach 13', F(13, 'taxi')],
+      ['Jäger 1: Taxi nach 4', J(1, 4, 'taxi')],
+      ['Jäger 2: Taxi nach 45', J(2, 45, 'taxi')],
+      ['Flüchtiger: Taxi nach 14, Runde 2, er wird gesehen', F(14, 'taxi')],
+      ['Jäger 1: Taxi nach 5', J(1, 5, 'taxi')],
+      ['Jäger 2: Taxi nach 46, das war die letzte Runde', J(2, 46, 'taxi')],
+    ],
+  },
+  {
+    title: 'Verbotene Züge',
+    view: 'leiter',
+    setup: { fugitive: 12, hunters: [3, 13, 14, 44] },
+    lage: 'Vier Jäger, zwei davon stehen direkt neben dem Flüchtigen. Die meisten Schritte hier versuchen etwas, das die Regeln nicht erlauben.',
+    achten: 'Jeder verbotene Versuch wird mit einem Grund abgelehnt, und nichts ändert sich. Die erlaubten Schritte dazwischen bringen die Partie weiter.',
+    steps: [
+      ['Jäger 1 will vor dem Flüchtigen ziehen', J(1, 4, 'taxi'), true],
+      ['Flüchtiger will mit dem Taxi nach 13, wo Jäger 2 steht', F(13, 'taxi'), true],
+      ['Flüchtiger will mit dem Bus nach 4', F(4, 'bus'), true],
+      ['Flüchtiger will mit der U-Bahn nach 21', F(21, 'ubahn'), true],
+      ['Flüchtiger fährt mit dem Taxi nach 20 (erlaubt)', F(20, 'taxi')],
+      ['Flüchtiger will jetzt noch einen Doppelzug ansagen', { type: 'double', by: 'F' }, true],
+      ['Jäger 1 will eine Schattenfahrt nehmen', J(1, 2, 'schatten'), true],
+      ['Jäger 1 fährt mit dem Taxi nach 4 (erlaubt)', J(1, 4, 'taxi')],
+      ['Jäger 2 will nach 14, wo Jäger 3 steht', J(2, 14, 'taxi'), true],
+      ['Jäger 2 fährt mit dem Taxi nach 12 (erlaubt)', J(2, 12, 'taxi')],
+    ],
+  },
+].map(sc => ({ ...sc, steps: sc.steps.map(([label, action, refused]) => ({ label, action, refused: !!refused })) }));
+// ===== END SCENARIOS =====
+
+// ===== PAGE (throwaway shell: draws the state, wires the buttons, never decides a rule) =====
+const HUNTER_COLORS = ['#2563eb', '#15803d', '#be185d', '#a16207', '#0e7490'];
+const SHORT = { taxi: 'Taxi', bus: 'Bus', ubahn: 'U-Bahn', schatten: 'Schatten' };
+const VIEWS = {
+  leiter: ['Spielleiter (alles)', 'Zeigt alles, auch den echten Standort. Nur zum Prüfen, so sieht es niemand am Tisch.'],
+  tv: ['Fernseher (öffentlich)', 'Genau das, was der Fernseher im Wohnzimmer zeigen darf.'],
+  phone: ['Handy des Flüchtigen', 'Was der Flüchtige auf seinem Handy sieht: zusätzlich seinen echten Standort.'],
+};
+
+let state = newGame();
+let view = 'leiter';
+let tour = { index: -1, step: 0, left: false };
+
+const $ = sel => document.querySelector(sel);
+
+function dispatch(action, fromTour) {
+  state = apply(state, action);
+  if (!fromTour && tour.index >= 0) tour.left = true;
+  render();
+}
+
+function startTour(i) {
+  const sc = SCENARIOS[i];
+  state = newGame({ ...sc.options, showHideouts: $('#helper').checked }, sc.setup);
+  view = sc.view;
+  tour = { index: i, step: 0, left: false };
+  render();
+}
+
+function newFromKnobs() {
+  const v = id => Number($(id).value);
+  state = newGame({
+    rounds: Math.max(1, v('#k-rounds')),
+    revealRounds: $('#k-reveal').value.split(/[^0-9]+/).filter(Boolean).map(Number),
+    hunterCount: Math.min(5, Math.max(1, v('#k-hunters'))),
+    hunterTickets: { taxi: v('#k-ht'), bus: v('#k-hb'), ubahn: v('#k-hu') },
+    fugitiveTickets: { taxi: v('#k-ft'), bus: v('#k-fb'), ubahn: v('#k-fu'), schatten: v('#k-fs'), doppel: v('#k-fd') },
+    spentGoToFugitive: $('#k-inflow').checked,
+    showHideouts: $('#helper').checked,
+  }, { seed: Math.max(1, v('#k-seed')) });
+  if (tour.index >= 0) tour.left = true;
+  render();
+}
+
+// The fugitive's choices are secret: on the TV view they are not drawn at all.
+function visibleMoves() {
+  if (state.phase === 'over' || (state.phase === 'fugitive' && view === 'tv')) return [];
+  return movesFor(state);
+}
+
+function edgePath(a, b, bend) {
+  const A = MAP.nodes[a], B = MAP.nodes[b];
+  if (!bend) return `M${A.x} ${A.y}L${B.x} ${B.y}`;
+  const dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx, dy);
+  return `M${A.x} ${A.y}Q${(A.x + B.x) / 2 - dy / len * bend} ${(A.y + B.y) / 2 + dx / len * bend} ${B.x} ${B.y}`;
+}
+
+function boardSvg() {
+  const tv = tvView(state);
+  const showFugitive = view !== 'tv' || tv.fugitiveAt !== null;
+  const hideouts = view === 'leiter' ? new Set(state.hideouts) : new Set(tv.hideouts ?? []);
+  const targets = new Set(visibleMoves().map(m => m.to));
+  let out = '<path class="river" d="M0 268 C 160 246, 320 294, 480 270 S 800 246, 960 272"/>';
+  for (const type of ['ubahn', 'bus', 'taxi']) {
+    for (const e of MAP.edges) if (e.type === type) out += `<path class="edge ${type}" d="${edgePath(e.a, e.b, { taxi: 0, bus: 22, ubahn: 42 }[type])}"/>`;
+  }
+  for (const id in MAP.nodes) {
+    const n = MAP.nodes[id], types = new Set(MAP.adj[id].map(e => e.type));
+    const kind = types.has('ubahn') ? 'ubahn' : types.has('bus') ? 'bus' : 'taxi';
+    if (hideouts.has(+id)) out += `<circle class="hideout" cx="${n.x}" cy="${n.y}" r="21"/>`;
+    out += `<circle class="node ${kind}${targets.has(+id) ? ' target' : ''}" cx="${n.x}" cy="${n.y}" r="14"/>`;
+    out += `<text class="label" x="${n.x}" y="${n.y + 4}">${id}</text>`;
+  }
+  if (view === 'tv' && tv.lastSeen && tv.fugitiveAt === null) {
+    const n = MAP.nodes[tv.lastSeen.at];
+    out += `<text class="seen" x="${n.x}" y="${n.y + 33}">gesehen R${tv.lastSeen.round}</text>`;
+  }
+  tv.hunters.forEach((h, i) => {
+    const n = MAP.nodes[h.at];
+    out += `<g class="pawn"><circle cx="${n.x + 13}" cy="${n.y - 13}" r="10" fill="${HUNTER_COLORS[i]}"/><text x="${n.x + 13}" y="${n.y - 9.5}">${i + 1}</text></g>`;
+  });
+  if (showFugitive) {
+    const n = MAP.nodes[state.fugitive.at];
+    out += `<g class="pawn fugitive"><circle cx="${n.x - 13}" cy="${n.y - 13}" r="10"/><text x="${n.x - 13}" y="${n.y - 9.5}">F</text></g>`;
+  }
+  return out;
+}
+
+const tickets = (t, keys) => keys.map(k => `${TICKET_LABEL[k]} ${t[k]}`).join(' · ');
+
+function statePanel() {
+  const tv = tvView(state), phone = fugitivePhoneView(state);
+  const turn = state.phase === 'over' ? 'niemand, die Partie ist vorbei'
+    : state.phase === 'fugitive' ? (phone.doubleStepsLeft === 1 ? 'der Flüchtige, 2. Schritt des Doppelzugs' : 'der Flüchtige')
+    : `Jäger ${state.hunterTurn + 1}`;
+  let html = `<div class="status">Runde <b>${tv.round}</b> von ${tv.rounds} · Am Zug: <b>${turn}</b><br>`
+    + `<span class="viewnote">${tv.nextReveal ? `Nächstes Auftauchen: Runde ${tv.nextReveal}` : 'Kein Auftauchen mehr geplant'}${tv.doubleRunning ? ' · Doppelzug läuft' : ''}</span></div>`;
+  if (tv.winner) html += `<div class="banner ${tv.winner}">${tv.winner === 'hunters' ? 'Die Jäger gewinnen.' : 'Der Flüchtige gewinnt.'}<br><span style="font-weight:400">${tv.reason}</span></div>`;
+
+  html += '<h3>Gerade passiert</h3>';
+  if (state.error) html += `<div class="error">Abgelehnt: ${state.error}</div>`;
+  html += state.news.length ? `<ul class="news">${state.news.map(n => `<li>${n}</li>`).join('')}</ul>` : (state.error ? '<p class="viewnote">Nichts hat sich geändert.</p>' : '');
+
+  html += '<h3>Fahrtenbuch (für alle sichtbar)</h3><div class="log">';
+  const reveals = new Set(state.config.revealRounds);
+  for (let r = 1; r <= tv.rounds; r++) {
+    const e = tv.log.find(x => x.round === r);
+    html += `<div class="cell${reveals.has(r) ? ' reveal' : ''}${r === tv.round && state.phase !== 'over' ? ' now' : ''}">`
+      + `<span class="rn">${r}${reveals.has(r) ? ' ◉' : ''}</span>`
+      + (e ? e.tickets.map(t => `<span class="tk ${t}">${SHORT[t]}</span>`).join('') : '')
+      + (e && e.shownAt ? `<span class="at">an ${e.shownAt}</span>` : '') + '</div>';
+  }
+  html += '</div><p class="viewnote" style="margin-top:4px">◉ = Auftauchrunde</p>';
+
+  html += '<h3>Mögliche Verstecke</h3>';
+  const list = view === 'leiter' ? state.hideouts : tv.hideouts;
+  html += list ? `<p><b>${list.length}</b> Felder: ${list.join(', ')}</p>` : '<p class="viewnote">Am Fernseher ausgeblendet.</p>';
+
+  html += '<h3>Jäger</h3><table><tr><th></th><th>Feld</th><th>Taxi</th><th>Bus</th><th>U-Bahn</th></tr>'
+    + tv.hunters.map((h, i) => `<tr${state.phase === 'hunter' && i === state.hunterTurn ? ' style="background:var(--accent-soft)"' : ''}><td><span style="color:${HUNTER_COLORS[i]}">●</span> Jäger ${i + 1}</td><td>${h.at}</td><td>${h.tickets.taxi}</td><td>${h.tickets.bus}</td><td>${h.tickets.ubahn}</td></tr>`).join('')
+    + '</table>';
+
+  html += `<h3>Flüchtiger</h3><p>Fahrscheine (offen auf dem Tisch): ${tickets(tv.fugitiveTickets, ['taxi', 'bus', 'ubahn', 'schatten', 'doppel'])}</p>`;
+  html += view === 'tv' && tv.fugitiveAt === null
+    ? '<div class="secret hidden">Standort: geheim. Nur sein Handy kennt ihn.</div>'
+    : `<div class="secret">Standort auf seinem Handy: <b>${phone.at}</b>${phone.doubleStepsLeft ? ` · Doppelzug: noch ${phone.doubleStepsLeft} Schritt${phone.doubleStepsLeft > 1 ? 'e' : ''}` : ''}</div>`;
+  return html;
+}
+
+function playPanel() {
+  if (state.phase === 'over') return '<p>Die Partie ist vorbei. Starte unten eine neue Partie oder ein Szenario.</p>';
+  if (state.phase === 'fugitive' && view === 'tv') {
+    return '<p><b>Der Flüchtige wählt geheim auf seinem Handy.</b> Der Fernseher zeigt seine Möglichkeiten nicht. Zum Ziehen oben auf „Handy des Flüchtigen“ oder „Spielleiter“ umschalten.</p>';
+  }
+  const who = state.phase === 'fugitive' ? 'Flüchtiger' : `Jäger ${state.hunterTurn + 1}`;
+  const byTarget = new Map();
+  for (const m of visibleMoves()) byTarget.set(m.to, [...(byTarget.get(m.to) ?? []), m.ticket]);
+  let html = `<p>Am Zug: <b>${who}</b>. Wähle Ziel und Fahrschein.</p>`;
+  for (const [to, ts] of [...byTarget].sort((a, b) => a[0] - b[0])) {
+    html += `<div class="row"><span class="to">Nach ${to}</span>${ts.map(t => `<button data-to="${to}" data-ticket="${t}">${TICKET_LABEL[t]}</button>`).join('')}</div>`;
+  }
+  if (state.phase === 'fugitive' && state.fugitive.tickets.doppel > 0 && state.fugitive.doubleStepsLeft === 0) {
+    html += '<p><button data-act="double">Doppelzug ansagen (zweimal fahren, bevor die Jäger ziehen)</button></p>';
+  }
+  return html;
+}
+
+function tourPanel() {
+  let html = '<div class="tabs">' + SCENARIOS.map((sc, i) => `<button data-tour="${i}" class="${i === tour.index ? 'on' : ''}">${sc.title}</button>`).join('') + '</div>';
+  if (tour.index < 0) return html + '<p class="viewnote">Wähle ein Szenario. Es beginnt sofort von seiner Startaufstellung.</p>';
+  const sc = SCENARIOS[tour.index];
+  html += `<p><b>Die Lage:</b> ${sc.lage}</p><p><b>Darauf achten:</b> ${sc.achten}</p>`;
+  if (tour.left) html += '<p class="error" style="background:var(--accent-soft);color:var(--accent)">Du hast frei weitergespielt, deshalb sind die Schritte gesperrt. „Von vorn“ startet das Szenario neu.</p>';
+  html += '<ol class="steps">' + sc.steps.map((st, i) => {
+    const done = i < tour.step, next = i === tour.step && !tour.left;
+    return `<li><span class="n">${i + 1}.</span><button data-act="step" ${next ? 'class="primary"' : 'disabled'}><span class="${done ? 'done' : ''}">${st.label}</span></button>${st.refused ? '<span class="expect">soll abgelehnt werden</span>' : ''}${done ? ' ✓' : ''}</li>`;
+  }).join('') + '</ol>';
+  if (tour.step >= sc.steps.length) html += '<p><b>Szenario fertig.</b> Du kannst oben frei weiterspielen.</p>';
+  return html + '<p><button data-act="restart">Von vorn</button></p>';
+}
+
+function render() {
+  $('#views').innerHTML = Object.entries(VIEWS).map(([k, [name]]) => `<button data-view="${k}" class="${k === view ? 'on' : ''}">${name}</button>`).join('');
+  $('#viewnote').textContent = VIEWS[view][1];
+  $('#board').innerHTML = boardSvg();
+  $('#state').innerHTML = statePanel();
+  $('#play').innerHTML = playPanel();
+  $('#tour').innerHTML = tourPanel();
+}
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (!b || b.disabled) return;
+  const d = b.dataset;
+  if (d.view) { view = d.view; render(); }
+  else if (d.to) dispatch({ type: 'move', by: state.phase === 'fugitive' ? 'F' : state.hunterTurn, to: Number(d.to), ticket: d.ticket });
+  else if (d.act === 'double') dispatch({ type: 'double', by: 'F' });
+  else if (d.tour !== undefined) startTour(Number(d.tour));
+  else if (d.act === 'step') { const st = SCENARIOS[tour.index].steps[tour.step]; tour.step++; dispatch(st.action, true); }
+  else if (d.act === 'restart') startTour(tour.index);
+  else if (d.act === 'new') newFromKnobs();
+});
+$('#helper').addEventListener('change', e => {
+  state = { ...state, config: { ...state.config, showHideouts: e.target.checked } };
+  render();
+});
+
+// Fill the rule inputs from the defaults once.
+$('#k-rounds').value = DEFAULTS.rounds;
+$('#k-reveal').value = DEFAULTS.revealRounds.join(', ');
+$('#k-hunters').value = DEFAULTS.hunterCount;
+[['#k-ht', 'taxi'], ['#k-hb', 'bus'], ['#k-hu', 'ubahn']].forEach(([id, k]) => { $(id).value = DEFAULTS.hunterTickets[k]; });
+[['#k-ft', 'taxi'], ['#k-fb', 'bus'], ['#k-fu', 'ubahn'], ['#k-fs', 'schatten'], ['#k-fd', 'doppel']].forEach(([id, k]) => { $(id).value = DEFAULTS.fugitiveTickets[k]; });
+$('#k-seed').value = 1;
+$('#k-inflow').checked = DEFAULTS.spentGoToFugitive;
+$('#helper').checked = DEFAULTS.showHideouts;
+render();
+</script>
+</body>
+</html>

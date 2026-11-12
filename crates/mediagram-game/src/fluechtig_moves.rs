@@ -3,7 +3,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::fluechtig_map::{CITY, Field};
+use crate::fluechtig_map::Field;
 use crate::fluechtig_rules::{Chase, Move, Turn};
 use crate::protocol::{FluechtigTicket as Ticket, FluechtigTickets as Tickets};
 
@@ -45,11 +45,12 @@ impl Chase {
         let taken = self.hunter_fields();
         let mut out = Vec::new();
         let mut shadow = BTreeSet::new();
-        for &(to, kind) in CITY.exits(from) {
+        for &(to, kind) in self.city.exits(from) {
             if taken.contains(&to) {
                 continue;
             }
-            if tickets.count(kind) > 0 {
+            // the ferry's kind is the shadow ride itself, offered once below
+            if kind != Ticket::Schatten && tickets.count(kind) > 0 {
                 out.push(Move { to, ticket: kind });
             }
             if tickets.schatten > 0 && shadow.insert(to) {
@@ -62,7 +63,7 @@ impl Chase {
     pub(crate) fn hunter_moves(&self, i: usize) -> Vec<Move> {
         let me = &self.hunters[i];
         let taken = |to: Field| self.hunters.iter().enumerate().any(|(j, h)| j != i && h.at == to);
-        CITY.exits(me.at)
+        self.city.exits(me.at)
             .iter()
             .filter(|&&(to, kind)| me.tickets.count(kind) > 0 && !taken(to))
             .map(|&(to, ticket)| Move { to, ticket })
@@ -78,7 +79,7 @@ impl Chase {
     pub(crate) fn house_move(&self) -> Option<Move> {
         let moves = self.moves();
         let hunters = self.hunter_fields();
-        let near = |f: Field| CITY.exits(f).iter().filter(|(to, _)| hunters.contains(to)).count();
+        let near = |f: Field| self.city.exits(f).iter().filter(|(to, _)| hunters.contains(to)).count();
         match self.turn {
             Turn::Fugitive => moves.into_iter().min_by_key(|m| (near(m.to), m.ticket == Ticket::Schatten)),
             _ => moves.into_iter().max_by_key(|m| self.hideouts.contains(&m.to)),
