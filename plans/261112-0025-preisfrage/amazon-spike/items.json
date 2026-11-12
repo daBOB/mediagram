@@ -1,0 +1,2263 @@
+{
+  "fetched": "2026-11-12T00:10:32.885Z",
+  "stats": [
+    {
+      "category": "kitchen",
+      "status": 200,
+      "found": 46,
+      "priced": 46,
+      "note": "Amazon.de Bestseller: Die beliebtesten Artikel in Küche, Hau"
+    },
+    {
+      "category": "toys",
+      "status": 200,
+      "found": 46,
+      "priced": 45,
+      "note": "Amazon.de Bestseller: Die beliebtesten Artikel in Spielzeug"
+    },
+    {
+      "category": "diy",
+      "status": 200,
+      "found": 46,
+      "priced": 46,
+      "note": "Amazon.de Bestseller: Die beliebtesten Artikel in Baumarkt"
+    },
+    {
+      "category": "drugstore",
+      "status": 200,
+      "found": 38,
+      "priced": 37,
+      "note": "Amazon.de Bestseller: Die beliebtesten Artikel in Drogerie &"
+    },
+    {
+      "category": "sports",
+      "status": 200,
+      "found": 37,
+      "priced": 36,
+      "note": "Amazon.de Bestseller: Die beliebtesten Artikel in Sport & Fr"
+    },
+    {
+      "category": "pet-supplies",
+      "status": 200,
+      "found": 38,
+      "priced": 36,
+      "note": "Amazon.de Bestseller: Die beliebtesten Artikel in Haustier"
+    }
+  ],
+  "items": [
+    {
+      "asin": "B01BYTG0SG",
+      "title": "Jacobson Jersey Spannbettlaken Spannbetttuch Baumwolle Bettlaken (180x200-200x200 cm, Anthrazit)",
+      "cents": 1199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71hVqlYcUaL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 1,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B008YETL18",
+      "title": "De'Longhi Decalk - Entkalker für Kaffeemaschinen 5 Entkalkungsdosen | Echt De'Longhi Entkalker, Pflegezubehör für Kaffeemasch",
+      "cents": 799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71DuIPbpAaL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 2,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0CKZ4GW25",
+      "title": "the carpet Relax kuscheliger Kurzflor Teppich, Anti-Rutsch Unterseite, Waschbar bis 30 Grad, Super Soft, Felloptik, Beige, 16",
+      "cents": 2539,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61fTTbjwxbL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 3,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B07BFVKFTK",
+      "title": "Utopia Bedding - Spannbettlaken 180x200cm - Grau | 100% Polyester Mikrofaser Spannbetttuch - Boxspringbett - Oeko-Tex Zertifi",
+      "cents": 1199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61byHhAJuwL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 4,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B074M9DZ4M",
+      "title": "Philips Original AquaClean Wasser-Filter Doppelpack für Kaffeevollautomaten | Bis zu 5000 Tassen ohne Entkalken, Click&Go-Sys",
+      "cents": 1699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61lf71xP0UL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 5,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0BF9W3WC4",
+      "title": "JURA original CLARIS Smart+ Wasserfilter 3er-Pack (24233) | Filterpatrone mit RFID-Filtererkennung · TÜV-zertifizierte Hygien",
+      "cents": 3999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61gmMv9mlGL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 6,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B00E3862DE",
+      "title": "Philips Fusselrasierer, Blau, 2 Höheneinstellungen | 8800 U/min, 3 Maschengrößen für alle Stoffe, Leicht zu reinigen, Kompakt",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61REpxcoIfL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 7,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B09Z3F73D3",
+      "title": "Papierdrachen Adventskalender 2026 zum Befüllen - Motiv Holy Night - 24 braune bedruckte Geschenktüten mit Zahlenaufklebern &",
+      "cents": 1290,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81HA7U7LFwL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 8,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0CC2HPSLS",
+      "title": "Moxled Fensterbilder Weihnachten Selbstklebend, 148 Weiß Fensterdeko Weihnachten, Wiederverwendbar Statisch Haftende PVC Aufk",
+      "cents": 548,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81PjQNfZLLL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 9,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B07VHP1VYK",
+      "title": "Buseu Plissee Klemmfix ohne Bohren 80x120cm Weiß Faltrollo Plisseerollo | Sonnenschutz für Fenster & Tür, Fensterrollo, Blick",
+      "cents": 1979,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61h7WgBD3JL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 10,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B07WWGKRHL",
+      "title": "Siemens Entkalkungstabletten TZ80002A, 3 Stück, entfernt Kalkablagerungen und schützt vor Korrosion, Original-Zubehör, passen",
+      "cents": 865,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71kaddNyUjL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 11,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B08W1KQ2JR",
+      "title": "Bolsius Rustik Stumpenkerzen - Bordeauxrot - 4 Stück - 13 x 7 cm - Dekorative Haushaltkerzen - Natürliches Pflanzenwachs - Oh",
+      "cents": 1997,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81tmoVSCS1L._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 12,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B00CSLLTIG",
+      "title": "edding 5200 Permanent Spray - reichgold matt - 200 ml - Acrylspray | Acryllack zum Lackieren und Dekorieren von Glas - Metall",
+      "cents": 697,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61AgyTeof-L._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 13,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0155OGEUU",
+      "title": "Yankee Candle Duftkerze im Glas (groß) | Christmas Eve | Kerze mit langer Brenndauer bis zu 150 Stunden | Perfekte Geschenke ",
+      "cents": 1895,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71WkGZcKR+L._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 14,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B08GHN366K",
+      "title": "EMSA Clip & Close Frischhaltedosen-Set, rechteckig, 5 X 0,8 L, Aufbewahrungsboxen, 100 Prozent dicht, spülmaschinen-, gefrier",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61z-vKUYCAL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 15,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B074P8RR96",
+      "title": "Swiffer Staubwedel Nachfüller, 25 Tücher | Fängt Staub, Schmutz und Haare ein; ideal für Möbel, Ecken und schwer erreichbare ",
+      "cents": 1199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81jybiEOfsL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 16,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B09F98MMVC",
+      "title": "JURA original Reinigungstabletten Kaffeevollautomat 6 Stk. (24225) | 3-Phasen: Reinigung + Pflege + Schutz · TÜV-zertifiziert",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61ctoJVjMLL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 17,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0D7C8QLHC",
+      "title": "1Stück Vorhangstange Ohne Bohren Spannstange Teleskopstange Vorhang für Badezimmer, Fenster, Kleiderschrank 83-160CM Schwarz(",
+      "cents": 1868,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61FrNmG0odL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 18,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0FCSSND2X",
+      "title": "uandu Glasbehälter mit Deckel 20-teilig – Meal Prep Boxen Glas | 10 Behälter, 10 Deckel, Borosilikatglas, Auslaufsichere Fris",
+      "cents": 3389,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81vFwLoMJnL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 19,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0HHN4GLY9",
+      "title": "Rituals Klassischer Beauty-Adventskalender 24 Tage 2026 | 24 Tür Adventskalender | Bad, Körper & Haus Luxus | Limited Edition",
+      "cents": 8990,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81FJSAvMFtL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 20,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B00560SG00",
+      "title": "RAYHER HOBBY Rayher 3699000 Raysin 200 Gießpulver 1kg, Gießmasse weiß, Reliefgießpulver, lufthärtend und geruchslos, 1 Kg",
+      "cents": 849,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51fpmyekdJL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 21,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B09ZYLM43B",
+      "title": "Ninja Foodi MAX Dual Zone Heißluftfritteuse, 9,5 L, 6-in-1, Kupfer/Schwarz | 2 Fächer, mit Zange, Antihaftbeschichtung, spülm",
+      "cents": 13999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61FZ31g+LeL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 22,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B07BFJB33C",
+      "title": "Gründl Wolle Cotton Quick uni Häkelgarn 1 Knäuel 50 g, Schokolade | dünne Wolle zum Häkeln - Strickgarn - Häkelgarn - Glänzen",
+      "cents": 279,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81TRfEcInTL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 23,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B08C5DR9GR",
+      "title": "Papierdrachen Adventskalender 2026 - Cozy Winter Schwarz | 24 bedruckte Papiertüten - praktische Größe 14x22 cm - inkl. Zahle",
+      "cents": 1290,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81AViBx9x5L._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 24,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0CQMPH7BJ",
+      "title": "Philips Airfryer Dual Basket 3000 Serie Heißluftfritteuse, Schwarz, 9 L | 2 Körbe, RapidAir Plus Technologie, Touchscreen, 12",
+      "cents": 9999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51V8Z0DwvfL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 25,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0816KNX6B",
+      "title": "Sonello Plissee Klemmfix ohne Bohren 75x120cm Weiß Plisseerollo Klemmrollo | Sonnenschutz für Tür & Fenster, Blickdicht, Sich",
+      "cents": 2005,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71SYtTTc8SL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 26,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0BW3NTPWN",
+      "title": "120 Stück Backpapier für Heißluftfritteuse Ninja Dual, Stone TH Airfryer mit Doppelkammer Pergamentpapier Liner Kompatibel mi",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71X8Prqo84L._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 27,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B09886CTWD",
+      "title": "Buymax Spannbettlaken 140x200cm Baumwolle 100% Spannbetttuch Bettlaken Jersey, Matratzenhöhe bis 25 cm, Farbe Anthrazit-Grau ",
+      "cents": 1699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81-syVwT34L._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 28,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0GHN3V6BP",
+      "title": "roborock Qrevo S Pro Set Saugroboter mit Wischfunktion, 18.500 Pa Saugkraft | verbessert von QV 35A, 75 °C Heißwasser-Mopprei",
+      "cents": 32999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61SQ7RtTTsL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 29,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0CW1N1PCF",
+      "title": "MIULEE Kissenbezug 40x40 4er Set Kordsamt Kissenhülle sofakissen Green | Weiche Kissenhülle Dekorative Sofakissen Quadratisch",
+      "cents": 1296,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81ilnY+RRYL._AC_UL600_SR600,400_.jpg",
+      "category": "kitchen",
+      "rank": 30,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0DWNGKKKG",
+      "title": "Swiffer Staubmagnet Nachfüllpackung, 25 Tücher, Febreze-Duft | Fängt Staub, Schmutz und Haare ein; mit frischem Duft für die ",
+      "cents": 1799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/8178bUdlgxL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 31,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B08NW6F6KN",
+      "title": "Dreamzie - Kissenbezug 40 x 80cm - 2er Set - 100% Baumwolle - Anthrazit | Oeko-Tex zertifiziert · mit Reißverschluss · Kopfki",
+      "cents": 1299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61xrGV2XMfL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 32,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B01I58OJWS",
+      "title": "sleepling Kopfkissen 40x80 cm 2er Set , Allergiker Kissen, Komfort 100 | langes Schlafkissen 40 x 80, Bettkissen, Polster, Pi",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61hH3e8Bc6L._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 33,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0C9D4KL9D",
+      "title": "Dreo Energiesparender Heizlüfter, 34 dB Leiser 1500W Elektrischer PTC Keramik, Thermostat, Überhitzungs- & Kippschutz, 12 Std",
+      "cents": 4999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81batP9YzsL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 34,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B09YRMHFBT",
+      "title": "BEDSURE Bettdecke Ohne Bezug 135x200 - Bettdecke mit Integriertem Bezug | Bettdecke 135x200 für Allergiker Waschbare 4 Jahres",
+      "cents": 3399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81A0gVXNfLL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 35,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0BW8SR17S",
+      "title": "Emsa N20202 Travel Mug Classic Isolierbecher 0,36 Liter | neuer Komfort-Schraubverschluss | Edelstahl | 4h heiß und 8h kalt |",
+      "cents": 1499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/514DRCzyVdL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 36,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B08T9WF9B4",
+      "title": "BARBONS - Matratzenschoner 90 x 200 - Baumwolle - Wasserdicht | Oeko TEX Zertifiziert . Atmungsaktive . Matratzenauflage . Wa",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81y3nqIOACL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 37,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0DCVT1ZSX",
+      "title": "Acrylstifte Acryl Marker Set, 48 Farben Dual Tip mit dünner & dicker Spitze | Kreatives für Erwachsene: Glasmalfarbe für krea",
+      "cents": 1498,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/91MZ2SfhRTL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 38,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0BTT4FHJ5",
+      "title": "Mepal - Müslibecher Ellipse - 500 ml - Nordic sage | Praktischer Joghurtbecher to go - Unterteilung für Joghurt & Müsli - Gee",
+      "cents": 1605,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61N0GuUSaNL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 39,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0CP1Q5613",
+      "title": "G2PLUS 10mm Rot Geschenkband Satin: 22m Schleifenband zum Bastel | Deko Satinband für Geschenkverpackung, Hochzeit, Weihnacht",
+      "cents": 499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71DR5F0NCpL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 40,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B08W9V3V8M",
+      "title": "Siemens Original BRITA INTENZA Wasserfilter mit Aromaring, TZ70033A, 3er Pack, verbessert den Kaffeegeschmack, schützt die Es",
+      "cents": 2161,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61vLpBau9WL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 41,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B08CXTZF5H",
+      "title": "Philips Wasserkocher, Schwarz, 1,7 L | Mit Kontrollanzeige, 360°-Pirouettenbasis (HD9318/20)",
+      "cents": 2599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51Ce+nsQXWL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 42,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B001JYP09M",
+      "title": "tesa Powerstrips DECO Haken SMALL - 200 g - 1 x 5 Dekohaken | Klebehaken zur Befestigung von Deko an Glas und Spiegeln - bis ",
+      "cents": 425,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71N-B8ebrUL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 43,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0CHV1XPP6",
+      "title": "Secopad Kleberoller Fotokleber, 8 mm x 8 m, 6 Stück, Helle Farben | Selbstklebend,Starke und Lang Anhaltende Haftung, Einfach",
+      "cents": 799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71kHMcPjpYL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 44,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0DMP77812",
+      "title": "BARBONS Spannbettlaken 180x200cm - 100% Baumwolle Spannbetttuch Dunkelgrau | Oeko-TEX Zertifiziert - Bettbezug - Bettlaken - ",
+      "cents": 1599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81OYiLojbcL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 45,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B000GPI7RC",
+      "title": "UHU Bastelkleber Standtube, Lösungsmittelfreier Weißleim zum Basteln und kreativen Gestalten, 90 g",
+      "cents": 279,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51W3hHsWHaL._AC_UL300_SR300,200_.jpg",
+      "category": "kitchen",
+      "rank": 46,
+      "checked": "2026-11-12T00:09:46.422Z"
+    },
+    {
+      "asin": "B0HGFN92L4",
+      "title": "Pokémon-Sammelkartenspiel: Top-Trainer-Box Mega-Entwicklung – Delta-Herrschaft (1 Vollbild-Promokarte, 9 Boosterpacks & Premi",
+      "cents": 5299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/91gpalzUE+L._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 1,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0FSL7TSQV",
+      "title": "Nonstop Cards – Lustiges Kartenspiel mit App, Stadt-Land-Fluss, 2-8 Spieler | 1750+ Themen | Gesellschaftsspiel für Erwachsen",
+      "cents": 2499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71XteioqdyL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 2,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0HGF9K6J2",
+      "title": "Pokémon-Sammelkartenspiel: Boosterbundle Mega-Entwicklung – Delta-Herrschaft (6 Boosterpacks)",
+      "cents": 2994,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/818pW4IqV6L._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 3,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0H8SSWNHB",
+      "title": "Pokémon-Sammelkartenspiel: Ordner-Kollektion 30 Jahre",
+      "cents": 4499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81XUG12cPmL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 4,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0DQVGD538",
+      "title": "Kosmos Flip 7, Kartenspiel mit schnellem und einfachen Black Jack Prinzip | Deutsche Ausgabe, für 3-18 Personen ab 8 Jahren, ",
+      "cents": 899,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81mO4G-eMIL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 5,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B07MV3DYGJ",
+      "title": "Play-Doh Super Colour Set mit 20 Dosen Modelliermasse (insgesamt 1,6 kg), Bastelset zum gemeinsamen Spielen oder als kreative",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81fbrS6ePGL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 6,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0FPXD4D4B",
+      "title": "LEGO Creator 3in1 Niedlicher Hamster mit Blume 31376 | Spielzeug ab 7 Jahren, Mädchen & Jungen, Konstruktionsspielzeug mit 3 ",
+      "cents": 699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71789o7b9FL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 7,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0GGSTTS1R",
+      "title": "LEGO City Adventskalender 2026 | 60510 | Spielzeug ab 5 Jahren, Jungen & Mädchen, 7 Minifiguren, Spielmatte, 24 Überraschunge",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/8145-9+Ai2L._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 8,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0FJX6CMP3",
+      "title": "Zingbee 8 stück magnetische Fidget Toys,Silikon Magnetkugeln Anti-Stress | Sensorik Spielzeug,für Erwachsene und Kinder ADHS,",
+      "cents": 1099,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/7150nH+b-bL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 9,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B09T3K9ZC6",
+      "title": "Hitster – Partyspiel für Erwachsene – Musikspiel zum Scannen & Erinnern | 300+ Hits zum Scannen & Erinnern – Für Partys, Spie",
+      "cents": 1499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/711MIs31M-L._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 10,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0GGSM14GC",
+      "title": "LEGO Marvel Adventskalender 2026 | 76340 | Spielzeug ab 6 Jahren für Jungen & Mädchen, 24 Superhelden Überraschungen, 6 Minif",
+      "cents": 2499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81YYcrD+NDL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 11,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0DHS9Y433",
+      "title": "LEGO Speed Champions Mercedes-AMG F1 W15 Rennauto 77244 | Spielzeug ab 10 Jahren, Jungen & Mädchen, Modellauto zum Sammeln & ",
+      "cents": 1649,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71bWlDvPt1L._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 12,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0GG9WS8M9",
+      "title": "Game Factory 646031 Dito, das wortwitzige Partyspiel für 3 bis 7 Spieler | Spiel des Jahres 2026, interaktives Gesellschaftss",
+      "cents": 1699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81Rrbx3QgfL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 13,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0HGFBWVW9",
+      "title": "Pokémon-Sammelkartenspiel: 3er-Pack Mega-Entwicklung – Delta-Herrschaft: (1 holografische Promokarte & 3 Boosterpacks)",
+      "cents": 1599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81CaXOamqGL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 14,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0H8T5LMYY",
+      "title": "Pokémon-Sammelkartenspiel: Figuren-Kollektion 30 Jahre: Mewtu (1 Promokarte, 1 überdimensionale holografische Promokarte, 1 F",
+      "cents": 3699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81BTF9BsXGL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 15,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0H8T3M9KW",
+      "title": "Pokémon-Sammelkartenspiel: Figuren-Kollektion 30 Jahre: Mew (1 Promokarte, 1 überdimensionale holografische Promokarte, 1 Fig",
+      "cents": 3699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81Fn7MsfX4L._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 17,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0FPXDY3X2",
+      "title": "LEGO Botanicals Gänseblümchen 11508 | Spielzeug ab 9 Jahren, Mädchen & Jungen, Kunstblumen Strauß mit Gänseblümchen & Lavende",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71HDeDgrfgL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 18,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0H2Z8B2N1",
+      "title": "KOSMOS EXIT - Das Spiel: Adventskalender: Das verstecke Level | Level: Einsteiger, Escape Game Adventskalender mit 24 spannen",
+      "cents": 2199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71zKQh+XTjL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 19,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B08WX8DJXH",
+      "title": "Hama Perlen 4108 Kleines Set Tannenbaum mit ca. 450 bunten Midi Bügelperlen mit Durchmesser 5 mm, Stiftplatte und Motivvorlag",
+      "cents": 399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71WCRoJsAxL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 20,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B07MKCZJNJ",
+      "title": "Spin Master Games Perplexus Rebel, 3D-Kugellabyrinth mit 70 Hindernissen - für fingerfertige Perplexus-Fans ab 6 Jahren",
+      "cents": 1591,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81PVr7oWHWL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 21,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0DLCK15KH",
+      "title": "Hitster Movies & TV Soundtracks Erweiterung – Partyspiel für Erwachsene | 154 Musikkarten, Party- & Kartenspiel für Erwachsen",
+      "cents": 699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71tItr2vTWL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 22,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0HGFPYPBV",
+      "title": "Pokémon-Sammelkartenspiel: Boosterpack-Display Mega-Entwicklung – Delta-Herrschaft (enthält 18 Boosterpacks)",
+      "cents": 8982,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81ru9tuotfL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 23,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0DQVT49GJ",
+      "title": "PLAYMOBIL | Adventskalendar | Horses of Waterfall | Weihnachtsbacken im Reitcafé | Adventskalender für Pferdefans | Mit tägli",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81YY96WzDEL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 24,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B09TPRRSW7",
+      "title": "Ravensburger tiptoi Stift 00110 - Das spielerische Lernsystem, Lernspielzeug für Kinder ab 2 Jahren - Der Stift",
+      "cents": 3699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/611koWkB30L._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 25,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0BQ1J9C1P",
+      "title": "Ultimate Guard Card Covers Toploading 35 pt Transparent (25er-Pack)",
+      "cents": 348,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61wEmEMQpIL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 26,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B005I5M2F8",
+      "title": "Mattel Games UNO Kartenspiel, ab 7 Jahre, 2–10 Spieler | Klassisches UNO-Farb- und Zahlenkartenspiel für Kinder, Teenager & F",
+      "cents": 599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71IC1KLr+uL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 27,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0GGSK4J2N",
+      "title": "LEGO Star Wars Adventskalender 2026 | 75456 | Spielzeug ab 6 Jahren, Jungen & Mädchen, 24 Überraschungen, 4 Minifiguren, IG-1",
+      "cents": 2499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81xhNfsL65L._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 28,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0H8T2DHNX",
+      "title": "Pokémon-Sammelkartenspiel: Mini-Tin-Box-Bundle 30 Jahre: Nacht",
+      "cents": 6995,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81aW5FhYyuL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 29,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0FPXGJL6H",
+      "title": "LEGO Editions Cristiano Ronaldo – Fußball-Highlights 43012 | Spielzeug ab 10 Jahren, Jungen & Mädchen, 3D Modellbau mit Minif",
+      "cents": 1998,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71kGWzHQVUL._AC_UL600_SR600,400_.jpg",
+      "category": "toys",
+      "rank": 30,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0H8SX6F9J",
+      "title": "Pokémon-Sammelkartenspiel: Mini-Tin-Box-Bundle 30 Jahre: Tag",
+      "cents": 6995,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71r77R3EX3L._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 31,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B073WX91H6",
+      "title": "Sigg - Trinkflasche Kinder - Viva One - Made in Germany - Für Kohlensäurehaltige Getränke Geeignet - Auslaufsicher - Spülmasc",
+      "cents": 1013,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71ztF4vOdwL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 32,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B07L4T1QNN",
+      "title": "FUNXGO Folien-Ballon 5, Helium-Ballon, Luftballon-Zahl, nachfüllbare Ballonzahl, Party-Deko zum 5. Kinder-Geburtstag, Jubiläu",
+      "cents": 399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/611+9AJhaCL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 33,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0FPXDXXYR",
+      "title": "LEGO Speed Champions Zeitmaschine aus Zurück in die Zukunft 77256 | Spielzeug ab 9 Jahren, Jungen & Mädchen, Modellauto & 2 M",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71GYS7L0XIL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 34,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0CYZZ1SQ2",
+      "title": "ATM Gaming Quickstop - Das Buchstaben-Duell - Kartenspiel für Jugendliche und Erwachsene - Schnell und Verrückt - 2 bis 7 Spi",
+      "cents": 1399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71n3jTV-q0L._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 35,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0DNFPMXMT",
+      "title": "Play-Doh 4er-Pack Klassische Farben à 85 g",
+      "cents": 299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71JoiEn-tBL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 36,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0080OJ6K8",
+      "title": "Plus Plus Basic Mix – Bauspielzeug mit 600 Bausteinen, ab 5 Jahren | Klassische 20 × 12 mm Bausteine für kreative 2D-Mosaike ",
+      "cents": 1797,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71eecYKvVHL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 37,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B08487VK7G",
+      "title": "Craze Magic Slime POOUPSIE Noise | Dickflüssiger Pups Schleim für Kinder, 100 g Kinder Schleim in Dose, Slime Set Scherzartik",
+      "cents": 369,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/716oOd4EIIL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 38,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0GDDXQJPM",
+      "title": "Hitster Battle of the Generations - Musik Party Brettspiel für Erwachsene | 420+ Songs aus Allen Jahrzehnten - Epochen von Vi",
+      "cents": 1799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71MXcdkcRPL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 39,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B00NVDP3ZU",
+      "title": "LEGO Classic Mittelgroße Bausteine-Box 10696 | Spielzeug ab 4 Jahren, Jungen & Mädchen, Konstruktionsspielzeug mit Autos, Tie",
+      "cents": 1898,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/712XaX0NUXL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 40,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0H2ZFXXX7",
+      "title": "Die DREI ??? Adventskalender 2026, Der Fluch des Feuervogels in 24 Rätseln | Spielzeug- und Rätsel-Adventskalender von Die dr",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81sEFodDJdL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 41,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B00006YYY5",
+      "title": "Mattel Games Skip-BO, ab 7 Jahren, 2-6 Spieler | Klassisches Sequenz-Kartenspiel für Kinder, Teens & Erwachsene, Reisen, Camp",
+      "cents": 918,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/710-HSHeW7L._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 42,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0FG7MW88Q",
+      "title": "JSRHEEM 2er Laternenstab Elektrisch 40cm für St. Martin, Laternenstab LED, Sankt Martin Laterne Kinder Elektrischer Stab für ",
+      "cents": 899,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51TjvBmT3XL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 43,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B0DJDF2Z1B",
+      "title": "Tattoos für Kinder Weihnachten - 120 Stk., hautfreundlich (6 Bögen) | Hautfreundliche Kindertattoos: Made in Germany, dermate",
+      "cents": 890,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/815M29aMXNL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 44,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B00ZRD99C0",
+      "title": "Bright Starts, Oball Classic, flexibler und leicht zu handhabender Ball, sensorisches Aktivitätsspielzeug für Kinder aller Al",
+      "cents": 494,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71BFqKPjRBL._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 45,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B08495ZL5B",
+      "title": "Zoch Geistesblitz Metalldose – Reaktionsspiel für schlaue Köpfe, rasante Denkduelle, mit fünf Symbolen aus Holz, handlich und",
+      "cents": 399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81aMVXPIJ5L._AC_UL300_SR300,200_.jpg",
+      "category": "toys",
+      "rank": 46,
+      "checked": "2026-11-12T00:09:57.179Z"
+    },
+    {
+      "asin": "B093SWH4D8",
+      "title": "100x ARNOMED® Einweghandschuhe Schwarz, Nitril Handschuhe L | Einmalhandschuhe, Nitrilhandschuhe puderfrei, Gummihandschuhe, ",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71UrCif8gWL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 1,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B019ETZ2ZU",
+      "title": "fischer DuoPower 6 x 30, Universaldübel, Leistungsstarker 2-Komponenten-Dübel, Kunststoffdübel zur Befestigung in Beton, Zieg",
+      "cents": 529,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81OazVrQYHL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 2,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0F743FK2Q",
+      "title": "Vantamo Taschenalarm Extra Laut 130dB Mit 2 Lautsprechern Für Selbstverteidigung Frauen, Hell Taschenlampe & Batteriewarnung,",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81cCGySxg6L._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 3,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B00006JCUB",
+      "title": "Hama Steckdosenleiste 3-Fach, Kabel 1,4m, GS geprüft | Mehrfachsteckdose weiß mit Save Energy-Schalter zum Stromsparen, Steck",
+      "cents": 599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/41GS4x+bo1L._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 4,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B084SCFTCG",
+      "title": "tesa Klebenagel für Tapete & Putz, verstellbar - 4 Nägel inkl. tesa Strips | Höhenverstellbare Wandnägel für empfindliche Obe",
+      "cents": 529,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71tvoqQaFaL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 5,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0BG5HX693",
+      "title": "TP-Link smartes Heizkörperthermostat - Erweiterungseinheit, benötigt Kasa Hub, Heizungssteuerung (Kasa App, Zeitpläne, Geofen",
+      "cents": 2465,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/41fhRliUdZL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 6,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0GHZ2JZMN",
+      "title": "Shelly Plug M Gen3 Weiß - WLAN & Matter Smarte Steckdose, Leistungsmessung, 13A, 3000W, Zeitschaltuhr, Stecker, Smart Home St",
+      "cents": 1899,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/719TF7IwrqL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 7,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B08K7B2ZJY",
+      "title": "Neosmuk Magnethaken,Silber,11kg Kleiderhaken mit Neodym-Magnet,10er-Pack | für Camping, Werkstatt, Spind, Kleiderhaken mit Ne",
+      "cents": 722,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71j6RSbPOgL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 8,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0C6R9G4ZW",
+      "title": "Sekundenkleber Universal Gel 50 g - Alleskleber Universalkleber | für Holz, Metall, Kunststoff, Glas, tropffrei, spaltfüllend",
+      "cents": 699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71mEgh9msgL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 9,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0D66LK5NP",
+      "title": "X-Sense Kohlenmonoxid Melder, TÜV Rheinland Zertifiziert, 10 Jahre Sensor, CO Melder mit austauschbarer Batterie und digitale",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61nnT2EkQuL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 10,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0BMLFZ35N",
+      "title": "REV AquaStorm Aufputz Steckdose 1-fach, Feuchtraum, IP55, anthrazit | Robustes Gehäuse | zweipolig, 230V, 16A | ideal für Wer",
+      "cents": 449,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71X6q7DDKiL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 11,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B000UW8LPE",
+      "title": "fischer Premium-Sanitärsilikon, Silikon zum Abdichten & Verfugen im Sanitär- und Küchenbereich, Kartusche für zahlreiche Anwe",
+      "cents": 699,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61l8ihKGEIL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 12,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0BRB8JGFJ",
+      "title": "7m Doppelseitiges Klebeband Extra Stark Transparent,Abnehmbar Spurlos Double Sided Tape,2 Rollen Nano Klebeband Doppelseitig ",
+      "cents": 698,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61O4c-y6OkL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 13,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B006JZ628E",
+      "title": "Ponal Express Holzleim, schnell trocknender Leim, wasserfest, 1x100g | 5 Min. Abbindezeit, lösemittelfrei, Dosierflasche mit ",
+      "cents": 503,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/612RTysopWL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 14,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B00JB3U9CG",
+      "title": "Wago 221-413 Lever Connector, 3 Conductor, 0.14-4mm², Compact Splicing, Plastic, Pack of 50, orange Terminal Block, Transpare",
+      "cents": 1549,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71TtfZipL1L._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 15,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B07BH3NC7V",
+      "title": "2x Heizkörper Entlüftungsschlüssel - Entlüfterschlüssel zum Entlüften - stabil & robust - passend für Heizungen - Heizkosten ",
+      "cents": 399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51GBWP5awsL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 16,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B07Z5JD3T4",
+      "title": "Tapo P100 WLAN Smart Steckdose, Smart Home WiFi Steckdose, Alexa Zubehör, funktioniert mit Alexa, Google Home, Sprachsteuerun",
+      "cents": 959,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61+xbx5WfQL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 17,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0C3B4H4Z5",
+      "title": "Blukar LED Taschenlampe Aufladbar, 2 Stück 2000L Extrem Helle Zoombar Torch | 5 Lichtmodi & Langer Betriebsdauer, IPX6 Wasser",
+      "cents": 1497,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71-tNGqkyrL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 18,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0C4683S9B",
+      "title": "MYMIND® Kabelhalter selbstklebend 50 Stück Kabelclips Indoor & Outdoor | Vielseitiger Kabelorganisator für Schreibtisch, Lich",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71TpaB1TpgL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 19,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B07YPVB13Z",
+      "title": "2er set Entlüftungsschlüssel | Heizkörper | robust | Universal Entlüfter für alle Heizungen/Heizkörper Entlüftungsschlüssel m",
+      "cents": 399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/7183L0VeRyL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 20,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B09LQ9LK7J",
+      "title": "Neosmuk Magnethaken Schwarz, 10kg Extra Starke Magnetische Haken für Camping, Werkstatt, Spind, Kleiderhaken mit Neodym Magne",
+      "cents": 849,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71pNc4IlIoL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 21,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B007IGQ5SK",
+      "title": "Ei Electronics Ei650 Rauchmelder mit Batterie für 10 Jahre | Testsieger Stiftung Warentest, Rauchwarnmelder ohne LED-Blinken,",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71JaUh6730L._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 22,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0C77T1HPC",
+      "title": "50x PROGRIP Einweghandschuhe Diamant Grip Schwarz, Nitrilhandschuhe L | Einmalhandschuhe Extra Stark, Handschuhe Einweg griff",
+      "cents": 899,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71HzP2SjGJL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 23,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B007259ZJI",
+      "title": "SPAX Universalschraube, 6 x 100 mm, 100 Stück, Teilgewinde, Senkkopf, T-STAR plus T30, 4CUT, WIROX - 0191010601005",
+      "cents": 1302,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71KhqFKPHEL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 24,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B07T13G4DF",
+      "title": "ZHEGE Vorhängeschloss Zahlenschloss, 4 Stellig Zahlencode Schloss (Schwarz) | Vorhängeschloß, Kombinationsschloss, Nummernsch",
+      "cents": 599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51ZGyPXR-OL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 25,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B07FW3GTXB",
+      "title": "Alex Tech 13mm-3.1m selbstschließend Kabelschlauch gewebter Kabelmantel Kabelschutz zuschneidbar Schwarz Für TV Computer Heim",
+      "cents": 799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71t6eXtVD6L._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 26,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0014E7HCA",
+      "title": "tesa Malerband ECONOMY - 3er-Pack - 50 m x 30 mm | Abdeckband zum Abkleben bei Malerarbeiten - lösungsmittelfrei und bis zu 4",
+      "cents": 690,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71xWhE1rjTL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 27,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B07XLML2YS",
+      "title": "Tapo C200 360°-WLAN-Überwachungskamera für den Innenbereich | 1080P, Nachtsicht, Bewegungserkennung, Zwei-Wege-Audio, kompati",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/41PMfEig6nL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 28,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B001BAYIYW",
+      "title": "Brennenstuhl Qualitäts-Gummi-Verlängerungskabel 10m (IP44, Kabel für außen) schwarz",
+      "cents": 1636,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/714ooH61RdL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 29,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B087295VJ2",
+      "title": "SONGMICS Schwerlastregal, 2er Set, 90 x 40 x 180 cm | Kellerregal, Regal mit 175 kg Tragkraft pro Boden, Lagerregal, mit Stah",
+      "cents": 4199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71bO3eAt6EL._AC_UL600_SR600,400_.jpg",
+      "category": "diy",
+      "rank": 30,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B08YKP2LJ4",
+      "title": "BauFan Bohrloch- & Rissfüller Weiß 350 g | Schnell erhärtende Spachtelmasse; Bohrloch Füllung für innen & außen; Zum Ausbesse",
+      "cents": 425,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/719d--dBFdL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 31,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0GL97MGF3",
+      "title": "Brennenstuhl Rauchmelder Set, 2X RM C 9010 mit austauschbarer Batterie | geprüft nach EN 14604, durchdringendes Alarmsignal, ",
+      "cents": 1299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71KU-fdyTcL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 32,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0GT95TS6P",
+      "title": "PaaoRoaru Fugenbürste Hartborsten, Multifunktionale Spaltreinigungsbürste, Fugenreiniger für Fugen und Ecken, Fliesen, Bad, K",
+      "cents": 799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61Os71axZGL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 33,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B07NJ727HW",
+      "title": "Einhell Original Akku-Twinpack PXC 18 V 4,0 Ah | 2 Akkus im Set | 900 W | PXC | Li-Ion | ABS | LED-Anzeige | ohne Ladegerät",
+      "cents": 5289,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71x1zOHJu3L._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 34,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B000KJOC78",
+      "title": "tesa Powerstrips LARGE - 1 x 10 doppelseitige Klebestreifen | Selbstklebende Befestigungsstreifen zur Fixierung von Gegenstän",
+      "cents": 276,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61ZM2tStp-L._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 35,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B000QB6HFK",
+      "title": "tesa Verlegeband extra stark klebend - 10 m x 50 mm | Doppelseitiges Verlegeklebeband zum Verlegen von Teppich und PVC-Belag ",
+      "cents": 527,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71bVhrW-qAL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 36,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B08XWFQ1RL",
+      "title": "Vellure® Türdichtung Zugluftstopper für Türen- NEU Premium Türdichtung selbstklebend (Energie sparen - Schnell & einfach ange",
+      "cents": 1490,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71gyIKlfhvL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 37,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0822PXJ1N",
+      "title": "Amazon Basics Klebeband Gewebeband, 2er-Pack, 5cm x 54,8m, Silberfarben",
+      "cents": 989,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81MAmnKG8SL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 38,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0B7NKLDXW",
+      "title": "Tapo TP-Link Smart WLAN Steckdose P110 mit Energieverbrauchsmesser, Smart Home Alexa Steckdose, funktioniert mit Alexa, Googl",
+      "cents": 2966,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61mAEUdVFML._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 39,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B00IDE6FB8",
+      "title": "Makita 821550-0 MAKPAC Größe 2 Systemkoffer, Werkzeugkoffer, Transportkoffer, verknüpfbar an Koffersystem, mit Tragegriff, 39",
+      "cents": 1899,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51zO6Q-qU8L._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 40,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0F9LKH3QR",
+      "title": "Shelly 2PM Gen4 - WLAN Smart Relais Schalter, Rolladenschalter, Stromzähler, 2 Kanäle, 16A, Lichtschalter, Smart Home, Zeitsc",
+      "cents": 5254,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81rIMzzs1PL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 41,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B00261P8LW",
+      "title": "tesa 64014 PP Paketklebeband - 66 m x 50 mm - transparent - 6 Rollen | Alterungs-, UV- und temperaturbeständiges Paketband - ",
+      "cents": 1379,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61+CW+GKIWL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 42,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B09417SYWY",
+      "title": "Bosch Professional 1x Expert SDS plus-7X Hammerbohrer (für Stahlbeton, Ø 6,00x165 mm, Zubehör Bohrhammer)",
+      "cents": 399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51974EpcBlL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 43,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0GSFKVSC3",
+      "title": "Brennenstuhl 3er Set Qualitäts-Kunststoff-Verlängerungskabel mit Flachstecker, kompatibel mit Haushaltsgeräten (Verlängerungs",
+      "cents": 1499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/712KqJS8P4L._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 44,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B09NQ6Z75Q",
+      "title": "Feuerfest Heißklebepistole mit 30 sticks Klebepistole Heissklebepistole 20W | 7mm Heißklebesticks Klebesticks für DIY Kleine ",
+      "cents": 811,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81QLfdJpONL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 45,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0B28Y3DZJ",
+      "title": "X-PROTECTOR Filzgleiter Selbstklebend Schwarz - 235 Stück Großpackung | Premium Möbelgleiter. Filzgleiter groß - Möbelpads au",
+      "cents": 1399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81odsDQvAxL._AC_UL300_SR300,200_.jpg",
+      "category": "diy",
+      "rank": 46,
+      "checked": "2026-11-12T00:10:04.780Z"
+    },
+    {
+      "asin": "B0B1DV8KG8",
+      "title": "Oral-B iO Aufsteckbürsten Ultimative Reinigung, Schwarz, 8 Stück | Original Zahnbürstenaufsatz für Elektrische Zahnbürste, 36",
+      "cents": 3899,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81X7rtO4oZL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 1,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B09GGDP2PS",
+      "title": "by Amazon Küchenrolle, 3-lagig, 4 Rollen (4 Rollen, 1-er Pack), 64 Blätter pro Rolle, FSC-Zertifiziert",
+      "cents": 330,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71mhklyoO7L._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 2,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B07NS14648",
+      "title": "natural elements Magnesium Bisglycinat - Premium: Chelatiertes Magnesium - 180 Kapseln - 300mg elementares Magnesium pro Tage",
+      "cents": 1799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71e-wJeE4FL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 3,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B082FH6GDL",
+      "title": "natural elements Omega 3 – 365 Kapseln – 2000mg Fischöl pro Tagesdosis – mit EPA und DHA in Triglycerid-Form – Laborgeprüft u",
+      "cents": 2249,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71SIsdyiWhL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 4,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B09GGDPKSZ",
+      "title": "by Amazon Classic Toilettenpapier, 3-lagig, 10 Rollen (10 Rollen, 1er-Pack), 200 Blatt pro Rolle, FSC-zertifiziert",
+      "cents": 420,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61jcRiBmP1L._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 5,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B071P67LCY",
+      "title": "Wehle Collagen Pulver – 1000g Peptide Typ 1, 2 & 3, Kollagen Hydrolysat | Collapure® Markenrohstoff, Geschmacksneutral – abge",
+      "cents": 3229,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81kYlMeT5-L._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 6,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B082VPHWK2",
+      "title": "Dr. Beckmann Intensiv - Reiniger WC-Schaum Citrus | 3 x 100 g | Selbstaktivierender Schaum | Portionsbeutel | Reinigt schwer ",
+      "cents": 295,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/619hpUhQbrL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 7,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B07NS4RX11",
+      "title": "natural elements Magnesium Komplex - Premium: Aus 5 hochwertigen Verbindungen - 400mg elementares Magnesium pro Tagesdosis - ",
+      "cents": 1724,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/717DQ9oZ0oL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 8,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B07PXMT4HX",
+      "title": "by Amazon Premium Toilettenpapier, 4-lagig, 48 Rollen (4 Packungen à 12 Stück), 160 Blatt pro Rolle, FSC-zertifiziert",
+      "cents": 1969,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71ul3YlH0RL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 9,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0H294WYY1",
+      "title": "Philips OneBlade Original 360-Klingen, passend für alle OneBlade und Pro Modelle, original von Philips, 4er-Pack (Modell QP44",
+      "cents": 3299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71kfWlhJLnL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 10,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B003IT6HFM",
+      "title": "PARI NaCl 0,9% Inhalationslösung - isoton (0,9% Kochsalz),60 x 2,5 ml | Befeuchtet trockene Atemwege, für alle Altersgruppen ",
+      "cents": 1071,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51eB1UvQZ1L._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 11,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0BGM7NFZG",
+      "title": "sanotact Elektrolyte Plus (20 Beutel) • Elektrolyt Pulver für Flüssigkeitshaushalt • Kalium & Magnesium für Elektrolytgleichg",
+      "cents": 336,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/718i+VKGxgL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 12,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0DJQNLWGC",
+      "title": "Philips Sonicare W2 Optimal White, Original Ersatzbürstenköpfe, Schwarz, 8er-Pack, HX6068/88",
+      "cents": 2999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71OGByNbfvL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 13,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0B3BQTD5C",
+      "title": "bedrop Bee Cream Bienengiftsalbe hochdosiert (kühlend & wärmend) - 100g | für den Körper mit Bienenwachs und 8 Kräuterextrakt",
+      "cents": 1749,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71ZXju02EjL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 14,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0FPG73Q25",
+      "title": "Glow25® Kollagen Pulver [450g] – Unser Original – Collagen Hydrolysat mit Vitamin C – Peptide Typ 1 und 3 – Gute Löslichkeit ",
+      "cents": 2995,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71tYKiBkfUL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 15,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0DP1JCJJ7",
+      "title": "Oral-B iO Aufsteckbürsten Sanfte Reinigung, Schwarz, 8 Stück | Original Zahnbürstenaufsatz für Elektrische Zahnbürste, Zahnbü",
+      "cents": 3799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81g4UATKGXL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 16,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0CH9VFGM6",
+      "title": "Finish Ultimate Plus Infinity Shine Citrus Spülmaschinentabs 105 Caps",
+      "cents": 1799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81cMoRTgb9L._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 17,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0CJBTZPL3",
+      "title": "by Amazon Müllbeutel 20 x 50 L (Früher Our Essentials) - Verpackung kann variieren",
+      "cents": 81,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51+tSiSDG2L._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 18,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B01M36DP4F",
+      "title": "natural elements Vitamin D3 + K2VITAL® – 5000 IE D3 + 99,8+% All-Trans MK7 von Kappa – 180 Tabletten – hochdosiert, ohne Zusä",
+      "cents": 1874,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/7171e1JhCWL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 19,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B096FGZZS9",
+      "title": "THE HEAT COMPANY Sohlenwärmer - EXTRA WARM - 8h warme Füße - Wärmesohlen | 100% natürlich, sofort einsatzbereit, Fußwärmer, l",
+      "cents": 1953,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81-eZp1tFxL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 20,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B09GGL275B",
+      "title": "by Amazon Recyceltes Toilettenpapier, 100% recycelte Fasern, 3-lagig, 200 Blatt, 8 Rollen (1 Pack à 8 Rollen), FSC-zertifizie",
+      "cents": 292,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61Wve7GdqGL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 21,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B01B4PKQL2",
+      "title": "Beurer BM 27 Oberarm-Blutdruckmessgerät mit Manschettensitzkontrolle, klinisch validiert, Manschette für 22-42 cm, Risikoindi",
+      "cents": 2999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81qwXQgX8SL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 22,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0BT113ZSC",
+      "title": "Creatin Monohydrat Pulver 1kg / 1000g reines Kreatin Monohydrat in mikronisierter Qualität - Creatine-Monohydrate mit 3000 mg",
+      "cents": 1449,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71j3M19VTnL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 24,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0BWNW7H47",
+      "title": "Oral-B Aufsteckbürsten PRO CrossAction, Weiß, 10 Stück | Original Zahnbürstenaufsatz für Elektrische Zahnbürste, Gründliche P",
+      "cents": 2247,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81MYbB49ecL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 25,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0FMS3V43J",
+      "title": "SUNDAY NATURAL® Magnesium Komplex – 240 Kapseln - 400mg pro Tag - aus 7 Verbindungen: Magnesium Bisglycinat, Citrat, Malat, L",
+      "cents": 2090,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71X9JOjbN9L._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 26,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B09DGFG8KC",
+      "title": "Heldengrün® BIO Lavendelöl [100% NATURREIN] Ätherisches Öl 30 ml | Lavandula angustifolia · floral, frisch & voller Seele · B",
+      "cents": 1496,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81rW1Z8IhML._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 27,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B094GFSRSS",
+      "title": "Finish Citrus Maschinentiefenreiniger 4 x 250 ml",
+      "cents": 889,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81eJ3CSSJUL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 28,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0CGDG26B1",
+      "title": "Inhalationsgerät, JOSSIS Ultra Leise Inhaliergeräte für Erwachsene, Kinder, Partikelgröße 1-5µm, Einstellbarer Sprühnebel, Au",
+      "cents": 3999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61Inw64QCHL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 29,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0D3M1JNDG",
+      "title": "MORE Chunky Flavour, Vanilla Perfection, 150 g, vegan | Geschmackspulver zum Süßen, ohne viel Zucker und Kalorien, mit Inulin",
+      "cents": 1399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71-RX8CCesL._AC_UL600_SR600,400_.jpg",
+      "category": "drugstore",
+      "rank": 30,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0CJCDTNM2",
+      "title": "by Amazon Ultrasaugfähige TAD Küchenrolle, 4 Rollen (1er-Pack), 51 Blatt pro Rolle",
+      "cents": 339,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71ad5-aw5oL._AC_UL300_SR300,200_.jpg",
+      "category": "drugstore",
+      "rank": 31,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B00TU70ZFE",
+      "title": "Lubido Original Gleitgel auf Wasserbasis für den Intimbereich, ohne Parabene, 250 ml",
+      "cents": 789,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71dd9imLaQL._AC_UL300_SR300,200_.jpg",
+      "category": "drugstore",
+      "rank": 32,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0DCK62NKS",
+      "title": "pureSGP® Kollagen [300g]: Reinstes Kollagen in Apothekenqualität | Bioaktive Premium-Peptide aus hochwertigem Kollagenhydroly",
+      "cents": 3508,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61BJHC23fLL._AC_UL300_SR300,200_.jpg",
+      "category": "drugstore",
+      "rank": 33,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0057DVWYI",
+      "title": "ESN Designer Whey Protein Pulver, Vanilla, 1 kg | Bis zu 23 g Protein pro Portion, ideal zum Muskelaufbau und -erhalt, made i",
+      "cents": 5090,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71YWIHMAE9L._AC_UL300_SR300,200_.jpg",
+      "category": "drugstore",
+      "rank": 34,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0FMS51PCG",
+      "title": "SUNDAY NATURAL® Magnesium Bisglycinat - 240 Kapseln - 300mg reines Magnesium pro Tagesdosis - Depot Magnesiumglycinat als org",
+      "cents": 1606,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71I9ntbdFNL._AC_UL300_SR300,200_.jpg",
+      "category": "drugstore",
+      "rank": 35,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0DHKS9JN7",
+      "title": "Philips Sonicare W2 Optimal White, Original Ersatzbürstenköpfe, Weiß, 8er-Pack, HX6068/87",
+      "cents": 2999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71jpxigwtUL._AC_UL300_SR300,200_.jpg",
+      "category": "drugstore",
+      "rank": 36,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0H3QQ2VFW",
+      "title": "Kijimea® K53 Advance – Darmbakterien hochdosiert | 53 ausgewählte Bakterienstämme aus der Darmflora | mit Biotin | >500 Milli",
+      "cents": 3299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71wbYQnpcAL._AC_UL300_SR300,200_.jpg",
+      "category": "drugstore",
+      "rank": 37,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B09DGB5H6Q",
+      "title": "Sagrotan 2in1 Desinfektionstücher 8 x 15 Feuchttücher",
+      "cents": 651,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71GxMEcoWNL._AC_UL300_SR300,200_.jpg",
+      "category": "drugstore",
+      "rank": 38,
+      "checked": "2026-11-12T00:10:14.799Z"
+    },
+    {
+      "asin": "B0H71MYDBK",
+      "title": "SWEETFULL Handwärmer Elektrisch,4000mAh aufladbar,2 Stück,mit Magnetische | Taschenwärmer Wiederverwendbar,Dünn, 3 Stufen Hei",
+      "cents": 1199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71nejTm7YfL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 2,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B016N88R3Y",
+      "title": "4er Set Taschenwärmer Pinguin (tolles Wichtelgeschenk) Handwärmer, Taschenheizkissen",
+      "cents": 594,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81otJ+qGzHL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 3,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0CDPVQZ9J",
+      "title": "Antimi Fahrradleuchten-Set, StVZO-zugelassen Beleuchtungsset Led IPX5 Frontlicht + Rücklicht Fahrradlicht Set USB Typ C",
+      "cents": 2399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61Rkrepr7NL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 4,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B07ZKLYVHQ",
+      "title": "720°DGREE Trinkflasche ”uberBottle” – BPA-Frei, 7 Größen, über 40 Farben",
+      "cents": 1897,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/617TrUhuuBL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 5,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B07T75NCHM",
+      "title": "TerraTherm Wärmesohlen & Fußwärmer – 8h warme Füße, luftaktiviert | Sohlenwärmer & Heizsohlen gegen kalte Füße, wärmende Schu",
+      "cents": 1130,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/814210t0uOL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 6,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0H3V43G15",
+      "title": "Gaiatop Handwärmer wiederaufladbar, 2er-Pack, Avocado magnetisch Design | 3 Einstellungen schnelles Aufheizen, elektrischer t",
+      "cents": 1799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61zCGKxM0BL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 7,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0DNHRW9CR",
+      "title": "Amazon Basics Neopren Hanteln Gewichte, Hantelset, 2er-Set, 1–5kg, Sechseckig, für Krafttraining und Fitnesskurse",
+      "cents": 2549,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/718b0A68-EL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 8,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0H4PWN62B",
+      "title": "Laternenstab Stern - Elektrisch für Laternen aller Art - Hell leuchtend mit Haken - für Halloween & St. Martin Elektrische La",
+      "cents": 849,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61C5-uQn2LL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 9,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B01F2OGJQM",
+      "title": "Fitgriff® Zughilfen (gepolstert) für Krafttraining, Bodybuilding, Fitness - Kreuzheben Gurte - Lifting Straps - für Frauen un",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81ZDizb0wEL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 10,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B07BJG2XKZ",
+      "title": "Sparrow Trinkflasche 500ml/750ml/1L - BPA-frei Tritan Wasserflasche 1-Klick | Sportflasche, Auslaufsicher, Leicht, Spülmaschi",
+      "cents": 1100,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/712KRHYehiL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 11,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0FHKYW91D",
+      "title": "OCOOPA Handwärmer Elektrisch 2er Set, Wiederverwendbar 4000mAh USB Taschenwärmer, 3 Wärmestufen, Maximal 52°C, Nützliche Gesc",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71ogtpHn1UL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 12,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0D3VDXB19",
+      "title": "Blukar LED Stirnlampe Aufladbar, 2000L Superhell Kopflampe - 2 Stück | Stufenlos Dimmbar mit 8 Modi, Sensor & Rotlicht, IPX5 ",
+      "cents": 2599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71qT+zyf3fL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 13,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0F1F6LZG3",
+      "title": "Lepro Stirnlampe LED Wiederaufladbar, USB C Kopflampe mit 6 Modi & Rotlicht | 2000 Lux Superhell Kopflampe Stirnlampe, 6 Modi",
+      "cents": 945,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51Ril4xOxfL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 14,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B001O0DQTM",
+      "title": "BALLISTOL 24430 Pfeffer-KO Jet 50ml Spray – Verteidigungsspray gegen Tiere – Abwehrspray 5m Sprühweite - Panikverschluss",
+      "cents": 859,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61-dTVhnAuL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 15,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0BLVT2Y9N",
+      "title": "Blukar LED Stirnlampe Wiederaufladbar, 2000L Kopflampe mit Rotlicht,2 Stück | Stufenlos Dimmbar, 8 Lichtmodi, Sensor, Leichtg",
+      "cents": 1796,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71cXxSbw7LL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 16,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B07L9WLKZQ",
+      "title": "Gritin Fitnessbänder Widerstandsbänder mit 5 Stufen | Latex Fitnessband Resistance mit Deutscher Übungsanleitung & Tragebeute",
+      "cents": 1099,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/617NmwvU4tL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 17,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0DJSRQ5ZH",
+      "title": "Heumüller Holzwolle 400 Stück Holzwolle-Anzünder Kaminanzünder - Grillanzünder | Anzünder aus Holzwolle & Wachs | Für Kamin, ",
+      "cents": 3299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/812Z1CBCIlL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 18,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0BK1Y38RD",
+      "title": "Speedo Unisex Biofuse 2.0 Swimming Goggles Goggles (pack of 1)",
+      "cents": 1799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51egBRs35pL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 20,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B07CNRN566",
+      "title": "DANSI Fahrradleuchten-Set StVZO I LED-Fahrradlicht I Rad-Licht hell vorne",
+      "cents": 1099,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61CCfbU1IML._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 21,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B08Z7B2RCQ",
+      "title": "2 x Wilhelm Pfefferspray Tierabwehr Selbstverteidigung CS Gas KO Spray hochdosiert (ca. 2 Mio. Scoville) effektives Verteidig",
+      "cents": 799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81NEWXr493L._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 22,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0B9436MVY",
+      "title": "Fit-Flip Mikrofaser Handtuch schnelltrocknend für Fitness, Sport & Sauna",
+      "cents": 1614,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71PBYgXx6bL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 23,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B07KH5YC1T",
+      "title": "ATNKE LED Beleuchtete Mütze,Wiederaufladbare USB Laufmütze mit Licht Extrem Heller 4 LED Lampe Winter Warme Stirnlampe für He",
+      "cents": 1399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61FVnIjKaHL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 24,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0G39Q25HF",
+      "title": "toptrek Fahrradlicht Set USB Aufladbar mit Austauschbarem Akku Design | StVZO Zugelassen Fahrrad Lichter LED Set, IPX5 Wasser",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71EwRlF4kvL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 25,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0H3V3ST69",
+      "title": "Gaiatop Handwärmer Elektrisch, 2er-Pack 3 Heizmodi Magnetisch Tragbar Taschenwärmer Wiederverwendbar, Outdoor Camping Hand Wa",
+      "cents": 1499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51Roc7y8EIL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 26,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0CD2DVLSX",
+      "title": "THERMOPAD Sohlenwärmer - 5, 10 oder 30 Paar Wärmepads (in 5 Größen)",
+      "cents": 2290,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71tZd2wg69L._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 27,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0CM9J2FHV",
+      "title": "GYMERK Fitnessbänder Set 4er, 1.8M/2M Fitnessband, 4 Widerstandsstufen mit Übungsposter, Gymnastikband mit Tragetasche & Übun",
+      "cents": 1049,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71L9dz+zwML._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 28,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B09CTVQWK8",
+      "title": "Fokky Fitnessbänder [5er Set], 100% Naturlatex Resistance Bands | Widerstandsbänder mit Übungsanleitung auf Deutsch & Tragebe",
+      "cents": 799,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51sVFEQCXXL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 29,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0GP1ZD39T",
+      "title": "Sigg WMB ONE Top 2 Verschluss (One Size), Ersatzteile Trinkflaschen, einhändig bedienbarer & auslaufsicherer Verschluss mit S",
+      "cents": 395,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/41qkgL8eCmL._AC_UL600_SR600,400_.jpg",
+      "category": "sports",
+      "rank": 30,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B07113WZ15",
+      "title": "Fit-Flip Fitness Handtuch aus Mikrofaser kompakt und schnelltrocknend | mit Magnet und Reißverschluss Tasche, Fitnesshandtuch",
+      "cents": 1855,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/714DapP0gFL._AC_UL300_SR300,200_.jpg",
+      "category": "sports",
+      "rank": 31,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0D1VP5HKM",
+      "title": "SPEEDAP Imprägnierspray 400 ml, für Textilien, Leder & Outdoor-Ausrüstung | Wasser- & schmutzabweisend, atmungsaktiv, rücksta",
+      "cents": 895,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/51Nur4Xz58L._AC_UL300_SR300,200_.jpg",
+      "category": "sports",
+      "rank": 32,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B09HSGCSKH",
+      "title": "Fit-Flip Microfaser Handtücher leicht und kompakt - Fitness und Sport",
+      "cents": 849,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71HqhU29VqL._AC_UL300_SR300,200_.jpg",
+      "category": "sports",
+      "rank": 33,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0DDRF8N9P",
+      "title": "KIVY Trinkflasche 1l aus Tritan - Kohlensäure geeignet & Auslaufsicher | Für Sport, Schule & Büro - Sport Trinkflasche Gym - ",
+      "cents": 1999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81WxH0dlrlL._AC_UL300_SR300,200_.jpg",
+      "category": "sports",
+      "rank": 34,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0H3TYQF1V",
+      "title": "Gaiatop Wiederaufladbare Handwärmer 2er Pack, Magnetischer Niedliches Hunde-Design, 3 Heizstufen Elektrische Taschenwärmer fü",
+      "cents": 1299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61gEz8GLcTL._AC_UL300_SR300,200_.jpg",
+      "category": "sports",
+      "rank": 35,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0H6M31PCC",
+      "title": "Gaiatop Handwärmer Elektrisch 2er-Pack, Taschenwärmer Wiederverwendbar | Elektrische Handwärmer Aufladbar, Süße Geschenke Für",
+      "cents": 1499,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/613ltVqRFpL._AC_UL300_SR300,200_.jpg",
+      "category": "sports",
+      "rank": 36,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0H6WFNLDR",
+      "title": "Gaiatop Handwärmer Elektrisch 2er-Set, Taschenwärmer Wiederverwendbar | Kompakt für Handschuhe, Camping Zubehör, Wichtelgesch",
+      "cents": 1299,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61D2XL061mL._AC_UL300_SR300,200_.jpg",
+      "category": "sports",
+      "rank": 37,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B0D7ZMJ6BZ",
+      "title": "Blukar LED Stirnlampe Aufladbar, Superhell 2000L Kopflampe | Stufenlos Dimmbar, 5 Normalmodi & 5 Sensormodi & Rotlicht, Leich",
+      "cents": 1399,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61zRJ5bDchL._AC_UL300_SR300,200_.jpg",
+      "category": "sports",
+      "rank": 38,
+      "checked": "2026-11-12T00:10:22.658Z"
+    },
+    {
+      "asin": "B07D4T5XVT",
+      "title": "MjAMjAM - Premium Nassfutter für Katzen - saftiges Huhn an leckeren Möhrchen, 6er Pack (6 x 400 g), getreidefrei mit extra vi",
+      "cents": 1290,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/715zaQl9iML._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 1,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B07CPK4T22",
+      "title": "Biokat's Diamond Care Fresh Katzenstreu mit Babypuder-Duft - Feine Klumpstreu aus Bentonit mit Aktivkohle und Aloe Vera - 1 S",
+      "cents": 1149,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61JZ0-J35cL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 2,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B01J57509O",
+      "title": "animonda Carny Adult Katzenfutter nass Kräftige Variation (12 x 400g) | getreidefreies Katzennassfutter ohne Zucker, für ausg",
+      "cents": 1599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81orE2t7nGL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 3,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0FST25J1J",
+      "title": "Enzymreiniger Spray 750 ml - Geruchsentferner Fleckenentferner Universal | für Teppiche, Polster, Matratzen, Autositze und Ti",
+      "cents": 999,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71gI2KPB-nL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 4,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0H2BD3XQX",
+      "title": "animonda Vom Feinsten Katzenfutter in Gelee Mix Land & Wasser (12 x 85 g) | Katzen Nassfutter in Gelee mit Taurin und Vitamin",
+      "cents": 529,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/714k2yzTPtL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 6,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B08665ZZQY",
+      "title": "DIBO Barf-Leckerli mit Pferd - der perfekte Trainingssnack im 200 g Beutel",
+      "cents": 329,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/810I3rZudoL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 7,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0DFCQ682Y",
+      "title": "Vitakraft Adventskalender 2026, Hundeleckerli, Vorweihnachtszeit (1x 244g) | 24 abwechslungsreiche herzhafte, fleischige Hund",
+      "cents": 1129,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/91MZ4zj9LgL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 8,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B08HPFJ2R2",
+      "title": "FELIX So gut wie es aussieht Nassfutter für Katzen Gemischte Vielfalt Vorteilspack, 120 praktische Portionsbeutel, zarte Stüc",
+      "cents": 3739,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71HVw2kTppL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 9,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B08HP7BH9B",
+      "title": "FELIX So gut wie es aussieht Nassfutter für Katzen Geschmacksvielfalt vom Land Vorteilspack, 44 praktische Portionsbeutel, za",
+      "cents": 1425,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/810nqdlF5kL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 10,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0CP2G2SZ5",
+      "title": "SHEBA Adult Sauce Collection Mix Katzennassfutter in Sauce Schale 32 x 85g | 100% Qualität, Huhn, Ente, Lachs, Thunfisch, Nah",
+      "cents": 1239,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71avbjmhLTL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 11,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0BPD587DQ",
+      "title": "WHISKAS TASTY MIX Nassfutter in Sauce für Katzen 40 x 85g Chef’s Choice",
+      "cents": 1119,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71td-XIckaL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 12,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B08HPMP2QF",
+      "title": "FELIX So gut wie es aussieht Nassfutter für Katzen Gemischte Vielfalt Vorteilspack, 44 praktische Portionsbeutel, zarte Stück",
+      "cents": 1425,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81ExbQAi+2L._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 13,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B00NABTC8M",
+      "title": "Amazon Basics Hundekotbeutel mit Spender und Leinenclip, Unparfümiert, 300er-Pack, Schwarz",
+      "cents": 1201,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71RhBxKwOWL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 14,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0F7LY2FSZ",
+      "title": "Vitakraft Liquid Snack, Katzen Leckerli, Mega Pack, feine Auswahl (48x 15g) | cremiger Katzensnack, kalorienarm, pur oder als",
+      "cents": 1619,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81Lwj0YlbIL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 15,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B001MZV3FS",
+      "title": "animonda GranCarno Adult Hunde Nassfutter mit Rind+Lamm (6x800 g) | getreidefreies Hundenassfutter ohne Zucker, für ausgewach",
+      "cents": 1199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81qcQJNekQL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 16,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B00MW8G3YU",
+      "title": "Amazon Basics Welpen Unterlagen, Pipi Matten für Hunde, 5-lagiges Auslaufsicheres Design, 56cm x 56cm, 50 Stück, Blau",
+      "cents": 1253,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71Co+yjlWAL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 17,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0FM8V6RFF",
+      "title": "Catit Go Natural Katzenstreu klumpend | parfumfrei | 99% staubfrei, 5,6 kg | auf Basis von Erbsenhülsen, ohne Duft für empfin",
+      "cents": 1382,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61oNEgQhf3L._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 18,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0079F3N12",
+      "title": "GOURMET Gold Feine Pastete, mit Thunfisch, 12 x 85g | Katzenfutter nass",
+      "cents": 478,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71IDFpBGaML._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 19,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B07CPDVRD9",
+      "title": "Biokat's Diamond Care Classic Katzenstreu ohne Duft - Feine Klumpstreu aus Bentonit mit Aktivkohle und Aloe Vera - 1 Sack (1 ",
+      "cents": 1149,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71BTCs+F4GL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 20,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B077GPYZYL",
+      "title": "SHEBA Adult Katzennassfutter Geflügel in Sauce 40 x 85g (40er-Pack) | Katzenfutter als vollwertiges Alleinfuttermittel mit ho",
+      "cents": 1519,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71j-SX5ONnL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 21,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B08GD94LQC",
+      "title": "by Amazon Nassfutter für Katzen, Pastete Gemischt, 100g, 32er-Pack",
+      "cents": 1080,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71+N4YMGzwL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 22,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0932VW4C1",
+      "title": "GimCat Nutri Pockets Malt & Vitamin Mix - Knuspriger Katzensnack mit cremiger Füllung und funktionalen Inhaltsstoffen - 1 Beu",
+      "cents": 199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71GvEfxUfOL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 23,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0CTCFWBQC",
+      "title": "by Amazon weißes Ultra-Klumpstreu für Katzen 10L",
+      "cents": 1199,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61KZL8zBzHL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 24,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B01EQZB85U",
+      "title": "bosch HPC Adult Hundefutter trocken mit Lamm & Reis, 15 kg | Weizenfrei, für sensible Hunde, Made in Germany, Muschelextrakt,",
+      "cents": 3149,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/812p+E9WvxL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 25,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B01MFDF226",
+      "title": "Gourmet Perle Erlesene Streifen Katzenfutter nass, Sorten-Mix, 60er Pack (60 x 85g)",
+      "cents": 2814,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71flBU6kITL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 26,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0BZ117CZZ",
+      "title": "animonda Carny Kitten Nassfutter Variation für Katzenkinder (12 x 200 g) | Kitten Nassfutter für wachsende Kätzchen, Katzenfu",
+      "cents": 1099,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/715d6PzLC-L._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 27,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0821DWR9D",
+      "title": "MjAMjAM - Premium Nassfutter für Katzen - Kitten saftiges Hühnchen mit Lachsöl, 6er Pack (6 x 400 g), getreidefrei mit extra ",
+      "cents": 1329,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61Bf8DnCSuL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 28,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B012H5THFO",
+      "title": "animonda Milkies Katzensnack Cups Selection Mixpack (20 Cups à 15 g) | leicht verdauliche Katzenmilch für erwachsene Katzen, ",
+      "cents": 599,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71l3r9h+1jL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 29,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0DG933ZKR",
+      "title": "by Amazon Klumpende feine, geruchsneutrale Katzenstreu 10L (1er-Pack)",
+      "cents": 719,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71SwO75uDzL._AC_UL600_SR600,400_.jpg",
+      "category": "pet-supplies",
+      "rank": 30,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B001N03TAY",
+      "title": "Biokat's Classic fresh 3in1 mit Frühlings-Duft - Klumpende Katzenstreu mit 3 unterschiedlichen Korngrößen - 1 Sack (1 x 10 L)",
+      "cents": 649,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61ISE9vb6yL._AC_UL300_SR300,200_.jpg",
+      "category": "pet-supplies",
+      "rank": 31,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B0BPD4QFMT",
+      "title": "Whiskas 1+ Katzennassfutter Ragout Geflügel Auswahl in Gelee, 40x85g (1 Packung) – Hochwertiges Nassfutter für ausgewachsene ",
+      "cents": 1119,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71AIDzBcz-L._AC_UL300_SR300,200_.jpg",
+      "category": "pet-supplies",
+      "rank": 33,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B09X58R722",
+      "title": "PURINA ONE Adult Katzenfutter nass, Sorten-Mix, 40er Pack (40 x 85g)",
+      "cents": 1791,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/61lhAUS1CFL._AC_UL300_SR300,200_.jpg",
+      "category": "pet-supplies",
+      "rank": 34,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B007ZY4D0W",
+      "title": "Pedigree DentaStix Hundesnack für mittelgroße Hunde (10-25kg), Zahnpflege-Snack mit Huhn und Rind, 1 Packung je 56 Stück (1 x",
+      "cents": 889,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71OjkPahCnL._AC_UL300_SR300,200_.jpg",
+      "category": "pet-supplies",
+      "rank": 35,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B08TMZ3QZV",
+      "title": "EWL Getrocknete Mehlwürmer 460g (2,5L) | Vogelfutter & Wildvogelfutter",
+      "cents": 1395,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/71+rgQtc86L._AC_UL300_SR300,200_.jpg",
+      "category": "pet-supplies",
+      "rank": 36,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B00K8UC1AY",
+      "title": "Cat's Best Sensitive, 100 % pflanzliche Katzenstreu, fest klumpend und antibakteriell aus veredelten Aktiv-Holzfasern – spezi",
+      "cents": 829,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81+KSnk2yAL._AC_UL300_SR300,200_.jpg",
+      "category": "pet-supplies",
+      "rank": 37,
+      "checked": "2026-11-12T00:10:32.859Z"
+    },
+    {
+      "asin": "B07R5PNKXQ",
+      "title": "Gelenktabletten Hunde – Test SEHR GUT Made in Germany mit Grünlippmuschel, MSM und Teufelskralle - Keine Kapseln, hohe Akzept",
+      "cents": 2546,
+      "image": "https://images-eu.ssl-images-amazon.com/images/I/81RjQ6YVx2L._AC_UL300_SR300,200_.jpg",
+      "category": "pet-supplies",
+      "rank": 38,
+      "checked": "2026-11-12T00:10:32.859Z"
+    }
+  ]
+}

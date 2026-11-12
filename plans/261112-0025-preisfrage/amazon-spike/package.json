@@ -1,0 +1,8 @@
+{
+  "name": "preisfrage-amazon-spike",
+  "private": true,
+  "description": "PROTOTYPE, throwaway: can amazon.de bestseller pages be read with Playwright from home?",
+  "dependencies": {
+    "playwright-core": "^1.65.0"
+  }
+}
