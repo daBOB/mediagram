@@ -77,7 +77,7 @@ class TvGamesFrameTest {
 
     @Test
     fun aGameWithArtShowsItsPosterAndOneWithoutShowsItsName() {
-        compose.onNodeWithText("Kopfnuss").assertExists()
+        compose.onNodeWithText("Grand Allee").assertExists()
         // The focused game's name is the heading; its poster carries the title in the art.
         assertEquals(1, compose.onAllNodesWithText("Buzzer-Quiz").fetchSemanticsNodes().size)
     }
