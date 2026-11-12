@@ -44,6 +44,17 @@ class GameNightProviderTest {
     }
 
     @Test
+    fun theNightNamesTheHomeCacheServerThisAppFollows() {
+        assertEquals("", f.cacheServer(), "none found, or the LAN cache switched off")
+
+        f.homeCache.linked("http://192.168.0.42:7788")
+        assertEquals("http://192.168.0.42:7788", f.cacheServer())
+
+        f.core.chosen = "k"
+        assertEquals("http://192.168.0.42:7788", f.cacheServer(), "a kids night too: the game decides what it may play")
+    }
+
+    @Test
     fun noProfileMeansLockedAndNoTitles() {
         f.core.chosen = null
 

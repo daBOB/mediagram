@@ -89,3 +89,86 @@ fn a_read_blob_outlives_a_later_written_one_after_reopening() {
     assert_eq!(reopened.head(BlobKind::Tmdb, &key('a')).unwrap(), Some(10));
     assert_eq!(reopened.head(BlobKind::Tmdb, &key('b')).unwrap(), None);
 }
+
+#[test]
+fn a_game_blob_is_replaced_by_a_newer_write_and_found_again_after_reopening() {
+    let dir = tempdir().unwrap();
+    let store = BlobStore::open(dir.path().to_path_buf(), 1 << 20).unwrap();
+    let list = "preisfrage/articles.json";
+    assert_eq!(
+        store.put(BlobKind::Game, list, b"[1]").unwrap(),
+        BlobPut::Created
+    );
+    assert_eq!(
+        store.put(BlobKind::Game, list, b"[2,2]").unwrap(),
+        BlobPut::Replaced
+    );
+    store
+        .put(BlobKind::Game, "preisfrage/photos-B0ABC12345.jpg", &[9; 7])
+        .unwrap();
+    assert!(
+        dir.path()
+            .join("blobs/game/preisfrage/articles.json")
+            .is_file()
+    );
+    drop(store);
+
+    let reopened = BlobStore::open(dir.path().to_path_buf(), 1 << 20).unwrap();
+    assert_eq!(reopened.status().0, 5 + 7);
+    assert_eq!(
+        reopened.get(BlobKind::Game, list).unwrap(),
+        Some(b"[2,2]".to_vec())
+    );
+}
+
+#[test]
+fn game_blobs_share_the_budget_and_go_oldest_first() {
+    let dir = tempdir().unwrap();
+    let store = BlobStore::open(dir.path().to_path_buf(), 20).unwrap();
+    store
+        .put(BlobKind::Game, "preisfrage/a.jpg", &[1; 10])
+        .unwrap();
+    store.put(BlobKind::Art, "w92/b.jpg", &[2; 10]).unwrap();
+    store
+        .put(BlobKind::Game, "preisfrage/c.png", &[3; 10])
+        .unwrap();
+
+    assert_eq!(
+        store.head(BlobKind::Game, "preisfrage/a.jpg").unwrap(),
+        None
+    );
+    assert_eq!(store.head(BlobKind::Art, "w92/b.jpg").unwrap(), Some(10));
+    assert_eq!(
+        store.head(BlobKind::Game, "preisfrage/c.png").unwrap(),
+        Some(10)
+    );
+}
+
+#[test]
+fn game_names_are_a_lowercase_game_and_a_flat_file() {
+    assert!(valid_game("preisfrage") && valid_game(&"a".repeat(24)));
+    for bad in ["", "Preisfrage", "preis-frage", "..", &"a".repeat(25)] {
+        assert!(!valid_game(bad), "{bad:?}");
+    }
+    assert!(valid_game_file("articles.json") && valid_game_file("photos-B0ABC12345.jpg"));
+    assert!(valid_game_file("x_1.png") && valid_game_file(&format!("{}.jpg", "a".repeat(80))));
+    for bad in [
+        "articles",
+        "a.gif",
+        "../x.json",
+        "a/b.json",
+        ".json",
+        "a..json",
+        &format!("{}.jpg", "a".repeat(81)),
+    ] {
+        assert!(!valid_game_file(bad), "{bad:?}");
+    }
+    let store_dir = tempdir().unwrap();
+    let store = BlobStore::open(store_dir.path().to_path_buf(), 1 << 20).unwrap();
+    assert!(
+        store
+            .put(BlobKind::Game, "preisfrage/../x.json", b"{}")
+            .is_err()
+    );
+    assert!(store.put(BlobKind::Game, "articles.json", b"{}").is_err());
+}

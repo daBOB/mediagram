@@ -15,6 +15,7 @@ use qrcode::render::svg;
 use rust_embed::RustEmbed;
 use tokio::sync::mpsc;
 
+use crate::article_photos::article_photo;
 use crate::game_log::serve_log;
 use crate::image_files::{ImageLookup, content_type, title_image};
 use crate::poster_lookup::{PosterLookup, textless_file};
@@ -36,6 +37,7 @@ pub(crate) struct AppState {
     pub(crate) pool: Arc<TitlePool>,
     pub(crate) textless: Option<PosterLookup>,
     pub(crate) images: Option<ImageLookup>,
+    pub(crate) articles: Arc<crate::ArticleList>,
     pub(crate) log: Option<PathBuf>,
 }
 
@@ -44,6 +46,7 @@ pub(crate) fn router(state: AppState) -> Router {
         .route("/ws", get(ws_handler))
         .route("/qr.svg", get(qr_svg))
         .route("/img/{i}/{which}", get(image))
+        .route("/img/article/{asin}", get(article_photo))
         .route("/grand-allee-log", get(serve_log))
         .fallback(static_handler)
         .with_state(state)

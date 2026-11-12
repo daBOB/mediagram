@@ -94,6 +94,7 @@ async fn images_are_only_served_to_the_box() {
         pool: Arc::new(TitlePool::new(vec![t], false)),
         textless: None,
         images: None,
+        articles: std::sync::Arc::default(),
         log: None,
     };
     let get = |peer: &str, i: usize, which: &str| {
@@ -135,6 +136,7 @@ async fn poster_with(lookup: crate::PosterLookup) -> (axum::http::StatusCode, Ve
         pool: std::sync::Arc::new(TitlePool::new(vec![t], false)),
         textless: Some(lookup),
         images: None,
+        articles: std::sync::Arc::default(),
         log: None,
     };
     let peer = "127.0.0.1:5000".parse().unwrap();

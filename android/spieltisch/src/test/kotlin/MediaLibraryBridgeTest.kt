@@ -100,6 +100,31 @@ class MediaLibraryBridgeTest {
     }
 
     @Test
+    fun theNightNamesTheHomeCacheServerAndAnOlderMediaAppNone() {
+        mediaApp().night = {
+            MatrixCursor(arrayOf("kids_locked", "titles", "cache_server")).apply { addRow(arrayOf<Any>(0, "[]", "http://192.168.0.42:7788")) }
+        }
+        assertEquals("http://192.168.0.42:7788", night().cacheServer)
+
+        mediaApp().night = { row(0, "[]") }
+        assertEquals(MediaNight(kidsLocked = false, titles = "[]"), night(), "a media app from before Preisfrage: still a night, no server")
+    }
+
+    @Test
+    fun theArticleListIsReadFromThatServerAndASlowOneCostsOnlyTheList() {
+        TestCacheServer().use { server ->
+            server.files["/v1/game/preisfrage/articles.json"] = ARTICLE_LIST.toByteArray()
+            mediaApp().night = {
+                MatrixCursor(arrayOf("kids_locked", "titles", "cache_server")).apply { addRow(arrayOf<Any>(0, "[{\"key\":\"A\"}]", server.url)) }
+            }
+            assertEquals(MediaNight(kidsLocked = false, titles = "[{\"key\":\"A\"}]", cacheServer = server.url, articles = ARTICLE_LIST), night())
+
+            server.delayMs = 3_000
+            assertEquals(MediaNight(kidsLocked = false, titles = "[{\"key\":\"A\"}]", cacheServer = server.url), night())
+        }
+    }
+
+    @Test
     fun aKidsProfilesAnswerIsLocked() {
         mediaApp().night = { row(1, "[]") }
 

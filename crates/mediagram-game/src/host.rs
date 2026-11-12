@@ -8,6 +8,7 @@ use tokio::net::TcpListener;
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 
+use crate::articles::ArticleList;
 use crate::factory::game_factory;
 use crate::game::GameFactory;
 use crate::general::general_pack;
@@ -38,6 +39,8 @@ pub struct HostConfig {
     pub textless: Option<PosterLookup>,
     /// Copies of title images the host cannot read at their own paths; `None` serves only those.
     pub images: Option<ImageLookup>,
+    /// Preisfrage's articles; their photos come through `images`.
+    pub articles: Arc<ArticleList>,
     /// Where games append their log lines, also served at `/grand-allee-log`; `None` keeps no log.
     pub log: Option<PathBuf>,
 }
@@ -54,6 +57,7 @@ impl Default for HostConfig {
             pool: Arc::default(),
             textless: None,
             images: None,
+            articles: Arc::default(),
             log: None,
         }
     }
@@ -62,10 +66,11 @@ impl Default for HostConfig {
 /// Hosts the games over `titles`. The one `kids_locked` decides both which
 /// titles exist and whether the toggle is locked, so the two cannot disagree.
 /// `images` supplies the titles' images from elsewhere when their paths
-/// can't be read here. `log` is the file games append their log lines to,
-/// across nights.
+/// can't be read here, and Preisfrage's `articles` photos. `log` is the file
+/// games append their log lines to, across nights.
 pub async fn start_game_night(
     titles: Vec<GameTitle>,
+    articles: ArticleList,
     kids_locked: bool,
     preferred_port: u16,
     textless: Option<PosterLookup>,
@@ -73,6 +78,7 @@ pub async fn start_game_night(
     log: Option<PathBuf>,
 ) -> std::io::Result<Host> {
     let pool = Arc::new(TitlePool::new(titles, kids_locked));
+    tracing::info!(count = articles.articles.len(), fetched = %articles.fetched, "Preisfrage articles");
     let cfg = HostConfig {
         preferred_port,
         kids_locked,
@@ -83,6 +89,7 @@ pub async fn start_game_night(
         pool: pool.clone(),
         textless: textless.clone(),
         images,
+        articles: Arc::new(articles),
         log,
         ..HostConfig::default()
     };
@@ -130,6 +137,7 @@ impl Host {
             pool: cfg.pool,
             textless: cfg.textless,
             images: cfg.images,
+            articles: cfg.articles,
             log: cfg.log,
         };
         let (shutdown, stopped) = oneshot::channel::<()>();

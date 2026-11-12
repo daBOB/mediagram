@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The TV page is the box talking to its own game host over plain http on
-    127.0.0.1. Nothing else this app loads is cleartext, so only loopback is
-    allowed it.
+    Plain http for two servers on the home network: the box's own game host
+    on 127.0.0.1, which the TV page talks to, and the home LAN cache server,
+    where Preisfrage's articles are (docs/running-the-player.md, "Home cache
+    server"). network_security_config cannot express a CIDR range, only exact
+    domains or IP literals, and the cache server's address is whatever the
+    router hands out, so this is global, as in the media app.
+
+    This app makes no other network calls: its updates and the media app's
+    library come through the media app's provider.
 -->
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">127.0.0.1</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

@@ -147,14 +147,14 @@ class CatalogEnrichmentFetcherTest {
             runCurrent()
             assertFalse(enrichment.state.value.viaHomeCache)
 
-            home.linked(true)
+            home.linked("http://192.168.0.240:7788")
             runCurrent()
             assertTrue(enrichment.state.value.viaHomeCache)
 
-            home.linked(false)
+            home.linked(null)
             runCurrent()
             assertFalse(enrichment.state.value.viaHomeCache)
         }
 
-    private fun linkedHomeCache() = HomeCacheServer().apply { linked(true) }
+    private fun linkedHomeCache() = HomeCacheServer().apply { linked("http://192.168.0.240:7788") }
 }

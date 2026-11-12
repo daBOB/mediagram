@@ -1,9 +1,14 @@
 //! Hosts the buzzer quiz on the LAN for development, without the app.
 //! `GAME_PORT` overrides the port; `--kids-locked`
 //! starts the night as a kids profile would. `--titles <file>` loads the
-//! title list (image paths relative to the workspace root).
+//! title list (image paths relative to the workspace root). `--articles <dir>`
+//! loads Preisfrage's articles and photos from a folder that
+//! `bun run fetch --dry-run <dir>` (tools/preisfrage-articles) wrote.
 
-use mediagram_game::{GameTitle, start_game_night};
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use mediagram_game::{ArticleList, GameTitle, ImageKind, ImageLookup, start_game_night};
 use qrcode::QrCode;
 use qrcode::render::unicode;
 
@@ -23,6 +28,17 @@ fn load_titles(path: &str) -> std::io::Result<Vec<GameTitle>> {
     Ok(titles)
 }
 
+/// The list in `dir` and a lookup that answers each photo from beside it.
+fn load_articles(dir: &str) -> std::io::Result<(ArticleList, ImageLookup)> {
+    let list = ArticleList::from_json(&std::fs::read_to_string(PathBuf::from(dir).join("articles.json"))?)?;
+    let dir = PathBuf::from(dir);
+    let lookup: ImageLookup = Arc::new(move |asin, kind| {
+        let photo = dir.join(format!("photos-{asin}.jpg"));
+        Box::pin(async move { (kind == ImageKind::Article && photo.is_file()).then_some(photo) })
+    });
+    Ok((list, lookup))
+}
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     tracing_subscriber::fmt()
@@ -37,7 +53,12 @@ async fn main() -> std::io::Result<()> {
         Some(path) => load_titles(path)?,
         None => Vec::new(),
     };
-    let host = start_game_night(titles, kids_locked, env_or("GAME_PORT", 8080), None, None, None).await?;
+    let (articles, images) = match args.iter().position(|a| a == "--articles").and_then(|i| args.get(i + 1)) {
+        Some(dir) => load_articles(dir).map(|(list, lookup)| (list, Some(lookup)))?,
+        None => (ArticleList::default(), None),
+    };
+    let port = env_or("GAME_PORT", 8080);
+    let host = start_game_night(titles, articles, kids_locked, port, None, images, None).await?;
 
     println!();
     if let Ok(code) = QrCode::new(host.join_url().as_bytes()) {

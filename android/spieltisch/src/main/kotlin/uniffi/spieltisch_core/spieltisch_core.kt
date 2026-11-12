@@ -1674,6 +1674,11 @@ data class SpieltischConfig (
      * The media app's titles as JSON, in `GameTitle`'s shape; `[]` when it gave none.
      */
     var `titles`: kotlin.String
+    ,
+    /**
+     * Preisfrage's article list as the home cache server holds it; empty when there is none.
+     */
+    var `articles`: kotlin.String
 
 ){
 
@@ -1693,19 +1698,22 @@ public object FfiConverterTypeSpieltischConfig: FfiConverterRustBuffer<Spieltisc
             FfiConverterBoolean.read(buf),
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
         )
     }
 
     override fun allocationSize(value: SpieltischConfig) = (
             FfiConverterBoolean.allocationSize(value.`kidsLocked`) +
             FfiConverterString.allocationSize(value.`dataDir`) +
-            FfiConverterString.allocationSize(value.`titles`)
+            FfiConverterString.allocationSize(value.`titles`) +
+            FfiConverterString.allocationSize(value.`articles`)
     )
 
     override fun write(value: SpieltischConfig, buf: ByteBuffer) {
             FfiConverterBoolean.write(value.`kidsLocked`, buf)
             FfiConverterString.write(value.`dataDir`, buf)
             FfiConverterString.write(value.`titles`, buf)
+            FfiConverterString.write(value.`articles`, buf)
     }
 }
 
@@ -1722,7 +1730,11 @@ enum class MediaImageKind {
     /**
      * The poster without its lettering, which Poster-Raten shows when there is one.
      */
-    TEXTLESS;
+    TEXTLESS,
+    /**
+     * A Preisfrage article's photo, asked for by ASIN; it comes from the home cache server.
+     */
+    ARTICLE;
 
 
 

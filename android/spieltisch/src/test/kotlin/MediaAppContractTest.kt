@@ -38,6 +38,7 @@ class MediaAppContractTest {
         assertEquals(MediaApp.AUTHORITY, provider["AUTHORITY"])
         assertEquals(MediaApp.KIDS_LOCKED, provider["KIDS_LOCKED"])
         assertEquals(MediaApp.TITLES, provider["TITLES"])
+        assertEquals(MediaApp.CACHE_SERVER, provider["CACHE_SERVER"])
         assertEquals(MediaApp.VERSION_NAME, provider["VERSION_NAME"])
         assertEquals(MediaApp.VERSION_CODE, provider["VERSION_CODE"])
         assertEquals(MediaApp.BYTES, provider["BYTES"])

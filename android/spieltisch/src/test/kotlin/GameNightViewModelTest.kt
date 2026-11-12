@@ -42,9 +42,23 @@ class GameNightViewModelTest {
             model.start()
 
             assertEquals(GameNightUi.Ready("http://127.0.0.1:8080/tv"), model.state.first { it !is GameNightUi.Starting })
-            assertEquals(SpieltischConfig(kidsLocked = false, dataDir = "/data/spieltisch", titles = "[{\"key\":\"A\"}]"), core.starts.single())
-            assertEquals(NoImages, core.startImages.single(), "the media app's images, for the host to fetch")
+            assertEquals(
+                SpieltischConfig(kidsLocked = false, dataDir = "/data/spieltisch", titles = "[{\"key\":\"A\"}]", articles = ""),
+                core.starts.single(),
+            )
+            assertIs<NightImages>(core.startImages.single(), "the media app's images and the articles' photos, for the host to fetch")
             assertFalse(model.filmsUnavailable.value)
+        }
+
+    @Test
+    fun theArticleListIsWhatTheNightStartsWith() =
+        runTest {
+            val model = model(backgroundScope) { MediaNight(kidsLocked = false, titles = "[]", articles = ARTICLE_LIST) }
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            assertEquals(ARTICLE_LIST, core.starts.single().articles)
         }
 
     @Test
@@ -67,7 +81,7 @@ class GameNightViewModelTest {
             model.start()
 
             assertEquals(GameNightUi.Ready("http://127.0.0.1:8080/tv"), model.state.first { it !is GameNightUi.Starting })
-            assertEquals(SpieltischConfig(kidsLocked = true, dataDir = "/data/spieltisch", titles = "[]"), core.starts.single())
+            assertEquals(SpieltischConfig(kidsLocked = true, dataDir = "/data/spieltisch", titles = "[]", articles = ""), core.starts.single())
             assertTrue(model.filmsUnavailable.value)
         }
 

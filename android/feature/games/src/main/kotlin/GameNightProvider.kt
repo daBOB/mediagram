@@ -9,6 +9,7 @@ import android.os.CancellationSignal
 import android.os.OperationCanceledException
 import android.os.ParcelFileDescriptor
 import dagger.hilt.EntryPoint
+import data.HomeCacheServer
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
@@ -19,7 +20,8 @@ import java.io.FileNotFoundException
 
 /**
  * Spieltisch's window on this app's library, read-only:
- * - `content://com.mediagram.android.games/night`: one row, [KIDS_LOCKED] (1 or 0) and [TITLES] (JSON).
+ * - `content://com.mediagram.android.games/night`: one row, [KIDS_LOCKED] (1 or 0), [TITLES] (JSON) and
+ *   [CACHE_SERVER], the home cache server this app follows (`""` for none), where Preisfrage's articles are.
  * - `/image/{key}/{poster|still}` and `/textless/{key}`: that title's file, only while the active
  *   profile's night holds the title, so a key cannot fetch a picture the profile may not see.
  * - `/release`: one row ([VERSION_NAME], [VERSION_CODE], [BYTES], [SHA256]) for Spieltisch's newest
@@ -38,6 +40,8 @@ class GameNightProvider : ContentProvider() {
         fun export(): GameNightExport
 
         fun releases(): SpieltischReleaseExport
+
+        fun homeCache(): HomeCacheServer
     }
 
     /** Built on the first ask; a test sets its own. */
@@ -46,6 +50,9 @@ class GameNightProvider : ContentProvider() {
 
     @Volatile
     internal var releases: SpieltischReleaseExport? = null
+
+    @Volatile
+    internal var homeCache: HomeCacheServer? = null
 
     override fun onCreate(): Boolean = true
 
@@ -60,7 +67,10 @@ class GameNightProvider : ContentProvider() {
         return when (uri.pathSegments) {
             listOf("night") -> {
                 val night = runBlocking { runCatching { export().night() } }.getOrDefault(ExportedNight.Locked)
-                MatrixCursor(arrayOf(KIDS_LOCKED, TITLES)).apply { addRow(arrayOf<Any>(if (night.kidsLocked) 1 else 0, night.titles)) }
+                val cacheServer = runCatching { homeCache().url.value }.getOrNull().orEmpty()
+                MatrixCursor(arrayOf(KIDS_LOCKED, TITLES, CACHE_SERVER)).apply {
+                    addRow(arrayOf<Any>(if (night.kidsLocked) 1 else 0, night.titles, cacheServer))
+                }
             }
             // No row says "no release" (no library chosen, nothing pinned); no cursor at all says the lookup failed,
             // so a caller never mistakes a failure for nothing pinned and drops a release it already holds.
@@ -137,6 +147,12 @@ class GameNightProvider : ContentProvider() {
             .export()
             .also { export = it }
 
+    private fun homeCache(): HomeCacheServer =
+        homeCache ?: EntryPointAccessors
+            .fromApplication(checkNotNull(context).applicationContext, Dependencies::class.java)
+            .homeCache()
+            .also { homeCache = it }
+
     private fun releases(): SpieltischReleaseExport =
         releases ?: EntryPointAccessors
             .fromApplication(checkNotNull(context).applicationContext, Dependencies::class.java)
@@ -148,6 +164,7 @@ class GameNightProvider : ContentProvider() {
         const val PERMISSION = "com.mediagram.android.permission.GAME_NIGHT"
         const val KIDS_LOCKED = "kids_locked"
         const val TITLES = "titles"
+        const val CACHE_SERVER = "cache_server"
         const val VERSION_NAME = "version_name"
         const val VERSION_CODE = "version_code"
         const val BYTES = "bytes"

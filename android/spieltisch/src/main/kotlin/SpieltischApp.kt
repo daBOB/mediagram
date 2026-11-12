@@ -30,6 +30,7 @@ class SpieltischApp : Application(), UpdaterHost {
                 filesDir.path,
                 MediaLibraryBridge(contentResolver),
                 MediaImageCache(contentResolver, File(cacheDir, "media-images")),
+                File(cacheDir, "articles"),
             )
         updater =
             AppUpdater(

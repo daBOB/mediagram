@@ -225,3 +225,102 @@ async fn an_oversize_put_is_refused_before_its_body_is_read() {
         );
     }
 }
+
+#[tokio::test]
+async fn a_game_list_is_replaced_and_its_photos_are_served_as_images() {
+    let (_dir, app) = app(1 << 20);
+    let list = "/v1/game/preisfrage/articles.json";
+    assert_eq!(
+        send(&app, put(list, b"[1]", false)).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    assert_eq!(
+        send(&app, put(list, b"[1]", true)).await.0,
+        StatusCode::CREATED
+    );
+    assert_eq!(
+        send(&app, put(list, b"[2,2]", true)).await.0,
+        StatusCode::OK
+    );
+    let (status, body, headers) = send(&app, request("GET", list)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, b"[2,2]");
+    assert_eq!(headers[header::CONTENT_TYPE], "application/json");
+
+    let photo = "/v1/game/preisfrage/photos-B0ABC12345.jpg";
+    send(&app, put(photo, b"jpeg!", true)).await;
+    let (status, _, headers) = send(&app, request("HEAD", photo)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers[header::CONTENT_LENGTH], "5");
+    assert_eq!(
+        send(&app, request("GET", photo)).await.2[header::CONTENT_TYPE],
+        "image/jpeg"
+    );
+}
+
+#[tokio::test]
+async fn a_put_signed_for_another_game_path_is_refused() {
+    let (_dir, app) = app(1 << 20);
+    let sig = token::sign(TOKEN, "PUT", "/v1/game/other/articles.json", 2, b"{}");
+    let req = Request::builder()
+        .method("PUT")
+        .uri("/v1/game/preisfrage/articles.json")
+        .header(header::AUTHORIZATION, format!("MGC1 {sig}"))
+        .body(Body::from("{}"))
+        .unwrap();
+    assert_eq!(send(&app, req).await.0, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn bad_game_paths_are_not_found() {
+    let (dir, app) = app(1 << 20);
+    for path in [
+        "/v1/game/Preisfrage/articles.json",
+        "/v1/game/preisfrage/articles",
+        "/v1/game/preisfrage/..",
+        "/v1/game/preisfrage/a.gif",
+        "/v1/game/preisfrage/a/b.json",
+        &format!("/v1/game/preisfrage/{}.json", "a".repeat(81)),
+        &format!("/v1/game/{}/a.json", "a".repeat(25)),
+    ] {
+        for method in ["GET", "HEAD"] {
+            assert_eq!(
+                send(&app, request(method, path)).await.0,
+                StatusCode::NOT_FOUND,
+                "{method} {path}"
+            );
+        }
+        assert_eq!(
+            send(&app, put(path, b"{}", true)).await.0,
+            StatusCode::NOT_FOUND,
+            "PUT {path}"
+        );
+    }
+    assert!(!dir.path().join("blobs/game").exists());
+}
+
+#[tokio::test]
+async fn game_bodies_are_capped_by_their_extension() {
+    let (_dir, app) = app(1 << 30);
+    let json = vec![b' '; 2 * 1024 * 1024 + 1];
+    assert_eq!(
+        send(&app, put("/v1/game/preisfrage/articles.json", &json, true))
+            .await
+            .0,
+        StatusCode::PAYLOAD_TOO_LARGE
+    );
+    let image = vec![0u8; 16 * 1024 * 1024 + 1];
+    assert_eq!(
+        send(&app, put("/v1/game/preisfrage/p.jpg", &image, true))
+            .await
+            .0,
+        StatusCode::PAYLOAD_TOO_LARGE
+    );
+    let image = vec![0u8; 3 * 1024 * 1024];
+    assert_eq!(
+        send(&app, put("/v1/game/preisfrage/p.png", &image, true))
+            .await
+            .0,
+        StatusCode::CREATED
+    );
+}

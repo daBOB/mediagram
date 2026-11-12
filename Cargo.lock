@@ -1731,7 +1731,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram"
-version = "0.177.0"
+version = "0.178.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1768,7 +1768,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-cache"
-version = "0.177.0"
+version = "0.178.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -1792,7 +1792,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-core"
-version = "0.177.0"
+version = "0.178.0"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1832,7 +1832,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-game"
-version = "0.176.0"
+version = "0.177.0"
 dependencies = [
  "axum",
  "futures",
@@ -1850,7 +1850,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-tmdb"
-version = "0.177.0"
+version = "0.178.0"
 dependencies = [
  "anyhow",
  "hex",
@@ -1918,7 +1918,7 @@ dependencies = [
 
 [[package]]
 name = "mlib-spec"
-version = "0.177.0"
+version = "0.178.0"
 dependencies = [
  "flate2",
  "hex",
@@ -2927,7 +2927,7 @@ dependencies = [
 
 [[package]]
 name = "spieltisch-core"
-version = "0.176.0"
+version = "0.177.0"
 dependencies = [
  "mediagram-game",
  "serde_json",
