@@ -59,8 +59,9 @@ check. Not part of any app; no version line.
   slogan shirts: skipped by ASIN shape (`B…` only), a clothing word list and one article per short name.
 - Playwright 1.65 wants a headless shell this PC did not have; the tool uses the newest installed
   `~/.cache/ms-playwright/chromium-*` (the spike ran on 1228), or `PREISFRAGE_CHROME`.
-- Deep pages (3-4) with newest-first in a narrow band often come back empty (3 of 16 searches); the other
-  searches more than make up for it, so nothing was changed.
+- Deep pages (3-4) or newest-first in the top band come back empty: the first real run into the funstation
+  (2026-11-12) got 3 of 4 top-band searches empty and only 14 articles at 150-500 €. Top-band searches now read
+  page 1 by relevance; the next run kept 574 articles, 154 / 144 / 162 / 114 per band, 405 with under 20 reviews.
 
 ## Risks
 - Amazon changes its result markup → parse tests on saved pages make the break obvious; fixtures are refreshed
