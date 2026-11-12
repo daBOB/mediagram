@@ -847,6 +847,26 @@ found for chunks, with the same token; with no TMDB key stored, its Library
 update card says "Artwork comes from the home cache server.", and turning
 the LAN cache switch off stops that too.
 
+### Game data
+
+A third kind of blob holds a game's own data, refetched by hand on a PC
+rather than by any player: today Preisfrage's article list and its photos.
+
+```
+GET|HEAD|PUT /v1/game/{game}/{name}  game: [a-z]{1,24}, the game (preisfrage)
+                                     name: [A-Za-z0-9_-]{1,80}.(json|jpg|png),
+                                           flat: no further path level
+```
+
+Same rules as the TMDB answers above: reads are open, a PUT is signed with
+the body's own length, a name of any other shape is a 404 and an oversize
+body a 413 before the signature is looked at. A newer write replaces the
+stored one (201 new, 200 replaced), so next week's list overwrites this
+week's. A `.json` body over 2 MiB or an image over 16 MiB is a 413; reads
+answer `application/json`, `image/jpeg` or `image/png` by extension. Game
+data shares the blob budget, and its oldest-first eviction, with the
+answers and artwork.
+
 ### Finding it: mDNS, with an avahi fallback
 
 `mediagram_cache` advertises itself as `_mediagram-cache._tcp.local.` (TXT

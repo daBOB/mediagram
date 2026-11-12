@@ -16,6 +16,7 @@ use crate::store::{ChunkStore, PutOutcome};
 use crate::token;
 
 mod blob_routes;
+mod game_blob_routes;
 mod set_status;
 
 #[derive(Clone)]

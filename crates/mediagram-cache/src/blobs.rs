@@ -1,10 +1,12 @@
-//! Small answers and images (TMDB JSON, posters) kept beside the video
-//! chunks but under their own budget: evicting a blob never touches a chunk
-//! and the reverse, so a burst of poster downloads cannot push a film out.
+//! Small answers and images (TMDB JSON, posters, game data) kept beside
+//! the video chunks but under their own budget: evicting a blob never
+//! touches a chunk and the reverse, so a burst of poster downloads cannot
+//! push a film out.
 //!
-//! Layout under `{root}/blobs`: `tmdb/{key[0..2]}/{key}` and
-//! `art/{size}/{name}`. Every write is staged in `.tmp` and renamed into
-//! place, so a reader sees a file whole or not at all. The index lives in
+//! Layout under `{root}/blobs`: `tmdb/{key[0..2]}/{key}`,
+//! `art/{size}/{name}` and `game/{game}/{name}`. Every write is staged in
+//! `.tmp` and renamed into place, so a reader sees a file whole or not at
+//! all. The index lives in
 //! memory behind one lock and is rebuilt by a scan at open, oldest mtime
 //! first; the lock is held across the rename so index and disk never
 //! disagree about which of two racing writers won.
@@ -21,7 +23,7 @@ mod index;
 mod names;
 use index::Index;
 use names::relative_path;
-pub use names::{valid_art_name, valid_art_size, valid_tmdb_key};
+pub use names::{valid_art_name, valid_art_size, valid_game, valid_game_file, valid_tmdb_key};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BlobKind {
@@ -29,6 +31,9 @@ pub enum BlobKind {
     Tmdb,
     /// Images: the first write stands.
     Art,
+    /// A game's own data (Preisfrage's article list and photos): a newer
+    /// write replaces the older one, since the list is refetched weekly.
+    Game,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -52,7 +57,7 @@ impl BlobStore {
         let _ = fs::remove_dir_all(root.join(".tmp"));
         fs::create_dir_all(root.join(".tmp"))?;
         let mut found = Vec::new();
-        for top in ["tmdb", "art"] {
+        for top in ["tmdb", "art", "game"] {
             for dir in subdirs(&root.join(top)) {
                 for file in fs::read_dir(&dir)?.flatten() {
                     let Ok(meta) = file.metadata() else { continue };

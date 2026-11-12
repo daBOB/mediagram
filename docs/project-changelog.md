@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.177.0 — The home cache server keeps a game's own data
+
+**Added**
+
+- `GET|HEAD|PUT /v1/game/{game}/{name}` on the home cache server: a third blob kind beside TMDB answers and artwork, for data a game needs that no player fetches, starting with Preisfrage's article list and photos. Reads are open, a PUT is signed like the other blobs, a newer write replaces the older one; `.json` up to 2 MiB, `.jpg`/`.png` up to 16 MiB, under the blob budget. See `docs/running-the-player.md` § Game data.
+
 ## Spieltisch 0.175.0 — the games' own app
 
 **Added**

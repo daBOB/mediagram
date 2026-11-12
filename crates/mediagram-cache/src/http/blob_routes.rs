@@ -1,5 +1,5 @@
 //! `GET|HEAD|PUT` for TMDB answers (`/v1/tmdb/{key}`) and images
-//! (`/v1/art/{size}/{name}`). Reads are open, like chunk reads; a PUT is
+//! (`/v1/art/{size}/{name}`), plus the game routes beside them. Reads are open, like chunk reads; a PUT is
 //! signed over the path rebuilt from the validated parts and the body's own
 //! length. A malformed name is a 404 before the store is asked anything.
 
@@ -14,8 +14,8 @@ use super::{AppState, auth_signature, blocking, body_response, empty, server_err
 use crate::blobs::{BlobKind, BlobPut, valid_art_name, valid_art_size, valid_tmdb_key};
 use crate::token;
 
-const MAX_JSON: usize = 2 * 1024 * 1024;
-const MAX_IMAGE: usize = 16 * 1024 * 1024;
+pub(super) const MAX_JSON: usize = 2 * 1024 * 1024;
+pub(super) const MAX_IMAGE: usize = 16 * 1024 * 1024;
 
 pub(super) fn routes() -> Router<AppState> {
     Router::new()
@@ -27,10 +27,11 @@ pub(super) fn routes() -> Router<AppState> {
             "/v1/art/{size}/{name}",
             get(get_art).head(head_art).put(put_art),
         )
+        .merge(super::game_blob_routes::routes())
 }
 
 /// `(kind, store name, canonical path)` once the shape checks out.
-type Target = (BlobKind, String, String);
+pub(super) type Target = (BlobKind, String, String);
 
 fn tmdb_target(key: &str) -> Option<Target> {
     valid_tmdb_key(key).then(|| (BlobKind::Tmdb, key.to_string(), format!("/v1/tmdb/{key}")))
@@ -48,7 +49,7 @@ fn art_target(size: &str, name: &str) -> Option<Target> {
 
 fn content_type(kind: BlobKind, name: &str) -> &'static str {
     match (kind, name.rsplit('.').next()) {
-        (BlobKind::Tmdb, _) => "application/json",
+        (BlobKind::Tmdb, _) | (_, Some("json")) => "application/json",
         (_, Some("png")) => "image/png",
         (_, Some("svg")) => "image/svg+xml",
         _ => "image/jpeg",
@@ -95,7 +96,7 @@ async fn put_art(
     write(state, art_target(&size, &name), MAX_IMAGE, headers, body).await
 }
 
-async fn read(state: AppState, target: Option<Target>) -> Response {
+pub(super) async fn read(state: AppState, target: Option<Target>) -> Response {
     let Some((kind, name, _)) = target else {
         return empty(StatusCode::NOT_FOUND);
     };
@@ -117,7 +118,7 @@ async fn read(state: AppState, target: Option<Target>) -> Response {
     }
 }
 
-async fn probe(state: AppState, target: Option<Target>) -> Response {
+pub(super) async fn probe(state: AppState, target: Option<Target>) -> Response {
     let Some((kind, name, _)) = target else {
         return empty(StatusCode::NOT_FOUND);
     };
@@ -137,7 +138,7 @@ async fn probe(state: AppState, target: Option<Target>) -> Response {
 /// that can never be accepted is not charged an HMAC over its body. The
 /// body is read only once its declared length fits and it names a
 /// signature, so an unsigned or oversize request is never buffered.
-async fn write(
+pub(super) async fn write(
     state: AppState,
     target: Option<Target>,
     max: usize,
