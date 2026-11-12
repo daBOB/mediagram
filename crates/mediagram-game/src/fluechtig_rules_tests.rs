@@ -1,6 +1,11 @@
 use super::*;
-use crate::fluechtig_map::CITY;
+use crate::fluechtig_map::CityKind;
 use Ticket::{Bus, Schatten, Taxi, Ubahn};
+
+/// The small city: these tests know its fields.
+fn small() -> &'static City {
+    CityKind::Small.city()
+}
 
 fn chase(rules: Rules, fugitive: Field, hunters: &[Field]) -> Chase {
     Chase::new(rules, fugitive, hunters)
@@ -22,14 +27,14 @@ fn hideouts(c: &Chase) -> Vec<Field> {
 }
 
 #[test]
-fn the_city_is_one_connected_map_of_three_transports() {
-    assert_eq!(CITY.spots.len(), 48);
-    let count = |k| CITY.links.iter().filter(|l| l.kind == k).count();
-    assert_eq!((count(Taxi), count(Bus), count(Ubahn)), (77, 14, 4));
+fn the_city_is_one_connected_map_of_three_transports_and_a_ferry() {
+    assert_eq!(small().spots.len(), 48);
+    let count = |k| small().links.iter().filter(|l| l.kind == k).count();
+    assert_eq!((count(Taxi), count(Bus), count(Ubahn), count(Schatten)), (77, 14, 4, 3));
     let mut seen = BTreeSet::from([1]);
     let mut todo = vec![1];
     while let Some(f) = todo.pop() {
-        for &(to, _) in CITY.exits(f) {
+        for &(to, _) in small().exits(f) {
             if seen.insert(to) {
                 todo.push(to);
             }
@@ -39,8 +44,30 @@ fn the_city_is_one_connected_map_of_three_transports() {
 }
 
 #[test]
+fn only_a_shadow_ride_boards_the_ferry() {
+    // 27 is a pier: the ferry runs to 17 and 22
+    let c = chase(Rules::small(), 27, &[3, 44]);
+    let to_17: Vec<Ticket> = c.moves().iter().filter(|m| m.to == 17).map(|m| m.ticket).collect();
+    assert_eq!(to_17, vec![Schatten], "the ferry is offered once, as a shadow ride");
+    let no_shadow = Tickets { schatten: 0, ..Rules::small().fugitive_tickets };
+    let c = chase(Rules { fugitive_tickets: no_shadow, ..Rules::small() }, 27, &[3, 44]);
+    assert!(c.moves().iter().all(|m| m.to != 17), "without a shadow ride the ferry stays shut");
+    // the room reckons with the ferry after a shadow ride, and only then
+    let mut c = chase(Rules::small(), 27, &[3, 44]);
+    play_all(&mut c, &[(26, Taxi)]);
+    assert!(!hideouts(&c).contains(&17));
+    let mut c = chase(Rules::small(), 27, &[3, 44]);
+    play_all(&mut c, &[(17, Schatten)]);
+    assert!(hideouts(&c).contains(&17));
+    // a hunter on a pier stays ashore
+    let mut c = chase(Rules::small(), 10, &[17, 44]);
+    play_all(&mut c, &[(11, Taxi)]);
+    assert!(c.moves().iter().all(|m| m.to != 27));
+}
+
+#[test]
 fn a_reveal_shrinks_the_hideouts_to_one_field() {
-    let mut c = chase(Rules::default(), 12, &[3, 44]);
+    let mut c = chase(Rules::small(), 12, &[3, 44]);
     assert_eq!(hideouts(&c), vec![6, 10, 12, 24, 27, 33, 39, 46]);
     play_all(&mut c, &[(13, Taxi), (4, Taxi), (36, Taxi), (15, Bus), (21, Bus), (38, Bus), (16, Taxi)]);
     assert_eq!(hideouts(&c), vec![16]);
@@ -52,7 +79,7 @@ fn a_reveal_shrinks_the_hideouts_to_one_field() {
 
 #[test]
 fn a_shadow_ride_spreads_over_every_transport() {
-    let rules = Rules { reveal_rounds: vec![2, 8, 13, 18], ..Rules::default() };
+    let rules = Rules { reveal_rounds: vec![2, 8, 13, 18], ..Rules::small() };
     let mut c = chase(rules, 12, &[3, 44]);
     play_all(&mut c, &[(13, Taxi), (4, Taxi), (45, Taxi), (21, Taxi), (12, Taxi), (37, Taxi), (42, Schatten)]);
     // all of 21's neighbours but 12 and 37, where hunters stand
@@ -64,7 +91,7 @@ fn a_shadow_ride_spreads_over_every_transport() {
 
 #[test]
 fn a_double_move_on_a_reveal_round_shows_only_where_it_ends() {
-    let mut c = chase(Rules::default(), 12, &[3, 44]);
+    let mut c = chase(Rules::small(), 12, &[3, 44]);
     play_all(&mut c, &[(13, Taxi), (4, Taxi), (45, Taxi), (14, Taxi), (5, Taxi), (46, Taxi)]);
     c.announce_double().unwrap();
     assert!(c.announce_double().is_err(), "one double move at a time");
@@ -79,16 +106,16 @@ fn a_double_move_on_a_reveal_round_shows_only_where_it_ends() {
 #[test]
 fn a_double_move_only_takes_first_steps_that_leave_a_second() {
     let one_taxi = Tickets { taxi: 1, doppel: 1, ..Tickets::default() };
-    let c = chase(Rules { fugitive_tickets: one_taxi, ..Rules::default() }, 10, &[3, 44]);
+    let c = chase(Rules { fugitive_tickets: one_taxi, ..Rules::small() }, 10, &[3, 44]);
     assert!(!c.can_double(), "one taxi ticket cannot make two steps");
     // 10's exits are all taxi; with two tickets every first step leaves a second
     let two_taxis = Tickets { taxi: 2, doppel: 1, ..Tickets::default() };
-    let mut c = chase(Rules { fugitive_tickets: two_taxis, ..Rules::default() }, 10, &[3, 44]);
+    let mut c = chase(Rules { fugitive_tickets: two_taxis, ..Rules::small() }, 10, &[3, 44]);
     c.announce_double().unwrap();
-    assert_eq!(c.moves().len(), CITY.exits(10).len());
+    assert_eq!(c.moves().len(), small().exits(10).len());
     // one taxi and one bus from 27: a taxi to 28 or 35 strands him (no bus there), to 26 or 36 does not
     let taxi_and_bus = Tickets { taxi: 1, bus: 1, doppel: 1, ..Tickets::default() };
-    let mut c = chase(Rules { fugitive_tickets: taxi_and_bus, ..Rules::default() }, 27, &[3, 14]);
+    let mut c = chase(Rules { fugitive_tickets: taxi_and_bus, ..Rules::small() }, 27, &[3, 14]);
     c.announce_double().unwrap();
     let firsts: Vec<Field> = c.moves().iter().map(|m| m.to).collect();
     assert_eq!(firsts, vec![26, 36]);
@@ -96,7 +123,7 @@ fn a_double_move_only_takes_first_steps_that_leave_a_second() {
 
 #[test]
 fn a_hunter_on_the_fugitive_field_catches_him() {
-    let mut c = chase(Rules::default(), 10, &[3, 19]);
+    let mut c = chase(Rules::small(), 10, &[3, 19]);
     play_all(&mut c, &[(9, Taxi), (2, Taxi), (18, Taxi), (1, Taxi), (1, Taxi)]);
     assert_eq!(c.winner(), Some(Side::Hunters));
     assert!(c.news.last().unwrap().contains("erwischt"));
@@ -104,7 +131,7 @@ fn a_hunter_on_the_fugitive_field_catches_him() {
 
 #[test]
 fn a_fugitive_with_nowhere_to_go_loses() {
-    let mut c = chase(Rules::default(), 10, &[3, 17, 19]);
+    let mut c = chase(Rules::small(), 10, &[3, 17, 19]);
     play_all(&mut c, &[(9, Taxi), (2, Taxi), (18, Taxi), (11, Taxi), (1, Taxi), (10, Taxi), (2, Bus), (9, Bus)]);
     assert_eq!((c.winner(), c.round), (Some(Side::Hunters), 3));
     assert!(c.news.last().unwrap().contains("eingekesselt"));
@@ -112,7 +139,7 @@ fn a_fugitive_with_nowhere_to_go_loses() {
 
 #[test]
 fn hunters_out_of_tickets_pass_and_then_lose() {
-    let rules = Rules { hunter_tickets: Tickets { taxi: 1, bus: 1, ..Tickets::default() }, ..Rules::default() };
+    let rules = Rules { hunter_tickets: Tickets { taxi: 1, bus: 1, ..Tickets::default() }, ..Rules::small() };
     let mut c = chase(rules, 12, &[3, 44]);
     play_all(&mut c, &[(13, Taxi), (4, Taxi), (45, Taxi), (14, Taxi), (21, Bus)]);
     assert!(c.news.iter().any(|n| n == "Jäger 2 kann nicht fahren und setzt aus."));
@@ -123,7 +150,7 @@ fn hunters_out_of_tickets_pass_and_then_lose() {
 
 #[test]
 fn surviving_the_last_round_wins() {
-    let rules = Rules { rounds: 2, reveal_rounds: vec![2], ..Rules::default() };
+    let rules = Rules { rounds: 2, reveal_rounds: vec![2], ..Rules::small() };
     let mut c = chase(rules, 12, &[3, 44]);
     play_all(&mut c, &[(13, Taxi), (4, Taxi), (45, Taxi), (14, Taxi), (5, Taxi)]);
     assert_eq!(c.winner(), None);
@@ -133,7 +160,7 @@ fn surviving_the_last_round_wins() {
 
 #[test]
 fn illegal_moves_are_refused_and_change_nothing() {
-    let mut c = chase(Rules::default(), 12, &[3, 13, 14, 44]);
+    let mut c = chase(Rules::small(), 12, &[3, 13, 14, 44]);
     let before = format!("{c:?}");
     for (to, ticket) in [(13, Taxi), (4, Bus), (21, Ubahn)] {
         assert!(c.play(Move { to, ticket }).is_err(), "fugitive {to} {ticket:?}");
@@ -149,7 +176,7 @@ fn illegal_moves_are_refused_and_change_nothing() {
 
 #[test]
 fn spent_hunter_tickets_go_to_the_fugitive() {
-    let mut c = chase(Rules::default(), 12, &[3, 44]);
+    let mut c = chase(Rules::small(), 12, &[3, 44]);
     play_all(&mut c, &[(13, Taxi), (4, Taxi)]);
     assert_eq!(c.fugitive.tickets.taxi, 4);
     assert_eq!(c.hunters[0].tickets.taxi, 9);
@@ -157,13 +184,47 @@ fn spent_hunter_tickets_go_to_the_fugitive() {
 
 #[test]
 fn hideouts_always_hold_the_real_field_through_a_whole_game() {
-    let mut c = chase(Rules::default(), 27, &[3, 14, 19, 44]);
-    let mut step = 0;
-    while c.winner().is_none() {
-        assert!(c.hideouts.contains(&c.fugitive.at), "round {}", c.round);
-        let moves = c.moves();
-        c.play(moves[(step * 7) % moves.len()]).unwrap();
-        step += 1;
-        assert!(step < 400, "the chase must end");
+    let big = CityKind::Big.city();
+    let games = [(Rules::small(), 27, vec![3, 14, 19, 44]), (Rules::big(), big.fugitive_starts[0], big.hunter_starts[..5].to_vec())];
+    for (rules, start, hunters) in games {
+        let mut c = chase(rules, start, &hunters);
+        let mut step = 0;
+        while c.winner().is_none() {
+            assert!(c.hideouts.contains(&c.fugitive.at), "round {}", c.round);
+            let moves = c.moves();
+            c.play(moves[(step * 7) % moves.len()]).unwrap();
+            step += 1;
+            assert!(step < 400, "the chase must end");
+        }
     }
+}
+
+#[test]
+fn the_big_city_has_the_classic_totals_and_hangs_together() {
+    let city = CityKind::Big.city();
+    assert_eq!(city.spots.len(), 199);
+    let count = |k| city.links.iter().filter(|l| l.kind == k).count();
+    assert_eq!((count(Taxi), count(Bus), count(Ubahn), count(Schatten)), (346, 99, 20, 3));
+    let stops = |k| city.links.iter().filter(|l| l.kind == k).flat_map(|l| [l.a, l.b]).collect::<BTreeSet<_>>().len();
+    assert_eq!((stops(Bus), stops(Ubahn), stops(Schatten)), (62, 14, 4));
+    // a taxi alone reaches every field
+    let mut seen = BTreeSet::from([1]);
+    let mut todo = vec![1];
+    while let Some(f) = todo.pop() {
+        for &(to, kind) in city.exits(f) {
+            if kind == Taxi && seen.insert(to) {
+                todo.push(to);
+            }
+        }
+    }
+    assert_eq!(seen.len(), 199);
+    // no link twice, none from a field to itself
+    let pairs: BTreeSet<_> = city.links.iter().map(|l| (l.a.min(l.b), l.a.max(l.b), l.kind as u8)).collect();
+    assert_eq!(pairs.len(), city.links.len());
+    assert!(city.links.iter().all(|l| l.a != l.b && l.a <= 199 && l.b <= 199));
+    // starts for five hunters and the fugitive, no field in both lists
+    let starts: BTreeSet<_> = city.hunter_starts.iter().chain(&city.fugitive_starts).collect();
+    assert_eq!((city.hunter_starts.len(), city.fugitive_starts.len(), starts.len()), (9, 9, 18));
+    // the river runs past both edges of the plan
+    assert!(city.river.first().unwrap().0 < 0 && city.river.last().unwrap().0 > city.size.0);
 }

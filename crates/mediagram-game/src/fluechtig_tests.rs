@@ -1,4 +1,5 @@
 use super::*;
+use crate::fluechtig_rules::Rules;
 use crate::protocol::{FluechtigOption, FluechtigPhone, FluechtigSeen, FluechtigTurn};
 
 const NAMES: [&str; 6] = ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay"];
@@ -8,7 +9,7 @@ fn table(n: u8, connected: bool) -> Vec<Player> {
 }
 
 fn game(players: &[Player], seed: u64) -> FluechtigGame {
-    FluechtigGame::new(FluechtigConfig { seed: Some(seed), ..FluechtigConfig::default() }, players, 0.0)
+    FluechtigGame::new(FluechtigConfig { seed: Some(seed), rules: Rules::small(), ..FluechtigConfig::default() }, players, 0.0)
 }
 
 fn tap(g: &mut FluechtigGame, players: &mut [Player], who: PlayerId, index: usize, now: f64) -> Result<(), ActionError> {
@@ -47,6 +48,22 @@ fn scene(g: &FluechtigGame) -> crate::protocol::FluechtigScene {
         TvScene::Fluechtig { scene } => scene,
         other => panic!("expected the Flüchtig scene, got {other:?}"),
     }
+}
+
+#[test]
+fn the_room_plays_the_big_city_with_five_hunters_over_24_rounds() {
+    let players = table(3, true);
+    let g = FluechtigGame::new(FluechtigConfig { seed: Some(1), ..FluechtigConfig::default() }, &players, 0.0);
+    let s = scene(&g);
+    assert_eq!((s.board.spots.len(), s.board.width, s.board.height), (199, 1168, 540));
+    assert!(s.board.river.len() > 2);
+    assert_eq!((s.rounds, s.reveal_rounds.clone(), s.hunters.len()), (24, vec![3, 8, 13, 18, 24], 5));
+    // the two hunting players take the five pieces in turn
+    let owners: Vec<PlayerId> = s.hunters.iter().map(|h| h.player).collect();
+    assert_eq!((owners[0], owners[1]), (owners[2], owners[3]));
+    assert_eq!(owners[0], owners[4]);
+    assert_ne!(owners[0], owners[1]);
+    assert!(!owners.contains(&s.fugitive));
 }
 
 #[test]

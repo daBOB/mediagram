@@ -3,7 +3,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::fluechtig_map::{CITY, Field};
+use crate::fluechtig_map::{City, Field};
 use crate::fluechtig_rules::{Chase, Entry, Move, Turn};
 use crate::protocol::{FluechtigSide as Side, FluechtigTicket as Ticket};
 
@@ -43,7 +43,7 @@ impl Chase {
         let entry = self.log.last_mut().expect("pushed above");
         entry.tickets.push(ticket);
         entry.stops.push(to);
-        self.hideouts = spread(&self.hideouts, ticket, &self.hunter_fields());
+        self.hideouts = spread(self.city, &self.hideouts, ticket, &self.hunter_fields());
         self.news.push(match ticket {
             Ticket::Schatten => "Der Flüchtige nimmt eine Schattenfahrt: Womit, bleibt geheim.".into(),
             t => format!("Der Flüchtige fährt {}.", by(t)),
@@ -130,9 +130,9 @@ impl Chase {
 }
 
 /// Where the fugitive may be after spending `ticket` from any of `from`.
-fn spread(from: &BTreeSet<Field>, ticket: Ticket, blocked: &[Field]) -> BTreeSet<Field> {
+fn spread(city: &City, from: &BTreeSet<Field>, ticket: Ticket, blocked: &[Field]) -> BTreeSet<Field> {
     from.iter()
-        .flat_map(|&f| CITY.exits(f))
+        .flat_map(|&f| city.exits(f))
         .filter(|&&(to, kind)| (ticket == Ticket::Schatten || kind == ticket) && !blocked.contains(&to))
         .map(|&(to, _)| to)
         .collect()

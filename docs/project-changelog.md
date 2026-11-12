@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.176.0 — Flüchtig's big city, as a city map
+
+**Added**
+
+- Flüchtig is played in a big city of our own: 199 fields, 346 taxi links, 99 bus links on 62 stations, 20 U-Bahn links on 14 stations and a ferry of 3 links on 4 piers, the totals of the genre's classic board. The city is a data file (`crates/mediagram-game/cities/fluechtig-big-city.json`) made by `tools/fluechtig-city/generate_city.py`.
+- The chase takes the classic's numbers with it: 24 rounds, the fugitive seen after rounds 3, 8, 13, 18 and 24, five hunter pieces with 10 taxi, 8 bus and 4 U-Bahn tickets each, the fugitive with 4, 3 and 3 plus five Schattenfahrten and two double moves.
+- The city was chosen by measurement (`tools/fluechtig-city/balance_sim.py`): with the same two kinds of bots, the fugitive wins 45 % (43 %) of the chases here against 42 % (38 %) on the classic board with its own rules. Equal totals alone gave 26 %; a compact street grid and sixteen bridges made the difference.
+- A ferry runs down the river, in both cities. Only a Schattenfahrt boards it, so only the fugitive rides it, and the travel log shows a shadow ride like any other.
+
+**Changed**
+
+- The TV draws the city as a daylight city map: blocks between the streets, courtyards, parks with trees, the river with its banks, landmark signs and district names, all worked out from the city itself.
+- Hunters stand on the plan as their players' avatar figures on a base in their colour, each with its piece's number, beside their field. The fugitive's last sighting is their own figure, faded, with the round. The hunters' panel in the corner is gone.
+- The 48-field city and its 18-round rules stay in the code as the short chase; the lobby does not offer it yet.
 ## Spieltisch 0.175.0 — the games' own app
 
 **Added**

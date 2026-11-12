@@ -3,6 +3,7 @@ import type { FluechtigLink } from "./FluechtigLink";
 import type { FluechtigSpot } from "./FluechtigSpot";
 
 /**
- * The city: `spots[field - 1]` on a 960×540 plan, and its links.
+ * The city on a plan `width` by `height`: `spots[field - 1]`, its links, and
+ * the middle of its river from west to east, past both edges of the plan.
  */
-export type FluechtigBoard = { spots: Array<FluechtigSpot>, links: Array<FluechtigLink>, };
+export type FluechtigBoard = { width: number, height: number, spots: Array<FluechtigSpot>, links: Array<FluechtigLink>, river: Array<FluechtigSpot>, };

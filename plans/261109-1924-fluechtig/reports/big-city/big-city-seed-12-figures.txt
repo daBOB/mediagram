@@ -1,0 +1,6 @@
+seed 12: fields 199, taxi 346, bus 99 on 62, ubahn 20 on 14, ferry 3 on 4, bridges 7
+  all transports: mean distance 4.75, diameter 10 (reference 4.71, 10)
+  taxi only:      mean distance 10.79, diameter 28 (reference 8.31, 20)
+  taxi degrees:   {2: 20, 3: 84, 4: 76, 5: 18, 6: 1} (reference {2: 24, 3: 82, 4: 72, 5: 17, 6: 3, 7: 1})
+  closest fields: 37 px
+  longest links: taxi 102, bus 172, ubahn 348 px
