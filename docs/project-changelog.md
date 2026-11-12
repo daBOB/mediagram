@@ -10,6 +10,7 @@ to `main`. Full phase-by-phase detail lives in
 **Added**
 
 - `GET|HEAD|PUT /v1/game/{game}/{name}` on the home cache server: a third blob kind beside TMDB answers and artwork, for data a game needs that no player fetches, starting with Preisfrage's article list and photos. Reads are open, a PUT is signed like the other blobs, a newer write replaces the older one; `.json` up to 2 MiB, `.jpg`/`.png` up to 16 MiB, under the blob budget. See `docs/running-the-player.md` § Game data.
+- `tools/preisfrage-articles`: `bun run fetch` on a PC reads 16 amazon.de search pages with Playwright (one every 4-8 s, stopping at a robot check), keeps odd articles across four price bands (sponsored results, books and films, adult titles, slogan shirts and second copies skipped) and stores the list and 800 px photos on the home cache server; `--dry-run DIR` writes them to a folder. Not part of any app. See `docs/running-the-player.md` § Preisfrage articles.
 
 ## Spieltisch 0.175.0 — the games' own app
 

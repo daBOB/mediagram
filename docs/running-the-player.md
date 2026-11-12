@@ -867,6 +867,62 @@ answer `application/json`, `image/jpeg` or `image/png` by extension. Game
 data shares the blob budget, and its oldest-first eviction, with the
 answers and artwork.
 
+### Preisfrage articles
+
+Preisfrage's articles come from amazon.de search results, read by
+`tools/preisfrage-articles` on a PC with a real browser (Amazon answers a
+plain HTTP client with a 503, and its API needs a sales record a household
+does not have). It is run by hand, for private use; nothing on the box
+fetches from Amazon.
+
+Once, on the PC:
+
+```sh
+cd tools/preisfrage-articles && bun install
+bunx playwright-core install chromium   # only if ~/.cache/ms-playwright has no chromium-*
+```
+
+and in `~/.config/mediagram/config.toml` the funstation's server and token
+(`sudo cat /var/lib/mediagram-cache/token` there):
+
+```toml
+cache_server = "http://funstation:7788"
+cache_server_token = "<64 hex>"
+```
+
+Then, about once a week:
+
+```sh
+cd tools/preisfrage-articles && bun run fetch
+```
+
+It makes 16 searches, one page every 4-8 s: a term from `terms.json`, a
+results page 1-4, newest first 40 % of the time, the price bands 5-20,
+20-50, 50-150 and 150-500 € in turn. Each result is kept or skipped
+(sponsored, no price, a book or film, an adult or slogan-shirt title, a
+second copy under the same short name), and the line per search says how
+many of each. The photos go up first as
+`/v1/game/preisfrage/photos-{asin}.jpg`, then `articles.json`:
+
+```json
+{ "version": 1, "fetched": "2026-11-12T19:14:03.120Z",
+  "articles": [{ "asin": "B0GF25D3LF", "name": "2 Stück Phone Holder",
+                 "title": "2 Stück Phone Holder, Daumen Hoch …", "cents": 899,
+                 "reviews": 21, "image": "https://m.media-amazon.com/…_AC_SL800_.jpg" }] }
+```
+
+With fewer than 60 articles the list is not written and last week's stays.
+A robot check stops the searching (a screenshot, `robot-check.png`, is
+kept); what was found before it is still stored if it is enough, and the
+run exits 2. Try again later or from another network.
+
+`bun run fetch --dry-run DIR` writes the list, the photos and every search
+page (`DIR/pages/NN.html`) to a folder instead, for looking at them and
+for refreshing the parse fixtures in
+`tools/preisfrage-articles/fixtures/` when Amazon changes its markup and
+`bun test` there starts failing. A different Chromium can be named with
+`PREISFRAGE_CHROME=/path/to/chrome`, a different config with `--config FILE`.
+
 ### Finding it: mDNS, with an avahi fallback
 
 `mediagram_cache` advertises itself as `_mediagram-cache._tcp.local.` (TXT
