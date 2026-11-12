@@ -16,11 +16,17 @@ test("terms are not repeated while there are unused ones, pages are 1-4", () => 
   expect(planSearches(["a", "b"], 4).map((s) => s.term).sort()).toEqual(["a", "a", "b", "b"]);
 });
 
-test("about 40 % of searches are sorted by newest", () => {
+test("about 40 % of the cheaper bands' searches are sorted by newest", () => {
   let newest = 0;
   for (let i = 0; i < 50; i++) newest += planSearches(terms, 16).filter((s) => s.newest).length;
-  expect(newest / 800).toBeGreaterThan(0.3);
-  expect(newest / 800).toBeLessThan(0.5);
+  expect(newest / 600).toBeGreaterThan(0.3);
+  expect(newest / 600).toBeLessThan(0.5);
+});
+
+test("the top band reads page 1 by relevance: deeper or newest-first pages there come back empty", () => {
+  for (let i = 0; i < 20; i++) {
+    for (const s of planSearches(terms, 16).filter((s) => s.band === BANDS[3])) expect([s.page, s.newest]).toEqual([1, false]);
+  }
 });
 
 test("the url carries term, page, order and the band in cents", () => {

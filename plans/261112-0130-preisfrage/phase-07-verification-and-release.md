@@ -11,7 +11,9 @@ dependencies: [2, 6]
 
 ## Steps
 1. `scripts/check.sh` (clippy, cargo test, protocol committed, bindings committed, typecheck, build) green.
-2. A real fetch on the PC (phase 2) into the funstation's cache server; `curl` shows the list and a photo.
+2. [x] A real fetch on the PC (phase 2) into the funstation's cache server; `curl` shows the list and a photo.
+   Done 2026-11-12: cache server 0.177.0 installed on the funstation (the old binary kept as
+   `/usr/local/bin/mediagram_cache.0.163.0`, chunks and artwork intact), 574 articles and their photos read back.
 3. funstation: Spieltisch and the media app from this branch; a night with three phones on the LAN plays a full
    Preisfrage to the ceremony; screenshots of each stage kept in `reports/`.
 4. Edge checks there: kids lock → blocked with its reason; cache server stopped → blocked with its reason, other

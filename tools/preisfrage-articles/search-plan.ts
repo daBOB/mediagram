@@ -14,17 +14,20 @@ export type Search = { term: string; page: number; newest: boolean; band: Band }
 /**
  * `count` searches, the bands taken in turn so each gets its share. Terms are drawn without
  * repeats until all are used; the page (1-4) and newest-first (40 %) are random, so a run
- * finds articles a bestseller list never shows.
+ * finds articles a bestseller list never shows. The top band has few results for gadget terms:
+ * there it reads page 1 by relevance (2026-11-12: 3 of 4 such searches came back empty otherwise).
  */
 export function planSearches(terms: string[], count: number, random = Math.random): Search[] {
   let pool: string[] = [];
   return Array.from({ length: count }, (_, i) => {
     if (pool.length === 0) pool = shuffled(terms, random);
+    const band = BANDS[i % BANDS.length];
+    const top = band === BANDS[BANDS.length - 1];
     return {
       term: pool.pop()!,
-      page: 1 + Math.floor(random() * 4),
-      newest: random() < 0.4,
-      band: BANDS[i % BANDS.length],
+      page: top ? 1 : 1 + Math.floor(random() * 4),
+      newest: !top && random() < 0.4,
+      band,
     };
   });
 }

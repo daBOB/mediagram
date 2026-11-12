@@ -8,6 +8,7 @@ import { ChoiceScreen } from "./ChoiceScreen";
 import { OutcomeScreen } from "./OutcomeScreen";
 import { PhoneFluechtig } from "./PhoneFluechtig";
 import { PhoneLobby } from "./PhoneLobby";
+import { PhonePriceKeypad } from "./PhonePriceKeypad";
 import { PhoneSheet } from "./PhoneSheet";
 import { buzz, memory as store } from "./app-bridge";
 import { rememberAvatar, rememberedAvatar } from "./avatar-memory";
@@ -155,6 +156,9 @@ function Screen({ view, conn }: { view: PhoneView; conn: Connection }) {
       return <PhoneSheet screen={screen} conn={conn} />;
     case "fluechtig":
       return <PhoneFluechtig phone={screen.phone} me={me} conn={conn} />;
+    case "price":
+      // keyed by the article, so the next one starts with an empty keypad
+      return <PhonePriceKeypad key={screen.keypad.opens_at} keypad={screen.keypad} conn={conn} />;
     case "outcome":
       return <OutcomeScreen screen={screen} score={me.score} />;
     case "final":

@@ -25,6 +25,8 @@ pub enum GameKind {
     Dreifelder,
     /// Flüchtig, the hidden-move chase for two to six.
     Fluechtig,
+    /// Preisfrage: guess what an odd article costs; the closer, the more points.
+    Preisfrage,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

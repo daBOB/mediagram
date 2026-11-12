@@ -30,9 +30,11 @@ pub use crate::protocol_grand_allee::{
 pub use crate::protocol_dreifelder::{DreifelderScene, DreifelderStage, FieldPick, OutPlayer};
 pub use crate::protocol_choice::{AnswerColor, BidRange, ChoiceOption, ChoiceStatus, HotelCard, OutcomeKey, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
+pub use crate::protocol_preisfrage::{ArticleView, PreisfrageScene, PreisfrageStage, PriceKeypad, PriceRow, PriceStanding};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
 pub use crate::protocol_settings::{GameKind, LobbySettings, QuizMode};
+pub use crate::protocol_tv::{TvScene, TvView};
 
 pub type PlayerId = u8;
 pub type ServerTime = f64;
@@ -155,45 +157,14 @@ pub enum PhoneScreen {
     Fluechtig {
         phone: FluechtigPhone,
     },
+    /// Preisfrage's keypad: type a price in euros, send it once.
+    Price {
+        keypad: PriceKeypad,
+    },
     Final {
         rank: u8,
         of: u8,
         score: i32,
         can_restart: bool,
     },
-}
-
-// ---------------------------------------------------------------- TV views
-//
-// The TV is allowed to be game specific: each game adds a scene variant.
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct TvView {
-    pub join_url: String,
-    pub players: Vec<PlayerInfo>,
-    pub scene: TvScene,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-#[ts(export)]
-pub enum TvScene {
-    Lobby {
-        min_players: u8,
-        settings: LobbySettings,
-        leader_name: Option<String>,
-        /// Why the chosen game cannot start yet.
-        blocked: Option<String>,
-        /// The game catalogue, in lobby order.
-        games: Vec<GameEntry>,
-    },
-    Quiz { scene: QuizScene },
-    Poster { scene: PosterScene },
-    Race { scene: RaceScene },
-    Cards { scene: CardsScene },
-    Kopfnuss { scene: KopfnussScene },
-    GrandAllee { scene: GrandAlleeScene },
-    Dreifelder { scene: DreifelderScene },
-    Fluechtig { scene: FluechtigScene },
 }

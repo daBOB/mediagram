@@ -1,0 +1,45 @@
+/* Preisfrage on the TV, the shop window look (chosen 2026-11-12 from three renders). Sizes in vh/vw so the
+   page fills any TV the box is on. */
+.tv-pf { position: fixed; inset: 0; overflow: hidden; }
+.pf-top { position: absolute; top: 3.7vh; left: 3.3vw; right: 3.3vw; display: flex; align-items: center; justify-content: space-between; }
+.pf-brand { font: 800 4.1vh/1 var(--display); }
+.pf-brand span { color: var(--yellow); }
+.pf-count { display: flex; align-items: center; gap: 1.8vw; font: 700 2.8vh/1 var(--display); color: var(--muted); }
+.pf-clock { width: 8.5vh; height: 8.5vh; border-radius: 50%; display: grid; place-items: center; }
+.pf-clock b { width: 6.7vh; height: 6.7vh; border-radius: 50%; background: var(--felt-deep); color: var(--card); display: grid; place-items: center; font: 800 3.1vh/1 var(--display); }
+.pf-photo {
+  position: absolute; left: 3.3vw; top: 15.7vh; width: 46.9vw; height: 77.8vh; margin: 0; border-radius: 3.3vh;
+  background: #fff; box-shadow: 0 2.8vh 5.6vh rgba(0, 0, 0, 0.35), 0 0 0 0.6vh var(--card-edge) inset;
+  display: grid; place-items: center; overflow: hidden;
+}
+.pf-photo img { width: 86%; height: 86%; object-fit: contain; }
+.pf-side { position: absolute; left: 53.6vw; right: 3.3vw; top: 17.6vh; bottom: 4vh; }
+.pf-name { font: 800 5.9vh/1.05 var(--display); letter-spacing: -0.05vh; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.pf-ask { margin-top: 2.6vh; font: 700 3.1vh/1.2 var(--body); color: var(--muted); }
+.pf-countdown { margin-top: 3.7vh; font: 800 27.8vh/1 var(--display); color: var(--yellow); }
+.pf-players { list-style: none; padding: 0; margin-top: 6.5vh; display: flex; flex-wrap: wrap; gap: 3.1vh 1.8vw; }
+.pf-players li { display: grid; justify-items: center; gap: 0.7vh; font: 700 2vh var(--body); position: relative; }
+.pf-players .is-waiting .token { opacity: 0.38; filter: grayscale(0.7); }
+.pf-players .is-done::after {
+  content: "✓"; position: absolute; right: -0.6vh; top: 5.4vh; width: 3.7vh; height: 3.7vh; border-radius: 50%;
+  background: #3fbf7f; color: #fff; font: 800 2.4vh/3.7vh var(--display); text-align: center; border: 0.4vh solid var(--felt-deep);
+}
+.pf-price { margin-top: 2.2vh; font: 800 13.9vh/1 var(--display); color: var(--yellow); letter-spacing: -0.3vh; }
+.pf-checked { font: 400 2.4vh/1.2 var(--body); color: var(--muted); }
+.pf-line { position: relative; margin: 21vh 2vw 0 1vw; height: 9vh; }
+.pf-rail { position: absolute; left: 0; right: 0; top: 0; height: 1.3vh; border-radius: 0.65vh; background: rgba(255, 255, 255, 0.18); }
+.pf-tick { position: absolute; top: 7.4vh; transform: translateX(-50%); font: 400 2vh var(--body); color: var(--muted); white-space: nowrap; }
+.pf-flag { position: absolute; top: 0; height: 6vh; width: 0.55vh; transform: translateX(-50%); background: var(--yellow); }
+.pf-flag b {
+  position: absolute; left: 0.55vh; top: 2.6vh; padding: 0.7vh 1.1vh; border-radius: 0 0.9vh 0.9vh 0;
+  background: var(--yellow); color: var(--ink); font: 800 2.4vh/1 var(--display); white-space: nowrap;
+}
+.pf-pin {
+  position: absolute; bottom: calc(100% - 0.6vh); transform: translateX(-50%);
+  display: grid; justify-items: center; font: 700 2vh var(--body); white-space: nowrap;
+}
+.pf-pin.is-closest b { color: #3fbf7f; }
+/* a stacked pin stands on a longer stem, one pin's height per row */
+.pf-pin i { width: 0.4vh; height: calc(1.8vh + var(--row) * 8.5vh); background: var(--card); }
+.pf-points { list-style: none; padding: 0; margin-top: 4vh; display: flex; flex-wrap: wrap; gap: 1.5vh 2vw; font: 800 2.8vh var(--display); }
+.pf-points .is-closest { color: #3fbf7f; }

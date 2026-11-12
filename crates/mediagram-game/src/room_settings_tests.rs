@@ -100,7 +100,7 @@ fn lobby_views_carry_the_game_catalogue() {
 
 #[test]
 fn poster_game_needs_posters() {
-    let mut r = room_with(RoomConfig { readiness: Readiness { poster: true, poster_kids: false }, ..cfg(8) });
+    let mut r = room_with(RoomConfig { readiness: Readiness { poster: true, poster_kids: false, ..Readiness::default() }, ..cfg(8) });
     hello(&mut r, 1, "Ana", None);
     configure(&mut r, 1, GameKind::Poster, QuizMode::Mixed, true);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(_), .. }));
@@ -114,7 +114,7 @@ fn poster_game_needs_posters() {
 
 #[test]
 fn tv_lobby_carries_the_same_blocked_text() {
-    let mut r = room_with(RoomConfig { readiness: Readiness { poster: true, poster_kids: false }, ..cfg(8) });
+    let mut r = room_with(RoomConfig { readiness: Readiness { poster: true, poster_kids: false, ..Readiness::default() }, ..cfg(8) });
     r.connect(9, true);
     r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
     hello(&mut r, 1, "Ana", None);
@@ -200,4 +200,19 @@ fn dreifelder_needs_two_players_and_no_kids_mode() {
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
     configure(&mut r, 1, GameKind::Dreifelder, QuizMode::Mixed, true);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::DREIFELDER_NOT_FOR_KIDS));
+}
+
+#[test]
+fn preisfrage_needs_articles_and_no_kids_mode() {
+    let mut r = room_with(RoomConfig { readiness: Readiness { preisfrage: false, ..Readiness::default() }, ..cfg(8) });
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::Preisfrage, QuizMode::Mixed, false);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::PREISFRAGE_NEEDS_ARTICLES));
+    configure(&mut r, 1, GameKind::Preisfrage, QuizMode::Mixed, true);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::PREISFRAGE_NOT_FOR_KIDS), "kids mode says so first");
+
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::Preisfrage, QuizMode::Mixed, false);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }), "one player plays alone");
 }

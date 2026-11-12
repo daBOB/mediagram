@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.178.0 — Preisfrage
+
+**Added**
+
+- Preisfrage, for one to eight players: an odd article from Amazon shows on the TV, everyone types its price on their phone, and the closer a guess either way, the more it scores: `round(1000 × (1 − distance ÷ price))`, nothing from twice the price on, 500 more for a guess to the cent (the user's choice from the rules prototype). Six articles a game, each 3 s alone, 20 s to guess (closing early once everyone here has guessed) and 7 s of reveal with the date the price was read; the final ranks by total, equal totals sharing a place. Running totals show as the players' scores.
+- The draw: one article from each price band (5-20, 20-50, 50-150, 150-500 €) and two from bands at random, articles with under 20 reviews first, none twice in a night until the list runs out, an empty band filled from the nearest.
+- The lobby blocks Preisfrage in kids mode ("Preisfrage gibt es nicht im Kindermodus.") and without at least three articles ("Preisfrage braucht Artikel: am PC „bun run fetch“ starten.").
+- Wire types: `GameKind::Preisfrage`, `TvScene::Preisfrage` (`PreisfrageScene`), `PhoneScreen::Price` (`PriceKeypad`), `Action::GuessPrice { cents }`.
+- The TV page in the shop-window look the user picked from three renders: the photo large on the left, the name and who has guessed on the right, a clock ring; at the reveal the price, the date it was read, and a line from 0 to twice the price with every guess as an avatar pin (close ones stacked) and the price as a flag. The phone has a calculator keypad (digits, comma, delete) that shows the price as typed, sends once and then shows the guess. No sound yet.
+- `tools/smoke.mjs --game preisfrage --articles DIR`: three scripted phones play a whole game against the dev host and check the scores against the rules prototype's formula.
+
+**Changed**
+
+- `game_factory` takes the night's `ArticleList` last.
+- The TV view's types moved to `protocol_tv.rs`.
+- `tools/preisfrage-articles`: the top price band (150-500 €) reads page 1 by relevance; newest-first and deeper pages there came back empty.
+
 ## Spieltisch 0.177.1 — posters for Kopfnuss, Dreifelder, Heimlauf and Flüchtig
 
 **Added**
