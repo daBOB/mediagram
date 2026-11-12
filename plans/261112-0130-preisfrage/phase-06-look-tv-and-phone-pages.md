@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Look, TV and phone pages"
-status: pending
+status: done
 priority: P1
 effort: "6h"
 dependencies: [5]
@@ -24,6 +24,11 @@ intro, guessing and reveal:
 Plus the phone keypad in two variants (calculator grid; big digits with euro and cent fields). Rendered with the
 client's own fonts and tokens, opened for the user; the choice is recorded in this file.
 
+## Choice (user, 2026-11-12)
+From `visuals/preisfrage-look-choice.html`: **TV look A, shop window** (photo large on the left, name and
+who-has-guessed avatars on the right; the reveal is a number line from 0 to twice the price with avatar pins and
+a price flag, points under it) and **keypad K1, calculator** (one field, comma key, delete, send).
+
 ## 6b: TV page and phone keypad
 - `client/src/tv/TvPreisfrage.tsx` + `tv/preisfrage/` (the picked look), `TvApp.tsx` routing, the price check
   date at the reveal ("Preis vom 12.11."), `TvFinal` ranked.
@@ -39,6 +44,18 @@ Add Preisfrage's poster and backdrop prompts to `plans/261107-1509-games-poster-
 `ShelfGames.kt` and the two webp files as for the other games.
 
 ## Success Criteria
-- [ ] Look picked by the user from opened renders, recorded here.
-- [ ] Vitest helpers seen failing first, then green; `bun run build` and typecheck clean.
-- [ ] Screenshots of intro, guessing, reveal, final and the phone keypad kept in `reports/` and shown to the user.
+- [x] Look picked by the user from opened renders, recorded here.
+- [x] Helper tests (`bun test`, `tests/preisfrage-price.test.ts`) seen failing first, then green; `bun run build` and typecheck clean.
+- [x] Screenshots of intro, guessing, reveal, final and the phone keypad kept in `reports/` and shown to the user.
+
+## As built
+- `client/src/tv/TvPreisfrage.tsx` + `tv/preisfrage/preisfrage.css` (look A, fixed to the whole screen in vh/vw),
+  `client/src/phone/PhonePriceKeypad.tsx` + `price-keypad.css` (K1), helpers in `client/src/ui/price.ts`
+  (`euro`, `typeKey`, `toCents`, `linePlace`, `stackPins`: close guesses stand on longer stems so labels never
+  overlap). The final is the shared ceremony (`TvFinal`), ranked by the running totals.
+- Screenshots in `reports/` from a full game on the dev host over the 434-article dry run: a real phone page
+  (Dana) and two scripted players; TV lobby, article alone, guessing, reveal, final; phone typed, sent,
+  reveal, final.
+- Not done: sound. Kopfnuss's player is bound to Kopfnuss's scene; reusing it needs it generalised first.
+- Shelf art prompts: `shelf-art-prompts.md` in this folder (main's prompts file has moved on; move the section
+  there at merge). The poster and backdrop are still to be made by the user.

@@ -1,0 +1,166 @@
+<!doctype html>
+<!-- THROWAWAY: look renders for Preisfrage (phase 6a). ?v=A|B|C|K1|K2&f=intro|guess|reveal -->
+<meta charset="utf-8">
+<title>Preisfrage look renders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --felt: #0f5a43; --felt-deep: #0a4433; --felt-line: #1c7258; --ink: #0c2a22;
+  --card: #fbf8f1; --card-edge: #ddd3bd; --muted: #a9cdbf;
+  --blue: #2c6bed; --orange: #f2862e; --yellow: #f6c731; --pink: #e5487f; --good: #3fbf7f;
+  --display: "Bricolage Grotesque", system-ui, sans-serif; --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; }
+body { width: 1920px; height: 1080px; overflow: hidden; background: radial-gradient(120% 90% at 50% 30%, var(--felt) 0%, var(--felt-deep) 100%); color: var(--card); font-family: var(--body); }
+body.phone { width: 390px; height: 844px; }
+.top { position: absolute; top: 40px; left: 64px; right: 64px; display: flex; align-items: center; justify-content: space-between; }
+.brand { font: 800 44px/1 var(--display); letter-spacing: -0.5px; }
+.brand span { color: var(--yellow); }
+.count { font: 700 30px/1 var(--display); color: var(--muted); }
+.clock { width: 92px; height: 92px; border-radius: 50%; background: conic-gradient(var(--yellow) 0 62%, rgba(255,255,255,.12) 62% 100%); display: grid; place-items: center; }
+.clock b { width: 72px; height: 72px; border-radius: 50%; background: var(--felt-deep); display: grid; place-items: center; font: 800 34px/1 var(--display); }
+.name { font: 800 64px/1.05 var(--display); letter-spacing: -1px; }
+.ask { font: 700 34px/1.2 var(--body); color: var(--muted); }
+.avatar { width: 96px; height: 96px; border-radius: 50%; background: var(--card); position: relative; border: 5px solid var(--card); }
+.avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #e9e2d0; }
+.avatar.wait { opacity: .38; filter: grayscale(.7); }
+.avatar .tick { position: absolute; right: -8px; bottom: -6px; width: 40px; height: 40px; border-radius: 50%; background: var(--good); color: #fff; font: 800 26px/40px var(--display); text-align: center; border: 4px solid var(--felt-deep); }
+.who { font: 700 22px/1.2 var(--body); text-align: center; margin-top: 8px; }
+.photo-card { background: #fff; border-radius: 36px; box-shadow: 0 30px 60px rgba(0,0,0,.35), 0 0 0 6px var(--card-edge) inset; display: grid; place-items: center; overflow: hidden; }
+.photo-card img { width: 86%; height: 86%; object-fit: contain; }
+.price { font: 800 150px/1 var(--display); color: var(--yellow); letter-spacing: -3px; }
+.checked { font: 400 26px/1.2 var(--body); color: var(--muted); }
+.big-num { font: 800 300px/1 var(--display); color: var(--yellow); }
+.pts { font: 800 30px/1 var(--display); }
+.close { color: var(--good); }
+/* A: shop window */
+.A .photo-card { position: absolute; left: 64px; top: 170px; width: 900px; height: 840px; }
+.A .side { position: absolute; left: 1030px; right: 64px; top: 190px; }
+.A .players { display: flex; gap: 34px; margin-top: 70px; flex-wrap: wrap; }
+.A .line { position: relative; margin: 150px 40px 0 20px; height: 300px; }
+.A .rail { position: absolute; left: 0; right: 0; top: 190px; height: 14px; border-radius: 7px; background: rgba(255,255,255,.18); }
+.A .tickmark { position: absolute; top: 300px; white-space: nowrap; font: 400 22px var(--body); color: var(--muted); transform: translateX(-50%); }
+.A .pin { position: absolute; top: 36px; transform: translateX(-50%); text-align: center; }
+.A .pin .avatar { width: 76px; height: 76px; border-width: 4px; }
+.A .pin .stem { width: 4px; height: 40px; margin: 0 auto; background: var(--card); }
+.A .pin .g { font: 700 22px var(--body); margin-top: -4px; white-space: nowrap; }
+.A .flag { position: absolute; top: 190px; transform: translateX(-50%); width: 6px; height: 96px; background: var(--yellow); }
+.A .flag::after { content: "12,19 €"; position: absolute; left: 6px; top: 50px; background: var(--yellow); color: var(--ink); font: 800 26px/1 var(--display); padding: 8px 12px; border-radius: 0 10px 10px 0; white-space: nowrap; }
+/* B: showroom stage */
+.B .stage { position: absolute; left: 50%; top: 140px; width: 760px; transform: translateX(-50%); text-align: center; }
+.B .spot { position: absolute; left: 50%; top: 80px; width: 1100px; height: 900px; transform: translateX(-50%); background: radial-gradient(50% 45% at 50% 40%, rgba(255,247,220,.22), rgba(255,247,220,0) 70%); }
+.B .photo-card { width: 620px; height: 620px; margin: 0 auto; border-radius: 50%; }
+.B .pedestal { width: 760px; height: 70px; margin: -36px auto 0; border-radius: 50%; background: linear-gradient(#e7dcc3, #b9aa86); box-shadow: 0 24px 40px rgba(0,0,0,.35); }
+.B .name { margin-top: 34px; font-size: 58px; }
+.B .players { position: absolute; bottom: 52px; left: 0; right: 0; display: flex; justify-content: center; gap: 46px; }
+.B .table { position: absolute; left: 820px; right: 80px; top: 180px; }
+.B .row { display: grid; grid-template-columns: 90px 1fr 220px 200px 140px; align-items: center; gap: 20px; padding: 18px 26px; border-radius: 22px; margin-bottom: 14px; background: rgba(255,255,255,.07); font: 700 32px var(--body); }
+.B .row .avatar { width: 76px; height: 76px; border-width: 4px; }
+.B .row.best { background: var(--card); color: var(--ink); }
+.B .row .off { color: var(--muted); font-weight: 400; }
+.B .row.best .off { color: #5d6b63; }
+.B .mini { position: absolute; left: 80px; top: 180px; width: 680px; text-align: center; }
+.B .mini .photo-card { width: 440px; height: 440px; margin: 0 auto; }
+/* C: price tag */
+.C .tag { position: absolute; left: 220px; top: 150px; width: 820px; height: 860px; background: #f3e3c3; color: var(--ink); border-radius: 40px 40px 40px 40px; clip-path: polygon(0 12%, 50% 0, 100% 12%, 100% 100%, 0 100%); transform: rotate(-3deg); box-shadow: 0 30px 60px rgba(0,0,0,.4); padding: 150px 60px 40px; }
+.C .hole { position: absolute; left: 50%; top: 52px; width: 44px; height: 44px; margin-left: -22px; border-radius: 50%; background: var(--felt-deep); box-shadow: inset 0 3px 6px rgba(0,0,0,.4); }
+.C .string { position: absolute; left: 610px; top: -40px; width: 6px; height: 240px; background: #e9dcc0; transform: rotate(-8deg); transform-origin: top; }
+.C .tag .photo { height: 430px; background: #fff; border-radius: 24px; overflow: hidden; padding: 20px; }
+.C .tag .photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.C .tag .name { margin-top: 30px; color: var(--ink); font-size: 50px; }
+.C .tag .field { margin-top: 26px; height: 120px; border: 5px dashed #b99f6e; border-radius: 20px; display: grid; place-items: center; font: 800 86px/1 var(--display); color: #b99f6e; }
+.C .tag .field.shown { border-style: solid; border-color: #c8102e; color: #c8102e; transform: rotate(-2deg); }
+.C .side { position: absolute; left: 1160px; right: 64px; top: 200px; }
+.C .players { display: grid; grid-template-columns: repeat(2, 200px); gap: 40px 60px; margin-top: 60px; }
+.C .ruler { position: absolute; left: 1120px; right: 64px; top: 640px; height: 130px; background: repeating-linear-gradient(90deg, rgba(0,0,0,.35) 0 2px, transparent 2px 36px), linear-gradient(#e2c48d, #c9a565); border-radius: 12px; box-shadow: 0 16px 30px rgba(0,0,0,.3); }
+.C .ruler-label { position: absolute; top: 140px; font: 400 22px var(--body); color: var(--muted); transform: translateX(-50%); white-space: nowrap; }
+.C .slider { position: absolute; top: -96px; transform: translateX(-50%); text-align: center; }
+.C .slider .avatar { width: 80px; height: 80px; border-width: 4px; }
+.C .marker { position: absolute; top: -12px; bottom: -12px; width: 8px; margin-left: -4px; background: #c8102e; border-radius: 4px; }
+/* phone keypads */
+.phone .head { padding: 22px 22px 0; display: flex; gap: 14px; align-items: center; }
+.phone .thumb { width: 84px; height: 84px; border-radius: 18px; background: #fff; flex: none; overflow: hidden; padding: 6px; }
+.phone .thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.phone .pname { font: 700 21px/1.2 var(--display); }
+.phone .round { font: 400 16px var(--body); color: var(--muted); margin-top: 4px; }
+.phone .bar { margin: 16px 22px 0; height: 8px; border-radius: 4px; background: rgba(255,255,255,.14); }
+.phone .bar i { display: block; height: 100%; width: 62%; border-radius: 4px; background: var(--yellow); }
+.phone .display { margin: 22px 22px 0; height: 104px; border-radius: 22px; background: var(--card); color: var(--ink); display: flex; align-items: center; justify-content: flex-end; padding: 0 24px; font: 800 58px/1 var(--display); }
+.phone .display .cur { width: 4px; height: 56px; background: var(--ink); margin-left: 4px; opacity: .5; }
+.phone .keys { margin: 18px 22px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.phone .key { height: 76px; border-radius: 20px; background: rgba(255,255,255,.1); display: grid; place-items: center; font: 700 36px var(--display); }
+.phone .send { margin: 16px 22px 0; height: 78px; border-radius: 22px; background: var(--yellow); color: var(--ink); display: grid; place-items: center; font: 800 30px var(--display); box-shadow: 0 6px 0 #b98f0d; }
+.phone .fields { margin: 26px 22px 0; display: flex; align-items: flex-end; justify-content: center; gap: 8px; }
+.phone .f { background: var(--card); color: var(--ink); border-radius: 22px; height: 120px; display: grid; place-items: center; font: 800 72px var(--display); }
+.phone .f.e { width: 170px; box-shadow: 0 0 0 5px var(--yellow); }
+.phone .f.c { width: 110px; opacity: .8; }
+.phone .comma { font: 800 72px/1 var(--display); padding-bottom: 14px; }
+.phone .unit { font: 800 48px/1 var(--display); padding-bottom: 30px; margin-left: 6px; }
+.phone .hint { text-align: center; font: 400 16px var(--body); color: var(--muted); margin-top: 10px; }
+.phone .nudge { margin: 18px 22px 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.phone .nudge div { height: 64px; border-radius: 18px; background: rgba(255,255,255,.1); display: grid; place-items: center; font: 700 24px var(--display); }
+.phone .keys.small .key { height: 60px; font-size: 30px; }
+</style>
+<body>
+<script>
+const q = new URLSearchParams(location.search);
+const v = q.get("v") || "A", f = q.get("f") || "guess";
+const P = [["Ana","fox",999,820],["Ben","panda",1500,769],["Cem","witch",2500,0],["Dana","samurai",1250,975]];
+const guessed = new Set(["Ana","Dana"]);
+const eur = (c) => (c/100).toLocaleString("de-DE",{minimumFractionDigits:2}) + " €";
+const av = (n, a, cls = "") => `<div class="avatar ${cls}"><img src="render-${a}.webp">${cls.includes("done") ? '<div class="tick">✓</div>' : ""}</div>`;
+const topBar = (clock) => `<div class="top"><div class="brand">Preis<span>frage</span></div><div style="display:flex;gap:34px;align-items:center"><div class="count">Artikel 2 von 6</div>${clock ? '<div class="clock"><b>12</b></div>' : ""}</div></div>`;
+const NAME = "Neuheit Nase Seifenspender", PRICE = 1219, MAX = 2 * PRICE;
+const photo = `<img src="render-article.jpg">`;
+let html = "";
+document.body.className = v.startsWith("K") ? "phone" : v;
+if (v === "A") {
+  html += topBar(f === "guess") + `<div class="photo-card">${photo}</div><div class="side">`;
+  html += `<div class="name">${NAME}</div>`;
+  if (f === "intro") html += `<div class="ask" style="margin-top:28px">Was kostet das?</div><div class="big-num" style="margin-top:40px">3</div>`;
+  if (f === "guess") html += `<div class="ask" style="margin-top:28px">Was kostet das? Tippt den Preis aufs Handy.</div><div class="players">${P.map(([n,a]) => `<div>${av(n,a,guessed.has(n)?"done":"wait")}<div class="who">${n}</div></div>`).join("")}</div>`;
+  if (f === "reveal") {
+    html += `<div style="margin-top:30px" class="price">${eur(PRICE)}</div><div class="checked">Preis vom 12.11. · am nächsten: Dana</div><div class="line"><div class="rail"></div>`;
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) html += `<div class="tickmark" style="left:${t*100}%">${eur(Math.round(MAX*t)).replace(",00","")}</div>`;
+    html += `<div class="flag" style="left:${PRICE/MAX*100}%"></div>`;
+    for (const [n,a,g,p] of P) { const x = Math.min(g, MAX)/MAX*100; html += `<div class="pin" style="left:${x}%;${n==="Dana"?"top:-50px":""}"><div class="g ${p>=975?"close":""}">${eur(g)}</div>${av(n,a)}<div class="stem" style="height:${n==="Dana"?126:40}px"></div></div>`; }
+    html += `</div><div style="display:flex;gap:38px;margin-top:20px">${P.map(([n,,,p]) => `<div class="pts ${p===975?"close":""}">${n} +${p}</div>`).join("")}</div>`;
+  }
+  html += `</div>`;
+}
+if (v === "B") {
+  html += topBar(f === "guess");
+  if (f !== "reveal") {
+    html += `<div class="spot"></div><div class="stage"><div class="photo-card">${photo}</div><div class="pedestal"></div><div class="name">${NAME}</div>`;
+    html += f === "intro" ? `<div class="ask" style="margin-top:16px">Gleich geht's los …</div></div>` : `</div><div class="players">${P.map(([n,a]) => `<div>${av(n,a,guessed.has(n)?"done":"wait")}<div class="who">${n}</div></div>`).join("")}</div>`;
+  } else {
+    html += `<div class="mini"><div class="photo-card">${photo}</div><div class="name" style="font-size:44px;margin-top:26px">${NAME}</div><div class="price" style="font-size:120px;margin-top:20px">${eur(PRICE)}</div><div class="checked">Preis vom 12.11.</div></div><div class="table">`;
+    for (const [n,a,g,p] of [...P].sort((x,y) => Math.abs(x[2]-PRICE)-Math.abs(y[2]-PRICE))) html += `<div class="row ${p===975?"best":""}">${av(n,a)}<div>${n}</div><div>${eur(g)}</div><div class="off">${g>PRICE?"+":"−"}${eur(Math.abs(g-PRICE))}</div><div class="pts">+${p}</div></div>`;
+    html += `</div>`;
+  }
+}
+if (v === "C") {
+  html += topBar(f === "guess") + `<div class="string"></div><div class="tag"><div class="hole"></div><div class="photo">${photo}</div><div class="name">${NAME}</div><div class="field ${f==="reveal"?"shown":""}">${f==="reveal"?eur(PRICE):"?,?? €"}</div></div><div class="side">`;
+  if (f === "intro") html += `<div class="ask">Was kostet das?</div><div class="big-num" style="margin-top:30px">3</div>`;
+  if (f === "guess") html += `<div class="ask">Tippt den Preis aufs Handy.</div><div class="players">${P.map(([n,a]) => `<div style="display:flex;align-items:center;gap:20px">${av(n,a,guessed.has(n)?"done":"wait")}<div class="who" style="font-size:30px">${n}</div></div>`).join("")}</div>`;
+  if (f === "reveal") html += `<div class="ask">Preis vom 12.11.</div><div class="pts" style="margin-top:30px;font-size:44px" ><span class="close">Dana</span> liegt am nächsten</div>`;
+  html += `</div>`;
+  if (f === "reveal") {
+    html += `<div class="ruler">`;
+    for (const t of [0, 0.5, 1]) html += `<div class="ruler-label" style="left:${t*100}%">${eur(Math.round(MAX*t)).replace(",00","")}</div>`;
+    html += `<div class="marker" style="left:${PRICE/MAX*100}%"></div>`;
+    P.forEach(([n,a,g,p], i) => { html += `<div class="slider" style="left:${Math.min(g,MAX)/MAX*100}%;top:${-96 - (i%2)*84}px">${av(n,a)}</div>`; });
+    html += `</div><div style="position:absolute;left:1120px;right:64px;top:850px;display:flex;justify-content:space-between">${P.map(([n,,g,p]) => `<div><div class="pts ${p===975?"close":""}">${n} +${p}</div><div class="checked">${eur(g)}</div></div>`).join("")}</div>`;
+  }
+}
+if (v === "K1" || v === "K2") {
+  html += `<div class="head"><div class="thumb">${photo}</div><div><div class="pname">${NAME}</div><div class="round">Artikel 2 von 6 · noch 12 s</div></div></div><div class="bar"><i></i></div>`;
+  if (v === "K1") {
+    html += `<div class="display">12,4<span class="cur"></span><span style="margin-left:10px">€</span></div><div class="keys">${["1","2","3","4","5","6","7","8","9",",","0","⌫"].map(k => `<div class="key">${k}</div>`).join("")}</div><div class="send">Tipp abgeben</div>`;
+  } else {
+    html += `<div class="fields"><div class="f e">12</div><div class="comma">,</div><div class="f c">40</div><div class="unit">€</div></div><div class="hint">Erst Euro, dann Cent</div><div class="keys small">${["1","2","3","4","5","6","7","8","9","Cent","0","⌫"].map(k => `<div class="key">${k}</div>`).join("")}</div><div class="send">Tipp abgeben</div>`;
+  }
+}
+document.body.innerHTML = html;
+</script>

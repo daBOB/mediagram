@@ -1,0 +1,21 @@
+/* Preisfrage's keypad: the article, the price as typed, a calculator grid and one send. */
+.price-keypad { gap: 16px; justify-content: flex-start; }
+.pk-head { display: flex; gap: 14px; align-items: center; width: 100%; }
+.pk-thumb { width: 84px; height: 84px; flex: none; border-radius: 18px; background: #fff; object-fit: contain; padding: 6px; }
+.pk-name { font: 700 1.3rem/1.2 var(--display); }
+.pk-round { color: var(--muted); margin-top: 4px; }
+.pk-display {
+  width: 100%; padding: 22px 24px; border-radius: 22px; background: var(--card); color: var(--ink);
+  font: 800 3.4rem/1 var(--display); text-align: right; font-variant-numeric: tabular-nums;
+}
+.pk-display.is-empty { color: #b9b0a0; }
+.pk-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+.pk-key {
+  height: 72px; border: 0; border-radius: 20px; background: rgba(255, 255, 255, 0.1); color: var(--card);
+  font: 700 2.1rem var(--display);
+}
+.pk-key:active:not(:disabled) { background: rgba(255, 255, 255, 0.24); }
+.pk-key:disabled { opacity: 0.4; }
+.pk-send { width: 100%; }
+.pk-sent { margin: auto 0; text-align: center; }
+.pk-sent-price { font: 800 3rem/1.1 var(--display); color: var(--yellow); white-space: nowrap; margin-bottom: 8px; }

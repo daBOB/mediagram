@@ -53,7 +53,7 @@ search fetch `e310c8ff`.
 | 3 | [Spieltisch gets the articles](phase-03-spieltisch-gets-the-articles.md) | both | done |
 | 4 | [Protocol, lobby, article draw](phase-04-protocol-lobby-article-draw.md) | Spieltisch | done |
 | 5 | [Rules and game state](phase-05-rules-and-game-state.md) | Spieltisch | done |
-| 6 | [Look, TV and phone pages](phase-06-look-tv-and-phone-pages.md) | Spieltisch | pending |
+| 6 | [Look, TV and phone pages](phase-06-look-tv-and-phone-pages.md) | Spieltisch | done |
 | 7 | [Verification and release](phase-07-verification-and-release.md) | both | pending |
 
 Order: 1 → 2 (needs the blob routes) · 3 needs 1 · 4 → 5 → 6 → 7. Phase 2 can run beside 4-5.
