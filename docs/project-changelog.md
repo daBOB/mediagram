@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.178.1 — Preisfrage's poster and backdrop
+
+**Added**
+
+- Preisfrage has its poster and backdrop on the shelf (`game_{poster,backdrop}_preisfrage.webp`, 480×720 and 1920×1080), made by the user with GPT Image from the prompts in `plans/261112-0130-preisfrage/shelf-art-prompts.md`; the originals are in the main checkout's untracked `game_poster/`.
+
 ## Spieltisch 0.178.0 — Preisfrage
 
 **Added**

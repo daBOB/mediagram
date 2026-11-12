@@ -24,6 +24,7 @@ private val ArtByKind =
         "poster" to GameArt(R.drawable.game_poster_poster, R.drawable.game_backdrop_poster),
         "kopfnuss" to GameArt(R.drawable.game_poster_kopfnuss, R.drawable.game_backdrop_kopfnuss),
         "dreifelder" to GameArt(R.drawable.game_poster_dreifelder, R.drawable.game_backdrop_dreifelder),
+        "preisfrage" to GameArt(R.drawable.game_poster_preisfrage, R.drawable.game_backdrop_preisfrage),
         "race" to GameArt(R.drawable.game_poster_race, R.drawable.game_backdrop_race),
         "mau_mau" to GameArt(R.drawable.game_poster_mau_mau, R.drawable.game_backdrop_mau_mau),
         "schwimmen" to GameArt(R.drawable.game_poster_schwimmen, R.drawable.game_backdrop_schwimmen),
