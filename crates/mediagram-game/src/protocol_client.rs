@@ -69,6 +69,10 @@ pub enum Action {
         amount: i32,
         at: ServerTime,
     },
+    /// A Preisfrage guess in cents, sent once from a `PhoneScreen::Price` keypad.
+    GuessPrice {
+        cents: u32,
+    },
     /// A button of a `PhoneScreen::Cards` desk, with the cards picked for it
     /// (indices into the desk's hand and table).
     Cards {

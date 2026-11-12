@@ -5,9 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Spieltisch 0.177.0 — Preisfrage's articles reach the night
+## Spieltisch 0.177.0 — Preisfrage
 
 **Added**
+
+- Preisfrage, for one to eight players: an odd article from Amazon shows on the TV, everyone types its price on their phone, and the closer a guess either way, the more it scores: `round(1000 × (1 − distance ÷ price))`, nothing from twice the price on, 500 more for a guess to the cent (the user's choice from the rules prototype). Six articles a game, each 3 s alone, 20 s to guess (closing early once everyone here has guessed) and 7 s of reveal with the date the price was read; the final ranks by total, equal totals sharing a place. Running totals show as the players' scores.
+- The draw: one article from each price band (5-20, 20-50, 50-150, 150-500 €) and two from bands at random, articles with under 20 reviews first, none twice in a night until the list runs out, an empty band filled from the nearest.
+- The lobby blocks Preisfrage in kids mode ("Preisfrage gibt es nicht im Kindermodus.") and without at least three articles ("Preisfrage braucht Artikel: am PC „bun run fetch“ starten.").
+- Wire types: `GameKind::Preisfrage`, `TvScene::Preisfrage` (`PreisfrageScene`), `PhoneScreen::Price` (`PriceKeypad`), `Action::GuessPrice { cents }`. The TV page and the phone keypad follow with Preisfrage's look; until then the TV shows nothing during a Preisfrage game.
+- `tools/smoke.mjs --game preisfrage --articles DIR`: three scripted phones play a whole game against the dev host and check the scores against the rules prototype's formula.
 
 - Spieltisch reads Preisfrage's article list as a night starts, from the home cache server the media app names in its `/night` row (`cache_server`), and hands it to the core (`SpieltischConfig.articles`). No server, no list or a slow one (2.5 s to connect, 2.5 s to read, after the media app's answer) means no list; the night and its films start as before. A media app without the column reads as no server.
 - `/img/article/{asin}`: an article's photo, for tonight's articles only and, unlike film artwork, for phones too. Spieltisch fetches it once from the cache server into `cache/articles/` (`MediaImageKind::Article`); the host logs how many articles a night holds.
@@ -16,7 +22,8 @@ to `main`. Full phase-by-phase detail lives in
 **Changed**
 
 - Spieltisch allows plain http to the whole home network, as the media app does: the cache server's address is whatever the router hands out.
-- `start_game_night` takes an `ArticleList` after the titles.
+- `start_game_night` takes an `ArticleList` after the titles, `game_factory` the same list last.
+- The TV view's types moved to `protocol_tv.rs`.
 
 ## 0.177.0 — The home cache server keeps a game's own data
 

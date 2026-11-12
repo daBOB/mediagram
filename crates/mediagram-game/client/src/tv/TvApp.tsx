@@ -45,9 +45,9 @@ export function TvApp() {
         <TvFluechtig scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "grand_allee" ? (
         <TvGrandAllee key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : (
+      ) : view.scene.kind === "quiz" ? (
         <TvQuiz scene={view.scene.scene} players={view.players} conn={conn} />
-      )}
+      ) : null /* Preisfrage: its TV page comes with its look */}
       {status !== "open" && view && <p className="banner">Verbindung unterbrochen, verbinde neu …</p>}
     </main>
   );

@@ -1,9 +1,12 @@
 // End-to-end smoke test against a running host: one TV, two bots (four for Dreifelder).
 // Usage: bun crates/mediagram-game/tools/smoke.mjs [ws://localhost:8080/ws] [--game quiz|poster|race|kopfnuss|dreifelder]
+//        … --game preisfrage --articles DIR, with the dev host started on the same DIR (game-night-dev --articles DIR)
 // A race game runs longer than the 5-minute deadline; it still exercises the turn flow.
 const args = process.argv.slice(2);
 const gi = args.indexOf("--game");
 const game = gi >= 0 ? args.splice(gi, 2)[1] : "quiz";
+const ai = args.indexOf("--articles");
+const articlesDir = ai >= 0 ? args.splice(ai, 2)[1] : null;
 const url = args[0] ?? "ws://localhost:8080/ws";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -37,6 +40,18 @@ const bot = (name, delay, pick = random) =>
   client({ t: "hello", role: "phone", name, token: null }, (c, m) => {
     if (m.t !== "phone") return;
     const s = m.view.screen;
+    if (s.kind === "price" && s.keypad.sent === null && !c.pending && c.skipped !== s.keypad.opens_at) {
+      c.pending = true;
+      const wait = Math.max(0, s.keypad.opens_at - (performance.now() + c.offset)) + delay;
+      setTimeout(() => {
+        c.pending = false;
+        const price = prices.get(s.keypad.article.asin);
+        const cents = guesses[name]?.(price, s.keypad.round) ?? null;
+        if (cents === null) return void (c.skipped = s.keypad.opens_at);
+        c.expected = (c.expected ?? 0) + points(cents, price);
+        c.send({ t: "action", action: { t: "guess_price", cents } });
+      }, wait);
+    }
     if (s.kind === "choice" && s.picked === null && !c.pending && c.skipped !== s.opens_at) {
       c.pending = true;
       const wait = Math.max(0, s.opens_at - (performance.now() + c.offset)) + delay;
@@ -69,11 +84,24 @@ const script = {
 };
 const expected = "Ana=300, Ben=200, Cem=0, Dana=100";
 
+// Preisfrage: bots read each article's price from the list the dev host was given. Ana guesses to
+// the cent, Ben 10 % over, Cem leaves the first article open (its clock runs out) and then guesses
+// half. Their totals are worked out here with the rules prototype's own formula.
+const list = articlesDir ? JSON.parse(await Bun.file(`${articlesDir}/articles.json`).text()) : { articles: [] };
+const prices = new Map(list.articles.map((a) => [a.asin, a.cents]));
+const points = (g, p) => Math.round(1000 * Math.max(0, 1 - Math.abs(g - p) / p)) + (g === p ? 500 : 0);
+const guesses = {
+  Ana: (p) => p,
+  Ben: (p) => Math.round(p * 1.1),
+  Cem: (p, round) => (round === 1 ? null : Math.round(p / 2)),
+};
+
 const dreifelder = game === "dreifelder";
+const preisfrage = game === "preisfrage";
 const a = bot("Ana", 300, dreifelder ? script.Ana : random);
 await sleep(100); // Ana joins first and leads
 const b = bot("Ben", 900, dreifelder ? script.Ben : random);
-const extra = dreifelder ? [bot("Cem", 600, script.Cem), bot("Dana", 1200, script.Dana)] : [];
+const extra = dreifelder ? [bot("Cem", 600, script.Cem), bot("Dana", 1200, script.Dana)] : preisfrage ? [bot("Cem", 600)] : [];
 await sleep(500);
 console.log("phones:", a.last?.view?.screen?.kind, b.last?.view?.screen?.kind, "leader:", a.last?.view?.me?.leader);
 b.send({ t: "action", action: { t: "start_game" } }); // not leader → error
@@ -96,6 +124,11 @@ console.log("final scores:", scores);
 if (dreifelder) {
   console.log(scores === expected ? "PASS: finishing order as scripted" : `FAIL: expected ${expected}`);
   process.exitCode = scores === expected ? 0 : 1;
+}
+if (preisfrage) {
+  const want = [a, b, ...extra].map((c) => `${c.last.view.me.name}=${c.expected ?? 0}`).sort().join(", ");
+  console.log(scores === want ? "PASS: scores as the rules prototype counts them" : `FAIL: expected ${want}`);
+  process.exitCode = scores === want ? 0 : 1;
 }
 console.log("phone A:", JSON.stringify(a.last.view.screen));
 a.send({ t: "action", action: { t: "back_to_lobby" } });

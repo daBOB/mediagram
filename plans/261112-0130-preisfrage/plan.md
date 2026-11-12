@@ -51,8 +51,8 @@ search fetch `e310c8ff`.
 | 1 | [Cache server: game blobs](phase-01-cache-server-game-blobs.md) | media | done |
 | 2 | [Article fetch tool](phase-02-article-fetch-tool.md) | tools | done |
 | 3 | [Spieltisch gets the articles](phase-03-spieltisch-gets-the-articles.md) | both | done |
-| 4 | [Protocol, lobby, article draw](phase-04-protocol-lobby-article-draw.md) | Spieltisch | pending |
-| 5 | [Rules and game state](phase-05-rules-and-game-state.md) | Spieltisch | pending |
+| 4 | [Protocol, lobby, article draw](phase-04-protocol-lobby-article-draw.md) | Spieltisch | done |
+| 5 | [Rules and game state](phase-05-rules-and-game-state.md) | Spieltisch | done |
 | 6 | [Look, TV and phone pages](phase-06-look-tv-and-phone-pages.md) | Spieltisch | pending |
 | 7 | [Verification and release](phase-07-verification-and-release.md) | both | pending |
 
