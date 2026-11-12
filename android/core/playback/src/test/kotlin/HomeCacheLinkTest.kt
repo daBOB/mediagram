@@ -32,6 +32,7 @@ class HomeCacheLinkTest {
             server.value = SERVER
             runCurrent()
             assertTrue(home.connected.value)
+            assertEquals(URL, home.url.value, "the address games read their data from")
             token = "second-token"
             changes.value = 1
             runCurrent()
@@ -40,6 +41,7 @@ class HomeCacheLinkTest {
 
             assertEquals(listOf(null to null, URL to "first-token", URL to "second-token", null to null), core.homeCacheCalls)
             assertFalse(home.connected.value)
+            assertNull(home.url.value)
         }
 
     @Test
@@ -57,6 +59,7 @@ class HomeCacheLinkTest {
             runCurrent()
 
             assertEquals(listOf(URL to "token", null to null), core.homeCacheCalls)
+            assertNull(home.url.value)
             val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings(), homeCache = home)
             assertNull(enrichment.fetch())
             assertEquals(0, core.fetchCalls, "with the switch off a device with no key fetches nothing, as away from home")

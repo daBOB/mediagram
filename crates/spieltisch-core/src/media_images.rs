@@ -16,6 +16,8 @@ pub enum MediaImageKind {
     Still,
     /// The poster without its lettering, which Poster-Raten shows when there is one.
     Textless,
+    /// A Preisfrage article's photo, asked for by ASIN; it comes from the home cache server.
+    Article,
 }
 
 /// Implemented in Kotlin over the media app's provider.
@@ -26,12 +28,13 @@ pub trait MediaImages: Send + Sync {
     fn fetch(&self, key: String, kind: MediaImageKind) -> Option<String>;
 }
 
-/// The host's hook for posters and stills it cannot read where the titles say they are.
+/// The host's hook for posters and stills it cannot read where the titles say they are, and for article photos.
 pub(crate) fn image_lookup(images: Arc<dyn MediaImages>) -> ImageLookup {
     Arc::new(move |key, kind| {
         let kind = match kind {
             ImageKind::Poster => MediaImageKind::Poster,
             ImageKind::Still => MediaImageKind::Still,
+            ImageKind::Article => MediaImageKind::Article,
         };
         Box::pin(fetch(images.clone(), key, kind))
     })

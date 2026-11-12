@@ -15,6 +15,8 @@ pub enum TitleKind {
 pub enum ImageKind {
     Poster,
     Still,
+    /// A Preisfrage article's photo, asked for by ASIN rather than by title.
+    Article,
 }
 
 /// A film, or one show of a series. Image files are local paths on the box.
@@ -65,15 +67,19 @@ impl TitlePool {
         match which {
             ImageKind::Poster => t.poster.as_deref(),
             ImageKind::Still => t.still.as_deref(),
+            ImageKind::Article => None,
         }
     }
 }
 
 pub fn image_url(i: usize, which: ImageKind) -> String {
-    match which {
-        ImageKind::Poster => format!("/img/{i}/poster"),
-        ImageKind::Still => format!("/img/{i}/still"),
-    }
+    let which = match which {
+        ImageKind::Poster => "poster",
+        ImageKind::Still => "still",
+        // No title has one: the route answers 404. Articles have `article_photo_url`.
+        ImageKind::Article => "article",
+    };
+    format!("/img/{i}/{which}")
 }
 
 #[cfg(test)]

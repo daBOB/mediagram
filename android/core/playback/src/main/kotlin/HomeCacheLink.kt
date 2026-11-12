@@ -36,6 +36,6 @@ fun CoroutineScope.linkHomeCache(
                     core.setHomeCache(usable?.baseUrl, paired)
                     true
                 }
-            if (told) home.linked(usable != null)
+            if (told) home.linked(usable?.baseUrl)
         }
     }

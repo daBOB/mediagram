@@ -5,9 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.177.0 — Preisfrage's articles reach the night
+
+**Added**
+
+- Spieltisch reads Preisfrage's article list as a night starts, from the home cache server the media app names in its `/night` row (`cache_server`), and hands it to the core (`SpieltischConfig.articles`). No server, no list or a slow one (2.5 s to connect, 2.5 s to read, after the media app's answer) means no list; the night and its films start as before. A media app without the column reads as no server.
+- `/img/article/{asin}`: an article's photo, for tonight's articles only and, unlike film artwork, for phones too. Spieltisch fetches it once from the cache server into `cache/articles/` (`MediaImageKind::Article`); the host logs how many articles a night holds.
+- `game-night-dev --articles DIR` hosts a night over a folder that `bun run fetch --dry-run DIR` wrote.
+
+**Changed**
+
+- Spieltisch allows plain http to the whole home network, as the media app does: the cache server's address is whatever the router hands out.
+- `start_game_night` takes an `ArticleList` after the titles.
+
 ## 0.177.0 — The home cache server keeps a game's own data
 
 **Added**
+
+- `GameNightProvider`'s `/night` row names the home cache server this app follows, `cache_server` (`""` for none or with the LAN cache switched off), so Spieltisch can read Preisfrage's articles there without a token. `HomeCacheServer` keeps that address beside `connected`.
 
 - `GET|HEAD|PUT /v1/game/{game}/{name}` on the home cache server: a third blob kind beside TMDB answers and artwork, for data a game needs that no player fetches, starting with Preisfrage's article list and photos. Reads are open, a PUT is signed like the other blobs, a newer write replaces the older one; `.json` up to 2 MiB, `.jpg`/`.png` up to 16 MiB, under the blob budget. See `docs/running-the-player.md` § Game data.
 - `tools/preisfrage-articles`: `bun run fetch` on a PC reads 16 amazon.de search pages with Playwright (one every 4-8 s, stopping at a robot check), keeps odd articles across four price bands (sponsored results, books and films, adult titles, slogan shirts and second copies skipped) and stores the list and 800 px photos on the home cache server; `--dry-run DIR` writes them to a folder. Not part of any app. See `docs/running-the-player.md` § Preisfrage articles.

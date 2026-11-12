@@ -916,9 +916,13 @@ A robot check stops the searching (a screenshot, `robot-check.png`, is
 kept); what was found before it is still stored if it is enough, and the
 run exits 2. Try again later or from another network.
 
+Spieltisch reads the list as a night starts, from the server the media app
+follows (its LAN cache switch on), and each photo the first time it is shown.
+
 `bun run fetch --dry-run DIR` writes the list, the photos and every search
-page (`DIR/pages/NN.html`) to a folder instead, for looking at them and
-for refreshing the parse fixtures in
+page (`DIR/pages/NN.html`) to a folder instead, for the dev host
+(`cargo run -p mediagram-game --bin game-night-dev -- --articles DIR`), for
+looking at them, and for refreshing the parse fixtures in
 `tools/preisfrage-articles/fixtures/` when Amazon changes its markup and
 `bun test` there starts failing. A different Chromium can be named with
 `PREISFRAGE_CHROME=/path/to/chrome`, a different config with `--config FILE`.

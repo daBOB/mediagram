@@ -22,6 +22,10 @@ data class MediaNight(
     val titles: String,
     /** False when the media app gave no answer, so the shelf can say why there are no films. */
     val answered: Boolean = true,
+    /** The home cache server the media app follows, where Preisfrage's articles are; `""` for none. */
+    val cacheServer: String = "",
+    /** Preisfrage's article list from that server, `""` when there is none. */
+    val articles: String = "",
 ) {
     companion object {
         /** No answer: locked, with no films. */
@@ -45,8 +49,9 @@ object MediaApp {
     /** The night row's columns, as the media app's provider names them. */
     const val KIDS_LOCKED = "kids_locked"
     const val TITLES = "titles"
+    const val CACHE_SERVER = "cache_server"
 
-    /** One row: [KIDS_LOCKED] and [TITLES]. */
+    /** One row: [KIDS_LOCKED], [TITLES] and, from a media app that knows Preisfrage, [CACHE_SERVER]. */
     val night: Uri = "content://$AUTHORITY/night".toUri()
 
     /** The release row's columns: Spieltisch's newest release, or no row. */
@@ -74,6 +79,7 @@ object MediaApp {
             MediaImageKind.TEXTLESS -> uri.appendPath("textless").appendPath(key)
             MediaImageKind.POSTER -> uri.appendPath("image").appendPath(key).appendPath("poster")
             MediaImageKind.STILL -> uri.appendPath("image").appendPath(key).appendPath("still")
+            MediaImageKind.ARTICLE -> throw IllegalArgumentException("articles come from the home cache server")
         }.build()
     }
 }
@@ -94,8 +100,10 @@ class MediaLibraryBridge(
         // Not a child of the caller: a binder call can't be interrupted, so a late one is left to finish unheard.
         // Its own time is logged even then, since how long a cold media app takes is what the limit is set against.
         val answer = CoroutineScope(io).async { read().also { Log.i(TAG, "the media app's night read in ${ms()} ms") } }
-        val night = withTimeoutOrNull(limit) { answer.await() } ?: MediaNight.Unanswered
-        Log.i(TAG, "night from the media app in ${ms()} ms: answered=${night.answered} kids_locked=${night.kidsLocked} titles=${night.titles.length} chars")
+        val answered = withTimeoutOrNull(limit) { answer.await() } ?: MediaNight.Unanswered
+        // After the media app's answer, on its own timeouts: a slow cache server costs Preisfrage, never the films.
+        val night = answered.copy(articles = CacheServerArticles(answered.cacheServer).list())
+        Log.i(TAG, "night from the media app in ${ms()} ms: answered=${night.answered} kids_locked=${night.kidsLocked} titles=${night.titles.length} chars articles=${night.articles.length} chars")
         return night
     }
 
@@ -117,8 +125,11 @@ class MediaLibraryBridge(
                     val locked = row.getColumnIndexOrThrow(MediaApp.KIDS_LOCKED)
                     val titles = row.getString(row.getColumnIndexOrThrow(MediaApp.TITLES))
                     JSONArray(titles) // only a list of titles is an answer
+                    // A media app from before Preisfrage has no such column: no server.
+                    val cacheServer = row.getColumnIndex(MediaApp.CACHE_SERVER).takeIf { it >= 0 }?.let(row::getString).orEmpty()
                     // Unlocked only by an explicit 0.
-                    MediaNight(kidsLocked = row.getType(locked) != Cursor.FIELD_TYPE_INTEGER || row.getInt(locked) != 0, titles = titles)
+                    val kidsLocked = row.getType(locked) != Cursor.FIELD_TYPE_INTEGER || row.getInt(locked) != 0
+                    MediaNight(kidsLocked = kidsLocked, titles = titles, cacheServer = cacheServer)
                 }
             }
         } catch (e: Exception) {

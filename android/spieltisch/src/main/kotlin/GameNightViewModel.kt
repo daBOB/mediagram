@@ -54,8 +54,10 @@ class GameNightViewModel(
                     // The media app says whose night it is; with no answer the night is locked, with no films.
                     val media = night.media.night()
                     _filmsUnavailable.value = !media.answered
-                    val config = SpieltischConfig(kidsLocked = media.kidsLocked, dataDir = night.dataDir, titles = media.titles)
-                    val urls = night.core.startNight(config, night.images)
+                    // With no article list, Preisfrage says why it cannot start.
+                    val config = SpieltischConfig(kidsLocked = media.kidsLocked, dataDir = night.dataDir, titles = media.titles, articles = media.articles)
+                    val images = NightImages(night.images, CacheServerArticles(media.cacheServer), night.articleDir)
+                    val urls = night.core.startNight(config, images)
                     night.announcer.announce(urls.joinUrl)
                     GameNightUi.Ready(urls.tvUrl)
                 } catch (e: CancellationException) {

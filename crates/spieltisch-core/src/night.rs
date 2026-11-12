@@ -1,11 +1,13 @@
 //! The night: one game-night host per process, started, stepped back and
 //! stopped from Kotlin. Its film titles and their images come from the media
 //! app; without them the games that need films stay blocked in the lobby.
+//! Preisfrage's articles and their photos come from the home cache server,
+//! which Kotlin reads at the address the media app names.
 
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 
-use mediagram_game::{GameTitle, Host};
+use mediagram_game::{ArticleList, GameTitle, Host};
 use tokio::sync::Mutex as AsyncMutex;
 
 use crate::media_images::{MediaImages, image_lookup, textless_lookup};
@@ -23,6 +25,8 @@ pub struct SpieltischConfig {
     pub data_dir: String,
     /// The media app's titles as JSON, in `GameTitle`'s shape; `[]` when it gave none.
     pub titles: String,
+    /// Preisfrage's article list as the home cache server holds it; empty when there is none.
+    pub articles: String,
 }
 
 /// Where the box shows the game and where phones join it.
@@ -50,7 +54,8 @@ static NIGHT: LazyLock<AsyncMutex<Option<Host>>> = LazyLock::new(AsyncMutex::def
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn start_night(config: SpieltischConfig, images: Arc<dyn MediaImages>) -> Result<NightUrls, NightError> {
     let log = Some(PathBuf::from(config.data_dir).join(GAME_LOG));
-    replace(&NIGHT, titles_of(&config.titles), config.kids_locked, PREFERRED_PORT, images, log).await
+    let (titles, articles) = (titles_of(&config.titles), articles_of(&config.articles));
+    replace(&NIGHT, titles, articles, config.kids_locked, PREFERRED_PORT, images, log).await
 }
 
 /// No titles when the JSON cannot be read: a night without films beats no night.
@@ -58,6 +63,17 @@ fn titles_of(json: &str) -> Vec<GameTitle> {
     serde_json::from_str(json).unwrap_or_else(|err| {
         tracing::warn!(error = %err, "the media app's titles could not be read; the night has no films");
         Vec::new()
+    })
+}
+
+/// No articles when there is no list or it cannot be read: Preisfrage then says why it cannot start.
+fn articles_of(json: &str) -> ArticleList {
+    if json.is_empty() {
+        return ArticleList::default();
+    }
+    ArticleList::from_json(json).unwrap_or_else(|err| {
+        tracing::warn!(error = %err, "the cache server's article list could not be read; no Preisfrage tonight");
+        ArticleList::default()
     })
 }
 
@@ -78,6 +94,7 @@ pub async fn stop_night() {
 async fn replace(
     slot: &AsyncMutex<Option<Host>>,
     titles: Vec<GameTitle>,
+    articles: ArticleList,
     kids_locked: bool,
     port: u16,
     images: Arc<dyn MediaImages>,
@@ -88,7 +105,7 @@ async fn replace(
         running.stop().await;
     }
     let (textless, images) = (Some(textless_lookup(images.clone())), Some(image_lookup(images)));
-    let host = mediagram_game::start_game_night(titles, kids_locked, port, textless, images, log).await?;
+    let host = mediagram_game::start_game_night(titles, articles, kids_locked, port, textless, images, log).await?;
     let urls = NightUrls { tv_url: host.tv_url(), join_url: host.join_url() };
     *held = Some(host);
     Ok(urls)

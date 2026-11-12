@@ -3,6 +3,7 @@ package com.mediagram.spieltisch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import uniffi.spieltisch_core.MediaImages
+import java.io.File
 
 /**
  * The game night's process-wide half. Leaving finishes the activity while its stop may still be
@@ -20,6 +21,8 @@ class NightSession(
     val media: MediaLibrary,
     /** Fetches those films' images from the media app. */
     val images: MediaImages,
+    /** Where Preisfrage's article photos are kept once fetched; tests that fetch none leave it. */
+    val articleDir: File = File(System.getProperty("java.io.tmpdir"), "spieltisch-articles"),
 ) {
     init {
         // Nothing is kept from it: each night still asks for itself.

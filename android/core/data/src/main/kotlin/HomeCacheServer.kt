@@ -13,10 +13,16 @@ import kotlinx.coroutines.flow.asStateFlow
  * stops as it always has.
  */
 class HomeCacheServer {
+    private val urlNow = MutableStateFlow<String?>(null)
+
+    /** That server's address, `null` while there is none; Spieltisch reads games' data from it. */
+    val url: StateFlow<String?> = urlNow.asStateFlow()
+
     private val linkedNow = MutableStateFlow(false)
     val connected: StateFlow<Boolean> = linkedNow.asStateFlow()
 
-    fun linked(connected: Boolean) {
-        linkedNow.value = connected
+    fun linked(url: String?) {
+        urlNow.value = url
+        linkedNow.value = url != null
     }
 }

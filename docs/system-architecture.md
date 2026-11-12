@@ -1287,10 +1287,22 @@ aren't available. Only an explicit `0` unlocks, and a locked host drops every
 title that is not kid-safe again. JSON the core cannot read means no films,
 never no night.
 
+The row's third column, `cache_server`, is the home cache server the media app
+follows (`HomeCacheServer.url`: the one it found, while the LAN cache is
+switched on; `""` otherwise, and absent from a media app older than 0.177.0).
+After the row, on its own 2.5 s connect and read timeouts, the bridge reads
+Preisfrage's list from it (`GET /v1/game/preisfrage/articles.json`, open on
+the LAN, so Spieltisch holds no token); a missing or slow server costs only the
+list, which reaches `start_night` as `articles` (`""` for none). An article's
+photo is asked for at `/img/article/{asin}`, only for tonight's articles and,
+unlike a film's artwork, from phones too; `NightImages` fetches it once from
+`photos-{asin}.jpg` into `cache/articles/`.
+
 ```text
 Spieltisch                                  media app (signature permission)
 MediaLibraryBridge --query /night---------> GameNightProvider -> GameNightExport
-  -> start_night(titles, kids_locked)          files/game-night/night.snapshot, if built for
+  -> start_night(titles, kids_locked,          files/game-night/night.snapshot, if built for
+                articles)
                                                the active profile; else gameNightConfig +
                                                Core::game_night_titles, and kept
 host /img/{i}/{which} -- own path unreadable

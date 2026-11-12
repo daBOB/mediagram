@@ -2,6 +2,7 @@ package games
 
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import data.HomeCacheServer
 import data.settings.InMemoryLibrarySettings
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.runBlocking
@@ -68,6 +69,17 @@ internal class NightFixture(
         Robolectric.buildContentProvider(GameNightProvider::class.java).create(GameNightProvider.AUTHORITY).get().also {
             it.export = export
             it.releases = releases()
+            it.homeCache = homeCache
+        }
+
+    /** The home cache server this app follows; none until a test links one. */
+    val homeCache = HomeCacheServer()
+
+    /** The night row's cache server address. */
+    fun cacheServer(provider: GameNightProvider = provider()): String =
+        checkNotNull(provider.query(uri("night"), null, null, null, null)).use {
+            assertTrue(it.moveToFirst())
+            it.getString(it.getColumnIndexOrThrow(GameNightProvider.CACHE_SERVER))
         }
 
     fun uri(path: String): Uri = Uri.parse("content://${GameNightProvider.AUTHORITY}/$path")
