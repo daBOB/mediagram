@@ -56,8 +56,12 @@
         <package android:name="com.mediagram.spieltisch" />
     </queries>
 
+    <!-- largeHeap: media3's buffer alone reaches ~144 MB on a film above ~23 Mbit/s, which
+         with the app ran past the 192 MB default heap and crashed the warm-up of a
+         30 Mbit/s film; the large heap (512 MB on the TVs) leaves it room. -->
     <application
         android:name=".MediagramApp"
+        android:largeHeap="true"
         android:allowBackup="false"
         android:banner="@drawable/tv_banner"
         android:dataExtractionRules="@xml/data_extraction_rules"

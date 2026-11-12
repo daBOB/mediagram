@@ -16,6 +16,8 @@ DEV_KEY='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF2gmaWnNNxNLbjuCjdSij8+LulsCuZdEDF
 ATV_OTA=https://waydroid-atv.github.io/ota/a16-tv
 REPO_URL=https://github.com/daBOB/mediagram.git
 REPO="$HOME/mediagram"
+# The Fun-Station picture: the boot and splash screens, and the Android TV tile's logo.
+ART="$REPO/scripts/funstation/fun-station.png"
 # shortcut: follows feat/funstation until it is merged; switch to main then.
 REPO_BRANCH=feat/funstation
 # The TV apps ask TMDB in the library's language (else the device's); posters must ask in
@@ -53,7 +55,7 @@ chmod 600 ~/.ssh/authorized_keys
 grep -qF "$DEV_KEY" ~/.ssh/authorized_keys || echo "$DEV_KEY" >>~/.ssh/authorized_keys
 
 step "packages (and the rest of the system up to date)"
-sudo pacman -Syu --needed --noconfirm plasma-bigscreen waydroid chromium git rustup bun ffmpeg
+sudo pacman -Syu --needed --noconfirm plasma-bigscreen waydroid chromium git rustup bun ffmpeg swayidle
 
 step "mediagram source (public repo, updated on every run)"
 [ -d "$REPO/.git" ] || git clone "$REPO_URL" "$REPO"
@@ -160,7 +162,7 @@ sudo systemctl restart mediagram-player
 sudo ufw allow 7788/tcp comment "mediagram cache server"
 sudo ufw allow 8770/tcp comment "mediagram web player"
 
-step "never dim, blank, sleep or lock: it is a TV box"
+step "Plasma never dims, blanks, sleeps or locks: funstation's own idle step below darkens it"
 kwriteconfig6 --file powerdevilrc --group AC --group SuspendAndShutdown --key AutoSuspendAction 0
 kwriteconfig6 --file powerdevilrc --group AC --group Display --key DimDisplayWhenIdle false
 kwriteconfig6 --file powerdevilrc --group AC --group Display --key TurnOffDisplayWhenIdle false
@@ -216,30 +218,59 @@ Restart=on-failure
 [Install]
 WantedBy=graphical-session.target
 EOF
+# Both Android tiles bring up the full Android window, mediagram's after starting it.
+mkdir -p ~/.local/bin
+cat >~/.local/bin/funstation-android <<'EOF'
+#!/bin/sh
+# Shows the full Android window, after starting the app named by $1 if one is.
+# In WayDroid's one-app-window mode an app whose window was once closed stays hidden
+# while it is still Android's top app, so apps open in the full window too.
+[ $# -gt 0 ] && waydroid app launch "$1"
+waydroid show-full-ui
 # WayDroid opens its window only when Android draws its next frame, and its own redraw
-# trick (pulling the notification shade) does nothing on Android TV, so a tile sat on
-# Bigscreen's splash until something on screen changed. SurfaceFlinger call 1004 forces
-# that frame at once.
+# trick (pulling the notification shade) does nothing on Android TV: force that frame.
+sudo -n waydroid shell -- service call SurfaceFlinger 1004 >/dev/null
+# Bigscreen minimizes the window when its home screen comes up, and WayDroid never
+# restores a window it already has, so KWin does.
+js=$(mktemp --suffix=.js)
+echo 'workspace.windowList().forEach(w => { if (w.resourceClass == "Waydroid") { w.minimized = false; workspace.activeWindow = w; } });' >"$js"
+qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript funstation-android >/dev/null 2>&1
+id=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript "$js" funstation-android)
+qdbus6 org.kde.KWin "/Scripting/Script$id" org.kde.kwin.Script.run
+qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript funstation-android >/dev/null
+rm -f "$js"
+EOF
+chmod +x ~/.local/bin/funstation-android
 # WayDroid lists only phone-launcher apps; mediagram is TV-only, so it gets its own tile.
-# It opens in the full Android window too: in WayDroid's one-app-window mode an app whose
-# window was once closed stays hidden while it is still Android's top app, so the tile
-# opened nothing. Switching to the full window clears that.
-cat >~/.local/share/applications/mediagram.desktop <<'EOF'
+cat >~/.local/share/applications/mediagram.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=mediagram
 Comment=Films, series and game night
-Exec=sh -c "waydroid app launch com.mediagram.android; waydroid show-full-ui; sudo -n waydroid shell -- service call SurfaceFlinger 1004"
+Exec=$HOME/.local/bin/funstation-android com.mediagram.android
 Icon=video-television
 Categories=AudioVideo;Video;Player;
 EOF
-cat >~/.local/share/applications/android-tv.desktop <<'EOF'
+# The Android TV tile wears the Fun-Station logo, which Bigscreen's loading screen shows
+# too: the logo cut from the picture, its dark sky made transparent for the tile's card.
+# Two magick runs: chained into one, the grey mask took the logo's colour with it.
+# shortcut: crop and star box measured on this picture; a new picture needs new numbers.
+ICON=~/.local/share/icons/fun-station.png
+LOGO=$(mktemp -d)
+mkdir -p "$(dirname "$ICON")"
+magick "$ART" -crop 1240x470+410+195 +repage "$LOGO/logo.png"
+magick "$LOGO/logo.png" -colorspace gray -level 6%,40% -fill black -draw "rectangle 1150,0 1240,200" "$LOGO/mask.png"
+magick "$LOGO/logo.png" "$LOGO/mask.png" -alpha off -compose CopyOpacity -composite -colorspace sRGB "$LOGO/cut.png"
+magick "$LOGO/cut.png" -channel A -morphology Open Disk:3 +channel -trim +repage -resize 496x496 \
+  -background none -gravity center -extent 512x512 "$ICON"
+rm -rf "$LOGO"
+cat >~/.local/share/applications/android-tv.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=Android TV
 Comment=The Android TV home screen
-Exec=sh -c "waydroid show-full-ui; sudo -n waydroid shell -- service call SurfaceFlinger 1004"
-Icon=waydroid
+Exec=$HOME/.local/bin/funstation-android
+Icon=$ICON
 Categories=AudioVideo;Video;
 EOF
 # Bigscreen's own Bluetooth page, one tile away instead of three menus deep.
@@ -257,8 +288,38 @@ EOF
 # finds when it rewrites its tiles, so this holds even before the tile first exists.
 kwriteconfig6 --file ~/.local/share/applications/waydroid.com.google.android.tv.remote.service.desktop \
   --group "Desktop Entry" --key NoDisplay true
+# Bigscreen reads its tiles from Plasma's app cache, which missed the rewritten files and
+# kept running the tiles' old commands. Rebuilt inside the session, so it is the session
+# locale's cache and not one for this shell's.
+systemd-run --user --wait --quiet kbuildsycoca6 >/dev/null 2>&1 || true
 systemctl --user daemon-reload 2>/dev/null || true
 systemctl --user enable android-tv-session.service
+
+step "after an hour without input the screen goes dark and Android sleeps"
+# HDMI off alone left the CPU near 20 W, because Android kept drawing; with Android's
+# display asleep too it drew 2.4 W. Android keeps running, and any key wakes both in
+# under a second. Playback and Spieltisch keep the screen on, which holds the timer.
+cat >~/.config/systemd/user/funstation-idle.service <<'EOF'
+[Unit]
+Description=After an hour without input, the screen goes dark and Android sleeps
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/swayidle timeout 3600 'kscreen-doctor --dpms off; sudo -n waydroid shell -- input keyevent KEYCODE_SLEEP' resume 'sudo -n waydroid shell -- input keyevent KEYCODE_WAKEUP; kscreen-doctor --dpms on'
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+systemctl --user daemon-reload 2>/dev/null || true
+systemctl --user enable funstation-idle.service
+# Android TV's Chromecast receiver gets no device certificate under WayDroid; it crashed
+# and restarted every 10-20 s around the clock. mediagram's Play on TV does not use it.
+# shortcut: only while Android runs; on a fresh install, run this script again after the first boot.
+if waydroid status 2>/dev/null | grep -q 'Session:.*RUNNING'; then
+  sudo waydroid shell -- pm disable-user --user 0 com.google.android.apps.mediashell >/dev/null
+fi
 
 step "Bluetooth on the USB stick only"
 # The remote and controllers pair on a USB Bluetooth stick (the user's choice). With the
@@ -280,6 +341,59 @@ sudo udevadm trigger --subsystem-match=input --action=change
 step "log $ME straight into Plasma Bigscreen"
 printf '[Autologin]\nUser=%s\nSession=plasma-bigscreen-wayland\n' "$ME" |
   sudo tee /etc/plasmalogin.conf >/dev/null
+
+step "the Fun-Station picture from power-on to Bigscreen, and while Android starts"
+# Plymouth, from power-on until the login, scaled to whatever the screen is.
+THEME=/usr/share/plymouth/themes/funstation
+sudo install -Dm644 "$ART" "$THEME/fun-station.png"
+sudo tee "$THEME/funstation.plymouth" >/dev/null <<EOF
+[Plymouth Theme]
+Name=Fun-Station
+Description=The Fun-Station picture, full screen
+ModuleName=script
+
+[script]
+ImageDir=$THEME
+ScriptFile=$THEME/funstation.script
+EOF
+sudo tee "$THEME/funstation.script" >/dev/null <<'EOF'
+Window.SetBackgroundTopColor(0, 0, 0);
+Window.SetBackgroundBottomColor(0, 0, 0);
+picture = Sprite(Image("fun-station.png").Scale(Window.GetWidth(), Window.GetHeight()));
+picture.SetPosition(Window.GetX(), Window.GetY(), 0);
+EOF
+# -R rebuilds the initramfs, which carries the theme; only when the theme changes.
+[ "$(plymouth-set-default-theme)" = funstation ] || sudo plymouth-set-default-theme -R funstation
+# Plasma's own splash after the autologin, so the picture stays up until Bigscreen.
+SPLASH=~/.local/share/plasma/look-and-feel/org.funstation.splash
+install -Dm644 "$ART" "$SPLASH/contents/splash/images/fun-station.png"
+cat >"$SPLASH/metadata.json" <<'EOF'
+{ "KPackageStructure": "Plasma/LookAndFeel",
+  "KPlugin": { "Id": "org.funstation.splash", "Name": "Fun-Station", "Description": "The Fun-Station picture as the login splash" } }
+EOF
+cat >"$SPLASH/contents/splash/Splash.qml" <<'EOF'
+import QtQuick
+
+Rectangle {
+    property int stage // set by ksplashqml as the session starts; the picture needs no steps
+    color: "black"
+    Image { anchors.fill: parent; source: "images/fun-station.png"; fillMode: Image.PreserveAspectCrop }
+}
+EOF
+kwriteconfig6 --file ksplashrc --group KSplash --key Engine KSplashQML
+kwriteconfig6 --file ksplashrc --group KSplash --key Theme org.funstation.splash
+# Android's boot animation: one frame, which bootanimation draws unscaled and centred.
+# shortcut: sized for a 4K TV (Android's display here); a 1080p TV would show its middle.
+BOOTANIM=$(mktemp -d)
+mkdir "$BOOTANIM/part0"
+magick "$ART" -resize 3840x2160^ -gravity center -extent 3840x2160 "$BOOTANIM/part0/00000.png"
+printf '3840 2160 1\np 0 0 part0\n' >"$BOOTANIM/desc.txt"
+# Stored, not deflated: bootanimation reads its frames straight out of the zip.
+(cd "$BOOTANIM" && python3 -c 'import sys, zipfile
+with zipfile.ZipFile("bootanimation.zip", "w", zipfile.ZIP_STORED) as z:
+    for name in sys.argv[1:]: z.write(name)' desc.txt part0/00000.png)
+sudo install -Dm644 "$BOOTANIM/bootanimation.zip" /var/lib/waydroid/overlay/system/product/media/bootanimation.zip
+rm -rf "$BOOTANIM"
 
 # Last, because the switch drops the wired link and any SSH session running over it.
 step "Android TV on the home network, so phones can join its game night"
