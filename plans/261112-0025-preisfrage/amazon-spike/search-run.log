@@ -1,0 +1,10 @@
+run 2026-11-12T00:18:03.111Z
+"scherzartikel" page 2 newest 50-150 €: HTTP 200, 0 results, 0 sponsored, 0 media, 0 adult, 0 kept
+"wichtelgeschenk" page 1 newest 50-150 €: HTTP 200, 18 results, 2 sponsored, 0 media, 0 adult, 15 kept
+"küchenhelfer gadget" page 1 newest 150-500 €: HTTP 200, 52 results, 4 sponsored, 0 media, 0 adult, 48 kept
+"badezimmer gadget" page 1 newest 50-150 €: HTTP 200, 21 results, 4 sponsored, 0 media, 0 adult, 17 kept
+"garten gadget" page 3: HTTP 200, 48 results, 0 sponsored, 0 media, 0 adult, 47 kept
+"verrückte erfindungen" page 2 20-50 €: HTTP 200, 3 results, 1 sponsored, 1 media, 0 adult, 1 kept
+"auto gadget" page 4 5-20 €: HTTP 200, 60 results, 12 sponsored, 0 media, 0 adult, 48 kept
+"skurrile geschenke" page 1 150-500 €: HTTP 200, 56 results, 8 sponsored, 0 media, 0 adult, 47 kept
+done: 223 articles with a price → search-items.json, search-items.html

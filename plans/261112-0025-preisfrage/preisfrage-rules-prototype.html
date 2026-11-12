@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preisfrage Regel-Prototyp</title>
+<style>
+  :root {
+    --bg: #f6f4ef; --panel: #ffffff; --line: #e3dfd5; --ink: #1c2229; --muted: #5d6772;
+    --accent: #c2410c; --accent-soft: #fdebdd; --bad: #b91c1c; --bad-soft: #fde8e8;
+    --good: #166534; --good-soft: #e3f4e8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 17px; margin: 0 0 12px; }
+  h3 { font-size: 13px; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  p { margin: 0 0 8px; max-width: 80ch; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: 1px 9px; margin-bottom: 8px; }
+  .note { color: var(--muted); font-size: 14px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; margin: 18px 0 16px; align-items: start; }
+  @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.on, button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  input { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 110px; }
+  .item { font-size: 20px; font-weight: 700; margin: 2px 0; }
+  .price { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .hint { background: var(--accent-soft); border-radius: 8px; padding: 6px 10px; display: inline-block; margin-top: 6px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .win { color: var(--good); font-weight: 700; }
+  .over { color: var(--bad); }
+  .secret { color: var(--muted); }
+  .notice { border-radius: 10px; padding: 9px 12px; margin: 0 0 12px; font-weight: 600; }
+  .notice.ok { background: var(--good-soft); color: var(--good); }
+  .notice.info { background: var(--accent-soft); color: #7c2d12; }
+  .notice.rejected { background: var(--bad-soft); color: var(--bad); }
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .row .name { width: 60px; font-weight: 600; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .steps { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .steps button.done { background: var(--good-soft); border-color: var(--good-soft); color: var(--good); }
+  ol.log { margin: 0; padding-left: 20px; font-size: 13px; color: var(--muted); max-height: 220px; overflow: auto; }
+  .phase { font-size: 13px; font-weight: 700; color: #fff; background: var(--ink); border-radius: 99px; padding: 2px 10px; display: inline-block; }
+  .scores td:first-child { width: 36px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Wegwerf-Prototyp, nicht für das Spiel gedacht</span>
+  <h1>Preisfrage, die Regeln zum Ausprobieren</h1>
+  <p><b>Die Frage:</b> Welche Regeln machen das Preisraten am Spieltisch gut? Der Fernseher zeigt einen Artikel ohne Preis,
+    jeder tippt seinen Preis geheim auf dem Handy, dann wird aufgedeckt. Zu entscheiden ist: Gewinnt, wer am nächsten dran
+    ist, oder nur, wer am nächsten dran ist <i>ohne drüber zu liegen</i>? Was passiert, wenn alle drüber liegen? Und wie
+    zählen die Punkte über mehrere Artikel?</p>
+  <p class="note">Voreingestellt ist das Original der Fernsehshow: am nächsten ohne drüber, liegen alle drüber, wird nochmal
+    getippt (der Preis bleibt verdeckt), ein exakter Tipp bringt einen Bonus, sechs Artikel pro Spiel. Die anderen Regeln
+    sind zum Vergleichen da. Die Artikel sind <b>Beispiele mit geschätzten Preisen</b>, nicht von Amazon: echte Artikel
+    kommen später über Amazons Creators API, sobald der Zugang steht.</p>
+
+  <div class="grid">
+    <div>
+      <div class="panel" id="state"></div>
+    </div>
+    <div>
+      <div class="panel" id="settings"></div>
+      <div class="panel" id="free" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Geführte Durchläufe</h2>
+    <p class="note">Ein Durchlauf beginnt immer neu, mit festen Spielern und Artikeln, und nimmt die Regeln, die oben gerade
+      eingestellt sind. So lässt sich derselbe Durchlauf mit jeder Regel spielen und vergleichen.</p>
+    <div class="tabs" id="tabs"></div>
+    <div id="walk"></div>
+  </div>
+</main>
+
+<script>
+/* ===================== The rules: a pure module, no page code in here ===================== */
+const Preisfrage = (() => {
+  const MAX_CENTS = 10000000; // 100.000 €: anything above is a typo, not a guess
+  const MAX_PLAYERS = 8;
+  const EXACT_BONUS = { wins: 1, accuracy: 500 };
+
+  const DEFAULT_SETTINGS = {
+    rule: 'notOver',      // 'notOver': closest without going over (the show) | 'closest': closest either way
+    allOver: 'rebid',     // only under notOver: 'rebid' everyone guesses again (the show) | 'nobody' no winner
+    scoring: 'wins',      // 'wins': 1 point per item won | 'accuracy': up to 1000 by how close
+    itemsPerGame: 6,      // the show prices six items per episode
+  };
+
+  function initial(names, settings = DEFAULT_SETTINGS) {
+    return {
+      phase: 'lobby', settings: { ...settings },
+      players: names.map((name, i) => ({ id: 'p' + (i + 1), name })),
+      nextId: names.length + 1,
+      items: [], index: 0, attempt: 1, ceiling: null,
+      guesses: {}, rounds: [], scores: {}, notice: null,
+    };
+  }
+
+  const reject = (s, text) => ({ ...s, notice: { kind: 'rejected', text } });
+  const player = (s, id) => s.players.find(p => p.id === id);
+
+  function reduce(s, a) {
+    switch (a.type) {
+      case 'setSetting':
+        if (s.phase !== 'lobby') return reject(s, 'Die Regeln stehen fest, solange ein Spiel läuft.');
+        return { ...s, settings: { ...s.settings, [a.key]: a.value }, notice: null };
+
+      case 'addPlayer': {
+        if (s.phase !== 'lobby') return reject(s, 'Mitspieler kommen nur vor dem Spiel dazu.');
+        if (s.players.length >= MAX_PLAYERS) return reject(s, 'Mehr als 8 Mitspieler gehen nicht.');
+        const name = (a.name || '').trim() || 'Spieler ' + s.nextId;
+        if (s.players.some(p => p.name === name)) return reject(s, `${name} sitzt schon am Tisch.`);
+        return { ...s, players: [...s.players, { id: 'p' + s.nextId, name }], nextId: s.nextId + 1, notice: { kind: 'ok', text: `${name} spielt mit.` } };
+      }
+
+      case 'removePlayer': {
+        if (s.phase !== 'lobby') return reject(s, 'Mitspieler gehen nur vor dem Spiel.');
+        if (s.players.length <= 1) return reject(s, 'Einer muss mitspielen.');
+        const p = player(s, a.id);
+        return { ...s, players: s.players.filter(x => x.id !== a.id), notice: { kind: 'ok', text: `${p ? p.name : 'Spieler'} spielt nicht mehr mit.` } };
+      }
+
+      case 'start': {
+        if (s.phase !== 'lobby') return reject(s, 'Das Spiel läuft schon.');
+        if (a.items.length < s.settings.itemsPerGame) return reject(s, 'Zu wenige Artikel für ein Spiel.');
+        const scores = Object.fromEntries(s.players.map(p => [p.id, 0]));
+        return { ...s, phase: 'guessing', items: a.items.slice(0, s.settings.itemsPerGame), index: 0, attempt: 1, ceiling: null,
+          guesses: {}, rounds: [], scores, notice: { kind: 'info', text: 'Artikel 1 ist da. Alle tippen auf dem Handy.' } };
+      }
+
+      case 'guess': {
+        const p = player(s, a.player);
+        if (!p) return reject(s, 'Wer nicht mitspielt, kann nicht tippen.');
+        if (s.phase !== 'guessing') return reject(s, `${p.name} kann gerade nicht tippen: Es läuft keine Tippzeit.`);
+        if (a.player in s.guesses) return reject(s, `${p.name} hat schon getippt. Ein Tipp gilt, er lässt sich nicht ändern.`);
+        if (!Number.isInteger(a.cents) || a.cents <= 0) return reject(s, `${p.name}: Das ist kein Preis.`);
+        if (a.cents > MAX_CENTS) return reject(s, `${p.name}: Mehr als 100.000 € ist sicher vertippt.`);
+        const guesses = { ...s.guesses, [a.player]: a.cents };
+        const next = { ...s, guesses, notice: { kind: 'ok', text: `${p.name} hat getippt.` } };
+        // The TV closes the round itself once everyone at the table has guessed.
+        return s.players.every(x => x.id in guesses) ? evaluate(next, 'Alle haben getippt.') : next;
+      }
+
+      case 'timeUp':
+        if (s.phase !== 'guessing') return reject(s, 'Es läuft gerade keine Tippzeit.');
+        return evaluate(s, 'Die Zeit ist um.');
+
+      case 'next': {
+        if (s.phase !== 'revealed') return reject(s, 'Erst aufdecken, dann kommt der nächste Artikel.');
+        if (s.index + 1 >= s.items.length) return { ...s, phase: 'ended', notice: { kind: 'info', text: 'Das Spiel ist aus.' } };
+        return { ...s, phase: 'guessing', index: s.index + 1, attempt: 1, ceiling: null, guesses: {},
+          notice: { kind: 'info', text: `Artikel ${s.index + 2} ist da. Alle tippen.` } };
+      }
+
+      case 'newGame':
+        return { ...initial(s.players.map(p => p.name), s.settings), players: s.players, nextId: s.nextId,
+          notice: { kind: 'info', text: 'Neues Spiel: Regeln und Mitspieler lassen sich wieder ändern.' } };
+
+      default:
+        return reject(s, 'Unbekannte Aktion.');
+    }
+  }
+
+  // Closes the current guessing round: hides the price for a rebid, or reveals and scores it.
+  function evaluate(s, why) {
+    const item = s.items[s.index];
+    const tipped = s.players.filter(p => p.id in s.guesses);
+    const allOver = tipped.length > 0 && tipped.every(p => s.guesses[p.id] > item.cents);
+    if (s.settings.rule === 'notOver' && allOver && s.settings.allOver === 'rebid') {
+      const ceiling = Math.min(...tipped.map(p => s.guesses[p.id]));
+      return { ...s, attempt: s.attempt + 1, ceiling, guesses: {},
+        notice: { kind: 'info', text: `${why} Alle liegen drüber! Der Preis bleibt verdeckt und liegt unter ${euro(ceiling)}. Nochmal tippen.` } };
+    }
+    const result = roundResult(item, s.players, s.guesses, s.settings);
+    const scores = { ...s.scores };
+    result.rows.forEach(r => { scores[r.id] += r.points; });
+    const round = { item, attempt: s.attempt, ...result };
+    return { ...s, phase: 'revealed', rounds: [...s.rounds, round], scores,
+      notice: { kind: 'info', text: `${why} Aufgedeckt: ${euro(item.cents)}. ${result.headline}` } };
+  }
+
+  // One item's outcome for every player at the table: who won, who went over, who scores what.
+  function roundResult(item, players, guesses, settings) {
+    const rows = players.map(p => {
+      const g = p.id in guesses ? guesses[p.id] : null;
+      const diff = g === null ? null : g - item.cents;
+      const eligible = g !== null && (settings.rule === 'closest' || diff <= 0);
+      return { id: p.id, name: p.name, guess: g, diff, over: diff !== null && diff > 0, exact: diff === 0, eligible, winner: false, points: 0 };
+    });
+    const best = Math.min(...rows.filter(r => r.eligible).map(r => Math.abs(r.diff)));
+    rows.forEach(r => { r.winner = r.eligible && Math.abs(r.diff) === best; });
+    rows.forEach(r => {
+      if (settings.scoring === 'wins') r.points = r.winner ? 1 : 0;
+      else if (r.eligible) r.points = Math.round(1000 * Math.max(0, 1 - Math.abs(r.diff) / item.cents));
+      if (r.exact) r.points += EXACT_BONUS[settings.scoring];
+    });
+    const winners = rows.filter(r => r.winner);
+    let headline;
+    if (rows.every(r => r.guess === null)) headline = 'Niemand hat getippt.';
+    else if (!winners.length) headline = 'Alle liegen drüber: Niemand gewinnt diesen Artikel.';
+    else headline = (winners.some(r => r.exact) ? 'Volltreffer! ' : '') +
+      winners.map(r => r.name).join(' und ') + (winners.length > 1 ? ' gewinnen gemeinsam.' : ' gewinnt.');
+    return { rows, headline };
+  }
+
+  // Final standings: equal points share a place.
+  function ranking(s) {
+    const sorted = [...s.players].sort((a, b) => s.scores[b.id] - s.scores[a.id]);
+    return sorted.map(p => ({ ...p, points: s.scores[p.id],
+      place: 1 + sorted.filter(q => s.scores[q.id] > s.scores[p.id]).length }));
+  }
+
+  function euro(cents) {
+    return (cents / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+
+  return { DEFAULT_SETTINGS, initial, reduce, ranking, euro };
+})();
+
+/* ===================== Sample items: estimated prices, not from Amazon ===================== */
+const ITEMS = [
+  { name: 'Wasserkocher, 1,7 l, Edelstahl', cents: 2999 },
+  { name: 'AA-Batterien, 8 Stück', cents: 649 },
+  { name: 'Bluetooth-Kopfhörer mit Ladecase', cents: 4999 },
+  { name: 'Akku-Bohrschrauber, 18 V, im Koffer', cents: 8900 },
+  { name: 'Kaffeevollautomat mit Milchschäumer', cents: 44900 },
+  { name: 'Badeenten, 10 Stück', cents: 999 },
+  { name: 'Gaming-Maus mit Kabel', cents: 2499 },
+  { name: 'Luftmatratze für zwei', cents: 3495 },
+  { name: 'Saugroboter mit Absaugstation', cents: 39900 },
+  { name: 'Kochbuch, Taschenbuch', cents: 1400 },
+  { name: 'LED-Lichterkette, 10 m', cents: 1299 },
+  { name: 'Familien-Brettspiel, 2 bis 4 Spieler', cents: 3299 },
+  { name: 'Elektrische Zahnbürste', cents: 5999 },
+  { name: 'Kurzhanteln, 2 × 5 kg', cents: 3990 },
+  { name: 'Smartwatch mit Pulsmesser', cents: 14900 },
+  { name: 'Klappbarer Campingstuhl', cents: 1999 },
+  { name: 'Espressokocher für 6 Tassen', cents: 2250 },
+  { name: 'Fernseher, 55 Zoll, 4K', cents: 49900 },
+];
+const byName = n => ITEMS.find(i => i.name.startsWith(n));
+
+/* ===================== The page: a thin shell over the module ===================== */
+const { euro } = Preisfrage;
+let state = Preisfrage.initial(['Ana', 'Ben', 'Cem', 'Dana']);
+const log = [];
+let walk = null; // { scenario, step }
+
+const LABELS = {
+  rule: { notOver: 'Am nächsten, ohne drüber (Original)', closest: 'Am nächsten, egal ob drüber' },
+  allOver: { rebid: 'Nochmal tippen (Original)', nobody: 'Niemand gewinnt den Artikel' },
+  scoring: { wins: 'Rundensieg: 1 Punkt', accuracy: 'Genauigkeit: bis 1000 Punkte' },
+};
+const PHASES = { lobby: 'Vor dem Spiel', guessing: 'Es wird getippt', revealed: 'Aufgedeckt', ended: 'Spiel aus' };
+
+function parseEuro(text) {
+  const t = String(text).trim().replace(/\s|€/g, '').replace(/\./g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(t)) return NaN;
+  return Math.round(parseFloat(t) * 100);
+}
+function shuffled(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function dispatch(action, label) {
+  state = Preisfrage.reduce(state, action);
+  if (label) log.push(label + (state.notice ? ' → ' + state.notice.text : ''));
+  render();
+}
+
+const nameOf = id => (state.players.find(p => p.id === id) || {}).name || id;
+const idOf = name => (state.players.find(p => p.name === name) || {}).id || 'unbekannt';
+
+function render() {
+  renderState(); renderSettings(); renderFree(); renderWalk();
+}
+
+function renderState() {
+  const s = state, el = document.getElementById('state');
+  let h = `<div class="row"><h2 style="margin:0">Spielstand</h2><span class="phase">${PHASES[s.phase]}</span></div>`;
+  if (s.notice) h += `<div class="notice ${s.notice.kind}">${s.notice.text}</div>`;
+  if (s.phase === 'lobby') {
+    h += `<p>Am Tisch: ${s.players.map(p => p.name).join(', ')}. Regeln oben rechts wählen, dann das Spiel starten.</p>`;
+  }
+  if (s.phase === 'guessing') {
+    const item = s.items[s.index];
+    h += `<h3>Artikel ${s.index + 1} von ${s.items.length}${s.attempt > 1 ? ` · ${s.attempt}. Versuch` : ''}</h3>
+      <div class="item">${item.name}</div><div class="price">? €</div>`;
+    if (s.ceiling) h += `<div class="hint">Alle lagen drüber. Der Preis liegt unter ${euro(s.ceiling)}.</div>`;
+    h += `<h3>Tipps</h3><table><tr><th>Mitspieler</th><th>Tipp</th></tr>` +
+      s.players.map(p => `<tr><td>${p.name}</td><td class="num">${p.id in s.guesses
+        ? `getippt <span class="secret">(${euro(s.guesses[p.id])}, der Fernseher zeigt nur „getippt“)</span>` : '<span class="secret">noch nicht</span>'}</td></tr>`).join('') + `</table>`;
+  }
+  if (s.phase === 'revealed' || s.phase === 'ended') {
+    const r = s.rounds[s.rounds.length - 1];
+    h += `<h3>Artikel ${s.rounds.length} von ${s.items.length}${r.attempt > 1 ? ` · im ${r.attempt}. Versuch` : ''}</h3>
+      <div class="item">${r.item.name}</div><div class="price">${euro(r.item.cents)}</div><p><b>${r.headline}</b></p>
+      <table><tr><th>Mitspieler</th><th>Tipp</th><th>Abstand</th><th>Ergebnis</th><th>Punkte</th></tr>` +
+      r.rows.map(x => `<tr><td>${x.name}</td><td class="num">${x.guess === null ? '–' : euro(x.guess)}</td>
+        <td class="num ${x.over ? 'over' : ''}">${x.diff === null ? '' : (x.diff > 0 ? '+' : x.diff < 0 ? '−' : '±') + euro(Math.abs(x.diff))}</td>
+        <td class="${x.winner ? 'win' : x.over ? 'over' : ''}">${x.guess === null ? 'nicht getippt' : x.exact ? 'Volltreffer' : x.winner ? 'gewinnt' : x.over && s.settings.rule === 'notOver' ? 'drüber, zählt nicht' : 'daneben'}</td>
+        <td class="num">${x.points ? '+' + x.points : '0'}</td></tr>`).join('') + `</table>`;
+  }
+  if (s.phase !== 'lobby') {
+    h += `<h3>${s.phase === 'ended' ? 'Endstand' : 'Punkte bisher'}</h3><table class="scores">` +
+      Preisfrage.ranking(s).map(p => `<tr><td>${p.place}.</td><td>${p.name}</td><td class="num">${p.points}</td></tr>`).join('') + `</table>`;
+  }
+  h += `<h3>Was bisher passiert ist</h3><ol class="log">${log.slice(-40).map(l => `<li>${l}</li>`).join('')}</ol>`;
+  el.innerHTML = h;
+}
+
+function renderSettings() {
+  const s = state, el = document.getElementById('settings'), locked = s.phase !== 'lobby';
+  const seg = (key, values) => `<div class="seg">${values.map(v =>
+    `<button class="${s.settings[key] === v ? 'on' : ''}" data-set="${key}" data-val="${v}">${LABELS[key] ? LABELS[key][v] : v}</button>`).join('')}</div>`;
+  el.innerHTML = `<h2>Regeln</h2>${locked ? '<p class="note">Während eines Spiels stehen die Regeln fest. Ein Klick zeigt, was dann passiert.</p>' : ''}
+    <h3>Wer gewinnt einen Artikel</h3>${seg('rule', ['notOver', 'closest'])}
+    <h3>Wenn alle drüber liegen</h3>${seg('allOver', ['rebid', 'nobody'])}
+    ${s.settings.rule === 'closest' ? '<p class="note">Gilt nur bei „ohne drüber“: Bei „egal ob drüber“ gewinnt immer jemand.</p>' : ''}
+    <h3>Punkte</h3>${seg('scoring', ['wins', 'accuracy'])}
+    <p class="note">Exakter Tipp: ${s.settings.scoring === 'wins' ? '1 Bonuspunkt' : '500 Bonuspunkte'}.</p>
+    <h3>Artikel pro Spiel</h3>${seg('itemsPerGame', [3, 6, 10])}`;
+  el.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
+    const key = b.dataset.set, raw = b.dataset.val, value = key === 'itemsPerGame' ? Number(raw) : raw;
+    dispatch({ type: 'setSetting', key, value }, `Regel ändern: ${LABELS[key] ? LABELS[key][value] : value + ' Artikel'}`);
+  });
+}
+
+function renderFree() {
+  const s = state, el = document.getElementById('free');
+  let h = `<h2>Frei spielen</h2>`;
+  h += `<div class="seg"><button class="primary" id="start">Spiel starten (zufällige Artikel)</button>
+    <button id="timeup">Zeit um</button><button id="next">Nächster Artikel</button><button id="newgame">Neues Spiel</button></div>`;
+  h += `<h3>Tipps auf den Handys</h3>` + s.players.map(p =>
+    `<div class="row"><span class="name">${p.name}</span><input id="g-${p.id}" placeholder="z. B. 29,99"><button data-guess="${p.id}">Tippen</button>
+     <button data-remove="${p.id}" title="Vor dem Spiel: Mitspieler entfernen">entfernen</button></div>`).join('');
+  h += `<div class="row" style="margin-top:10px"><input id="newname" placeholder="Name"><button id="add">Mitspieler dazu</button></div>`;
+  el.innerHTML = h;
+  el.querySelector('#start').onclick = () => { walk = null; dispatch({ type: 'start', items: shuffled(ITEMS) }, 'Spiel starten'); };
+  el.querySelector('#timeup').onclick = () => dispatch({ type: 'timeUp' }, 'Zeit um');
+  el.querySelector('#next').onclick = () => dispatch({ type: 'next' }, 'Nächster Artikel');
+  el.querySelector('#newgame').onclick = () => { walk = null; dispatch({ type: 'newGame' }, 'Neues Spiel'); };
+  el.querySelector('#add').onclick = () => dispatch({ type: 'addPlayer', name: el.querySelector('#newname').value }, 'Mitspieler dazu');
+  el.querySelectorAll('[data-guess]').forEach(b => b.onclick = () => {
+    const text = el.querySelector('#g-' + b.dataset.guess).value;
+    dispatch({ type: 'guess', player: b.dataset.guess, cents: parseEuro(text) }, `${nameOf(b.dataset.guess)} tippt ${text || '(nichts)'}`);
+  });
+  el.querySelectorAll('[data-remove]').forEach(b => b.onclick = () => dispatch({ type: 'removePlayer', id: b.dataset.remove }, `${nameOf(b.dataset.remove)} entfernen`));
+}
+
+/* ===================== Guided walkthroughs ===================== */
+const g = (name, text) => ({ label: `${name} tippt ${text}`, action: () => ({ type: 'guess', player: idOf(name), cents: parseEuro(text) }) });
+const timeUp = { label: 'Zeit um', action: () => ({ type: 'timeUp' }) };
+const next = { label: 'Nächster Artikel', action: () => ({ type: 'next' }) };
+const start = items => ({ label: 'Spiel starten', action: () => ({ type: 'start', items: items.map(byName) }) });
+
+const SCENARIOS = [
+  { title: 'Eine normale Runde', players: ['Ana', 'Ben', 'Cem'], items: ['Wasserkocher'],
+    text: 'Ein Wasserkocher. Ana tippt drunter, Ben und Cem drüber, Cem nur knapp. Spiel es einmal mit „ohne drüber“ und einmal mit „egal ob drüber“: Bei der einen Regel gewinnt Cem, bei der anderen Ana. Welche fühlt sich richtig an?',
+    steps: s => [start(s.items), g('Ana', '25,00'), g('Ben', '35,00'), g('Cem', '31,00')] },
+  { title: 'Alle liegen drüber', players: ['Ana', 'Ben', 'Cem'], items: ['AA-Batterien'],
+    text: 'Batterien sind billiger, als alle denken. Bei „egal ob drüber“ gewinnt einfach der Niedrigste. Bei „ohne drüber“ entscheidet die zweite Regel: Im Original bleibt der Preis verdeckt und alle tippen nochmal, mit dem Hinweis, dass er unter dem niedrigsten Tipp liegt. Bei „Niemand gewinnt“ ist der Artikel verloren, und die Nochmal-Tipps werden abgelehnt.',
+    force: { rule: 'notOver' },
+    steps: s => [start(s.items), g('Ana', '8,00'), g('Ben', '9,99'), g('Cem', '12,00'), g('Ana', '5,00'), g('Ben', '6,00'), g('Cem', '7,50')] },
+  { title: 'Gleich weit weg', players: ['Ana', 'Ben', 'Cem'], items: ['Kurzhanteln'],
+    text: 'Ana liegt 4 € drunter, Ben 4 € drüber. Bei „egal ob drüber“ gewinnen beide gemeinsam, bei „ohne drüber“ nur Ana. Ist ein geteilter Sieg gut oder soll es immer einen Sieger geben?',
+    steps: s => [start(s.items), g('Ana', '35,90'), g('Ben', '43,90'), g('Cem', '60,00')] },
+  { title: 'Volltreffer', players: ['Ana', 'Ben', 'Cem'], items: ['Badeenten'],
+    text: 'Ana trifft den Preis auf den Cent. Sie gewinnt und bekommt den Bonus. Reicht der Bonus, damit sich ein Volltreffer besonders anfühlt?',
+    steps: s => [start(s.items), g('Ana', '9,99'), g('Ben', '10,00'), g('Cem', '8,00')] },
+  { title: 'Jemand tippt nicht', players: ['Ana', 'Ben', 'Cem', 'Dana'], items: ['Luftmatratze'],
+    text: 'Dana tippt nicht, die Zeit läuft ab. Die Runde endet ohne sie: kein Tipp, keine Punkte. Erst wenn alle getippt haben, deckt der Fernseher von selbst auf.',
+    steps: s => [start(s.items), g('Ana', '30,00'), g('Ben', '45,00'), g('Cem', '39,00'), timeUp] },
+  { title: 'Immer knapp oder mal Glück', players: ['Ana', 'Ben', 'Cem'],
+    items: ['Klappbarer Campingstuhl', 'Akku-Bohrschrauber', 'Smartwatch', 'Badeenten', 'Saugroboter'],
+    text: 'Fünf Artikel. Ana liegt immer etwa 10 % drunter. Ben trifft dreimal sehr genau und liegt zweimal weit daneben, Cem zweimal genau und dreimal weit drüber. Mit „egal ob drüber“ und „Rundensieg“ endet Ana mit 0 Punkten und Ben gewinnt. Spiel es mit „Genauigkeit“ oder „ohne drüber“ nochmal: Wer soll vorne liegen?',
+    steps: s => [start(s.items),
+      g('Ana', '18,00'), g('Ben', '20,50'), g('Cem', '30,00'), next,
+      g('Ana', '80,00'), g('Ben', '88,00'), g('Cem', '135,00'), next,
+      g('Ana', '135,00'), g('Ben', '300,00'), g('Cem', '151,00'), next,
+      g('Ana', '9,00'), g('Ben', '9,50'), g('Cem', '25,00'), next,
+      g('Ana', '360,00'), g('Ben', '1.200,00'), g('Cem', '420,00'), next] },
+  { title: 'Was nicht geht', players: ['Ana', 'Ben'], items: ['Espressokocher'],
+    text: 'Jeder dieser Schritte ist ein Fehler oder ein Versuch zu schummeln. Das Spiel lehnt ihn ab und sagt warum: rot im Spielstand.',
+    steps: s => [
+      { label: 'Ana tippt, bevor das Spiel läuft', action: () => ({ type: 'guess', player: idOf('Ana'), cents: 2000 }) },
+      start(s.items),
+      g('Ana', '0'), g('Ana', 'zwanzig'), g('Ana', '20,00'), g('Ana', '25,00'),
+      { label: 'Regel mitten im Spiel ändern', action: () => ({ type: 'setSetting', key: 'rule', value: 'closest' }) },
+      { label: 'Nächster Artikel, bevor aufgedeckt ist', action: () => ({ type: 'next' }) },
+      { label: 'Ein Zuschauer tippt', action: () => ({ type: 'guess', player: 'zuschauer', cents: 2000 }) },
+      timeUp, g('Ben', '22,00')] },
+];
+
+function startWalk(i) {
+  const sc = SCENARIOS[i];
+  const settings = { ...state.settings, ...(sc.force || {}), itemsPerGame: sc.items.length };
+  state = Preisfrage.initial(sc.players, settings);
+  log.length = 0;
+  log.push(`Durchlauf „${sc.title}“ beginnt neu mit: ${LABELS.rule[settings.rule]}; alle drüber: ${LABELS.allOver[settings.allOver]}; ${LABELS.scoring[settings.scoring]}.`);
+  walk = { index: i, step: 0, steps: sc.steps(sc) };
+  render();
+}
+
+function renderWalk() {
+  const tabs = document.getElementById('tabs'), el = document.getElementById('walk');
+  tabs.innerHTML = SCENARIOS.map((sc, i) => `<button class="${walk && walk.index === i ? 'on' : ''}" data-tab="${i}">${sc.title}</button>`).join('');
+  tabs.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => startWalk(Number(b.dataset.tab)));
+  if (!walk) { el.innerHTML = '<p class="note">Einen Durchlauf oben wählen.</p>'; return; }
+  const sc = SCENARIOS[walk.index];
+  el.innerHTML = `<p>${sc.text}</p><div class="steps">${walk.steps.map((st, i) =>
+    `<button class="${i < walk.step ? 'done' : i === walk.step ? 'primary' : ''}" data-step="${i}" ${i !== walk.step ? 'disabled' : ''}>${i + 1}. ${st.label}</button>`).join('')}</div>
+    ${walk.step >= walk.steps.length ? '<p class="note" style="margin-top:10px">Durchlauf zu Ende. Regel oben umstellen und den Durchlauf nochmal wählen, um zu vergleichen.</p>' : ''}`;
+  el.querySelectorAll('[data-step]').forEach(b => b.onclick = () => {
+    const st = walk.steps[walk.step];
+    walk.step++;
+    dispatch(st.action(), st.label);
+  });
+}
+
+render();
+</script>
+</body>
+</html>

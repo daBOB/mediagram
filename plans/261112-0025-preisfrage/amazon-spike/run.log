@@ -1,0 +1,8 @@
+run 2026-11-12T00:09:42.663Z
+kitchen: HTTP 200, 46 articles, 46 with a price ("Amazon.de Bestseller: Die beliebtesten Artikel in Küche, Hau")
+toys: HTTP 200, 46 articles, 45 with a price ("Amazon.de Bestseller: Die beliebtesten Artikel in Spielzeug")
+diy: HTTP 200, 46 articles, 46 with a price ("Amazon.de Bestseller: Die beliebtesten Artikel in Baumarkt")
+drugstore: HTTP 200, 38 articles, 37 with a price ("Amazon.de Bestseller: Die beliebtesten Artikel in Drogerie &")
+sports: HTTP 200, 37 articles, 36 with a price ("Amazon.de Bestseller: Die beliebtesten Artikel in Sport & Fr")
+pet-supplies: HTTP 200, 38 articles, 36 with a price ("Amazon.de Bestseller: Die beliebtesten Artikel in Haustier")
+done: 246 articles with a price → items.json, items.html
