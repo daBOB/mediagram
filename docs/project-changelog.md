@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.175.1 — posters for Kopfnuss, Dreifelder, Heimlauf and Flüchtig
+
+**Added**
+
+- Kopfnuss, Dreifelder, Heimlauf and Flüchtig have their posters and backdrops on the shelf (`game_{poster,backdrop}_{kopfnuss,dreifelder,race,fluechtig}.webp`), made by the user with GPT Image from `plans/261107-1509-games-poster-overview/image-prompts.md`; they no longer show a name tile. Still owed: Grand Allee.
+
 ## Spieltisch 0.175.0 — the games' own app
 
 **Added**
