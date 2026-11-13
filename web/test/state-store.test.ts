@@ -164,6 +164,7 @@ describe("a player that cannot remember", () => {
       collections: [],
       watched: [],
       preferences: [],
+      scenes: [],
     });
     // None of these may throw: they are called from a request handler.
     state.setProgress("nobody", "01SET", 10, 20);
@@ -256,6 +257,7 @@ describe("one profile cannot see another", () => {
       collections: [],
       watched: [],
       preferences: [],
+      scenes: [],
     });
   });
 

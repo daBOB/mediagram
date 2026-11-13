@@ -34,6 +34,7 @@ import { PinWait } from "./profiles-wait";
 import { Household } from "./household-heard";
 import { readMeta, writeMeta } from "./state-meta";
 import { exportCollections, exportTitleMarks, exportWatchlist, importCollections, importTitleMarks, importWatchlist } from "./lists-exchange";
+import { type Scene, exportScenes, importScenes, markScene, readScenes, removeScene } from "./scenes-exchange";
 import { exportPreferences, importPreferences, isSyncedPreference, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
 import { exportProgress, importProgress, tickKey, writeProgress, type Ticks } from "./stats-recorder";
@@ -79,6 +80,8 @@ export interface StateSnapshot {
    * exactly when it has no time to ask.
    */
   preferences: Preference[];
+  /** Marked scenes, live ones only, newest first. */
+  scenes: Scene[];
 }
 
 /** One remembered choice. See the v5 migration for why it is shaped this way. */
@@ -162,7 +165,7 @@ export class WatchState {
   /** One profile's everything, in one read. The page asks once and holds it. */
   snapshot(profileId: string): StateSnapshot {
     if (!this.db) {
-      return { progress: [], watchlist: [], collections: [], watched: [], preferences: [] };
+      return { progress: [], watchlist: [], collections: [], watched: [], preferences: [], scenes: [] };
     }
 
     const progress = this.db
@@ -203,7 +206,9 @@ export class WatchState {
       .query("SELECT scope, name, value FROM preferences WHERE profile_id = ?1")
       .all(profileId) as Preference[];
 
-    return { progress, watchlist, collections, watched, preferences };
+    const scenes = readScenes(this.db, profileId);
+
+    return { progress, watchlist, collections, watched, preferences, scenes };
   }
 
   /** Where this profile is in `setId`, and the watching that adds — see `stats-recorder.ts`. */
@@ -251,6 +256,16 @@ export class WatchState {
         ?.query("UPDATE watchlist SET removed_at = ?3 WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL")
         .run(profileId, setId, Date.now());
     }
+  }
+
+  /** Marks a scene; its new id, or null for an unknown profile or an `at` that is no film second. */
+  markScene(profileId: string, setId: string, at: number): string | null {
+    return this.db ? markScene(this.db, profileId, setId, at) : null;
+  }
+
+  /** Takes a mark off, keeping the tombstone a sync needs; false when no live mark has that id. */
+  removeScene(profileId: string, id: string): boolean {
+    return this.db ? removeScene(this.db, profileId, id) : false;
   }
 
   /**
@@ -377,6 +392,7 @@ export class WatchState {
         unwatched,
         watchlist: exportWatchlist(this.db, profile.id),
         collections: exportCollections(this.db, profile.id),
+        scenes: exportScenes(this.db, profile.id),
         preferences: exportPreferences(this.db, profile.id),
         ...exportStats(this.db, profile.id),
       };
@@ -432,6 +448,7 @@ export class WatchState {
         changed += importUnwatched(db, profileId, profile.unwatched ?? []);
         changed += importWatchlist(db, profileId, profile.watchlist ?? []);
         changed += importCollections(db, profileId, profile.collections ?? []);
+        changed += importScenes(db, profileId, profile.scenes ?? []);
         changed += importPreferences(db, profileId, profile.preferences ?? []);
         changed += importStats(db, profileId, profile);
       }
