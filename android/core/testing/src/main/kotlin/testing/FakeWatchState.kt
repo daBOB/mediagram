@@ -3,6 +3,7 @@ package testing
 import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.ProgressRow
+import uniffi.mediagram_core.SceneMark
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.WatchedRow
 
@@ -66,6 +67,10 @@ class FakeWatchState(
     private val watchlistByProfile = mutableMapOf<String, LinkedHashMap<String, Mark>>()
     private val collectionsByProfile = mutableMapOf<String, LinkedHashMap<String, Collection>>()
 
+    /** Live scene marks, newest first, like `scenes::live_for`. */
+    private val scenesByProfile = mutableMapOf<String, MutableList<SceneMark>>()
+    private var nextSceneId = 1
+
     /** Keyed by `scope` then `name`, the real table's primary key after `profile_id`. */
     private val preferencesByProfile = mutableMapOf<String, LinkedHashMap<Pair<String, String>, String>>()
 
@@ -85,7 +90,20 @@ class FakeWatchState(
             collections = collectionsFor(profileId),
             editorsChoice = editorsChoiceSetId,
             kidsFromSix = liveKids(fromSixOnly = true),
+            scenes = scenesByProfile[profileId].orEmpty(),
         )
+
+    /** The new mark's id, or null for a position that is no film second or a profile that is gone — `scenes::mark`'s refusals. */
+    @Synchronized
+    fun markScene(profileId: String, setId: String, at: Double): String? {
+        if (!exists(profileId) || !at.isFinite() || at < 0.0) return null
+        val id = "scene%011d".format(nextSceneId++)
+        scenesByProfile.getOrPut(profileId) { mutableListOf() }.add(0, SceneMark(id, setId, at, now()))
+        return id
+    }
+
+    @Synchronized
+    fun removeScene(profileId: String, id: String): Boolean = scenesByProfile[profileId]?.removeAll { it.id == id } ?: false
 
     /** Drops everything a deleted profile owned — the same cascade `ON DELETE CASCADE` runs on the real tables. Kids and the editor's choice outlive it; neither belongs to any profile. */
     @Synchronized
@@ -93,6 +111,7 @@ class FakeWatchState(
         progressByProfile.remove(profileId)
         watchedByProfile.remove(profileId)
         watchlistByProfile.remove(profileId)
+        scenesByProfile.remove(profileId)
         collectionsByProfile.remove(profileId)
         preferencesByProfile.remove(profileId)
     }
