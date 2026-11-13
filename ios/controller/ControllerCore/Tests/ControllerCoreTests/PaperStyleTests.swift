@@ -20,4 +20,12 @@ final class PaperStyleTests: XCTestCase {
         XCTAssertEqual(PaperStyle.lineWidth(color: 0, width: 9, paperWidth: 1000), 17, accuracy: 1e-9)
         XCTAssertEqual(PaperStyle.lineWidth(color: 0, width: -1, paperWidth: 1000), 5, accuracy: 1e-9)
     }
+
+    /// The same values as client/src/ink/ink-style.ts, which pins them on its side.
+    func testThePaperConstantsMatchThePage() {
+        XCTAssertEqual(PaperStyle.colors, ["#1b1b1b", "#d8342b", "#2c6bed", "#2f9e44", "#f2a20e", "#fbf8f1"])
+        XCTAssertEqual(PaperStyle.widths, [0.005, 0.01, 0.017])
+        XCTAssertEqual(PaperStyle.eraserIndex, 5)
+        XCTAssertEqual(PaperStyle.eraserScale, 3)
+    }
 }
