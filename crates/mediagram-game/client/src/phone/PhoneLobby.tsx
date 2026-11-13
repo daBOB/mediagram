@@ -3,14 +3,16 @@ import type { Connection } from "../net";
 import type { LobbySettings } from "../protocol/LobbySettings";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
-import { inApp } from "./app-bridge";
+import { boardCapable, inApp } from "./app-bridge";
 import { AvatarPicker } from "./AvatarPicker";
 import { QUIZ_MODES } from "../ui/lobby";
 import { Token } from "../ui/Token";
 
 type Lobby = Extract<PhoneScreen, { kind: "lobby" }>;
 
-export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby; conn: Connection }) {
+type Props = { me: PlayerInfo; screen: Lobby; conn: Connection; onBecomeBoard: () => void };
+
+export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
   const { settings } = screen;
   const style = { "--player": me.color } as CSSProperties;
   // A plain-HTTP page cannot keep the screen on (no Wake Lock outside HTTPS, and Chrome ignored a
@@ -21,6 +23,11 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
       <AvatarPicker avatars={screen.avatars} mine={me.avatar} conn={conn} />
       {!inApp() && (
         <p className="hint">Tipp: Schalte für den Spieleabend die automatische Bildschirmsperre deines Handys aus, sonst geht es mitten im Spiel aus.</p>
+      )}
+      {boardCapable() && settings.game === "kritzelei" && (
+        <button className="cta" onClick={onBecomeBoard}>
+          Als Zeichenbrett verwenden
+        </button>
       )}
     </>
   );
