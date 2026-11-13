@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.179.0 — The games shelf and the lobby in one screen
+
+**Changed**
+
+- Spieltisch opens straight on one screen for the whole night, the user's layout A from three mockups (`plans/261113-1520-games-lobby/visuals/`): the focused game's backdrop, its name, seats and a line saying what OK does or why the game cannot start; the posters along the bottom; and a panel top right with the join code (large until someone joins, smaller after), who sits at the table and Einstellungen. Before, each game went shelf → its own lobby with the code → game, and back.
+- OK on a poster starts that game (the user's choice). Moving along the row picks the game for the room once the row rests (180 ms), so the phones see it; the leader's phone picking another game moves the row; OK before the room has heard the pick sends the pick and the start together, and the host judges it. Up reaches Einstellungen.
+- The native poster shelf is gone (`TvGamesShelf.kt`, `ShelfGames.kt`); the shelf is the TV page (`TvLobby.tsx`, `tv/lobby/`). Back: the page first, then a running game back to the shelf; on the shelf the first Back only says "Press Back again to end the game night" (3 s), since leaving drops every phone at the table. A night that failed to start offers Try again.
+- The host takes only the game from the TV's `configure`, never quiz mode, kids mode or adult questions: a pick from the poster row crossing the leader's kids-mode tap could otherwise switch it back.
+- The art moved from `res/drawable-nodpi/game_{poster,backdrop}_<kind>.webp` to `assets/game-art/{poster,backdrop}-<kind>.webp` (kind with dashes), served to the page at `/game-art/` by `GamePageClient` like the ceremony avatars, so it is not embedded once per ABI with the web client. A game without art shows its name on the felt; so does every game on the dev host.
+- "The library's films aren't available right now" is now on the page (`?films=0`): "Die Filme der Mediathek sind gerade nicht erreichbar."
+
 ## Spieltisch 0.178.1 — Preisfrage's poster and backdrop
 
 **Added**

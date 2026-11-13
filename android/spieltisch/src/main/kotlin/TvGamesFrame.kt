@@ -4,14 +4,18 @@ import android.annotation.SuppressLint
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -19,26 +23,30 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.tv.material3.Button
 import androidx.tv.material3.Text
 import designsystem.TvType
+import designsystem.tvDp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Game night as one full-screen frame. It opens on the poster shelf while the host starts behind
- * it; a poster opens the lobby with that game set. Back steps a running game back to the lobby,
- * the lobby back to the shelf (the host keeps running, so joined phones stay), and the shelf out
- * through [leave], which stops the host.
+ * Game night as one full-screen frame: the host's TV page, which is the games shelf and the lobby in
+ * one, opens as soon as the host runs. Back goes to the page first (its settings panel), then steps a
+ * running game back to that page; on it, Back asks once and a second Back within [LEAVE_WINDOW_MS]
+ * leaves through [leave], which stops the host and drops every phone at the table.
  */
 @Composable
 internal fun TvGamesFrame(
     model: GameNightViewModel,
-    games: List<ShelfGame>,
     leave: () -> Unit,
 ) {
     val state by model.state.collectAsState()
@@ -46,7 +54,7 @@ internal fun TvGamesFrame(
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { model.start() }
     DisposableEffect(Unit) { onDispose { model.stop() } }
-    // Nothing of a game night runs in the background: going away ends it, as Back from the lobby does.
+    // Nothing of a game night runs in the background: going away ends it, as Back from the shelf does.
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val latestLeave by rememberUpdatedState(leave)
     DisposableEffect(lifecycle) {
@@ -62,21 +70,27 @@ internal fun TvGamesFrame(
         onDispose { lifecycle.removeObserver(observer) }
     }
     var page by remember { mutableStateOf<WebView?>(null) }
-    var chosen by remember { mutableStateOf<String?>(null) }
-    var focused by remember { mutableIntStateOf(0) }
+    var leaving by remember { mutableStateOf(false) }
+    LaunchedEffect(leaving) {
+        if (!leaving) return@LaunchedEffect
+        delay(LEAVE_WINDOW_MS)
+        leaving = false
+    }
     // The page's settings panel closes on Back before anything else happens, so ask it first:
     // it answers "true" when it had a panel open and took the key. A page too busy to answer
     // (the board still building on the box) must not swallow Back, so after 400 ms it counts as "no".
     BackHandler {
-        if (chosen == null) {
+        val web = page
+        if (web == null) {
             leave()
             return@BackHandler
         }
-        val stepBack = { scope.launch { if (!model.back()) chosen = null }; Unit }
-        val web = page
-        if (web == null) {
-            stepBack()
-            return@BackHandler
+        val stepBack = {
+            scope.launch {
+                if (model.back()) return@launch
+                if (leaving) leave() else leaving = true
+            }
+            Unit
         }
         var answered = false
         val giveUp = scope.launch {
@@ -92,20 +106,43 @@ internal fun TvGamesFrame(
         }
     }
 
-    val game = chosen
-    if (game == null) {
-        val note = if (filmsUnavailable) "The library's films aren't available right now." else null
-        TvGamesShelf(games, focused, note, onFocus = { focused = it }) { picked ->
-            // A host that failed to start gets another go with the next pick.
-            if (state is GameNightUi.Failed) model.start()
-            chosen = picked.kind
-        }
-        return
-    }
     when (val ui = state) {
         GameNightUi.Starting -> Centred("Starting game night…")
-        is GameNightUi.Failed -> Centred("${ui.message}\n\nPress Back to return")
-        is GameNightUi.Ready -> GamePage("${ui.tvUrl}?game=$game") { page = it }
+        is GameNightUi.Failed -> Failed(ui.message) { model.start() }
+        // The page says so when the media app has not answered: its film games then have nothing to show.
+        is GameNightUi.Ready ->
+            Box(Modifier.fillMaxSize()) {
+                GamePage(if (filmsUnavailable) "${ui.tvUrl}?films=0" else ui.tvUrl) { page = it }
+                if (leaving) LeaveHint(Modifier.align(Alignment.BottomCenter))
+            }
+    }
+}
+
+/** How long the first Back on the shelf waits for a second one that ends the night. */
+internal const val LEAVE_WINDOW_MS = 3_000L
+
+/** A Back on the shelf ends the night for everyone, so the first one only says so. */
+@Composable
+private fun LeaveHint(modifier: Modifier) {
+    Text(
+        text = "Press Back again to end the game night",
+        style = TvType.bodyMedium,
+        color = Color.White,
+        modifier = modifier.padding(bottom = 32.tvDp).background(Color(0xE60A4433), RoundedCornerShape(12.tvDp)).padding(horizontal = 20.tvDp, vertical = 10.tvDp),
+    )
+}
+
+/** The host could not start: OK tries again, Back leaves. */
+@Composable
+private fun Failed(
+    message: String,
+    retry: () -> Unit,
+) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = message, style = TvType.headlineSmall, textAlign = TextAlign.Center)
+        Button(onClick = retry, modifier = Modifier.padding(top = 24.tvDp).focusRequester(focus)) { Text("Try again") }
     }
 }
 

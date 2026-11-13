@@ -1,7 +1,6 @@
 package com.mediagram.spieltisch
 
 import kotlinx.coroutines.CompletableDeferred
-import uniffi.spieltisch_core.GameEntry
 import uniffi.spieltisch_core.MediaImageKind
 import uniffi.spieltisch_core.MediaImages
 import uniffi.spieltisch_core.NightUrls
@@ -86,18 +85,3 @@ class RecordingAnnouncer : GameNightAnnouncer {
         live = null
     }
 }
-
-/** The host's catalogue in the lobby's order: more games than the row shows, Durak last and off screen. */
-val Catalogue =
-    listOf(
-        GameEntry("quiz", "Buzzer-Quiz", 1u, 8u),
-        GameEntry("poster", "Poster-Raten", 1u, 8u),
-        GameEntry("kopfnuss", "Kopfnuss", 2u, 8u),
-        GameEntry("dreifelder", "Dreifelder", 2u, 8u),
-        GameEntry("race", "Heimlauf", 2u, 4u),
-        GameEntry("grand_allee", "Grand Allee", 2u, 8u),
-        GameEntry("fluechtig", "Flüchtig", 2u, 6u),
-        GameEntry("mau_mau", "Mau-Mau", 2u, 8u),
-        GameEntry("schwimmen", "Schwimmen", 2u, 8u),
-        GameEntry("durak", "Durak", 2u, 6u),
-    )

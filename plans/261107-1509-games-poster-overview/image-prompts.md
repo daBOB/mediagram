@@ -11,7 +11,7 @@ Files: `<game>-poster.png`, `<game>-backdrop.png` with game = the host's game ki
 schwimmen, durak, grand_allee, kopfnuss, dreifelder, fluechtig.
 
 **State 2026-11-12:** delivered and on the shelf: quiz, poster, mau_mau, schwimmen, durak. Owed, the shelf shows a
-name tile until they arrive (`android/spieltisch/src/main/kotlin/ShelfGames.kt`): race (Heimlauf), grand_allee,
+name tile until they arrive (art lives in `android/spieltisch/src/main/assets/game-art/`, `{poster,backdrop}-<kind>.webp`, kind with dashes, since 0.179.0): race (Heimlauf), grand_allee,
 kopfnuss, dreifelder, fluechtig.
 
 Backdrop layout, from the shelf: the game's name sits top left and the poster row covers the bottom ~40 %, and the

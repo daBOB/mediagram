@@ -125,7 +125,9 @@ impl Room {
         let is_leader = player.is_some() && player == self.leader();
         match action {
             Action::Configure { game, quiz_mode, kids_only, adult } => {
-                // The TV sets the game its poster shelf picked, as the leader's phone does.
+                // The TV's poster row picks only the game: a pick crossing the leader's kids-mode tap must not undo it.
+                let s = &self.settings;
+                let (quiz_mode, kids_only, adult) = if is_tv { (s.quiz_mode, s.kids_only, s.adult) } else { (quiz_mode, kids_only, adult) };
                 self.configure(is_tv || is_leader, game, quiz_mode, kids_only, adult).then_some(()).ok_or_else(not_allowed)
             }
             Action::StartGame => {
