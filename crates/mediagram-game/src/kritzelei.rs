@@ -5,7 +5,7 @@ use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::kritzelei_clock::TurnClock;
 pub use crate::kritzelei_config::KritzeleiConfig;
 use crate::kritzelei_rules::turn_order;
-use crate::protocol::{Action, BoardAct, DrawOp, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, BoardAct, BoardScreen, Buzz, DrawOp, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 const WHO: &str = "Wer soll das sein?";
@@ -122,8 +122,16 @@ impl Game for KritzeleiGame {
         self.phone_view(view, player)
     }
 
-    fn tv_scene(&self, _view: &ViewCtx) -> TvScene {
-        self.tv_view()
+    fn tv_scene(&self, view: &ViewCtx) -> TvScene {
+        self.tv_view(view)
+    }
+
+    fn board_screen(&self, view: &ViewCtx) -> BoardScreen {
+        self.board_view(view)
+    }
+
+    fn phone_buzz(&self, _view: &ViewCtx, player: PlayerId) -> Option<Buzz> {
+        self.buzz(player)
     }
 
     fn is_finished(&self) -> bool {
