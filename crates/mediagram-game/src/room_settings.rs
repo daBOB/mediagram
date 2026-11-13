@@ -2,7 +2,9 @@
 
 use crate::catalogue::{GameEntry, entry};
 use crate::protocol::{GameKind, LobbySettings, QuizMode};
-use crate::room::Room;
+use crate::game::GameCtx;
+use crate::protocol::{ErrorCode, ServerMsg, ServerTime};
+use crate::room::{Room, error};
 
 /// Which poster-based games have enough material. Filled by the caller from
 /// the title pool.
@@ -58,6 +60,25 @@ impl Room {
         // kids mode switches the adult questions off, and they stay off until switched on again
         self.settings.adult = adult && !self.settings.kids_only;
         true
+    }
+
+    /// Seats only the connected players, zeroes scores and builds the chosen game.
+    #[allow(clippy::result_large_err)]
+    pub(crate) fn start_game(&mut self, now: ServerTime) -> Result<(), ServerMsg> {
+        if let Some(why) = self.blocked() {
+            return Err(error(ErrorCode::NotAllowed, why));
+        }
+        if self.connected_count() < self.cfg.min_players {
+            return Err(error(ErrorCode::NotAllowed, "Noch zu wenige Spieler.".into()));
+        }
+        self.players.retain(|p| p.connected());
+        for p in &mut self.players {
+            p.score = 0;
+        }
+        let mut ctx = GameCtx { now, players: &mut self.players };
+        self.game = Some((self.factory)(&mut ctx, &self.settings));
+        self.announce_board(now);
+        Ok(())
     }
 
     /// Why the chosen game cannot start, if it cannot.

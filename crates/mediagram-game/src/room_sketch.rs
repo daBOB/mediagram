@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use super::*;
-use crate::game::ViewCtx;
+use crate::game::{ActionError, ViewCtx};
 use crate::protocol::{BoardAct, Buzz, DrawOp, PhoneScreen, TvScene, TvView};
 use super::tests::{action, cfg, decode, hello};
 

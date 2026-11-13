@@ -1,5 +1,5 @@
 use super::*;
-use crate::game::ViewCtx;
+use crate::game::{ActionError, ViewCtx};
 use crate::protocol::{PhoneScreen, TvScene};
 use crate::room_seats::{LOBBY_GRACE_MS, MAX_NAME_CHARS, clean_name};
 use crate::room_settings::Readiness;

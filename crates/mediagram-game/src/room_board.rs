@@ -3,7 +3,8 @@
 
 use crate::game::GameCtx;
 use crate::protocol::{BoardAct, ErrorCode, Role, ServerMsg, ServerTime};
-use crate::room::{ConnId, Room, action_reply, encode, error};
+use crate::game::ActionError;
+use crate::room::{ConnId, Room, encode, error};
 use crate::room_seats::new_token;
 
 /// Who may hold the board; `conn` is `None` while the iPad is away.
@@ -91,5 +92,14 @@ impl Room {
         let from = c.drawn.filter(|&(t, n)| t == turn && n <= ops.len()).map_or(0, |(_, n)| n);
         c.drawn = Some((turn, ops.len()));
         Some(encode(&ServerMsg::Draw { turn, from: from as u32, ops: ops[from..].to_vec() }))
+    }
+}
+
+/// A game's verdict on an action as the reply to its sender; a dropped action is no error.
+#[allow(clippy::result_large_err)]
+pub(crate) fn action_reply(result: Result<(), ActionError>) -> Result<(), ServerMsg> {
+    match result {
+        Ok(()) | Err(ActionError::Ignored) => Ok(()),
+        Err(ActionError::NotAllowed(msg)) => Err(error(ErrorCode::NotAllowed, msg.into())),
     }
 }

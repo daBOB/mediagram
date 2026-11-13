@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::game::{ActionError, Game, GameCtx, GameFactory};
+use crate::game::{Game, GameCtx, GameFactory};
 use crate::protocol::{Action, ClientMsg, ErrorCode, LobbySettings, PlayerId, Role, ServerMsg, ServerTime};
+use crate::room_board::action_reply;
 use crate::room_seats::{Conn, LOBBY_GRACE_MS, Player};
 use crate::room_settings::{Readiness, initial_settings};
 
@@ -28,7 +29,7 @@ pub struct Room {
     pub(crate) players: Vec<Player>,
     pub(crate) conns: BTreeMap<ConnId, Conn>,
     pub(crate) game: Option<Box<dyn Game>>,
-    factory: GameFactory,
+    pub(crate) factory: GameFactory,
     pub(crate) settings: LobbySettings,
     pub(crate) next_player_id: PlayerId,
     pub(crate) board: Option<crate::room_board::BoardSeat>,
@@ -134,25 +135,8 @@ impl Room {
                 let (quiz_mode, kids_only, adult) = if is_tv { (s.quiz_mode, s.kids_only, s.adult) } else { (quiz_mode, kids_only, adult) };
                 self.configure(is_tv || is_leader, game, quiz_mode, kids_only, adult).then_some(()).ok_or_else(not_allowed)
             }
-            Action::StartGame => {
-                if !(is_tv || is_leader) || self.game.is_some() {
-                    return Err(not_allowed());
-                }
-                if let Some(why) = self.blocked() {
-                    return Err(error(ErrorCode::NotAllowed, why));
-                }
-                if self.connected_count() < self.cfg.min_players {
-                    return Err(error(ErrorCode::NotAllowed, "Noch zu wenige Spieler.".into()));
-                }
-                self.players.retain(|p| p.connected());
-                for p in &mut self.players {
-                    p.score = 0;
-                }
-                let mut ctx = GameCtx { now, players: &mut self.players };
-                self.game = Some((self.factory)(&mut ctx, &self.settings));
-                self.announce_board(now);
-                Ok(())
-            }
+            Action::StartGame if !(is_tv || is_leader) || self.game.is_some() => Err(not_allowed()),
+            Action::StartGame => self.start_game(now),
             Action::PickAvatar { id } => {
                 let ok = self.game.is_none() && player.is_some_and(|p| crate::avatars::pick(&mut self.players, p, &id));
                 ok.then_some(()).ok_or_else(not_allowed)
@@ -181,16 +165,7 @@ pub(crate) fn error(code: ErrorCode, message: String) -> ServerMsg {
     ServerMsg::Error { code, message }
 }
 
-/// A game's verdict on an action as the reply to its sender; a dropped action is no error.
-#[allow(clippy::result_large_err)]
-pub(crate) fn action_reply(result: Result<(), ActionError>) -> Result<(), ServerMsg> {
-    match result {
-        Ok(()) | Err(ActionError::Ignored) => Ok(()),
-        Err(ActionError::NotAllowed(msg)) => Err(error(ErrorCode::NotAllowed, msg.into())),
-    }
-}
-
-pub(crate) fn not_allowed() -> ServerMsg {
+fn not_allowed() -> ServerMsg {
     error(ErrorCode::NotAllowed, "Das geht gerade nicht.".into())
 }
 
