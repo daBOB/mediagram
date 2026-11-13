@@ -8,12 +8,12 @@ struct BoardToolRow: View {
     let act: (BoardAct) -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             ForEach(0..<PaperStyle.eraserIndex, id: \.self) { index in
                 Button { color = index } label: {
-                    Circle().fill(Color(hex: PaperStyle.colors[index])).frame(width: 45, height: 45)
+                    Circle().fill(Color(hex: PaperStyle.colors[index])).frame(width: 36, height: 36)
                         .overlay(Circle().stroke(BoardColor.card, lineWidth: color == index ? 5 : 0).padding(-7))
-                        .frame(width: 60, height: 60)
+                        .frame(width: 48, height: 48)
                 }
             }
             separator
@@ -28,12 +28,12 @@ struct BoardToolRow: View {
             }
             slot(selected: false, action: { act(.draw(.undo)) }) { icon("arrow.uturn.backward") }
             slot(selected: false, action: { act(.draw(.clear)) }) { icon("trash") }
-            Spacer(minLength: 8)
+            Spacer(minLength: 0)
             BoardKey(title: "Niemand", quiet: true, size: 22) { act(.pick(player: nil)) }
             BoardKey(title: "Erraten!", size: 22) { act(.guessed) }
         }
         .buttonStyle(.plain)
-        .frame(height: 66)
+        .frame(height: 56)
     }
 
     private var separator: some View {
@@ -47,7 +47,7 @@ struct BoardToolRow: View {
     private func slot<Content: View>(selected: Bool, action: @escaping () -> Void,
                                      @ViewBuilder _ content: () -> Content) -> some View {
         Button(action: action) {
-            content().frame(width: 60, height: 60)
+            content().frame(width: 48, height: 48)
                 .background(selected ? BoardColor.line : BoardColor.deep, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(BoardColor.card, lineWidth: selected ? 3.5 : 0))
         }

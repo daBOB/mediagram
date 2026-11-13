@@ -7,16 +7,14 @@ struct BoardDrawingView: View {
     let drawer: BoardPlayer
     let word: String
     let clock: NativeClock
-    @State private var color = 0
-    @State private var width = 1
 
     var body: some View {
         VStack(spacing: 0) {
             topBar
-            PaperView(model: model, color: color, width: width)
+            PaperView(model: model, color: model.pen.color, width: model.pen.width)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            BoardToolRow(color: $color, width: $width, act: model.act)
+            BoardToolRow(color: $model.pen.color, width: $model.pen.width, act: model.act)
                 .padding(.top, 10).padding(.bottom, 14)
         }
         .padding(.horizontal, 20)

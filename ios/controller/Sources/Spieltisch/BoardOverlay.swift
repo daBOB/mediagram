@@ -63,6 +63,7 @@ struct BoardKey: View {
             Text(title)
                 .font(BoardFonts.display(size))
                 .foregroundColor(quiet ? BoardColor.card : BoardColor.ink)
+                .fixedSize()
                 .padding(.horizontal, size * 0.9).padding(.vertical, size * 0.55)
                 .frame(minHeight: 56)
                 .background(quiet ? BoardColor.line : BoardColor.yellow, in: RoundedRectangle(cornerRadius: 14))

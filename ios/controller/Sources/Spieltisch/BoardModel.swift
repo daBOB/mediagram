@@ -8,12 +8,15 @@ import Combine
     private(set) var ink = InkModel()
     /// Bumped when the ink was replaced or changed by undo or clear (`ink.epoch`); not on an own stroke.
     @Published private(set) var inkEpoch = 0
+    /// The drawer's colour and width for the turn; kept across the who-got-it screen and back.
+    @Published var pen = PenChoice()
     /// Set by GameWebView's coordinator: posts one act to the page.
     var send: (BoardAct) -> Void = { _ in }
     private var latch = ActLatch()
 
     func show(_ show: NativeBoardShow) {
         screen = show.screen
+        pen.show(turn: show.screen.turn)
         ink.show(turn: show.screen.turn, ops: show.ops, resync: show.resync)
         inkEpoch = ink.epoch
         latch = ActLatch()
