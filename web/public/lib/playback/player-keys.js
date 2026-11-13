@@ -101,6 +101,9 @@ export function keyAction(press = {}) {
     // Keeping a moment to come back to, or to clip.
     case "n":
       return { do: "markScene" };
+    // The panel that exports the looped stretch.
+    case "x":
+      return { do: "clip" };
     default:
       break;
   }

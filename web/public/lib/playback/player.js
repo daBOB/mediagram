@@ -17,6 +17,7 @@ import { audioItems, defaultTrack, loadAudioTracks, trackIndexForLanguage } from
 import { bufferedAhead } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
 import { mountTransport } from "./transport.js";
+import { mountClipPanel } from "./clip-panel.js";
 import { keyAction, wantsKeys } from "./player-keys.js";
 import { mountPlayerNotes } from "./notes/player-notes.js";
 import { mediaError, mountPlayerReport } from "./player-report.js";
@@ -51,6 +52,8 @@ let mounted = null;
  * @property {boolean} [inRun] Whether the title is one of a run; see `playsNext`.
  * @property {import("../library.js").Collection|null} [collection] The run's show or course, for the sidebar.
  * @property {(set: CatalogSet, options: PlayerOptions) => void} [onOpenNext]
+ * @property {number} [at] Where to start, which wins over the saved position.
+ * @property {{from: number, to: number}} [clip] A stretch to loop with the clip panel open; nothing is saved while it plays.
  * @property {Promise<number|null>} [freshResume] A position read from the server
  *   after the title opened (see `play` in `app.js`), applied only for direct
  *   playback while the viewer has not really begun; see `RESUME_DRIFT_SECONDS`.
@@ -404,6 +407,9 @@ function mountPlayer() {
     remember: (name, value) => { remember(name, value); if (name === "speed") together.viewer({ rate: Number(value) }); },
     toggleSubtitles: () => subtitles.toggle(),
   });
+  const clip = mountClipPanel({
+    button: document.getElementById("clip"), menus, transport, filmTime, runtime: runtimeSeconds, audioTrack: () => audioTrack,
+  });
   // The viewer's own moves reach it only through the calls above; what it does to follow goes out through none of them.
   const together = mountTogether({
     video, button: document.getElementById("together"), label: document.getElementById("together-label"),
@@ -492,6 +498,8 @@ function mountPlayer() {
    */
   function saveProgress(final = false) {
     if (!playing) return;
+    // Clipping is not watching; a kid's minutes are still counted from these writes, so theirs go on.
+    if (clip.active() && state.profile()?.kids !== true) return;
     const runtime = runtimeSeconds();
     const at = filmTime();
     if (isFinished(at, runtime)) {
@@ -673,6 +681,8 @@ function mountPlayer() {
     startSaving();
     hud.open();
     dialog.showModal();
+    // After the dialog is shown, so the panel can be placed, and after the framing recall, which drops the last title's loop.
+    clip.open(set, options);
     const meta = () => playbackMeta(playing, { converting, copiedOutput, capBits });
     stopReporting = reportPlayback({
       read: () => ({ ...playbackFields(video, { starved, waitingToStart, held, watch }), ...meta(), viewer, title: titleLine(set) }),
@@ -681,7 +691,9 @@ function mountPlayer() {
     // Where this profile left off, if that is a place worth going back to —
     // `resume-point.js` decides what counts. Announced rather than done
     // silently, because a film that opens 34 minutes in looks broken.
-    const resume = sessionAt ?? resumeAt(state.progressOf(set.setId)) ?? 0;
+    const resume = sessionAt ?? options.at ?? resumeAt(state.progressOf(set.setId)) ?? 0;
+    // Where the viewer is sent, as against where they left off: no "carrying on", no fresher saved position.
+    const sent = sessionAt === null && options.at == null;
     // Armed before the source is attached, so nothing can become ready in the
     // gap between setting it and starting to watch for it. A title opened by
     // hand warms up and starts itself, as on Android; a watch-together session
@@ -721,7 +733,7 @@ function mountPlayer() {
         },
       );
       // The session's place is where everyone is, not where this profile left off.
-      if (resume > 0 && sessionAt === null) {
+      if (resume > 0 && sent) {
         note.textContent = `Carrying on from ${clockTime(resume)}.`;
         note.hidden = false;
       }
@@ -734,7 +746,7 @@ function mountPlayer() {
       // Conversions are not revisited here — restarting one mid-flight for a
       // position a few seconds different is not worth the encoder churn.
       options.freshResume?.then((at) => {
-        if (at == null || converting || signal.aborted || sessionAt !== null) return;
+        if (at == null || converting || signal.aborted || !sent) return;
         if (Math.abs(filmTime() - resume) > RESUME_DRIFT_SECONDS) return;
         if (metadataSeen) video.currentTime = at;
         else operation.resume = at;
@@ -755,7 +767,7 @@ function mountPlayer() {
     convert(
       set,
       resume,
-      resume > 0 && sessionAt === null ? `${warning} Carrying on from ${clockTime(resume)}.` : warning,
+      resume > 0 && sent ? `${warning} Carrying on from ${clockTime(resume)}.` : warning,
     );
     if (autoplay) startWhenReady(autoplay);
   }
@@ -848,7 +860,8 @@ function mountPlayer() {
     // every key this player has no opinion about, including the browser's.
     event.preventDefault();
     if (action.do === "markScene") void marks.mark();
-    else transport.act(action);
+    else if (action.do === "clip") clip.toggle();
+    else { transport.act(action); if (action.do === "loop") clip.refresh(); }
     hud.show();
   });
   video.addEventListener("ratechange", refreshEnds);

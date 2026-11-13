@@ -346,5 +346,10 @@ export function mountTransport({ video, menus, onPlay, onPause, onSeekTo, filmTi
     }
   }
 
-  return { refresh, recallSpeed, recallFraming, act };
+  /** The loop as it stands, for the clip panel to show and the keys' changes to reach it. */
+  const currentLoop = () => loop;
+  /** Sets both ends through `markLoop`, so a reversed pair is sorted like the keys would. */
+  const setLoop = ({ from, to }) => { loop = markLoop(markLoop({ ...NO_LOOP }, "from", from), "to", to); };
+
+  return { refresh, recallSpeed, recallFraming, act, loop: currentLoop, setLoop };
 }

@@ -47,7 +47,8 @@ test("initialization twice mounts controls and click listeners once", async () =
   expect(env.node("card-menu").hidden).toBe(false);
   expect(env.node("card-menu").children).toHaveLength(6);
   env.node("speed").fire("click");
-  expect(env.node("card-dock").children).toHaveLength(1);
+  // The subtitle style panel and the clip panel, each once.
+  expect(env.node("card-dock").children).toHaveLength(2);
   player.openPlayer({
     setId: "one",
     container: "mp4",

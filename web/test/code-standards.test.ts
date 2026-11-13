@@ -122,6 +122,8 @@ const ROOT = join(import.meta.dir, "..");
  * Raised the same day for `src/index.ts`, by 11, `src/routes.ts`, by 3 and `src/server.ts`, by 2, to
  * wire in clip exports: the jobs and their sweep, the route ahead of the state router, and the two
  * query fields a clip download and listing read; the jobs and routes are `transcode/clip-*.ts`.
+ * Raised 2026-11-13 for `player.js`, by 13, and `transport.js`, by 5, to mount the clip panel, gate
+ * saving while it is up and open a title at a given place; the panel is `clip-panel*.js`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 714,
@@ -132,10 +134,10 @@ const CEILINGS: Record<string, number> = {
   "public/lib/library-session.js": 201,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 1018,
+  "public/lib/playback/player.js": 1031,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
-  "public/lib/playback/transport.js": 350,
+  "public/lib/playback/transport.js": 355,
   "public/lib/watch-state.js": 518,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 637,
