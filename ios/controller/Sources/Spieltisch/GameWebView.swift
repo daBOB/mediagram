@@ -21,6 +21,7 @@ struct GameWebView: UIViewRepresentable {
 
         let view = WKWebView(frame: .zero, configuration: config)
         view.navigationDelegate = coordinator
+        coordinator.webView = view
         view.isOpaque = false
         view.backgroundColor = UIColor(red: 0x0F / 255, green: 0x5A / 255, blue: 0x43 / 255, alpha: 1)
         view.scrollView.isScrollEnabled = false
@@ -49,6 +50,7 @@ struct GameWebView: UIViewRepresentable {
         var box = ""
         var onFailed: (String) -> Void = { _ in }
         weak var content: WKUserContentController?
+        weak var webView: WKWebView?
         private let buzzer = Buzzer()
 
         /// `window.mediagramApp` as the page expects it: the same three calls as on Android.
@@ -62,6 +64,12 @@ struct GameWebView: UIViewRepresentable {
 
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
             guard message.frameInfo.isMainFrame, let body = message.body as? [String: Any] else { return }
+            if body["spike"] != nil, let web = webView, web.subviews.allSatisfy({ !($0 is SpikeInkView) }) {
+                let ink = SpikeInkView(web: web)
+                ink.frame = web.bounds
+                ink.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                web.addSubview(ink)
+            }
             if let kind = body["vibrate"] as? String { buzzer.buzz(kind) }
             if let key = body["setMemory"] as? String {
                 PageMemory.set(key, body["value"] as? String)
@@ -115,6 +123,7 @@ private func bridgeScript(memory: [String: String]) -> String {
     window.mediagramApp = {
       _m: \(json),
       vibrate(k) { webkit.messageHandlers.mediagramApp.postMessage({ vibrate: k }) },
+      spike() { webkit.messageHandlers.mediagramApp.postMessage({ spike: true }) },
       getMemory() { return JSON.stringify(this._m) },
       setMemory(k, v) {
         if (v === null) delete this._m[k]; else this._m[k] = v;

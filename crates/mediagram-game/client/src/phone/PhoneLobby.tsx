@@ -16,8 +16,14 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
   // A plain-HTTP page cannot keep the screen on (no Wake Lock outside HTTPS, and Chrome ignored a
   // hidden looping video), so the player turns the phone's screen timeout off themselves. The
   // controller apps keep the screen on, so they skip the hint.
+  // spike: the iPad's ink view calls this with {points, t}; t is the touch's epoch ms
+  (window as any).__spikeInk = (json: string) => {
+    const { points, t } = JSON.parse(json);
+    conn.send({ t: "action", action: { t: "spike_ink", points, at: conn.serverNow() - (Date.now() - t) } } as never);
+  };
   const picker = (
     <>
+      {inApp() && <button type="button" onClick={() => (window as any).mediagramApp.spike()}>Latenztest</button>}
       <AvatarPicker avatars={screen.avatars} mine={me.avatar} conn={conn} />
       {!inApp() && (
         <p className="hint">Tipp: Schalte für den Spieleabend die automatische Bildschirmsperre deines Handys aus, sonst geht es mitten im Spiel aus.</p>

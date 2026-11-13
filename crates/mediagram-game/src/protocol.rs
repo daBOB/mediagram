@@ -50,6 +50,7 @@ pub enum ServerMsg {
     Phone { view: PhoneView },
     Tv { view: TvView },
     Error { code: ErrorCode, message: String },
+    SpikeInk { points: Vec<u16>, at: ServerTime },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
