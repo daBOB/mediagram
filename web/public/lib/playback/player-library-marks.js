@@ -51,14 +51,16 @@ export function mountPlayerLibraryMarks({ filmTime }) {
     refreshKids();
   }
 
-  /** Marks the moment on screen and says so; cleared after a few seconds so the same words announce again. */
+  /** Marks the moment on screen and says so; cleared after 3 s so the same words announce again. */
+  let hideSaid = 0;
   async function mark() {
     if (!title || state.profileId() === null) return;
     const at = Math.floor(filmTime());
     said.textContent = (await state.markScene(title.setId, at)) === null
-      ? "Could not mark the scene"
+      ? "Couldn't mark this scene"
       : `Scene marked at ${clockTime(at)}`;
-    setTimeout(() => { said.textContent = ""; }, 4000);
+    clearTimeout(hideSaid); // a second mark restarts the wait
+    hideSaid = setTimeout(() => { said.textContent = ""; }, 3000);
   }
   markScene.addEventListener("click", mark);
   watchlist.addEventListener("click", () => {
