@@ -102,17 +102,17 @@ test("a reconnect reshows an unchanged screen with resync", () => {
   ]);
 });
 
-test("new ops reshow the screen, a gap does not", () => {
+test("echoed draws under an unchanged screen show nothing; a screen change carries the current ops", () => {
   const calls = fakeApp();
   const feed = new NativeBoardFeed(() => 10_000);
   feed.welcome();
   feed.board(drawing(40_000));
   feed.draw({ turn: 1, from: 0, ops: [line] });
   feed.draw({ turn: 1, from: 1, ops: [more] });
-  feed.draw({ turn: 1, from: 9, ops: [more] });
+  feed.board(drawing(40_000));
+  feed.board(drawing(41_000));
   expect(brief(calls)).toEqual([
     ["drawing", true, 0],
-    ["drawing", false, 1],
     ["drawing", false, 2],
   ]);
 });

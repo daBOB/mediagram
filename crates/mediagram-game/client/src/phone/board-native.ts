@@ -45,14 +45,15 @@ export function nativeShow(
 }
 
 /**
- * Feeds the native board from what the box sends. A show goes out when the screen's JSON changes or
- * new ops arrive; a wait hides the board. After each Welcome the box sends the drawing from 0 and then
- * the screen, so the show for that screen carries `resync` even when it looks the same as before:
- * strokes drawn while the socket was down never reached the box, and the board must match the TV again.
+ * Feeds the native board from what the box sends. A show goes out only when the screen's JSON changes;
+ * a wait hides the board. Draws alone never show: they echo the board's own strokes, which it already has,
+ * and re-sending the whole drawing per op would grow with its square. After each Welcome the box sends the
+ * drawing from 0 and then the screen, so the show for that screen carries `resync` even when it looks the
+ * same as before: strokes drawn while the socket was down never reached the box, and the board must match
+ * the TV again.
  */
 export class NativeBoardFeed {
   readonly ink = new InkLog();
-  private screen: BoardScreen | null = null;
   // the JSON of the screen last shown or hidden; null until the first screen after a Welcome
   private shown: string | null = null;
   private resync = true;
@@ -65,19 +66,16 @@ export class NativeBoardFeed {
   }
 
   board(screen: BoardScreen) {
-    this.screen = screen;
     if (JSON.stringify(screen) !== this.shown) this.push(screen);
   }
 
   draw(msg: { turn: number; from: number; ops: DrawOp[] }) {
-    const changed = this.ink.apply(msg) !== "ignored";
-    if (changed && this.shown !== null && this.screen && this.screen.kind !== "wait") this.push(this.screen);
+    this.ink.apply(msg);
   }
 
   /** Board mode ends: the native board goes away. */
   stop() {
     hideBoard();
-    this.screen = null;
     this.welcome();
   }
 
