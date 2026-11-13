@@ -31,6 +31,7 @@ pub struct Room {
     factory: GameFactory,
     pub(crate) settings: LobbySettings,
     pub(crate) next_player_id: PlayerId,
+    pub(crate) board: Option<crate::room_board::BoardSeat>,
 }
 
 impl Room {
@@ -43,6 +44,7 @@ impl Room {
             game: None,
             factory,
             next_player_id: 0,
+            board: None,
         }
     }
 
@@ -103,8 +105,7 @@ impl Room {
                 self.release(conn, now);
                 Some(ServerMsg::Welcome { player: None, token: None, now })
             }
-            // The board is seated by the room later; until then it is refused.
-            ClientMsg::Hello { role: Role::Board, .. } => Some(not_allowed()),
+            ClientMsg::Hello { role: Role::Board, token, .. } => Some(self.seat_board(conn, token, now)),
             ClientMsg::Hello { role: Role::Phone, name, token, avatar } => {
                 self.release(conn, now);
                 Some(match self.seat_phone(conn, name, token, avatar) {
@@ -123,6 +124,7 @@ impl Room {
     fn handle_action(&mut self, conn: ConnId, action: Action, now: ServerTime) -> Result<(), ServerMsg> {
         let c = self.conns.get(&conn).ok_or_else(not_allowed)?;
         let is_tv = c.role == Some(Role::Tv);
+        let is_board = c.role == Some(Role::Board);
         let player = c.player;
         let is_leader = player.is_some() && player == self.leader();
         match action {
@@ -148,6 +150,7 @@ impl Room {
                 }
                 let mut ctx = GameCtx { now, players: &mut self.players };
                 self.game = Some((self.factory)(&mut ctx, &self.settings));
+                self.announce_board(now);
                 Ok(())
             }
             Action::PickAvatar { id } => {
@@ -161,15 +164,14 @@ impl Room {
                 self.back_to_lobby();
                 Ok(())
             }
+            Action::Board { act } if is_board => self.board_act(&act, now),
+            Action::Board { .. } => Err(not_allowed()),
             other => {
                 let (Some(player), Some(game)) = (player, self.game.as_mut()) else {
                     return Err(not_allowed());
                 };
                 let mut ctx = GameCtx { now, players: &mut self.players };
-                match game.on_action(&mut ctx, player, &other) {
-                    Ok(()) | Err(ActionError::Ignored) => Ok(()),
-                    Err(ActionError::NotAllowed(msg)) => Err(error(ErrorCode::NotAllowed, msg.into())),
-                }
+                action_reply(game.on_action(&mut ctx, player, &other))
             }
         }
     }
@@ -179,7 +181,16 @@ pub(crate) fn error(code: ErrorCode, message: String) -> ServerMsg {
     ServerMsg::Error { code, message }
 }
 
-fn not_allowed() -> ServerMsg {
+/// A game's verdict on an action as the reply to its sender; a dropped action is no error.
+#[allow(clippy::result_large_err)]
+pub(crate) fn action_reply(result: Result<(), ActionError>) -> Result<(), ServerMsg> {
+    match result {
+        Ok(()) | Err(ActionError::Ignored) => Ok(()),
+        Err(ActionError::NotAllowed(msg)) => Err(error(ErrorCode::NotAllowed, msg.into())),
+    }
+}
+
+pub(crate) fn not_allowed() -> ServerMsg {
     error(ErrorCode::NotAllowed, "Das geht gerade nicht.".into())
 }
 
@@ -190,6 +201,10 @@ pub(crate) fn encode(msg: &ServerMsg) -> String {
 #[cfg(test)]
 #[path = "room_tests.rs"]
 pub(crate) mod tests;
+
+#[cfg(test)]
+#[path = "room_board_tests.rs"]
+mod board_tests;
 
 #[cfg(test)]
 #[path = "room_avatar_tests.rs"]

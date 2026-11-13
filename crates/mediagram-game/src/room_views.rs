@@ -2,7 +2,7 @@
 
 use crate::catalogue::CATALOGUE;
 use crate::game::ViewCtx;
-use crate::protocol::{PhoneScreen, PhoneView, PlayerInfo, Role, ServerMsg, ServerTime, TvScene, TvView};
+use crate::protocol::{BoardScreen, PhoneScreen, PhoneView, PlayerInfo, Role, ServerMsg, ServerTime, TvScene, TvView};
 use crate::room::{ConnId, Outbox, Room, encode};
 use crate::room_seats::Player;
 
@@ -12,6 +12,7 @@ impl Room {
         let ids: Vec<ConnId> = self.conns.keys().copied().collect();
         let mut out = Vec::new();
         for id in ids {
+            out.extend(self.draw_for(id).map(|json| (id, json)));
             let Some(msg) = self.view_for(id, now) else {
                 continue;
             };
@@ -41,12 +42,21 @@ impl Room {
                             leader_name: self.leader_name(),
                             blocked: self.blocked(),
                             games: CATALOGUE.to_vec(),
-                            board: false,
+                            board: self.board_connected(),
                         },
                     },
                 },
             }),
-            Role::Board => None,
+            Role::Board => Some(ServerMsg::Board {
+                screen: match &self.game {
+                    Some(g) => g.board_screen(&vctx),
+                    None => BoardScreen::Wait {
+                        title: "Zeichenbrett".into(),
+                        text: Some("Das iPad ist das Zeichenbrett. Es geht los, sobald die Spielleitung startet.".into()),
+                        can_leave: true,
+                    },
+                },
+            }),
             Role::Phone => {
                 let p = self.player(c.player?)?;
                 let screen = match &self.game {
@@ -68,7 +78,7 @@ impl Room {
                         }
                     }
                 };
-                Some(ServerMsg::Phone { view: PhoneView { me: self.info(p), screen, buzz: None } })
+                Some(ServerMsg::Phone { view: PhoneView { me: self.info(p), screen, buzz: self.game.as_ref().and_then(|g| g.phone_buzz(&vctx, p.id)) } })
             }
         }
     }

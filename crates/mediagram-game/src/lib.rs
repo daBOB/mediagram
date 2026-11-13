@@ -80,6 +80,7 @@ mod race_config;
 mod race_rules;
 mod race_views;
 pub mod room;
+mod room_board;
 mod room_loop;
 mod room_seats;
 mod room_settings;
