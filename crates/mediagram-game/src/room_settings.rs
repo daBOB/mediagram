@@ -2,7 +2,9 @@
 
 use crate::catalogue::{GameEntry, entry};
 use crate::protocol::{GameKind, LobbySettings, QuizMode};
-use crate::room::Room;
+use crate::game::GameCtx;
+use crate::protocol::{ErrorCode, ServerMsg, ServerTime};
+use crate::room::{Room, error};
 
 /// Which poster-based games have enough material. Filled by the caller from
 /// the title pool.
@@ -28,6 +30,7 @@ pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kinder
 pub(crate) const DREIFELDER_NOT_FOR_KIDS: &str = "Dreifelder gibt es nicht im Kindermodus.";
 /// Preisfrage's gag-gift searches bring articles nobody checked for children.
 pub(crate) const PREISFRAGE_NOT_FOR_KIDS: &str = "Preisfrage gibt es nicht im Kindermodus.";
+pub(crate) const KRITZELEI_NEEDS_BOARD: &str = "Kritzelei braucht das iPad als Zeichenbrett.";
 pub(crate) const PREISFRAGE_NEEDS_ARTICLES: &str = "Preisfrage braucht Artikel: am PC „bun run fetch“ starten.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
@@ -59,6 +62,25 @@ impl Room {
         true
     }
 
+    /// Seats only the connected players, zeroes scores and builds the chosen game.
+    #[allow(clippy::result_large_err)]
+    pub(crate) fn start_game(&mut self, now: ServerTime) -> Result<(), ServerMsg> {
+        if let Some(why) = self.blocked() {
+            return Err(error(ErrorCode::NotAllowed, why));
+        }
+        if self.connected_count() < self.cfg.min_players {
+            return Err(error(ErrorCode::NotAllowed, "Noch zu wenige Spieler.".into()));
+        }
+        self.players.retain(|p| p.connected());
+        for p in &mut self.players {
+            p.score = 0;
+        }
+        let mut ctx = GameCtx { now, players: &mut self.players };
+        self.game = Some((self.factory)(&mut ctx, &self.settings));
+        self.announce_board(now);
+        Ok(())
+    }
+
     /// Why the chosen game cannot start, if it cannot.
     pub(crate) fn blocked(&self) -> Option<String> {
         let s = &self.settings;
@@ -75,6 +97,7 @@ impl Room {
             GameKind::Dreifelder if s.kids_only => return Some(DREIFELDER_NOT_FOR_KIDS.into()),
             GameKind::Preisfrage if s.kids_only => return Some(PREISFRAGE_NOT_FOR_KIDS.into()),
             GameKind::Preisfrage if !r.preisfrage => return Some(PREISFRAGE_NEEDS_ARTICLES.into()),
+            GameKind::Kritzelei if !self.board_connected() => return Some(KRITZELEI_NEEDS_BOARD.into()),
             _ => {}
         }
         let GameEntry { name, min, max, .. } = entry(s.game);

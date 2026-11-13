@@ -4,12 +4,19 @@
 // box's address, and that moves whenever the router hands out a new one.
 // In a plain browser there is no bridge and everything works as before.
 
+import type { BoardAct } from "../protocol/BoardAct";
+import type { NativeBoardShow } from "./board-native";
+
 export type BuzzKind = "turn" | "accepted" | "wrong" | "won";
 
 type NativeBridge = {
   vibrate(kind: string): void;
   getMemory(): string;
   setMemory(key: string, value: string | null): void;
+  // The iPad app alone sets `board` and draws the drawing board natively; the page drives it.
+  board?: boolean;
+  showBoard?(json: string): void;
+  hideBoard?(): void;
 };
 
 // Android Chrome over plain http still vibrates after a tap; iPhones ignore it.
@@ -26,6 +33,38 @@ function bridge(): NativeBridge | null {
 
 export function inApp(): boolean {
   return bridge() !== null;
+}
+
+export function boardCapable(): boolean {
+  return bridge()?.board === true;
+}
+
+export function showBoard(show: NativeBoardShow) {
+  bridge()?.showBoard?.(JSON.stringify(show));
+}
+
+export function hideBoard() {
+  bridge()?.hideBoard?.();
+}
+
+/** Installs `globalThis.mediagramBoard = { receive(json) }`, which the app calls with each act; returns the remover. */
+export function listenToBoard(onAct: (act: BoardAct) => void): () => void {
+  const g = globalThis as Record<string, unknown>;
+  const listener = {
+    receive(json: string) {
+      let act: BoardAct | null;
+      try {
+        act = JSON.parse(json);
+      } catch {
+        return;
+      }
+      if (typeof act?.t === "string") onAct(act);
+    },
+  };
+  g.mediagramBoard = listener;
+  return () => {
+    if (g.mediagramBoard === listener) delete g.mediagramBoard;
+  };
 }
 
 export function buzz(kind: BuzzKind) {

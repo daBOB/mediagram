@@ -27,6 +27,8 @@ pub enum GameKind {
     Fluechtig,
     /// Preisfrage: guess what an odd article costs; the closer, the more points.
     Preisfrage,
+    /// Kritzelei: one draws on the iPad, the room guesses out loud.
+    Kritzelei,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

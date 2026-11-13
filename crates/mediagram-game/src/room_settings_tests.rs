@@ -229,3 +229,43 @@ fn preisfrage_needs_articles_and_no_kids_mode() {
     configure(&mut r, 1, GameKind::Preisfrage, QuizMode::Mixed, false);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }), "one player plays alone");
 }
+
+fn blocked_text(r: &mut Room, conn: ConnId) -> Option<String> {
+    match lobby_of(r, conn) {
+        PhoneScreen::Lobby { blocked, .. } => blocked,
+        other => panic!("expected the lobby, got {other:?}"),
+    }
+}
+
+#[test]
+fn kritzelei_waits_for_the_board() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    hello(&mut r, 2, "Ben", None);
+    configure(&mut r, 1, GameKind::Kritzelei, QuizMode::Mixed, false);
+    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some(crate::room_settings::KRITZELEI_NEEDS_BOARD));
+    r.connect(3, false);
+    r.handle(3, r#"{"t":"hello","role":"board"}"#, 0.0);
+    assert_eq!(blocked_text(&mut r, 1), None);
+}
+
+#[test]
+fn kritzelei_plays_in_kids_mode() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    hello(&mut r, 2, "Ben", None);
+    r.connect(3, false);
+    r.handle(3, r#"{"t":"hello","role":"board"}"#, 0.0);
+    configure(&mut r, 1, GameKind::Kritzelei, QuizMode::Mixed, true);
+    assert_eq!(blocked_text(&mut r, 1), None);
+}
+
+#[test]
+fn kritzelei_needs_two_players() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    r.connect(3, false);
+    r.handle(3, r#"{"t":"hello","role":"board"}"#, 0.0);
+    configure(&mut r, 1, GameKind::Kritzelei, QuizMode::Mixed, false);
+    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some("Kritzelei braucht mindestens 2 Spieler."));
+}

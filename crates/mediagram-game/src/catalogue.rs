@@ -29,6 +29,7 @@ pub const CATALOGUE: &[GameEntry] = &[
     entry(GameKind::Kopfnuss),
     entry(GameKind::Dreifelder),
     entry(GameKind::Preisfrage),
+    entry(GameKind::Kritzelei),
     entry(GameKind::Race),
     entry(GameKind::GrandAllee),
     entry(GameKind::Fluechtig),
@@ -48,6 +49,8 @@ pub(crate) const fn entry(kind: GameKind) -> GameEntry {
         GameKind::Dreifelder => ("Dreifelder", 2, ROOM_CAP),
         // Everyone guesses for themselves, so one player can play alone.
         GameKind::Preisfrage => ("Preisfrage", 1, ROOM_CAP),
+        // One draws, at least one guesses.
+        GameKind::Kritzelei => ("Kritzelei", 2, ROOM_CAP),
         // The race board has four corners.
         GameKind::Race => ("Heimlauf", 2, 4),
         // Grand Allee's round limit scales with the table, from two to eight.

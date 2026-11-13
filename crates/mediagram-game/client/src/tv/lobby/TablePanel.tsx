@@ -1,6 +1,10 @@
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
 import { Token } from "../../ui/Token";
 
+/** A note line takes a seat's room: more than four seats, or more than two beside a note, go two to a row
+ * with a smaller code, so the panel still fits beside the posters. */
+export const isCrowded = (seats: number, noted: boolean) => seats > (noted ? 2 : 4);
+
 /**
  * Who sits at the table and how to join: the code is big while nobody has, smaller once someone
  * has (latecomers walk up to it). The settings button below takes the remote's Up from the halves'
@@ -12,16 +16,18 @@ export function TablePanel({
   settingsFocused,
   onSettings,
   filmsAway,
+  boardChip,
 }: {
   players: PlayerInfo[];
   joinUrl: string;
   settingsFocused: boolean;
   onSettings: () => void;
   filmsAway: boolean;
+  /** Set while Kritzelei is the picked game: whether the drawing board is connected. */
+  boardChip?: boolean;
 }) {
   const empty = players.length === 0;
-  // more than four: two columns of seats and a smaller code, so eight still fit beside the posters
-  const crowded = players.length > 4;
+  const crowded = isCrowded(players.length, filmsAway || boardChip !== undefined);
   return (
     <aside className={`table-panel${empty ? " is-empty" : ""}${crowded ? " is-crowded" : ""}`}>
       <figure className="table-qr">
@@ -44,6 +50,7 @@ export function TablePanel({
         </ul>
       )}
       {filmsAway && <p className="table-note">Die Filme der Mediathek sind gerade nicht erreichbar.</p>}
+      {boardChip !== undefined && <p className="table-note">{boardChip ? "Zeichenbrett bereit" : "Zeichenbrett fehlt"}</p>}
       <button className={`table-settings${settingsFocused ? " is-focused" : ""}`} tabIndex={-1} onClick={onSettings}>
         Einstellungen
       </button>

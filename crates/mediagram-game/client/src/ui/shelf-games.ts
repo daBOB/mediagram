@@ -30,6 +30,7 @@ const PLAYABLE: Record<GameKind, { blurb: string; group: ShelfGroup }> = {
   kopfnuss: { group: "mini", blurb: "Kategorie wählen, den anderen Streiche aufs Handy schicken, Fragen beantworten – und am Ende der Gipfelsturm um den Sieg." },
   dreifelder: { group: "mini", blurb: "Eine Frage, drei Felder. Wer falsch steht, fliegt raus – wer als Letzter übrig bleibt, gewinnt." },
   preisfrage: { group: "mini", blurb: "Seltsame Produkte aus dem Netz: Wer schätzt den Preis am genauesten? Je näher dran, desto mehr Punkte." },
+  kritzelei: { group: "mini", blurb: "Einer zeichnet mit dem Finger auf dem iPad, der Fernseher zeigt jeden Strich live. Alle raten laut – wer's zuerst hat, punktet." },
   race: { group: "full", blurb: "Das Rennen ums Brett: vier Figuren, mit einer Sechs geht es los, und wer geschlagen wird, muss zurück nach Hause." },
   grand_allee: { group: "full", blurb: "Grundstücke kaufen, Hotels bauen, Eingänge setzen – und die Gäste zahlen. Der reichste Hotelier am Boulevard gewinnt." },
   fluechtig: { group: "full", blurb: "Einer flieht unsichtbar durch die Stadt, die anderen jagen ihn. Nur seine Tickets verraten, wie er fährt – und ab und zu taucht er auf." },
@@ -40,7 +41,6 @@ const PLAYABLE: Record<GameKind, { blurb: string; group: ShelfGroup }> = {
 
 /** The games in the works and the ones planned, in the order the shelf shows them within their half. */
 export const UPCOMING: readonly ShelfItem[] = [
-  { key: "kritzelei", name: "Kritzelei", min: 2, max: 8, group: "mini", badge: "wip", blurb: "Einer zeichnet mit dem Finger auf dem iPad, der Fernseher zeigt jeden Strich live. Alle raten laut – wer's zuerst hat, punktet." },
   { key: "neunmalklug", name: "Neunmalklug", min: 2, max: 8, group: "mini", badge: "soon", blurb: "Ein Quiz mit frechem Moderator: knifflige Fragen, fiese Fallen und jede Menge Sprüche über eure Antworten." },
   { key: "lebensweg", name: "Lebensweg", min: 2, max: 6, group: "full", badge: "wip", blurb: "Mit dem Auto den Lebensberg hinauf: Ausbildung, Beruf, Familie und Haus. Wer oben am meisten erreicht hat, gewinnt." },
   { key: "wissensreise", name: "Wissensreise", min: 2, max: 6, group: "full", badge: "soon", blurb: "Würfeln, ziehen, Frage beantworten: In sechs Kategorien je einen Stein sammeln – wer zuerst alle hat, gewinnt die Reise." },

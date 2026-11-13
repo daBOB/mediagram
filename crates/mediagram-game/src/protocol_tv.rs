@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::protocol::{
-    CardsScene, DreifelderScene, FluechtigScene, GameEntry, GrandAlleeScene, KopfnussScene, LobbySettings, PlayerInfo,
+    CardsScene, DreifelderScene, FluechtigScene, GameEntry, GrandAlleeScene, KopfnussScene, KritzeleiScene, LobbySettings, PlayerInfo,
     PosterScene, PreisfrageScene, QuizScene, RaceScene,
 };
 
@@ -29,6 +29,8 @@ pub enum TvScene {
         blocked: Option<String>,
         /// The game catalogue, in lobby order.
         games: Vec<GameEntry>,
+        /// A drawing board is connected.
+        board: bool,
     },
     Quiz { scene: QuizScene },
     Poster { scene: PosterScene },
@@ -39,4 +41,5 @@ pub enum TvScene {
     Dreifelder { scene: DreifelderScene },
     Fluechtig { scene: FluechtigScene },
     Preisfrage { scene: PreisfrageScene },
+    Kritzelei { scene: KritzeleiScene },
 }

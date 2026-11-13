@@ -77,12 +77,12 @@ test("the shelf shows the minigames, then the full games, each playable first, t
   const keys = items.map((i) => i.key);
 
   // Assert
-  expect(keys.slice(0, 3)).toEqual(["quiz", "kritzelei", "neunmalklug"]);
-  expect(keys.slice(3, 6)).toEqual(["durak", "race", "lebensweg"]);
+  expect(keys.slice(0, 2)).toEqual(["quiz", "neunmalklug"]);
+  expect(keys.slice(2, 5)).toEqual(["durak", "race", "lebensweg"]);
   expect(keys.at(-1)).toBe("klabberjass");
   expect(items.length).toBe(3 + UPCOMING.length);
   expect(items[0].game).toBe(quiz);
-  expect(items.find((i) => i.key === "kritzelei")?.badge).toBe("wip");
+  expect(items.find((i) => i.key === "lebensweg")?.badge).toBe("wip");
   expect(items.find((i) => i.key === "wissensreise")?.badge).toBe("soon");
 });
 

@@ -111,6 +111,7 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
         settingsFocused={zone === "settings" && !settingsOpen}
         onSettings={() => setSettingsOpen(true)}
         filmsAway={filmsAway}
+        boardChip={game?.kind === "kritzelei" ? scene.board : undefined}
       />
       <ShelfTabs group={item.group} focused={zone === "tabs" && !settingsOpen} onPick={switchTo} />
       <ShelfRow key={item.group} items={row} index={index} focused={zone === "row"} onPoster={pickOrStart} />

@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::game::{ActionError, Game, GameCtx, GameFactory};
+use crate::game::{Game, GameCtx, GameFactory};
 use crate::protocol::{Action, ClientMsg, ErrorCode, LobbySettings, PlayerId, Role, ServerMsg, ServerTime};
+use crate::room_board::action_reply;
 use crate::room_seats::{Conn, LOBBY_GRACE_MS, Player};
 use crate::room_settings::{Readiness, initial_settings};
 
@@ -28,9 +29,10 @@ pub struct Room {
     pub(crate) players: Vec<Player>,
     pub(crate) conns: BTreeMap<ConnId, Conn>,
     pub(crate) game: Option<Box<dyn Game>>,
-    factory: GameFactory,
+    pub(crate) factory: GameFactory,
     pub(crate) settings: LobbySettings,
     pub(crate) next_player_id: PlayerId,
+    pub(crate) board: Option<crate::room_board::BoardSeat>,
 }
 
 impl Room {
@@ -43,6 +45,7 @@ impl Room {
             game: None,
             factory,
             next_player_id: 0,
+            board: None,
         }
     }
 
@@ -103,6 +106,7 @@ impl Room {
                 self.release(conn, now);
                 Some(ServerMsg::Welcome { player: None, token: None, now })
             }
+            ClientMsg::Hello { role: Role::Board, token, .. } => Some(self.seat_board(conn, token, now)),
             ClientMsg::Hello { role: Role::Phone, name, token, avatar } => {
                 self.release(conn, now);
                 Some(match self.seat_phone(conn, name, token, avatar) {
@@ -121,6 +125,7 @@ impl Room {
     fn handle_action(&mut self, conn: ConnId, action: Action, now: ServerTime) -> Result<(), ServerMsg> {
         let c = self.conns.get(&conn).ok_or_else(not_allowed)?;
         let is_tv = c.role == Some(Role::Tv);
+        let is_board = c.role == Some(Role::Board);
         let player = c.player;
         let is_leader = player.is_some() && player == self.leader();
         match action {
@@ -130,24 +135,8 @@ impl Room {
                 let (quiz_mode, kids_only, adult) = if is_tv { (s.quiz_mode, s.kids_only, s.adult) } else { (quiz_mode, kids_only, adult) };
                 self.configure(is_tv || is_leader, game, quiz_mode, kids_only, adult).then_some(()).ok_or_else(not_allowed)
             }
-            Action::StartGame => {
-                if !(is_tv || is_leader) || self.game.is_some() {
-                    return Err(not_allowed());
-                }
-                if let Some(why) = self.blocked() {
-                    return Err(error(ErrorCode::NotAllowed, why));
-                }
-                if self.connected_count() < self.cfg.min_players {
-                    return Err(error(ErrorCode::NotAllowed, "Noch zu wenige Spieler.".into()));
-                }
-                self.players.retain(|p| p.connected());
-                for p in &mut self.players {
-                    p.score = 0;
-                }
-                let mut ctx = GameCtx { now, players: &mut self.players };
-                self.game = Some((self.factory)(&mut ctx, &self.settings));
-                Ok(())
-            }
+            Action::StartGame if !(is_tv || is_leader) || self.game.is_some() => Err(not_allowed()),
+            Action::StartGame => self.start_game(now),
             Action::PickAvatar { id } => {
                 let ok = self.game.is_none() && player.is_some_and(|p| crate::avatars::pick(&mut self.players, p, &id));
                 ok.then_some(()).ok_or_else(not_allowed)
@@ -159,15 +148,14 @@ impl Room {
                 self.back_to_lobby();
                 Ok(())
             }
+            Action::Board { act } if is_board => self.board_act(&act, now),
+            Action::Board { .. } => Err(not_allowed()),
             other => {
                 let (Some(player), Some(game)) = (player, self.game.as_mut()) else {
                     return Err(not_allowed());
                 };
                 let mut ctx = GameCtx { now, players: &mut self.players };
-                match game.on_action(&mut ctx, player, &other) {
-                    Ok(()) | Err(ActionError::Ignored) => Ok(()),
-                    Err(ActionError::NotAllowed(msg)) => Err(error(ErrorCode::NotAllowed, msg.into())),
-                }
+                action_reply(game.on_action(&mut ctx, player, &other))
             }
         }
     }
@@ -188,6 +176,22 @@ pub(crate) fn encode(msg: &ServerMsg) -> String {
 #[cfg(test)]
 #[path = "room_tests.rs"]
 pub(crate) mod tests;
+
+#[cfg(test)]
+#[path = "room_sketch.rs"]
+mod sketch;
+
+#[cfg(test)]
+#[path = "room_board_tests.rs"]
+mod board_tests;
+
+#[cfg(test)]
+#[path = "room_draw_tests.rs"]
+mod draw_tests;
+
+#[cfg(test)]
+#[path = "room_kritzelei_tests.rs"]
+mod kritzelei_tests;
 
 #[cfg(test)]
 #[path = "room_avatar_tests.rs"]

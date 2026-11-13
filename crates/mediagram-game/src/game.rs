@@ -1,4 +1,4 @@
-use crate::protocol::{Action, LobbySettings, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, BoardAct, BoardScreen, Buzz, DrawOp, LobbySettings, PhoneScreen, PlayerId, ServerTime, TvScene};
 
 use crate::room_seats::Player;
 
@@ -63,6 +63,29 @@ pub trait Game: Send {
     fn tv_scene(&self, view: &ViewCtx) -> TvScene;
 
     fn is_finished(&self) -> bool;
+
+    /// An act from the drawing board.
+    fn on_board(&mut self, _ctx: &mut GameCtx, _act: &BoardAct) -> Result<(), ActionError> {
+        Err(ActionError::Ignored)
+    }
+
+    /// The board connected (`true`) or went away (`false`) while this game runs.
+    fn on_board_presence(&mut self, _now: ServerTime, _present: bool) {}
+
+    /// What the drawing board shows.
+    fn board_screen(&self, _view: &ViewCtx) -> BoardScreen {
+        BoardScreen::Wait { title: "Zeichenbrett".into(), text: Some("Gerade läuft ein anderes Spiel.".into()), can_leave: true }
+    }
+
+    /// The current turn's drawing: its turn number and every op so far, append-only within a turn.
+    fn drawing(&self) -> Option<(u32, &[DrawOp])> {
+        None
+    }
+
+    /// A short vibration for `player`'s phone.
+    fn phone_buzz(&self, _view: &ViewCtx, _player: PlayerId) -> Option<Buzz> {
+        None
+    }
 
     /// Log lines recorded since the last call, which the host appends to a
     /// file so a night's decisions can be measured afterwards; most games keep none.

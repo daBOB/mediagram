@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var screen = startScreen(remembered: UserDefaults.standard.string(forKey: boxURLKey))
     @State private var scanning = false
     @StateObject private var finder = BoxFinder()
+    @StateObject private var board = BoardModel()
     @Environment(\.scenePhase) private var phase
 
     private var searching: Bool {
@@ -22,8 +23,9 @@ struct ContentView: View {
         Group {
             switch screen {
             case .playing(let url):
-                GameWebView(url: url, onFailed: { on(.pageFailed($0)) })
+                GameWebView(url: url, board: board, onFailed: { on(.pageFailed($0)) })
                     .ignoresSafeArea()
+                    .overlay { if board.screen != nil { BoardOverlay(model: board) } }
                     // edge swipes need a second swipe instead of stealing a stroke
                     .defersSystemGestures(on: .all)
                     .persistentSystemOverlays(.hidden)

@@ -182,9 +182,14 @@ proposals, not as items the user confirmed one by one.
        weekly refresh already covers that.
    - The bridge gains a capability that the page can check, so only the app on an iPad can offer
      "Als Zeichenbrett verwenden" in the lobby.
+   - **The iPad becomes the board by itself** (the user's decision on 2026-11-14, "Automatic"):
+     the app on an iPad skips the name screen and joins as the board straight away. Nobody taps a
+     button for it.
    - The choice is saved in page memory (`setMemory`), so the iPad comes back as the board after
      the app restarts.
    - The board's waiting screen, a web screen, offers "Doch mitspielen" to switch back to playing.
+     That choice is remembered too, so an iPad someone plays on stays a player after a restart;
+     "Als Zeichenbrett verwenden" in its lobby turns it back into the board.
 3. **Starting needs a board.** Kritzelei won't start without one. The lobby gives the reason
    through the existing `blocked` mechanism, for example "Kritzelei braucht das iPad als
    Zeichenbrett." The minimum is **2 players** (one draws, at least one guesses).

@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.184.0 — Kritzelei, the drawing game, as far as it is built
+
+**Added**
+
+- Kritzelei (`plans/261113-2115-kritzelei-drawing-game/plan.md`), merged mid-build at the user's request: one player draws on an iPad with a finger, the TV shows the line live, the room guesses out loud and the drawer taps who got it. A drawing board joins the room beside the phones and the TV; the iPad's page becomes the board by itself and drives a native drawing view (iOS controller), and the game waits in the lobby until a board is there. Its word list, turns, clock and scoring are in; the plan's device walk is not done yet.
+- On the shelf Kritzelei is a playable minigame now instead of WIP.
+- The Lebensberg board prototype for Lebensweg (`plans/261112-0055-lebensweg/`), a realistic miniature look; prototype only, no game code.
+
 ## Spieltisch 0.183.0 — The native core without its game list
 
 **Removed**

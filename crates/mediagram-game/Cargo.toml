@@ -2,7 +2,7 @@
 name = "mediagram-game"
 description = "Game night: party games hosted on the TV box, joined from phones"
 # Spieltisch's own version line, in step with crates/spieltisch-core and the client's package.json.
-version = "0.183.0"
+version = "0.184.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true

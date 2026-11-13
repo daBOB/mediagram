@@ -4,8 +4,10 @@ import WebKit
 
 /// The box's phone page, as a surface to tap and draw on: no zoom, no scrolling or bounce,
 /// and never anywhere but this box. `onFailed` gets the box URL when the page cannot load.
+/// On an iPad the page can lay `board`, the native drawing board, over itself.
 struct GameWebView: UIViewRepresentable {
     let url: String
+    let board: BoardModel
     let onFailed: (String) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -14,6 +16,7 @@ struct GameWebView: UIViewRepresentable {
         let coordinator = context.coordinator
         coordinator.onFailed = onFailed
         coordinator.box = url
+        coordinator.board = board
         let config = WKWebViewConfiguration()
         config.userContentController.add(WeakHandler(coordinator), name: "mediagramApp")
         coordinator.content = config.userContentController
@@ -29,6 +32,11 @@ struct GameWebView: UIViewRepresentable {
         view.scrollView.maximumZoomScale = 1
         view.scrollView.contentInsetAdjustmentBehavior = .never
         view.load(URLRequest(url: URL(string: url)!))
+        board.send = { [weak view] act in
+            guard let script = boardReceiveScript(for: act) else { return }
+            // the page installs `mediagramBoard` only in board mode; the script checks for it
+            view?.evaluateJavaScript(script, completionHandler: nil)
+        }
         return view
     }
 
@@ -43,20 +51,24 @@ struct GameWebView: UIViewRepresentable {
 
     static func dismantleUIView(_ view: WKWebView, coordinator: Coordinator) {
         view.configuration.userContentController.removeScriptMessageHandler(forName: "mediagramApp")
+        // a re-created page shows the board again itself; until then no stale board
+        coordinator.board?.hide()
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var box = ""
         var onFailed: (String) -> Void = { _ in }
+        var board: BoardModel?
         weak var content: WKUserContentController?
         private let buzzer = Buzzer()
 
-        /// `window.mediagramApp` as the page expects it: the same three calls as on Android.
+        /// `window.mediagramApp` as the page expects it: the same three calls as on Android, and on an iPad the board.
         /// The page's memory is written into the script, so it is current for every page load.
         func installBridge() {
             guard let content else { return }
             content.removeAllUserScripts()
-            let script = WKUserScript(source: bridgeScript(memory: PageMemory.load()), injectionTime: .atDocumentStart, forMainFrameOnly: true)
+            let source = bridgeScript(memory: PageMemory.load(), board: UIDevice.current.userInterfaceIdiom == .pad)
+            let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
             content.addUserScript(script)
         }
 
@@ -67,6 +79,27 @@ struct GameWebView: UIViewRepresentable {
                 PageMemory.set(key, body["value"] as? String)
                 installBridge()
             }
+            if let json = body["showBoard"] as? String { showBoard(json) }
+            if body["hideBoard"] != nil { board?.hide() }
+        }
+
+        private func showBoard(_ json: String) {
+            do {
+                board?.show(try JSONDecoder().decode(NativeBoardShow.self, from: Data(json.utf8)))
+            } catch {
+                // a screen this app does not know yet: the page stays as it is
+                NSLog("Spieltisch: ignored a board show: %@", "\(error)")
+            }
+        }
+
+        // a page that reloads shows the board again itself, with its drawing resynced
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            board?.hide()
+        }
+
+        // a crashed page must not leave the board up on its last screen
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            board?.hide()
         }
 
         // a link or redirect off the box would take the bridge with it
@@ -108,7 +141,7 @@ enum PageMemory {
     }
 }
 
-private func bridgeScript(memory: [String: String]) -> String {
+private func bridgeScript(memory: [String: String], board: Bool) -> String {
     let data = (try? JSONSerialization.data(withJSONObject: memory)) ?? Data("{}".utf8)
     let json = String(data: data, encoding: .utf8) ?? "{}"
     return """
@@ -120,6 +153,9 @@ private func bridgeScript(memory: [String: String]) -> String {
         if (v === null) delete this._m[k]; else this._m[k] = v;
         webkit.messageHandlers.mediagramApp.postMessage({ setMemory: k, value: v })
       },
+      board: \(board),
+      showBoard(j) { webkit.messageHandlers.mediagramApp.postMessage({ showBoard: j }) },
+      hideBoard() { webkit.messageHandlers.mediagramApp.postMessage({ hideBoard: true }) },
     };
     """
 }

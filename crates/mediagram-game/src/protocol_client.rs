@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::protocol::{GameKind, QuizMode, ServerTime};
+use crate::protocol::{BoardAct, GameKind, QuizMode, ServerTime};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
@@ -12,6 +12,7 @@ use crate::protocol::{GameKind, QuizMode, ServerTime};
 pub enum Role {
     Phone,
     Tv,
+    Board,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -79,5 +80,9 @@ pub enum Action {
         button: String,
         hand: Vec<u8>,
         table: Option<u8>,
+    },
+    /// From the drawing board only.
+    Board {
+        act: BoardAct,
     },
 }

@@ -38,9 +38,9 @@ pub enum BoardScreen {
     Wait { title: String, text: Option<String>, can_leave: bool },
     /// Native. The word stays hidden until "Ich bin dran".
     Handover { turn: u32, drawer: BoardPlayer },
-    Drawing { turn: u32, word: String, clock: Clock },
+    Drawing { turn: u32, drawer: BoardPlayer, word: String, clock: Clock },
     /// The who-got-it list. `can_go_back` is false once the time is up.
-    Picking { turn: u32, word: String, clock: Clock, guessers: Vec<BoardPlayer>, can_go_back: bool },
+    Picking { turn: u32, drawer: BoardPlayer, word: String, clock: Clock, guessers: Vec<BoardPlayer>, can_go_back: bool },
 }
 pub struct BoardPlayer { pub id: PlayerId, pub name: String, pub color: String, pub avatar: Option<String> }
 /// Runs while `ends_at` is set; paused with `left_ms` otherwise.
@@ -56,10 +56,11 @@ pub enum Buzz { Turn, Accepted, Wrong, Won }
     - `{"t":"draw","op":{"t":"line","color":0,"width":1,"points":[10,20,30,40]}}`
     - `{"t":"draw","op":{"t":"more","points":[50,60]}}`
     - `{"t":"draw","op":{"t":"undo"}}`
-  - `a_board_hello_and_action_parse`: `{"t":"hello","role":"board","name":null,"token":null}` → `ClientMsg::Hello { role: Role::Board, .. }`; `{"t":"action","action":{"t":"board","act":{"t":"clear"}}}` parses.
+  - `a_board_hello_and_action_parse`: `{"t":"hello","role":"board","name":null,"token":null}` → `ClientMsg::Hello { role: Role::Board, .. }`; `{"t":"action","action":{"t":"board","act":{"t":"draw","op":{"t":"clear"}}}}` parses (clear is a `DrawOp`, not a `BoardAct`).
   - `draw_and_board_messages_have_their_shapes`:
     - `ServerMsg::Draw { turn: 2, from: 0, ops: vec![] }` → `{"t":"draw","turn":2,"from":0,"ops":[]}`
     - a `ServerMsg::Board` with a `Handover` → `{"t":"board","screen":{"kind":"handover","turn":1,"drawer":{"id":0,"name":"Ada","color":"#ef476f","avatar":null}}}`
+    - a `Drawing` → `{"t":"board","screen":{"kind":"drawing","turn":1,"drawer":{"id":0,"name":"Ada","color":"#ef476f","avatar":null},"word":"Hund","clock":{"ends_at":null,"left_ms":90000.0,"total_ms":90000.0}}}`
   - `a_phone_view_without_buzz_still_parses`: a `PhoneView` JSON with no `buzz` key → `buzz == None`.
 - [ ] **Step 2:** `cargo test -p mediagram-game protocol_board` → FAIL (types missing).
 - [ ] **Step 3:** Add the types and fields. Every existing `PhoneView { .. }` and `TvScene::Lobby { .. }` construction gets `buzz: None` / `board: false`. The compiler lists them.
@@ -74,7 +75,9 @@ pub enum Buzz { Turn, Accepted, Wrong, Won }
 - Modify: `crates/mediagram-game/src/room.rs`:
   - `Room.board: Option<BoardSeat>`
   - a `Hello { role: Role::Board, token, .. }` arm that calls `seat_board`
+  - dispatch lines only: the logic lives in `room_board.rs`
   - an `Action::Board { act }` arm: only from a `Role::Board` conn, otherwise `not_allowed()`. Without a game it is `Ok(())`. With a game it goes to `game.on_board(ctx, &act)`, with errors mapped like phone actions
+- Modify: `crates/mediagram-game/src/lib.rs` — `mod room_board;`
 - Modify: `crates/mediagram-game/src/room_seats.rs`:
   - `Conn.drawn: Option<(u32, usize)>`
   - `release` also calls `release_board`
@@ -123,6 +126,8 @@ impl Room {
 5. Set role `Board` and `drawn = None`.
 6. Call `on_board_presence(now, true)` if a game runs.
 
+`release_board(conn)` acts only if `conn` still holds the board. A late close from a socket the board has since left must not mark the new one absent. When the room creates a game it calls `on_board_presence(now, board_connected())` right after, so a game started with the board seated knows it.
+
 `draw_for`: `from` is the conn's count when the turn matches **and** count ≤ ops.len(), else 0. Send nothing when the cursor already equals `(turn, len)`. With no game or no drawing, reset the cursor to `None`.
 
 - [ ] **Step 1: Write the failing tests** (`room_board_tests.rs`):
@@ -141,6 +146,8 @@ impl Room {
   - `a_cursor_past_the_drawing_starts_afresh`: TV saw `(1, 5)`, the game now has turn 1 with 2 ops (a new game) → `Draw { from: 0 }` with 2 ops, no panic.
   - `draw_goes_out_before_the_view`: in one `flush`, a conn's `draw` precedes its `tv`/`board` message.
   - `the_phone_view_carries_the_buzz_the_game_asks_for`: player 0's `PhoneView.buzz == Some(Buzz::Turn)`, player 1's `None`.
+  - `a_late_close_of_the_old_board_keeps_the_new_one`: board on conn 1 during a game, same token re-hellos on conn 2, then conn 1 closes → Sketch saw no `false` after the second `true`, and `board_connected()` is still true.
+  - `a_game_started_with_the_board_seated_hears_it`: board hello in the lobby, then the room creates a game → Sketch's first presence call is `true`; with no board it is `false`.
   - `leaving_the_board_in_the_lobby_frees_it`: the board conn says phone hello → the TV lobby scene has `board == false`.
   - `the_tv_lobby_shows_a_connected_board`: board hello → `board == true`.
 - [ ] **Step 2:** `cargo test -p mediagram-game room_board` → FAIL.

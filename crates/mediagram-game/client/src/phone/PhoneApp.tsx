@@ -3,6 +3,7 @@ import { useConnection, type Connection } from "../net";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PhoneView } from "../protocol/PhoneView";
 import type { ServerMsg } from "../protocol/ServerMsg";
+import { BoardPage } from "./BoardPage";
 import { CardsDesk } from "./CardsDesk";
 import { ChoiceScreen } from "./ChoiceScreen";
 import { OutcomeScreen } from "./OutcomeScreen";
@@ -12,8 +13,9 @@ import { PhonePriceKeypad } from "./PhonePriceKeypad";
 import { PhoneSheet } from "./PhoneSheet";
 import { buzz, memory as store } from "./app-bridge";
 import { rememberAvatar, rememberedAvatar } from "./avatar-memory";
-import { buzzFor } from "./buzz-moments";
+import { buzzForView } from "./buzz-moments";
 import { goFullscreen } from "./phone-fullscreen";
+import { useBoardMode } from "./use-board-mode";
 
 const NAME_KEY = "spieltisch.name";
 const TOKEN_KEY = "spieltisch.token";
@@ -33,6 +35,7 @@ export function PhoneApp() {
   }, [joined]);
 
   const onMessage = (msg: ServerMsg) => {
+    if (mode.onMessage(msg)) return;
     switch (msg.t) {
       case "welcome":
         if (msg.token) store.set(TOKEN_KEY, msg.token);
@@ -41,7 +44,7 @@ export function PhoneApp() {
         // the first avatar a phone gets is its choice until its player picks one themselves
         if (msg.view.me.avatar) rememberAvatar(msg.view.me.avatar, true);
         {
-          const kind = buzzFor(lastScreen.current, msg.view.screen);
+          const kind = buzzForView(lastScreen.current, msg.view.screen, msg.view.buzz);
           lastScreen.current = msg.view.screen;
           if (kind) buzz(kind);
         }
@@ -60,7 +63,8 @@ export function PhoneApp() {
 
   const { conn, status } = useConnection(
     () =>
-      joinedRef.current
+      mode.hello() ??
+      (joinedRef.current
         ? {
             t: "hello",
             role: "phone",
@@ -68,9 +72,10 @@ export function PhoneApp() {
             token: store.get(TOKEN_KEY),
             avatar: rememberedAvatar(),
           }
-        : null,
+        : null),
     onMessage,
   );
+  const mode = useBoardMode(conn, status);
 
   useEffect(() => {
     if (!toast) return;
@@ -94,14 +99,16 @@ export function PhoneApp() {
 
   return (
     <main className="phone">
-      {!joined ? (
+      {mode.asBoard ? (
+        <BoardPage screen={mode.screen} forward={mode.forward} onLeave={mode.leave} />
+      ) : !joined ? (
         <JoinScreen name={name} setName={setName} onJoin={join} disabled={status !== "open"} />
       ) : view ? (
-        <Screen view={view} conn={conn} />
+        <Screen view={view} conn={conn} onBecomeBoard={mode.become} />
       ) : (
         <Centered title="Einen Moment" text="Du wirst an den Tisch gesetzt." />
       )}
-      {status !== "open" && joined && <p className="banner">Verbindung zum Fernseher wird wiederhergestellt …</p>}
+      {status !== "open" && (joined || mode.asBoard) && <p className="banner">Verbindung zum Fernseher wird wiederhergestellt …</p>}
       {toast && (
         <p className="toast" role="alert">
           {toast}
@@ -139,13 +146,13 @@ function JoinScreen(props: {
   );
 }
 
-function Screen({ view, conn }: { view: PhoneView; conn: Connection }) {
+function Screen({ view, conn, onBecomeBoard }: { view: PhoneView; conn: Connection; onBecomeBoard: () => void }) {
   const { me, screen } = view;
   const act = (action: Parameters<Connection["send"]>[0]) => conn.send(action);
 
   switch (screen.kind) {
     case "lobby":
-      return <PhoneLobby me={me} screen={screen} conn={conn} />;
+      return <PhoneLobby me={me} screen={screen} conn={conn} onBecomeBoard={onBecomeBoard} />;
     case "wait":
       return <Centered title={screen.title} text={screen.text} />;
     case "choice":

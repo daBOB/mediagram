@@ -2,6 +2,7 @@
 // host re-sends a player's screen whenever anything in the room changes, so
 // every moment is a change from the previous screen, never the screen alone.
 
+import type { Buzz } from "../protocol/Buzz";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { BuzzKind } from "./app-bridge";
 
@@ -50,4 +51,10 @@ export function buzzFor(prev: PhoneScreen | null, next: PhoneScreen): BuzzKind |
   }
   if (asks(next) && !(prev !== null && asks(prev) && sameAsk(prev, next))) return "turn";
   return null;
+}
+
+/** A buzz the game asked for fires once per changed screen; otherwise the screen decides. */
+export function buzzForView(prev: PhoneScreen | null, next: PhoneScreen, ask: Buzz | null): BuzzKind | null {
+  if (!ask) return buzzFor(prev, next);
+  return prev === null || JSON.stringify(prev) !== JSON.stringify(next) ? ask : null;
 }

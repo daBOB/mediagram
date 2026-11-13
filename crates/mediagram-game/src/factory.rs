@@ -13,6 +13,8 @@ use crate::dreifelder_config::{DreifelderConfig, dreifelder_questions};
 use crate::game::{Game, GameFactory};
 use crate::general::adult_pack;
 use crate::kopfnuss::KopfnussGame;
+use crate::kritzelei::{KritzeleiConfig, KritzeleiGame};
+use crate::kritzelei_words::deck;
 use crate::kopfnuss_config::KopfnussConfig;
 use crate::kopfnuss_supply::QuestionSupply;
 use crate::film_questions::film_questions;
@@ -83,6 +85,12 @@ pub fn game_factory(
                 let drawn = draw(&articles, cfg.rounds, &mut shown, &mut StdRng::from_os_rng());
                 Box::new(PreisfrageGame::new(cfg, drawn, checked_label(&articles.fetched), ctx.players, ctx.now))
             }
+            GameKind::Kritzelei => Box::new(KritzeleiGame::new(
+                KritzeleiConfig::default(),
+                deck(settings.kids_only, &mut StdRng::from_os_rng()),
+                ctx.players,
+                ctx.now,
+            )),
             GameKind::Poster => {
                 let eligible = pool.eligible(settings.kids_only);
                 let cfg = PosterConfig::default();
