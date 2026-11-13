@@ -32,6 +32,7 @@ The app answers the page's `showBoard`/`hideBoard` with native screens laid over
     func show(_ show: NativeBoardShow)     // screen = show.screen; ink.show(turn:ops:resync:); inkEpoch = ink.epoch
     func hide()
     func act(_ act: BoardAct)              // send(act); for .draw(op) also ink.apply(op) and inkEpoch = ink.epoch
+                                           // any act other than .draw is sent once per screen: later taps are ignored until the next show() (a double tap on „Überspringen“ must not skip two drawers)
 }
 ```
 
