@@ -15,6 +15,10 @@ export interface PlayerRequest {
   maxrate?: string | null;
   /** `?audio=` on a transcode request: which audio stream, as `0:a:N`. */
   audio?: string | null;
+  /** `?profile=` on a clip download: whose clip this is claimed to be. */
+  profile?: string | null;
+  /** `?setId=` on a clip listing. */
+  setId?: string | null;
   /** `?q=` on a search request. */
   query?: string | null;
   /**

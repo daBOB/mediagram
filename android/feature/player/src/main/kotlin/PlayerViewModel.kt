@@ -124,6 +124,7 @@ class PlayerViewModel @Inject constructor(
     internal val marksController = PlayerMarksController(viewModelScope, session, repository, _openSetId, openFsk)
     val marks: StateFlow<PlayerMarksState?> = marksController.marks
     val actionNotice: StateFlow<String?> = marksController.actionNotice
+    val sceneNotice: StateFlow<String?> = marksController.sceneNotice
     fun dismissActionNotice() = marksController.dismissNotice()
 
     /** What follows the open title, and the countdown that may start it unattended — ported from `refreshUpNext`/`startWhenReady` in `player.js`. */

@@ -1,0 +1,356 @@
+/* The night's home screen: backdrop, game name top left, posters along the bottom left, the table
+   bottom right. Sized in vw/vh so the box's WebView, whatever its CSS pixel size, lays it out as the
+   1080p mockup. */
+.tv-shelf {
+  --poster-w: 8.88vw;
+  --poster-gap: 1.6vw;
+  /* how much of the sixth poster peeks in at the right, fading out */
+  --poster-tease: calc(var(--poster-w) * 0.45);
+  --row-bottom: 5.5vh;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--felt);
+}
+
+.shelf-backdrop img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 400ms ease-out;
+}
+
+.shelf-backdrop img.is-shown {
+  opacity: 1;
+}
+
+/* A soft shade behind the name and description, so they read over a bright backdrop too. */
+.shelf-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 35%, transparent 60%);
+}
+
+.shelf-head {
+  position: absolute;
+  left: 5vw;
+  top: 7vh;
+  right: 30vw;
+  display: grid;
+  justify-items: start;
+  gap: 1.2vh;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.shelf-head .kicker {
+  margin: 0;
+}
+
+.shelf-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 6.2vw;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.shelf-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8vw;
+  margin: 0;
+  font-size: 1.6vw;
+  color: rgba(251, 248, 241, 0.88);
+}
+
+.shelf-sub .badge {
+  font-size: 1.2vw;
+  text-shadow: none;
+}
+
+.shelf-line {
+  margin: 0.8vh 0 0;
+  padding: 0.9vh 1.1vw;
+  border-radius: 10px;
+  background: rgba(10, 68, 51, 0.88);
+  font-size: 1.5vw;
+  text-shadow: none;
+}
+
+/* The table: code, seats, settings, at the bottom right beside the posters; it grows upwards. */
+.table-panel {
+  position: absolute;
+  right: 5vw;
+  bottom: var(--row-bottom);
+  width: 21vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.3vh;
+  padding: 1.1vw;
+  overflow: hidden;
+  border-radius: 20px;
+  background: rgba(10, 68, 51, 0.92);
+}
+
+.table-qr {
+  margin: 0;
+  padding: 0.8vw;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 6px 0 var(--card-edge);
+}
+
+.table-qr img {
+  display: block;
+  width: min(7.5vw, 13.5vh);
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.table-panel.is-empty .table-qr img {
+  width: min(11vw, 20vh);
+}
+
+.table-panel.is-crowded .table-qr img {
+  width: min(6vw, 10.5vh);
+}
+
+.table-url {
+  margin: 0;
+  font-size: 1.3vw;
+  color: var(--muted);
+}
+
+.table-empty,
+.table-note {
+  margin: 0;
+  font-size: 1.3vw;
+  color: var(--muted);
+  text-align: center;
+}
+
+.table-seats {
+  align-self: stretch;
+  min-height: 0;
+  display: grid;
+  gap: 0.8vh 0.8vw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.is-crowded .table-seats {
+  grid-template-columns: 1fr 1fr;
+}
+
+.table-seat {
+  display: flex;
+  align-items: center;
+  gap: 0.6vw;
+  min-width: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.6vw;
+}
+
+.table-seat .token {
+  width: 2.8vw;
+  height: 2.8vw;
+}
+
+.is-crowded .table-seat {
+  font-size: 1.2vw;
+}
+
+.is-crowded .table-seat .token {
+  width: 2.1vw;
+  height: 2.1vw;
+}
+
+.table-seat-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.table-settings {
+  align-self: stretch;
+  padding: 0.9vh 0;
+  border-radius: 12px;
+  background: var(--felt-line);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.3vw;
+  outline: 4px solid transparent;
+}
+
+.table-settings.is-focused {
+  outline-color: var(--yellow);
+  background: var(--felt);
+}
+
+/* The switch between the halves, just above the posters' tops. */
+.shelf-tabs {
+  position: absolute;
+  left: calc(4vw + var(--poster-gap));
+  bottom: calc(var(--row-bottom) + var(--poster-w) * 1.5 + 2.6vh);
+  display: flex;
+  gap: 0.6vw;
+}
+
+.shelf-tabs button {
+  padding: 0.7vh 1.3vw;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(10, 20, 26, 0.6);
+  color: rgba(251, 248, 241, 0.75);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.35vw;
+  outline: 0.25vw solid transparent;
+  cursor: pointer;
+}
+
+.shelf-tabs button.is-active {
+  background: #fbf8f1;
+  color: var(--ink);
+}
+
+.shelf-tabs.is-focused button.is-active {
+  outline-color: var(--yellow);
+}
+
+/* Five posters across, and the sixth peeking in at the right as a tease, fading out. The left padding
+   is one gap, so the poster before the five sits just outside the row; the right padding lets the
+   scroll reach the last five whatever the tease. Both leave room for the focused poster to grow. */
+.shelf-row {
+  position: absolute;
+  left: 4vw;
+  bottom: var(--row-bottom);
+  width: calc(5 * var(--poster-w) + 6 * var(--poster-gap) + var(--poster-tease));
+  box-sizing: border-box;
+  display: flex;
+  gap: var(--poster-gap);
+  margin: 0;
+  padding: 4vh calc(var(--poster-gap) + var(--poster-tease)) 0 var(--poster-gap);
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--poster-tease)), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - var(--poster-tease)), transparent);
+  list-style: none;
+  overflow: hidden;
+}
+
+/* Posters rise in one after the other when a half opens. `translate` leaves `transform` to the
+   focused poster's growth, and the backwards fill keeps each one hidden until its turn. */
+@keyframes shelf-poster-rise {
+  from {
+    opacity: 0;
+    translate: 0 4vh;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.shelf-poster {
+  position: relative;
+  flex: none;
+  width: var(--poster-w);
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--felt-deep);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transform-origin: bottom center;
+  transition: transform 150ms ease-out;
+  cursor: pointer;
+  animation: shelf-poster-rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--reveal, 0) * 70ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shelf-poster {
+    animation: none;
+  }
+}
+
+.shelf-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shelf-poster.is-picked {
+  transform: scale(1.06);
+}
+
+.shelf-poster.is-focused {
+  outline: 0.3vw solid var(--yellow);
+  outline-offset: -0.3vw;
+}
+
+.shelf-poster-name {
+  position: absolute;
+  left: 0.7vw;
+  right: 0.7vw;
+  bottom: 0.7vw;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.4vw;
+}
+
+/* What the focused game is about, under its seats. */
+.shelf-blurb {
+  max-width: 44vw;
+  margin: 0;
+  font-size: 1.45vw;
+  line-height: 1.35;
+  color: rgba(251, 248, 241, 0.92);
+}
+
+/* A game not playable yet: being built (WIP) or planned (Coming soon). */
+.shelf-sub .badge-wip,
+.shelf-poster-badge.is-wip {
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.shelf-sub .badge-soon,
+.shelf-poster-badge.is-soon {
+  background: rgba(10, 20, 26, 0.82);
+  color: #fbf8f1;
+  font-weight: 700;
+}
+
+/* At the foot of the poster, where it leaves the title at the top readable. */
+.shelf-poster-badge {
+  position: absolute;
+  bottom: 0.6vw;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 0.2vw 0.55vw;
+  border-radius: 999px;
+  font-size: 0.85vw;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.shelf-poster.is-upcoming img {
+  filter: saturate(0.7) brightness(0.78);
+  transition: filter 150ms ease-out;
+}
+
+.shelf-poster.is-upcoming.is-picked img {
+  filter: none;
+}

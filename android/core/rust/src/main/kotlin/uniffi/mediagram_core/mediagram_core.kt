@@ -760,7 +760,11 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_editors_choice(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_mark_scene(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_profiles(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_remove_scene(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_retire_local_state(
     ): Int
@@ -954,7 +958,11 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_editors_choice(`ptr`: Long,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_mark_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_remove_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_retire_local_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Unit
@@ -1281,7 +1289,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_editors_choice() and 0xFFFF) != 8907) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_mark_scene() and 0xFFFF) != 19538) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 65036) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_remove_scene() and 0xFFFF) != 53733) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
@@ -2244,9 +2258,21 @@ public interface CoreInterface {
     suspend fun `editorsChoice`(): kotlin.String?
 
     /**
+     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
+     * mark's id, or `None` for an `at` that is no film second or a profile
+     * that is gone.
+     */
+    suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double): kotlin.String?
+
+    /**
      * Who watches this library. Empty until someone says.
      */
     suspend fun `profiles`(): List<Profile>
+
+    /**
+     * Takes a scene mark off. `false` when no live mark has that id.
+     */
+    suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
 
     /**
      * Permanently stops this core's local watch-state access and closes its
@@ -3648,6 +3674,34 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
+     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
+     * mark's id, or `None` for an `at` that is no film second or a profile
+     * that is gone.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_mark_scene(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterDouble.lower(`at`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
      * Who watches this library. Empty until someone says.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -3664,6 +3718,31 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterSequenceTypeProfile.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Takes a scene mark off. `false` when no live mark has that id.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_remove_scene(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -6125,6 +6204,60 @@ public object FfiConverterTypeProgressRow: FfiConverterRustBuffer<ProgressRow> {
 
 
 /**
+ * One live mark.
+ */
+data class SceneMark (
+    var `id`: kotlin.String
+    ,
+    var `setId`: kotlin.String
+    ,
+    /**
+     * Film seconds.
+     */
+    var `at`: kotlin.Double
+    ,
+    var `markedAt`: kotlin.Long
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSceneMark: FfiConverterRustBuffer<SceneMark> {
+    override fun read(buf: ByteBuffer): SceneMark {
+        return SceneMark(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SceneMark) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`setId`) +
+            FfiConverterDouble.allocationSize(value.`at`) +
+            FfiConverterLong.allocationSize(value.`markedAt`)
+    )
+
+    override fun write(value: SceneMark, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`setId`, buf)
+            FfiConverterDouble.write(value.`at`, buf)
+            FfiConverterLong.write(value.`markedAt`, buf)
+    }
+}
+
+
+
+/**
  * One hit: which set, which field earned it, and the words around a
  * summary match. Never title, path or any other field a caller already
  * holds — Kotlin already has the full `SetSummary` list from `list_sets`
@@ -6610,6 +6743,12 @@ data class StateSnapshot (
      * `StateSnapshot(…)` calls in Kotlin keep compiling.
      */
     var `kidsFromSix`: List<kotlin.String> = listOf()
+    ,
+    /**
+     * This profile's live scene marks, newest first. Defaulted for the same
+     * reason as `kids_from_six`.
+     */
+    var `scenes`: List<SceneMark> = listOf()
 
 ){
 
@@ -6633,6 +6772,7 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceTypeListRow.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceTypeSceneMark.read(buf),
         )
     }
 
@@ -6643,7 +6783,8 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceString.allocationSize(value.`kids`) +
             FfiConverterSequenceTypeListRow.allocationSize(value.`collections`) +
             FfiConverterOptionalString.allocationSize(value.`editorsChoice`) +
-            FfiConverterSequenceString.allocationSize(value.`kidsFromSix`)
+            FfiConverterSequenceString.allocationSize(value.`kidsFromSix`) +
+            FfiConverterSequenceTypeSceneMark.allocationSize(value.`scenes`)
     )
 
     override fun write(value: StateSnapshot, buf: ByteBuffer) {
@@ -6654,6 +6795,7 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceTypeListRow.write(value.`collections`, buf)
             FfiConverterOptionalString.write(value.`editorsChoice`, buf)
             FfiConverterSequenceString.write(value.`kidsFromSix`, buf)
+            FfiConverterSequenceTypeSceneMark.write(value.`scenes`, buf)
     }
 }
 
@@ -8717,6 +8859,34 @@ public object FfiConverterSequenceTypeProgressRow: FfiConverterRustBuffer<List<P
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeProgressRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSceneMark: FfiConverterRustBuffer<List<SceneMark>> {
+    override fun read(buf: ByteBuffer): List<SceneMark> {
+        val len = buf.getInt()
+        return List<SceneMark>(len) {
+            FfiConverterTypeSceneMark.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SceneMark>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSceneMark.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SceneMark>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSceneMark.write(it, buf)
         }
     }
 }

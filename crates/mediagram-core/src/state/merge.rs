@@ -27,7 +27,7 @@
 use std::collections::HashMap;
 
 use super::record::{
-    CollectionRow, ListRow, ProgressRow, SyncRecord, UnwatchedRow, WatchedRow, js_trim, normal_name,
+    CollectionRow, ListRow, ProgressRow, SceneRow, SyncRecord, UnwatchedRow, WatchedRow, js_trim, normal_name,
 };
 
 mod households;
@@ -52,6 +52,7 @@ struct ViewerState {
     watchlist: HashMap<String, Held<ListRow>>,
     collections: HashMap<String, Held<CollectionRow>>,
     preferences: preferences::Kept,
+    scenes: HashMap<String, Held<SceneRow>>,
     stats: stats::Kept,
 }
 
@@ -91,6 +92,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
                 watchlist: HashMap::new(),
                 collections: HashMap::new(),
                 preferences: HashMap::new(),
+                scenes: HashMap::new(),
                 stats: stats::Kept::default(),
             });
             // Device id decides spelling as it does row ties.
@@ -120,6 +122,10 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
                 keep(&mut held.collections, row.id.clone(), row.clone(), device);
             }
             preferences::absorb(&mut held.preferences, &profile.preferences, device);
+            // Keyed by the mark's own id: a removal is a later row for the same id.
+            for row in &profile.scenes {
+                keep(&mut held.scenes, row.id.clone(), row.clone(), device);
+            }
             stats::absorb(&mut held.stats, profile, device);
         }
     }
@@ -167,6 +173,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             watchlist: held.watchlist.into_values().map(|h| h.row).collect(),
             collections: held.collections.into_values().map(|h| h.row).collect(),
             preferences: preferences::rows(held.preferences),
+            scenes: held.scenes.into_values().map(|h| h.row).collect(),
             title_stats,
             day_stats,
             roles,

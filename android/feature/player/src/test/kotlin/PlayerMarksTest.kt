@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.KidsVerdict
 import model.ListOfSets
@@ -53,8 +54,11 @@ class PlayerMarksTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(repository: WatchStateRepository = WatchStateFixture().repository) = PlayerViewModel(
-        FakePlayerHandle(),
+    private fun viewModel(
+        repository: WatchStateRepository = WatchStateFixture().repository,
+        handle: FakePlayerHandle = FakePlayerHandle(),
+    ) = PlayerViewModel(
+        handle,
         PlaybackCounters(),
         repository,
         ProgressRecorder(repository),
@@ -314,5 +318,70 @@ class PlayerMarksTest {
                 assertEquals(listOf("Favourites"), settled.lists.map(ListOfSets::name))
                 assertEquals(setOf(settled.lists.single().id), settled.memberOf)
             }
+        }
+
+    @Test
+    fun markSceneRecordsTheOpenTitleAtThePosition() =
+        runTest {
+            installMainDispatcher()
+            val watch = WatchStateFixture()
+            val handle = FakePlayerHandle().apply { fakePositionMs = 3_735_000L }
+            val vm = viewModel(watch.repository, handle)
+            vm.open("s1")
+
+            vm.markScene()
+            // Not idle: that would run out the notice's three seconds.
+            runCurrent()
+
+            assertEquals(listOf("s1" to 3735.0), watch.core.snapshot("p1").scenes.map { it.setId to it.at })
+            assertEquals("Scene marked at 1:02:15", vm.sceneNotice.value)
+            assertNull(vm.actionNotice.value)
+        }
+
+    @Test
+    fun theSceneNoticeClearsAfterThreeSeconds() =
+        runTest {
+            installMainDispatcher()
+            val handle = FakePlayerHandle().apply { fakePositionMs = 5_000L }
+            val vm = viewModel(handle = handle)
+            vm.open("s1")
+
+            vm.markScene()
+            advanceTimeBy(2_900)
+            assertEquals("Scene marked at 0:05", vm.sceneNotice.value)
+            advanceTimeBy(200)
+            assertNull(vm.sceneNotice.value)
+        }
+
+    @Test
+    fun markSceneWithNoTitleOpenDoesNothing() =
+        runTest {
+            installMainDispatcher()
+            val watch = WatchStateFixture()
+            val vm = viewModel(watch.repository, FakePlayerHandle().apply { fakePositionMs = 9_000L })
+
+            vm.markScene()
+            advanceUntilIdle()
+
+            assertTrue(watch.core.snapshot("p1").scenes.isEmpty())
+            assertNull(vm.sceneNotice.value)
+            assertNull(vm.actionNotice.value)
+        }
+
+    @Test
+    fun aFailedMarkSaysSo() =
+        runTest {
+            installMainDispatcher()
+            val watch = WatchStateFixture()
+            val vm = viewModel(watch.repository, FakePlayerHandle().apply { fakePositionMs = 9_000L })
+            vm.open("s1")
+            // The core refuses a mark it cannot keep, as for a profile deleted on another device.
+            watch.core.profiles = emptyList()
+
+            vm.markScene()
+            advanceUntilIdle()
+
+            assertEquals("Couldn't mark this scene", vm.actionNotice.value)
+            assertNull(vm.sceneNotice.value)
         }
 }

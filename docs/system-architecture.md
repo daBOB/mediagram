@@ -1407,13 +1407,28 @@ with `INSTALL_FAILED_DUPLICATE_PERMISSION` rather than being refused by the
 provider. It cannot happen on this machine: its debug and release builds use
 the same key, `~/.android/debug.keystore`.
 
-**The shelf comes from the host.** `game_catalogue()` lists `CATALOGUE` in the
-lobby's order (kind as the pages name it, name, seat range), so a game added
-there shows up on the shelf with no Kotlin change. Art is keyed by kind
-(`ShelfGames.kt`); a game without any shows its name. The screen is the media
-app's former games page, moved here: Back from a game asks the page first,
-from the lobby returns to the poster that opened it, and on the shelf leaves
-the app, which stops the host; going to the background does the same, and the
+**The shelf is the TV page.** The games shelf and the lobby are one screen, the
+host's TV page (`TvLobby.tsx`), which the app opens as soon as the host runs:
+the focused game's backdrop, its name, a short description and why it can or
+cannot start, a poster row, and a panel bottom right with the join code, who sits
+at the table and the TV's settings. The row shows one half at a time, Minispiele
+or Spiele, switched by tabs above it (Up from the row, Left/Right), five posters
+whole and the next peeking in. Each half lists its `CATALOGUE` games in the
+lobby's order, then the games being built (WIP) and the planned ones (Coming
+soon), which the page knows on its own (`ui/shelf-games.ts`) and never sends to
+the host as a pick. A game added to `CATALOGUE` shows up with no Kotlin change,
+but not before `shelf-games.ts` has its description and half. Its art stays in the APK, as the ceremony avatars do,
+so it is not embedded once per ABI with the web client:
+`assets/game-art/{poster,backdrop}-<kind>.webp` (kind with dashes), answered at
+`/game-art/` by `GamePageClient`; a game without art shows its name on the felt.
+Moving over a poster picks it for the room once the row settles, so phones see
+it; the leader's phone picking another game moves the row. OK starts the
+focused game, sending the pick first when the room has not heard it, and the
+host judges the start; the host takes only the game from the TV, never the
+leader's switches. Back asks the page first (its settings panel), then steps a
+running game back to the shelf; on the shelf the first Back asks and a second
+within 3 s leaves the app, which stops the host and drops every phone; going to
+the background does the same, and the
 activity handles configuration changes in place so a gamepad connecting does
 not end the night. No Hilt: `SpieltischApp` holds one `NightSession` per
 process (the core, the NSD announcer, the scope stops run on and the latest
@@ -1422,12 +1437,12 @@ relaunch's night waits for that stop, and the stop withdraws the announcement
 again after cancelling the start, so a start that finished late leaves no dead
 table on the phones. On API 37 and up `MainActivity` asks for
 `ACCESS_LOCAL_NETWORK` before the night starts; without it the phones can
-neither reach nor find the host. The shelf's look (mediagram's colours, focus
-and poster row) is copied as values, since the media app's TV theme lives in
-`ui-tv`, which Spieltisch cannot depend on without the media core. Cleartext is
+neither reach nor find the host. The frame's own screens (starting, failed with
+Try again) use mediagram's colours, copied as values, since the media app's TV
+theme lives in `ui-tv`, which Spieltisch cannot depend on without the media core. Cleartext is
 allowed to 127.0.0.1 only, and the page's client refuses navigation to any
-other host; the ceremony avatars are served from the APK's assets
-(`make-ceremony-avatars.mjs --out=android/spieltisch/src/main/assets/game-avatars`).
+other host; the ceremony avatars and the shelf's art are served from the APK's
+assets (`make-ceremony-avatars.mjs --out=android/spieltisch/src/main/assets/game-avatars`).
 
 ### Reporting a broken video
 

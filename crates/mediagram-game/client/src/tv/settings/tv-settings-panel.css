@@ -64,16 +64,3 @@
   opacity: 0.65;
   font-size: 1.3rem;
 }
-
-/* Lobby: the quiet button beside "Los geht's". */
-.tv-seats-buttons {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.cta-tv-quiet {
-  background: var(--felt-line);
-  color: var(--card);
-  box-shadow: 0 6px 0 var(--felt-deep);
-}

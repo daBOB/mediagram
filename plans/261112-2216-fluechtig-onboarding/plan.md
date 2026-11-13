@@ -49,7 +49,7 @@ Order: 1 → 2 → 3; 4 can run after 1 (it touches the city and the ground draw
 
 Built inline (Native), nothing committed (user's rule). Rulings and deferred minors: the build ledger (`.superpowers/sdd/plan/progress.md`, git-ignored) and the hand-over message.
 
-- **Version:** Spieltisch 0.179.0 in all four manifests (`main` had moved to 0.178.1). Changelog entry in `docs/project-changelog.md`.
+- **Version:** Spieltisch 0.181.0 in all four manifests (`main` had moved to 0.180.0 by the merge). Changelog entry in `docs/project-changelog.md`.
 - **Checks:** `cargo test -p mediagram-game` 444 pass; clippy clean; client typecheck, `bun test` 125 pass, build ok.
 - **Balance** (`balance_sim.py 1500`, final city): 5 / 4 / 3 / 2 figures → fugitive wins 43.0 / 45.6 / 48.7 / 49.5 %.
 - **City:** `add_bridges.py` reproduces the approved city exactly and is idempotent; taxi 342, bus 89 on 63 stops, U-Bahn 20 on 14, ferry 3 on 4.

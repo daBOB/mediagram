@@ -19,6 +19,8 @@ import { GRID, LIST } from "./shelf-mode.js";
 import { coverStory } from "./home-cover.js";
 import { featureStrip } from "./home-features.js";
 import { resumeCards } from "./home-resume.js";
+import { sceneCards, sceneNodes } from "./home-scenes.js";
+import * as state from "../watch-state.js";
 import { pullQuote, thisMonth } from "./home-break.js";
 import { revealWithin } from "../reveal.js";
 import { href } from "../address.js";
@@ -29,7 +31,8 @@ import { togetherNotice } from "./together-join.js";
  *
  * An `h2` and not the `h1` a shelf page uses. Five page titles down one page
  * is five pages, to a reader and to anything reading the outline aloud.
- * `total` is left off when the row holds more kinds than one shelf counts.
+ * `total` is left off when the row holds more kinds than one shelf counts, and
+ * `hash` when there is no whole shelf to go to.
  */
 function rowHead(title, total, hash, id) {
   const head = el("header", "row-head");
@@ -37,10 +40,12 @@ function rowHead(title, total, hash, id) {
   h2.id = id;
   if (total !== null) h2.append(el("span", "count", ` ${total}`));
   head.append(h2);
-  const link = el("a", "see-all", "See all");
-  link.href = hash;
-  link.setAttribute("aria-label", `See all: ${title}`);
-  head.append(link);
+  if (hash) {
+    const link = el("a", "see-all", "See all");
+    link.href = hash;
+    link.setAttribute("aria-label", `See all: ${title}`);
+    head.append(link);
+  }
   return head;
 }
 
@@ -59,10 +64,12 @@ function section(className, key, title, total, hash, ...contents) {
  * @param {import("./home-shelves.js").HomeShelves} shelves
  * @param {ReturnType<typeof import("./editorial-picks.js").homeEditorial>} editorial
  * @param {{play: (set: import("../library.js").CatalogSet) => void,
+ *   playScene: (set: import("../library.js").CatalogSet, options: {at: number, clip: {from: number, to: number}}) => void,
+ *   byId: Map<string, import("../library.js").CatalogSet>,
  *   open: (kind: "series"|"tutorials", name: string) => void,
  *   openFilm: (set: import("../library.js").CatalogSet) => void}} on
  */
-export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
+export function renderHome(main, shelves, editorial, { play, playScene, byId, open, openFilm }) {
   // The page's one `h1`, for the outline; the cover's headline is a film's.
   main.append(el("h1", "sr-only", "Home"));
   if (editorial.cover.length > 0) {
@@ -89,6 +96,13 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
     band.append(quote);
   }
   if (band.childElementCount > 0) main.append(band);
+
+  const marked = sceneNodes(sceneCards(state.scenes(), byId), playScene, state.removeScene);
+  if (marked.length > 0) {
+    const strip = el("div", "resume-strip");
+    strip.append(...marked);
+    main.append(section("resume scenes", "scenes", "Marked scenes", null, null, strip));
+  }
 
   const library = el("div", "home-band home-library");
   if (shelves.latestMovies.length > 0) {

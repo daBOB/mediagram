@@ -60,7 +60,7 @@ class TvTogetherViewTest : TvScreenStateTest() {
     private fun extras(ui: TogetherUi) =
         TvPlayerExtras(
             marks = null,
-            markActions = TvMarksActions({}, {}, {}),
+            markActions = TvMarksActions({}, {}, {}, {}),
             statsShown = false,
             onToggleStats = {},
             totals = { error("no statistics here") },
@@ -98,7 +98,7 @@ class TvTogetherViewTest : TvScreenStateTest() {
             TvPlayerTopBar(
                 set = set("a", Kind.MOVIE, "A Film", addedAt = 0),
                 marks = null,
-                markActions = TvMarksActions({}, {}, {}),
+                markActions = TvMarksActions({}, {}, {}, {}),
                 onToggleNotes = null,
                 focus = TvPlayerFocus(),
                 label = "Together · TV, Tablet",

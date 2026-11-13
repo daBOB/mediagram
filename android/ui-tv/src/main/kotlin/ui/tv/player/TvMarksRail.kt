@@ -16,7 +16,7 @@ import player.kidsLabel
 import player.listLabel
 
 /**
- * The phone's three kept controls — My List, Kids, Add to list — along the
+ * The phone's three kept controls — My List, Kids, Add to list, Mark scene — along the
  * top beside what is playing, where the web's slim top bar keeps them:
  * "this is where a viewer is when they find out what a film actually is"
  * (`player.js`). Down from any of them goes to the seek bar ([down]); Left
@@ -54,7 +54,8 @@ internal fun TvMarksRail(
         if (marks.canMarkKids) {
             MarkButton(label = kidsLabel(marks), onClick = actions.onKids, enabled = marks.kidsVerdict == KidsVerdict.UNRATED, modifier = toCard)
         }
-        MarkButton(label = "Add to list", onClick = actions.onAddToList, modifier = toCard.then(atEnd))
+        MarkButton(label = "Add to list", onClick = actions.onAddToList, modifier = toCard)
+        MarkButton(label = "Mark scene", onClick = actions.onMarkScene, modifier = toCard.then(atEnd))
     }
 }
 
@@ -67,6 +68,7 @@ internal data class TvMarksActions(
     val onToggleWatchlist: () -> Unit,
     val onKids: () -> Unit,
     val onAddToList: () -> Unit,
+    val onMarkScene: () -> Unit,
 )
 
 @Composable

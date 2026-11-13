@@ -123,26 +123,6 @@
   font-size: 0.95rem;
 }
 
-.lobby-blocked-tv {
-  font-size: 1.3rem;
-}
-
-.tv-headline {
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 4.2rem;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  max-width: 14ch;
-}
-
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin: 0;
-}
-
 .badge {
   padding: 0.35rem 0.9rem;
   border-radius: 8px;
@@ -156,12 +136,3 @@
   font-weight: 700;
 }
 
-.tv-seats-main {
-  display: grid;
-  gap: 1rem;
-}
-
-.tv-footnote {
-  color: var(--muted);
-  font-size: 1.2rem;
-}

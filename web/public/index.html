@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/styles/deinterlace.css" />
     <link rel="stylesheet" href="/styles/player-card.css" />
     <link rel="stylesheet" href="/styles/together.css" />
+    <link rel="stylesheet" href="/styles/scenes.css" />
     <link rel="stylesheet" href="/styles/episode-sidebar.css" />
     <link rel="stylesheet" href="/styles/stats.css" />
     <link rel="stylesheet" href="/styles/film-leader.css" />
@@ -164,6 +165,7 @@
         <span class="what" id="now"></span>
         <span class="together-label" id="together-label" hidden></span>
         <button id="watchlist" class="ghost" aria-pressed="false">My List</button>
+        <button id="mark-scene" class="ghost" title="Mark this moment (N)">Mark scene</button>
         <button id="kids" class="ghost" aria-pressed="false">Kids</button>
         <!-- An unrated title is for kids only from the age a grown-up picks
              here; a rated one is decided by its rating, shown on the button above. -->
@@ -182,6 +184,8 @@
       <!-- What another screen in the session just did, for two seconds. Empty
            rather than hidden in between, so the change is read out. -->
       <p class="together-note" id="together-note" role="status"></p>
+      <!-- Same pill as above: it says what the viewer just marked. -->
+      <p class="together-note" id="mark-scene-said" role="status"></p>
 
       <!-- The controls, as one card over the foot of the picture, in three
            rows: where the viewer is, how the title plays, and the transport.
@@ -216,6 +220,7 @@
             <button id="speed" class="tool" aria-label="Speed">1×</button>
             <button id="audio" class="tool" aria-label="Audio" hidden>Audio</button>
             <button id="framing" class="tool" aria-label="Framing">Fit</button>
+            <button id="clip" class="tool" aria-label="Clip" aria-haspopup="true" aria-expanded="false" title="Clip a scene (X)">Clip</button>
             <button id="together" class="tool">Watch together</button>
             <button id="cast" class="tool" type="button">Play on TV</button>
             <span class="spacer"></span>

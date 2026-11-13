@@ -85,7 +85,7 @@ describe("player notes", () => {
 
 describe("player library marks", () => {
   test("watchlist controls follow the current title and emit state-owned changes once", () => {
-    const marks = mountPlayerLibraryMarks();
+    const marks = mountPlayerLibraryMarks({ filmTime: () => 0 });
     let changed = 0;
     const unsubscribe = state.subscribeChanges(() => {
       changed++;
@@ -111,8 +111,31 @@ describe("player library marks", () => {
     }
   });
 
+  test("marking a scene says where, and an unmarked profile says nothing", async () => {
+    const marks = mountPlayerLibraryMarks({ filmTime: () => 3735.4 });
+    marks.open({ setId: "film" });
+    await marks.mark(); // no profile chosen: nothing to keep the mark in
+    expect(env.node("mark-scene-said").textContent).toBe("");
+  });
+
+  test("a mark keeps the frame on screen to the millisecond, not the whole second", async () => {
+    env.respondWith(async (url, options) => {
+      if (url === "/api/profiles/p/state") return Response.json({});
+      if (options?.method === "POST") return Response.json({ id: "m1" }, { status: 201 });
+      return new Response(null, { status: 404 });
+    });
+    await state.useProfile("p");
+    const marks = mountPlayerLibraryMarks({ filmTime: () => 3735.4567 });
+    marks.open({ setId: "film" });
+    await marks.mark();
+    const post = env.requests.find((request) => request.options?.method === "POST")!;
+    expect(JSON.parse(post.options!.body as string)).toEqual({ setId: "film", at: 3735.457 });
+    expect(env.node("mark-scene-said").textContent).toBe("Scene marked at 1:02:15");
+    await state.useProfile(null);
+  });
+
   test("a rating decides and is shown locked; an unrated title is for kids from an age, or not at all", () => {
-    const marks = mountPlayerLibraryMarks();
+    const marks = mountPlayerLibraryMarks({ filmTime: () => 0 });
     const kids = env.node("kids");
     const age = env.node("kids-age");
     marks.open({ setId: "rated-safe", fsk: "6" });
@@ -145,7 +168,7 @@ describe("player library marks", () => {
       Response.json({ collections: [{ id: "weekend", name: "Weekend", items: [] }] }),
     );
     await state.useProfile("viewer");
-    const marks = mountPlayerLibraryMarks();
+    const marks = mountPlayerLibraryMarks({ filmTime: () => 0 });
     const prompts: string[] = [];
     Object.assign(env.window, {
       prompt: (message: string) => {

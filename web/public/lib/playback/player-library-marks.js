@@ -1,5 +1,6 @@
 /** My List, kids and collection controls for the title currently open. */
 import * as state from "../watch-state.js";
+import { clockTime } from "../format.js";
 import { ageLabel, kidsVerdict } from "../age-rating.js";
 
 /**
@@ -10,7 +11,9 @@ import { ageLabel, kidsVerdict } from "../age-rating.js";
 const YOUNGEST_KIDS_LIMIT = 6;
 const OLDEST_KIDS_LIMIT = 12;
 
-export function mountPlayerLibraryMarks() {
+export function mountPlayerLibraryMarks({ filmTime }) {
+  const markScene = document.getElementById("mark-scene");
+  const said = document.getElementById("mark-scene-said");
   const watchlist = document.getElementById("watchlist");
   const kids = document.getElementById("kids");
   const kidsAge = document.getElementById("kids-age");
@@ -48,6 +51,19 @@ export function mountPlayerLibraryMarks() {
     refreshKids();
   }
 
+  /** Marks the moment on screen and says so; cleared after 3 s so the same words announce again. */
+  let hideSaid = 0;
+  async function mark() {
+    if (!title || state.profileId() === null) return;
+    // To the millisecond, as the sync record keeps it: the frame on screen, not the second it fell in.
+    const at = Math.round(filmTime() * 1000) / 1000;
+    said.textContent = (await state.markScene(title.setId, at)) === null
+      ? "Couldn't mark this scene"
+      : `Scene marked at ${clockTime(at)}`;
+    clearTimeout(hideSaid); // a second mark restarts the wait
+    hideSaid = setTimeout(() => { said.textContent = ""; }, 3000);
+  }
+  markScene.addEventListener("click", mark);
   watchlist.addEventListener("click", () => {
     if (!title) return;
     state.setWatchlisted(title.setId, !state.isWatchlisted(title.setId));
@@ -71,5 +87,5 @@ export function mountPlayerLibraryMarks() {
     if (chosen) state.setInCollection(chosen.id, title.setId, true);
   });
 
-  return { open, clear: () => open(null) };
+  return { open, clear: () => open(null), mark };
 }

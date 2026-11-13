@@ -700,6 +700,10 @@ class FakeCore(
     override suspend fun setWatchlisted(profileId: String, setId: String, listed: Boolean) =
         watchState.setWatchlisted(profileId, setId, listed)
 
+    override suspend fun markScene(profileId: String, setId: String, at: Double): String? = watchState.markScene(profileId, setId, at)
+
+    override suspend fun removeScene(profileId: String, id: String): Boolean = watchState.removeScene(profileId, id)
+
     override suspend fun setKids(setId: String, age: UByte?) = watchState.setKids(setId, age)
 
     override suspend fun editorsChoice(): String? = watchState.editorsChoice()

@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.seconds
 data class MediaNight(
     val kidsLocked: Boolean,
     val titles: String,
-    /** False when the media app gave no answer, so the shelf can say why there are no films. */
+    /** False when the media app gave no answer, so the TV page can say why there are no films. */
     val answered: Boolean = true,
     /** The home cache server the media app follows, where Preisfrage's articles are; `""` for none. */
     val cacheServer: String = "",

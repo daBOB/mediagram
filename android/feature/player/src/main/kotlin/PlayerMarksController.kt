@@ -3,6 +3,8 @@ package player
 import data.WatchStateRepository
 import data.orDefault
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +35,13 @@ class PlayerMarksController(
 
     /** A mark write that could not be confirmed, said until dismissed or the title changes. */
     val actionNotice: StateFlow<String?> = _actionNotice.asStateFlow()
+
+    private val _sceneNotice = MutableStateFlow<String?>(null)
+
+    /** "Scene marked at 1:02:15", up for a few seconds after a mark. */
+    val sceneNotice: StateFlow<String?> = _sceneNotice.asStateFlow()
+
+    private var sceneNoticeJob: Job? = null
 
     /** Bumped on every open and stop, so a write that finishes late cannot speak about a title no longer open. */
     private var generation = 0L
@@ -66,10 +75,37 @@ class PlayerMarksController(
     fun reset() {
         generation++
         _actionNotice.value = null
+        clearSceneNotice()
     }
 
     fun dismissNotice() {
         _actionNotice.value = null
+        clearSceneNotice()
+    }
+
+    private fun clearSceneNotice() {
+        sceneNoticeJob?.cancel()
+        _sceneNotice.value = null
+    }
+
+    /** Keeps the open title's film second [atSeconds] as a scene; the web player lists and cuts them. */
+    fun markScene(atSeconds: Double) {
+        val setId = session.openSetId ?: return
+        val started = generation
+        scope.launch {
+            val kept = orDefault(false, "mark scene") { repository.markScene(setId, atSeconds) }
+            if (started != generation) return@launch
+            if (!kept) {
+                _actionNotice.value = "Couldn't mark this scene"
+                return@launch
+            }
+            sceneNoticeJob?.cancel()
+            _sceneNotice.value = "Scene marked at ${model.clockTime(atSeconds)}"
+            sceneNoticeJob = launch {
+                delay(SCENE_NOTICE_MS)
+                _sceneNotice.value = null
+            }
+        }
     }
 
     fun toggleWatchlist() {
@@ -141,3 +177,5 @@ class PlayerMarksController(
         }
     }
 }
+
+private const val SCENE_NOTICE_MS = 3_000L

@@ -70,6 +70,7 @@ fun TvPlayerScreen(
     val player by viewModel.player.collectAsStateWithLifecycle()
     val marks = marksOutsideACast(viewModel)
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
+    val sceneNotice by viewModel.sceneNotice.collectAsStateWithLifecycle()
     val held by viewModel.held.collectAsStateWithLifecycle()
     val choices by viewModel.choices.collectAsStateWithLifecycle()
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
@@ -190,7 +191,7 @@ fun TvPlayerScreen(
             val dialogKeys = { event: KeyEvent -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) }
             TvMarkDialogs(overlays, marks, actionNotice, report, viewModel, dialogKeys)
             TvActionNotice(
-                notice = actionNotice,
+                notice = actionNotice ?: sceneNotice,
                 onGone = viewModel::dismissActionNotice,
                 modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             )

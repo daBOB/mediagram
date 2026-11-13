@@ -1,0 +1,52 @@
+import type { PlayerInfo } from "../../protocol/PlayerInfo";
+import { Token } from "../../ui/Token";
+
+/**
+ * Who sits at the table and how to join: the code is big while nobody has, smaller once someone
+ * has (latecomers walk up to it). The settings button below takes the remote's Up from the halves'
+ * switch above the posters.
+ */
+export function TablePanel({
+  players,
+  joinUrl,
+  settingsFocused,
+  onSettings,
+  filmsAway,
+}: {
+  players: PlayerInfo[];
+  joinUrl: string;
+  settingsFocused: boolean;
+  onSettings: () => void;
+  filmsAway: boolean;
+}) {
+  const empty = players.length === 0;
+  // more than four: two columns of seats and a smaller code, so eight still fit beside the posters
+  const crowded = players.length > 4;
+  return (
+    <aside className={`table-panel${empty ? " is-empty" : ""}${crowded ? " is-crowded" : ""}`}>
+      <figure className="table-qr">
+        <img src="/qr.svg" alt={`QR-Code für ${joinUrl}`} />
+      </figure>
+      <p className="table-url">{joinUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
+      {empty ? (
+        <p className="table-empty">Noch niemand am Tisch.</p>
+      ) : (
+        <ul className="table-seats">
+          {players.map((p) => (
+            <li key={p.id} className="table-seat">
+              <Token player={p} size="sm" />
+              <span className="table-seat-name">
+                {p.name}
+                {p.leader && " ★"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {filmsAway && <p className="table-note">Die Filme der Mediathek sind gerade nicht erreichbar.</p>}
+      <button className={`table-settings${settingsFocused ? " is-focused" : ""}`} tabIndex={-1} onClick={onSettings}>
+        Einstellungen
+      </button>
+    </aside>
+  );
+}

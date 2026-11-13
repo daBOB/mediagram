@@ -145,6 +145,23 @@ dialog.resting .control-card { pointer-events: none; }
 .stats-overlay dd { margin: 0; color: var(--stage-ink); }
 #stats-toggle[aria-pressed="true"] { color: var(--stage-accent); }
 
+/* The clip panel: the loop's two ends, and the export beneath them. Its rows
+   wrap, so on a phone the three nudges drop under the time rather than off the card. */
+.clip-panel { box-sizing: border-box; width: min(26rem, 100%); }
+.clip-head { color: var(--stage-ink); font-size: 0.9rem; letter-spacing: 0; text-transform: none; }
+.clip-row { flex-wrap: wrap; gap: 0.2rem 0.6rem; }
+.clip-nudges { display: flex; flex-wrap: wrap; margin-left: auto; }
+.clip-length, .clip-said, .clip-progress { margin: 0; color: var(--stage-ink-2); font-size: 0.8125rem; letter-spacing: 0; text-transform: none; }
+/* Empty, the status line takes no room but stays in the accessibility tree:
+   a live region added back from display: none misses its first message. */
+.clip-said:empty { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.clip-progress:empty { display: none; }
+.clip-length.clip-problem { color: var(--stage-accent); }
+.clip-export { justify-self: end; border: 1px solid var(--stage-rule); color: var(--stage-ink); }
+.clip-export:disabled { opacity: 0.35; cursor: default; }
+.clip-ready { display: grid; }
+.clip-link { display: flex; align-items: center; min-height: 44px; color: var(--stage-accent); font-size: 0.8125rem; overflow-wrap: anywhere; }
+
 @media (max-width: 767px) {
   /* The title takes a row of its own, ellipsized, with the marks wrapping
      beneath; the way out stays in the corner, clear of both. */

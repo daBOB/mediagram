@@ -81,6 +81,7 @@ fun PlayerScreen(
     val notes by viewModel.notes.collectAsStateWithLifecycle()
     val episodes by viewModel.episodes.collectAsStateWithLifecycle()
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
+    val sceneNotice by viewModel.sceneNotice.collectAsStateWithLifecycle()
     val together by viewModel.together.collectAsStateWithLifecycle()
     val report by viewModel.report.collectAsStateWithLifecycle()
     CastWhileInSession(cast, inSession = together.button == TogetherButton.LEAVE)
@@ -205,7 +206,7 @@ fun PlayerScreen(
                 report = report,
                 marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )
-            ActionNoticeBar(actionNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
+            ActionNoticeBar(actionNotice ?: sceneNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
         }
     }
 }

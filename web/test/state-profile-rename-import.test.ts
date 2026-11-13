@@ -165,6 +165,14 @@ describe("folding two rows of one person", () => {
     state.close();
   });
 
+  test("a fold keeps the folded row's scene marks", () => {
+    const { state, older, newer } = twoRows();
+    const id = state.markScene(newer, "01A", 61.5)!;
+    state.importMerged(merged(viewer("Celi", { renamedAt: 5000, formerNames: ["celine"] })));
+    expect(state.snapshot(older).scenes).toMatchObject([{ id, setId: "01A", at: 61.5 }]);
+    state.close();
+  });
+
   test("a fold points a kid's parent and a household's admin at the kept row", () => {
     const { state, path, older, newer } = twoRows();
     const mia = state.createProfile("Mia", true)!.id;

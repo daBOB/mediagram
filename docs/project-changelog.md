@@ -5,7 +5,7 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Spieltisch 0.179.0 — Flüchtig, made clear
+## Spieltisch 0.181.0 — Flüchtig, made clear
 
 **Added**
 
@@ -20,6 +20,38 @@ to `main`. Full phase-by-phase detail lives in
 - One figure per player: every hunter moves exactly one figure, a lone hunter (two players) moves two. The rules follow the figure count (`Rules::big_for`): 5 figures play 3/8/13/18/24 sightings with 5 shadow rides and 2 double moves; 4 figures every third round with 5/2; 3 figures every third round with 2/1; 2 figures every third round with 1/0. Bots win as the fugitive 43.0 / 45.6 / 48.7 / 49.5 % (`balance_sim.py` `game5`…`game2`, 1,500 games each).
 - Texts name players instead of piece numbers ("Ben ist dran", "Cem fährt mit dem Bus nach 166.", "Deine Figur · Feld 106" with the avatar's head); figure numbers and badges on the plan appear only for a lone hunter's two figures.
 - The city has six bridges (55–73, 58–76, 68–105, 83–101, 89–108, 117–135), drawn as stone decks; no street or bus crosses open water any more. Buses are drawn along the streets between their stops as a stripe. Totals: taxi 342, bus 89 on 63 stops, U-Bahn 20 on 14, ferry 3 on 4 piers.
+
+## Spieltisch 0.180.0 — Every game on the shelf, in two halves
+
+**Added**
+
+- The shelf shows every game we have, are building or plan: 11 playable, Kritzelei and Lebensweg as **WIP**, 18 more as **Coming soon** (`ui/shelf-games.ts`). A game not playable yet shows its seats, badge and description and "noch nicht spielbar"; OK does nothing and the room's pick stays. Denkzettel (same original as Kopfnuss) and Kings (no own name yet) are left off.
+- A short description of each game under its name.
+- Posters and backdrops for those 20 games and Grand Allee's missing pair, made with BudgetPixel gpt-image-2.6 from the cast sheet (`plans/261113-2325-shelf-all-games/`); the ten games that had art keep it.
+
+**Changed**
+
+- The row shows one half at a time, Minispiele or Spiele, switched by tabs above it: Up from the row, Left/Right, Up again for Einstellungen. A phone's pick in the other half brings its half along.
+- Posters are 20 % smaller, five whole on screen with the next peeking in and fading out, and move one at a time; they rise in one after another when a half opens.
+- The table panel moved to the bottom right, the QR code is about a third smaller, and a soft shade on the left of the backdrop keeps the name and description readable.
+
+## Spieltisch 0.179.0 — The games shelf and the lobby in one screen
+
+**Changed**
+
+- Spieltisch opens straight on one screen for the whole night, the user's layout A from three mockups (`plans/261113-1520-games-lobby/visuals/`): the focused game's backdrop, its name, seats and a line saying what OK does or why the game cannot start; the posters along the bottom; and a panel top right with the join code (large until someone joins, smaller after), who sits at the table and Einstellungen. Before, each game went shelf → its own lobby with the code → game, and back.
+- OK on a poster starts that game (the user's choice). Moving along the row picks the game for the room once the row rests (180 ms), so the phones see it; the leader's phone picking another game moves the row; OK before the room has heard the pick sends the pick and the start together, and the host judges it. Up reaches Einstellungen.
+- The native poster shelf is gone (`TvGamesShelf.kt`, `ShelfGames.kt`); the shelf is the TV page (`TvLobby.tsx`, `tv/lobby/`). Back: the page first, then a running game back to the shelf; on the shelf the first Back only says "Press Back again to end the game night" (3 s), since leaving drops every phone at the table. A night that failed to start offers Try again.
+- The host takes only the game from the TV's `configure`, never quiz mode, kids mode or adult questions: a pick from the poster row crossing the leader's kids-mode tap could otherwise switch it back.
+- The art moved from `res/drawable-nodpi/game_{poster,backdrop}_<kind>.webp` to `assets/game-art/{poster,backdrop}-<kind>.webp` (kind with dashes), served to the page at `/game-art/` by `GamePageClient` like the ceremony avatars, so it is not embedded once per ABI with the web client. A game without art shows its name on the felt; so does every game on the dev host.
+- "The library's films aren't available right now" is now on the page (`?films=0`): "Die Filme der Mediathek sind gerade nicht erreichbar."
+
+## 0.179.0 — Clip a scene
+
+**Added**
+
+- Scene marks: a viewer marks a moment of a title and the mark syncs between devices like a position (web and `mediagram-core`); Android (phone, tablet, TV) has a "Mark scene" button.
+- The web player lists marks as "Marked scenes" on Home and exports a marked range as an MP4 (H.264 / AAC stereo, at most 1920 px wide, HDR tone-mapped to bt709) cut by the server's ffmpeg. Android only marks, deliberately; see `docs/web-player.md` § Differences from Android.
 
 ## Spieltisch 0.178.1 — Preisfrage's poster and backdrop
 

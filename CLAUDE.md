@@ -105,6 +105,7 @@ belongs to, in every manifest of that line, in step; a change to both bumps both
 - `crates/mediagram-game/client/package.json`
 - `android/spieltisch/build.gradle.kts` — `versionName`, the Spieltisch app
 - `android/controller` reads its version from `crates/spieltisch-core/Cargo.toml`
+- `ios/controller/Info.plist` — `CFBundleShortVersionString`, the iOS controller app; `CFBundleVersion` is computed from it like Android's versionCode
 
 Within a line the numbers always agree, since they are programs of one product
 and a reader who finds them disagreeing has no way to tell which is its version;
@@ -162,3 +163,4 @@ Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root, both created
 - 2026-09-27: § Versioning: while at `0.x`, a breaking change bumps minor, not major. Removing `push-index --merge`/`--check` would otherwise have made the project 1.0.0 as a side effect; the user chose 0.67.0 and asked for the rule to say so.
 - 2026-10-02: § Versioning: versionCode is derived from versionName instead of counted by hand. The Android app now updates itself from the channel, which Android allows only to a higher versionCode; the hand-kept counter had sat at 18 since 0.81. The user chose derivation over a counter bumped at publish time.
 - 2026-11-10: § Versioning has two lines, the media library and Spieltisch. The games moved into their own app so a game release no longer re-releases the media app; the phone controller joins the Spieltisch line (user's decisions).
+- 2026-11-13: § Versioning names the iOS controller app's Info.plist in the Spieltisch line. It sat at 0.153.3 while Spieltisch moved on to 0.178, because the rule never named it (user's decision).

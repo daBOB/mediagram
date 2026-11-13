@@ -115,6 +115,15 @@ const ROOT = join(import.meta.dir, "..");
  * Raised 2026-11-10 for `src/config.ts`, by 6, and `src/index.ts`, by 1, to read the LAN chunk
  * server's address and token and hand it to the byte source; the client itself is its own file,
  * `src/cache/lan-chunk-server.ts`.
+ * Raised 2026-11-13 for `src/state/routes.ts`, by 4, `src/state/schema.ts`, by 2,
+ * `src/state/store.ts`, by 17 and `src/state/sync-record.ts`, by 5, to wire in marked scenes: the
+ * route, the group, the store's three methods and export/import lines, and the profile's `scenes`
+ * key; the rows, table and routes themselves are `scenes-*.ts`.
+ * Raised the same day for `src/index.ts`, by 11, `src/routes.ts`, by 3 and `src/server.ts`, by 2, to
+ * wire in clip exports: the jobs and their sweep, the route ahead of the state router, and the two
+ * query fields a clip download and listing read; the jobs and routes are `transcode/clip-*.ts`.
+ * Raised 2026-11-13 for `player.js`, by 13, and `transport.js`, by 5, to mount the clip panel, gate
+ * saving while it is up and open a title at a given place; the panel is `clip-panel*.js`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 714,
@@ -125,11 +134,11 @@ const CEILINGS: Record<string, number> = {
   "public/lib/library-session.js": 201,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 1018,
+  "public/lib/playback/player.js": 1031,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
-  "public/lib/playback/transport.js": 350,
-  "public/lib/watch-state.js": 491,
+  "public/lib/playback/transport.js": 355,
+  "public/lib/watch-state.js": 518,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 637,
   "public/styles/shell.css": 257,
@@ -137,14 +146,15 @@ const CEILINGS: Record<string, number> = {
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 271,
-  "src/index.ts": 455,
+  "src/index.ts": 466,
   "src/package/refresh.ts": 272,
-  "src/server.ts": 269,
-  "src/state/routes.ts": 209,
+  "src/server.ts": 271,
+  "src/routes.ts": 203,
+  "src/state/routes.ts": 213,
   "src/state/profiles-manage.ts": 194,
-  "src/state/schema.ts": 245,
-  "src/state/store.ts": 743,
-  "src/state/sync-record.ts": 299,
+  "src/state/schema.ts": 247,
+  "src/state/store.ts": 760,
+  "src/state/sync-record.ts": 304,
   "src/transcode/registry.ts": 338,
 };
 

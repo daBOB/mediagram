@@ -4,6 +4,7 @@
  * The shapes only, kept apart from `merge.ts` so its rules have the room.
  */
 
+import type { SceneRow } from "./scenes-record";
 import type { CollectionRow, ListRow, ProgressRow, UnwatchedRow, WatchedRow } from "./sync-record";
 import type { PreferenceRow } from "./preferences-record";
 import type { StatsRows } from "./stats-record";
@@ -37,6 +38,7 @@ export interface MergedProfile extends StatsRows, MergedRoles, NameKeys {
   unwatched?: UnwatchedRow[];
   watchlist?: ListRow[];
   collections?: CollectionRow[];
+  scenes?: SceneRow[];
   preferences?: PreferenceRow[];
 }
 

@@ -5,8 +5,9 @@
 use rusqlite::{Connection, params};
 
 /// Every table whose rows belong to one profile.
-const OWN_ROWS: [&str; 7] =
-    ["progress", "watched", "watchlist", "collections", "preferences", "stats_titles", "stats_days"];
+const OWN_ROWS: [&str; 8] = [
+    "progress", "watched", "watchlist", "collections", "scenes", "preferences", "stats_titles", "stats_days",
+];
 
 /// Moves `from`'s rows to `into`, points whatever named it at `into`, and
 /// deletes it.

@@ -38,6 +38,7 @@ import {
   type UnwatchedRow,
   type WatchedRow,
 } from "./sync-record";
+import type { SceneRow } from "./scenes-record";
 import type { PreferenceRow } from "./preferences-record";
 import { reconcileWatched } from "./watched-reconcile";
 import { keep, type Held } from "./tie-break";
@@ -72,6 +73,7 @@ export function mergeStates(given: SyncRecord[]): MergedState {
       unwatched: Map<string, Held<UnwatchedRow>>;
       watchlist: Map<string, Held<ListRow>>;
       collections: Map<string, Held<CollectionRow>>;
+      scenes: Map<string, Held<SceneRow>>;
       preferences: Map<string, Held<PreferenceRow>>;
     }
   >();
@@ -101,6 +103,7 @@ export function mergeStates(given: SyncRecord[]): MergedState {
           unwatched: new Map(),
           watchlist: new Map(),
           collections: new Map(),
+          scenes: new Map(),
           preferences: new Map(),
         };
         byViewer.set(name, held);
@@ -125,6 +128,7 @@ export function mergeStates(given: SyncRecord[]): MergedState {
       // item: two devices editing the same list within a merge round have
       // the later edit win outright, name and membership together.
       for (const row of profile.collections ?? []) keep(held.collections, row.id, row, device);
+      for (const row of profile.scenes ?? []) keep(held.scenes, row.id, row, device);
       // Per scope and name, so the language and the cue size of one show are
       // decided independently. JSON for the key: a scope may hold any text.
       for (const row of profile.preferences ?? []) {
@@ -159,6 +163,7 @@ export function mergeStates(given: SyncRecord[]): MergedState {
       unwatched,
       watchlist: [...held.watchlist.values()].map((one) => one.row),
       collections: [...held.collections.values()].map((one) => one.row),
+      scenes: [...held.scenes.values()].map((one) => one.row),
       preferences: [...held.preferences.values()].map((one) => one.row),
       ...stats.get(name),
       ...roles.get(name),

@@ -42,7 +42,7 @@ function changed() {
  * @type {{remembers: boolean, heard: boolean, profiles: import("../../src/state/profiles.ts").Profile[], profileId: string|null,
  *   everyone: import("../../src/state/profiles.ts").Profile[], households: import("../../src/state/households.ts").Household[],
  *   progress: Map<string, {at: number, duration: number|null, updatedAt: number}>,
- *   watchlist: Set<string>, collections: import("../../src/state/store.ts").Collection[], watched: Map<string, number>,
+ *   watchlist: Set<string>, scenes: {id: string, setId: string, at: number, markedAt: number}[], collections: import("../../src/state/store.ts").Collection[], watched: Map<string, number>,
  *   kids: Map<string, number>, preferences: Map<string, string>}}
  */
 const held = {
@@ -52,6 +52,7 @@ const held = {
   profileId: null,
   progress: new Map(),
   watchlist: new Set(),
+  scenes: [],
   collections: [],
   /** Watched to the end, as set id -> when. Held because finishing clears
    *  the position, so this is the only thing that remembers a title was ever
@@ -213,7 +214,7 @@ export async function refreshState(timeoutMs = 1500) {
 }
 
 function shelfSignature() {
-  return JSON.stringify([[...held.progress], [...held.watched], [...held.watchlist], held.collections]);
+  return JSON.stringify([[...held.progress], [...held.watched], [...held.watchlist], held.scenes, held.collections]);
 }
 
 /** Every position and completion as one string, to tell whether a refresh changed any. */
@@ -241,6 +242,7 @@ function adopt(said) {
     ]),
   );
   held.watchlist = new Set(said.watchlist ?? []);
+  held.scenes = said.scenes ?? [];
   held.collections = said.collections ?? [];
   held.watched = new Map(
     (said.watched ?? []).map((row) => [row.setId, Number(row.finishedAt) || 0]),
@@ -324,6 +326,31 @@ export function setWatchlisted(setId, listed) {
   if (listed) held.watchlist.add(setId);
   else held.watchlist.delete(setId);
   void write(under(`/watchlist/${encodeURIComponent(setId)}`), listed ? "PUT" : "DELETE");
+  changed();
+}
+
+/** Marked scenes, newest first. */
+export const scenes = () => held.scenes;
+
+/**
+ * Marks `at` seconds into `setId`. Waits for the server because it names the
+ * mark; held and announced only once it has.
+ * @returns {Promise<string|null>} The mark's id, or null if it was not kept or the profile changed meanwhile.
+ */
+export async function markScene(setId, at) {
+  const selection = profileSelection;
+  const asked = held.profileId;
+  const made = await createRecord(under("/scenes"), { setId, at });
+  if (!made || typeof made.id !== "string" || selection !== profileSelection || held.profileId !== asked) return null;
+  held.scenes.unshift({ id: made.id, setId, at, markedAt: Date.now() });
+  changed();
+  return made.id;
+}
+
+/** Drops a mark locally and persists best-effort. @returns {void} */
+export function removeScene(id) {
+  held.scenes = held.scenes.filter((scene) => scene.id !== id);
+  void write(under(`/scenes/${encodeURIComponent(id)}`), "DELETE");
   changed();
 }
 
