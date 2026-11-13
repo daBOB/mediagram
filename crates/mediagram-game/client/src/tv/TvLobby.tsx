@@ -101,6 +101,7 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
         settingsFocused={zone === "settings" && !settingsOpen}
         onSettings={() => setSettingsOpen(true)}
         filmsAway={filmsAway}
+        boardChip={game.kind === "kritzelei" ? scene.board : undefined}
       />
       <ul className="shelf-row" ref={row}>
         {games.map((g, i) => (

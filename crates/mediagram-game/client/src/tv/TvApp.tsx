@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { InkLog } from "../ink/ink-log";
 import { useConnection } from "../net";
 import type { TvView } from "../protocol/TvView";
 import { TvDreifelder } from "./TvDreifelder";
+import { TvKritzelei } from "./TvKritzelei";
 import { TvKopfnuss } from "./TvKopfnuss";
 import { TvFluechtig } from "./TvFluechtig";
 import { TvGrandAllee } from "./TvGrandAllee";
@@ -18,10 +20,12 @@ import { TvRace } from "./TvRace";
  */
 export function TvApp() {
   const [view, setView] = useState<TvView | null>(null);
+  const ink = useRef(new InkLog()).current;
   const { conn, status } = useConnection(
     () => ({ t: "hello", role: "tv", name: null, token: null }),
     (msg) => {
       if (msg.t === "tv") setView(msg.view);
+      else if (msg.t === "draw") ink.apply(msg);
     },
   );
 
@@ -49,7 +53,7 @@ export function TvApp() {
       ) : view.scene.kind === "preisfrage" ? (
         <TvPreisfrage scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "kritzelei" ? (
-        <p className="tv-wait">Kritzelei</p>
+        <TvKritzelei scene={view.scene.scene} players={view.players} conn={conn} ink={ink} />
       ) : (
         <TvQuiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}

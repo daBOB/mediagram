@@ -11,12 +11,15 @@ export function TablePanel({
   settingsFocused,
   onSettings,
   filmsAway,
+  boardChip,
 }: {
   players: PlayerInfo[];
   joinUrl: string;
   settingsFocused: boolean;
   onSettings: () => void;
   filmsAway: boolean;
+  /** Set while Kritzelei is the picked game: whether the drawing board is connected. */
+  boardChip?: boolean;
 }) {
   const empty = players.length === 0;
   // more than four: two columns of seats and a smaller code, so eight still end above the posters
@@ -43,6 +46,7 @@ export function TablePanel({
         </ul>
       )}
       {filmsAway && <p className="table-note">Die Filme der Mediathek sind gerade nicht erreichbar.</p>}
+      {boardChip !== undefined && <p className="table-note">{boardChip ? "Zeichenbrett bereit" : "Zeichenbrett fehlt"}</p>}
       <button className={`table-settings${settingsFocused ? " is-focused" : ""}`} tabIndex={-1} onClick={onSettings}>
         Einstellungen
       </button>
