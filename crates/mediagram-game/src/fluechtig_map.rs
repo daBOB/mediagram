@@ -73,7 +73,10 @@ static SMALL: LazyLock<City> = LazyLock::new(small);
 static BIG: LazyLock<City> = LazyLock::new(|| big(include_str!("../cities/fluechtig-big-city.json")));
 
 /// The big city's file: every line as pairs of fields. `tools/fluechtig-city`
-/// generates it and measures how evenly the two sides play on it.
+/// makes it in two steps: `generate_city.py`, then `add_bridges.py`, which
+/// puts streets and buses over the river on six bridges only (regenerating
+/// without it brings links over open water back). `balance_sim.py` measures
+/// how evenly the two sides play on it.
 #[derive(Deserialize)]
 struct CityFile {
     size: (i16, i16),

@@ -5,6 +5,7 @@ use crate::fluechtig::{FluechtigGame, Pick, Step};
 use crate::fluechtig_map::{City, Field};
 use crate::fluechtig_rules::Turn;
 use crate::game::{ViewCtx, name};
+use crate::room_seats::leader;
 use crate::protocol::{
     FluechtigAsk, FluechtigBoard, FluechtigHunter, FluechtigLink, FluechtigLogEntry, FluechtigMover, FluechtigOption, FluechtigPhone,
     FluechtigPiece, FluechtigScene, FluechtigSeen, FluechtigSide as Side, FluechtigSpot, FluechtigTicket as Ticket, FluechtigTurn,
@@ -42,31 +43,58 @@ impl FluechtigGame {
             round: c.round,
             rounds: c.rules.rounds,
             next_reveal: c.next_reveal(),
+            reveal_rounds: c.rules.reveal_rounds.clone(),
             fugitive: name(view.players, self.fugitive).into(),
             hiding: runs.then_some(c.fugitive.at),
             seen: c.log.iter().rev().find_map(|e| e.seen_at.map(|field| FluechtigSeen { field, round: e.round })),
             hideouts: c.hideouts.iter().copied().collect(),
-            pieces: mine.iter().map(|&i| FluechtigPiece { number: i as u8 + 1, at: c.hunters[i].at, tickets: c.hunters[i].tickets }).collect(),
+            pieces: mine
+                .iter()
+                .map(|&i| FluechtigPiece { number: self.figure(i).unwrap_or(1), at: c.hunters[i].at, tickets: c.hunters[i].tickets })
+                .collect(),
             fugitive_tickets: c.fugitive.tickets,
             log: self.log(),
             mover: self.who(view, player, c.turn),
             next: self.who(view, player, self.after()),
             // only the mover gets the question and its clock: the others would be
             // re-sent on every tap of the fugitive's, and learn when they hesitate
-            ask: (self.mover() == Some(player)).then(|| self.question()),
+            ask: (self.intro.is_none() && self.mover() == Some(player)).then(|| self.question()),
+            intro: self.intro_view(view),
+            may_skip: self.intro.is_some() && leader(view.players) == Some(player),
+            partners: if runs { Vec::new() } else { self.partners(view, player) },
         };
-        PhoneScreen::Fluechtig { phone }
+        PhoneScreen::Fluechtig { phone: Box::new(phone) }
+    }
+
+    /// Figure `i`'s number among its player's figures; None when that player has one.
+    pub(crate) fn figure(&self, i: usize) -> Option<u8> {
+        let owner = self.owners[i];
+        let mine = self.owners.iter().filter(|&&o| o == owner).count();
+        let k = self.owners[..i].iter().filter(|&&o| o == owner).count();
+        (mine > 1).then_some(k as u8 + 1)
+    }
+
+    /// The other hunting players' names in turn order, each once.
+    fn partners(&self, view: &ViewCtx, me: PlayerId) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        for &id in self.owners.iter().filter(|&&id| id != me) {
+            let n = name(view.players, id).to_owned();
+            if !out.contains(&n) {
+                out.push(n);
+            }
+        }
+        out
     }
 
     /// The player behind `turn`, as a phone names them.
     fn who(&self, view: &ViewCtx, me: PlayerId, turn: Turn) -> Option<FluechtigMover> {
         let (id, piece) = match turn {
             Turn::Fugitive => (self.fugitive, None),
-            Turn::Hunter(i) => (self.owners[i], Some(i as u8 + 1)),
+            Turn::Hunter(i) => (self.owners[i], self.figure(i)),
             Turn::Over(_) => return None,
         };
         let color = view.players.iter().find(|p| p.id == id).map_or("#888888", |p| p.color);
-        Some(FluechtigMover { name: name(view.players, id).into(), color: color.into(), piece, you: id == me })
+        Some(FluechtigMover { name: name(view.players, id).into(), color: color.into(), piece, runs: turn == Turn::Fugitive, you: id == me })
     }
 
     /// Whose turn comes next, as far as the table can tell now.
@@ -104,7 +132,7 @@ impl FluechtigGame {
         let c = &self.chase;
         match (self.ask.step, c.turn) {
             (Step::Ticket(to), _) => format!("Nach Feld {to} – womit?"),
-            (Step::Field, Turn::Hunter(i)) => format!("Wohin fährt Jäger {}?", i + 1),
+            (Step::Field, Turn::Hunter(i)) => self.figure(i).map_or_else(|| "Wohin fährst du?".into(), |k| format!("Wohin fährt Figur {k}?")),
             (Step::Field, _) => match c.double_left {
                 2 => "Doppelzug, 1. Fahrt: wohin?",
                 1 => "Doppelzug, 2. Fahrt: wohin?",
@@ -118,7 +146,7 @@ impl FluechtigGame {
         self.chase.log.iter().map(|e| FluechtigLogEntry { round: e.round, tickets: e.tickets.clone(), seen_at: e.seen_at }).collect()
     }
 
-    pub(crate) fn tv_view(&self) -> TvScene {
+    pub(crate) fn tv_view(&self, view: &ViewCtx) -> TvScene {
         let c = &self.chase;
         let turn = match c.turn {
             Turn::Fugitive => FluechtigTurn::Fugitive { double_left: c.double_left },
@@ -152,6 +180,7 @@ impl FluechtigGame {
             hideouts: c.hideouts.iter().copied().collect(),
             news: c.news.clone(),
             route: c.winner().map(|_| c.route()),
+            intro: self.intro_view(view),
         };
         TvScene::Fluechtig { scene }
     }

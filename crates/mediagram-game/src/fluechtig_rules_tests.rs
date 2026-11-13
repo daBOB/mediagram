@@ -185,7 +185,7 @@ fn spent_hunter_tickets_go_to_the_fugitive() {
 #[test]
 fn hideouts_always_hold_the_real_field_through_a_whole_game() {
     let big = CityKind::Big.city();
-    let games = [(Rules::small(), 27, vec![3, 14, 19, 44]), (Rules::big(), big.fugitive_starts[0], big.hunter_starts[..5].to_vec())];
+    let games = [(Rules::small(), 27, vec![3, 14, 19, 44]), (Rules::big_for(5), big.fugitive_starts[0], big.hunter_starts[..5].to_vec())];
     for (rules, start, hunters) in games {
         let mut c = chase(rules, start, &hunters);
         let mut step = 0;
@@ -204,9 +204,9 @@ fn the_big_city_has_the_classic_totals_and_hangs_together() {
     let city = CityKind::Big.city();
     assert_eq!(city.spots.len(), 199);
     let count = |k| city.links.iter().filter(|l| l.kind == k).count();
-    assert_eq!((count(Taxi), count(Bus), count(Ubahn), count(Schatten)), (346, 99, 20, 3));
+    assert_eq!((count(Taxi), count(Bus), count(Ubahn), count(Schatten)), (342, 89, 20, 3));
     let stops = |k| city.links.iter().filter(|l| l.kind == k).flat_map(|l| [l.a, l.b]).collect::<BTreeSet<_>>().len();
-    assert_eq!((stops(Bus), stops(Ubahn), stops(Schatten)), (62, 14, 4));
+    assert_eq!((stops(Bus), stops(Ubahn), stops(Schatten)), (63, 14, 4));
     // a taxi alone reaches every field
     let mut seen = BTreeSet::from([1]);
     let mut todo = vec![1];
@@ -227,4 +227,56 @@ fn the_big_city_has_the_classic_totals_and_hangs_together() {
     assert_eq!((city.hunter_starts.len(), city.fugitive_starts.len(), starts.len()), (9, 9, 18));
     // the river runs past both edges of the plan
     assert!(city.river.first().unwrap().0 < 0 && city.river.last().unwrap().0 > city.size.0);
+}
+
+#[test]
+fn fewer_figures_see_the_fugitive_every_third_round_with_fewer_shadow_rides_and_double_moves() {
+    let third: Vec<u8> = (3..=24).step_by(3).collect();
+    for (figures, reveals, schatten, doppel) in
+        [(5, vec![3, 8, 13, 18, 24], 5, 2), (4, third.clone(), 5, 2), (3, third.clone(), 2, 1), (2, third.clone(), 1, 0)]
+    {
+        let r = Rules::big_for(figures);
+        assert_eq!(
+            (r.rounds, r.reveal_rounds.clone(), r.fugitive_tickets.schatten, r.fugitive_tickets.doppel),
+            (24, reveals, schatten, doppel),
+            "{figures} figures"
+        );
+        assert_eq!((r.fugitive_tickets.taxi, r.fugitive_tickets.bus, r.fugitive_tickets.ubahn), (4, 3, 3));
+        assert_eq!(r.hunter_tickets, Tickets { taxi: 10, bus: 8, ubahn: 4, schatten: 0, doppel: 0 });
+        assert!(r.inflow && r.city == CityKind::Big);
+    }
+    assert_eq!(Rules::big_for(1), Rules::big_for(2));
+    assert_eq!(Rules::big_for(9), Rules::big_for(5));
+}
+
+#[test]
+fn two_figures_never_offer_a_double_move() {
+    let big = CityKind::Big.city();
+    let c = chase(Rules::big_for(2), big.fugitive_starts[0], &big.hunter_starts[..2]);
+    assert!(!c.can_double());
+}
+
+#[test]
+fn taxi_and_bus_cross_the_river_only_on_the_six_bridges() {
+    let city = CityKind::Big.city();
+    // the river's middle under x, straight between its points
+    let river_y = |x: f64| {
+        let r = &city.river;
+        let i = r.windows(2).position(|w| f64::from(w[1].0) >= x).unwrap_or(r.len() - 2);
+        let ((x0, y0), (x1, y1)) = (r[i], r[i + 1]);
+        let (x0, y0, x1, y1) = (f64::from(x0), f64::from(y0), f64::from(x1), f64::from(y1));
+        y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+    };
+    let north = |f: Field| {
+        let (x, y) = city.spots[usize::from(f) - 1];
+        f64::from(y) < river_y(f64::from(x))
+    };
+    let crossings = |k| {
+        let mut out: Vec<(Field, Field)> =
+            city.links.iter().filter(|l| l.kind == k && north(l.a) != north(l.b)).map(|l| (l.a.min(l.b), l.a.max(l.b))).collect();
+        out.sort_unstable();
+        out
+    };
+    assert_eq!(crossings(Taxi), vec![(55, 73), (58, 76), (68, 105), (83, 101), (89, 108), (117, 135)]);
+    assert_eq!(crossings(Bus), vec![(58, 76), (68, 105)]);
 }

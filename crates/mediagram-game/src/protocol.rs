@@ -19,7 +19,7 @@ pub use crate::protocol_cards::{
 pub use crate::protocol_client::{Action, ClientMsg, Role};
 pub use crate::protocol_kopfnuss::{Climber, KopfnussScene, KopfnussStage, Trick, TrickHit, TrickLoad};
 pub use crate::protocol_fluechtig::{
-    FluechtigBoard, FluechtigHunter, FluechtigLink, FluechtigLogEntry, FluechtigScene, FluechtigSide, FluechtigSpot, FluechtigTicket,
+    FluechtigBoard, FluechtigHunter, FluechtigIntro, FluechtigLink, FluechtigLogEntry, FluechtigScene, FluechtigSide, FluechtigSpot, FluechtigTicket,
     FluechtigTickets, FluechtigTurn,
 };
 pub use crate::protocol_fluechtig_phone::{FluechtigAsk, FluechtigMover, FluechtigOption, FluechtigPhone, FluechtigPiece, FluechtigSeen};
@@ -153,7 +153,8 @@ pub enum PhoneScreen {
     },
     /// A Flüchtig phone: the chase as this player may know it, and the move to make.
     Fluechtig {
-        phone: FluechtigPhone,
+        // boxed: the phone is by far the largest screen
+        phone: Box<FluechtigPhone>,
     },
     Final {
         rank: u8,

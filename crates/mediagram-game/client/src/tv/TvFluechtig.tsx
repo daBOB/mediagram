@@ -2,9 +2,12 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { Connection } from "../net";
 import type { FluechtigScene } from "../protocol/FluechtigScene";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
+import { figureOf } from "../ui/fluechtig-naming";
 import { TICKET_COLOR, TICKET_SHORT, type TicketKey } from "../ui/fluechtig-tickets";
 import { Token } from "../ui/Token";
 import { FluechtigBoard } from "./fluechtig/FluechtigBoard";
+import { FluechtigIntroCard } from "./fluechtig/FluechtigIntroCard";
+import { FluechtigLegend } from "./fluechtig/FluechtigLegend";
 import "./fluechtig/fluechtig.css";
 import { TvFinal } from "./TvFinal";
 import { TvSettingsPanel } from "./settings/TvSettingsPanel";
@@ -55,19 +58,20 @@ export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; p
     return <TvFinal players={players} conn={conn} title={turn.winner === "fugitive" ? `${runner} ist entkommen!` : "Die Jäger gewinnen!"} />;
   }
 
-  const piece = turn.turn === "hunter" ? turn.index + 1 : null;
+  const piece = turn.turn === "hunter" ? figureOf(scene.hunters, turn.index) : null;
   const mover = byId.get(turn.turn === "hunter" ? scene.hunters[turn.index].player : scene.fugitive);
   const status =
     turn.turn === "over"
       ? `${runner} ist ${turn.winner === "fugitive" ? "entkommen" : "erwischt"}!`
       : turn.turn === "hunter"
-        ? `${name(scene.hunters[turn.index].player)} zieht Jäger ${piece}`
+        ? `${name(scene.hunters[turn.index].player)} ${piece ? `zieht Figur ${piece}` : "ist dran"}`
         : `${runner} fährt geheim${turn.double_left > 0 ? " (Doppelzug)" : ""} …`;
   const left = scene.next_reveal === null ? null : scene.next_reveal - scene.round;
   const reveals = new Set(scene.reveal_rounds);
+  const intro = scene.intro;
 
   return (
-    <section className="fl">
+    <section className={`fl${intro?.card === 3 ? " fl-log-lit" : ""}`}>
       <FluechtigBoard scene={scene} players={players} />
       <div className="fl-hud fl-tl">
         <b>Flüchtig</b>
@@ -75,11 +79,13 @@ export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; p
           Runde {scene.round} / {scene.rounds}
         </span>
       </div>
-      <div className="fl-hud fl-tc" style={{ background: mover?.color }}>
-        {mover && <Token player={mover} size="sm" />}
-        {status}
-      </div>
-      {left !== null && !over && (
+      {!intro && (
+        <div className="fl-hud fl-tc" style={{ background: mover?.color }}>
+          {mover && <Token player={mover} size="sm" />}
+          {status}
+        </div>
+      )}
+      {left !== null && !over && !intro && (
         <div className="fl-hud fl-tr">
           <b>{left > 0 ? left : "!"}</b>
           <span>
@@ -124,6 +130,8 @@ export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; p
           ))}
         </div>
       </div>
+      <FluechtigLegend runner={runner} />
+      {intro && <FluechtigIntroCard scene={scene} intro={intro} players={players} />}
       {settings && <TvSettingsPanel onClose={() => setSettings(false)} />}
     </section>
   );

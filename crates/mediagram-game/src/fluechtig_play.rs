@@ -77,11 +77,11 @@ impl Chase {
             *self.fugitive.tickets.count_mut(ticket) += 1;
         }
         if to == self.fugitive.at {
-            return self.finish(Side::Hunters, format!("Jäger {} fährt {} nach {to} und erwischt den Flüchtigen!", i + 1, by(ticket)));
+            return self.finish(Side::Hunters, format!("{} fährt {} nach {to} und erwischt den Flüchtigen!", self.names[i], by(ticket)));
         }
         let searched = self.hideouts.remove(&to);
         let found = if searched { ": Dort ist der Flüchtige nicht." } else { "." };
-        self.news.push(format!("Jäger {} fährt {} nach {to}{found}", i + 1, by(ticket)));
+        self.news.push(format!("{} fährt {} nach {to}{found}", self.names[i], by(ticket)));
         self.next_hunter();
         self.settle();
     }
@@ -117,7 +117,7 @@ impl Chase {
                     return self.finish(Side::Fugitive, "Kein Jäger kann mehr fahren: Der Flüchtige ist entkommen.".into());
                 }
                 Turn::Hunter(i) if self.hunter_moves(i).is_empty() => {
-                    self.news.push(format!("Jäger {} kann nicht fahren und setzt aus.", i + 1));
+                    self.news.push(format!("{} kann nicht fahren und setzt aus.", self.names[i]));
                     self.next_hunter();
                 }
                 _ => {

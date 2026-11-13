@@ -51,6 +51,10 @@ test("a field's ring is its strongest line, and the lines are drawn once per kin
   expect([rings.get(1), rings.get(3), rings.get(5), rings.get(2)]).toEqual(["bus", "ubahn", "schatten", undefined]);
   const lines = planLines(board);
   expect(lines.streets.split("M").length - 1).toBe(17);
-  expect(lines.bus).toContain("Q");
+  // the bus drives down the street through field 2; the U-Bahn bows underground
+  expect(lines.bus).toBe("M100 100L200 100L300 100");
+  expect(lines.ubahn).toContain("Q");
+  // the river at y 150 is crossed by the streets 1-5 … 4-8: one deck under each
+  expect(lines.bridges.split("M").length - 1).toBe(4);
   expect(lines.jetties.split("M").length - 1).toBe(2);
 });

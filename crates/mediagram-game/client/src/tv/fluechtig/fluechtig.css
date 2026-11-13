@@ -42,7 +42,12 @@
 .sp-street { stroke: #fffdf8; stroke-width: calc(5.2px * var(--u)); }
 .sp-name { font: 800 calc(14px * var(--u)) var(--display); letter-spacing: calc(3.5px * var(--u)); text-anchor: middle; fill: #6f6552; stroke: #e6dcc6; stroke-width: calc(4px * var(--u)); paint-order: stroke; opacity: 0.85; }
 .sp-ubahn { stroke: var(--ubahn); stroke-width: calc(4.5px * var(--u)); stroke-dasharray: 11 6; opacity: 0.8; }
-.sp-bus { stroke: var(--bus); stroke-width: calc(3.4px * var(--u)); opacity: 0.85; }
+/* the bus: a stripe down the middle of the streets it drives along */
+.sp-bus { stroke: var(--bus); stroke-width: calc(2.6px * var(--u)); stroke-linejoin: round; }
+/* a bridge: a stone deck under its street, over the water and the ferry's lane */
+.sp-deck-edge, .sp-deck { fill: none; stroke-linecap: square; }
+.sp-deck-edge { stroke: #7d6f57; stroke-width: calc(17px * var(--u)); }
+.sp-deck { stroke: #ece4d2; stroke-width: calc(13px * var(--u)); }
 
 .fl-field { fill: #fff; stroke: var(--taxi); stroke-width: 1.4; }
 .fl-field-bus { stroke: var(--bus); stroke-width: 2.8; }

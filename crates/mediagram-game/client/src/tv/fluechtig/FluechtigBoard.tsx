@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties } from "react";
 import type { FluechtigScene } from "../../protocol/FluechtigScene";
 import type { FluechtigSpot } from "../../protocol/FluechtigSpot";
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
+import { figureOf } from "../../ui/fluechtig-naming";
 import { avatarFigureUrl } from "../../ui/Token";
 import { fieldRings, planLines } from "./plan-lines";
 import { stadtplanArt } from "./stadtplan-art";
@@ -14,8 +15,8 @@ const PANELS = 64;
  * A piece on the plan: its player's avatar figure, standing beside its field
  * on a base in the player's colour, so the field's number stays readable. On
  * the top row it stands lower, clear of the TV's panels; at the plan's right
- * edge (`width`) it stands to the left of its field. `badge` is the hunter
- * piece's number, or the round a fugitive was last seen in.
+ * edge (`width`) it stands to the left of its field. `badge` is the figure's
+ * number when its player has two, or the round a fugitive was last seen in.
  */
 function Piece({ at, r, width, player, badge, look = "" }: { at: FluechtigSpot; r: number; width: number; player?: PlayerInfo; badge?: string; look?: string }) {
   const [failed, setFailed] = useState<string | null>(null);
@@ -96,7 +97,7 @@ export function FluechtigBoard({ scene, players }: { scene: FluechtigScene; play
       })}
       {seen?.seen_at != null && <Piece at={spot(seen.seen_at)} r={r} width={board.width} player={runner} badge={`R${seen.round}`} look="fl-pawn-seen" />}
       {scene.hunters.map((h, i) => (
-        <Piece key={i} at={spot(h.at)} r={r} width={board.width} player={player(h.player)} badge={String(i + 1)} look={mover === h ? "fl-pawn-now" : ""} />
+        <Piece key={i} at={spot(h.at)} r={r} width={board.width} player={player(h.player)} badge={figureOf(scene.hunters, i)?.toString()} look={mover === h ? "fl-pawn-now" : ""} />
       ))}
       {route && <Piece at={spot(route[route.length - 1])} r={r} width={board.width} player={runner} />}
     </svg>

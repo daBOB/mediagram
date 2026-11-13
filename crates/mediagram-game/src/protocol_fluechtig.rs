@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::protocol::PlayerId;
+use crate::protocol::{PlayerId, ServerTime};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -16,7 +16,7 @@ pub struct FluechtigScene {
     /// The next round whose fugitive move ends in plain sight.
     pub next_reveal: Option<u8>,
     pub fugitive: PlayerId,
-    /// Hunter pieces in turn order; "Jäger 1" is the first.
+    /// Hunter figures in turn order: one per hunting player, two for a lone hunter.
     pub hunters: Vec<FluechtigHunter>,
     /// The fugitive's tickets lie open on the table.
     pub fugitive_tickets: FluechtigTickets,
@@ -30,6 +30,20 @@ pub struct FluechtigScene {
     pub news: Vec<String>,
     /// The fugitive's real route from the start field, once the chase is over.
     pub route: Option<Vec<u8>>,
+    /// The rules card on show before round 1; None once the chase runs.
+    pub intro: Option<FluechtigIntro>,
+}
+
+/// Rules card `card` of `cards` (1-based), shown from `opened_at` until
+/// `closes_at`; the TV draws its content from the scene. `leader` may skip.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct FluechtigIntro {
+    pub card: u8,
+    pub cards: u8,
+    pub opened_at: ServerTime,
+    pub closes_at: ServerTime,
+    pub leader: Option<String>,
 }
 
 /// The city on a plan `width` by `height`: `spots[field - 1]`, its links, and

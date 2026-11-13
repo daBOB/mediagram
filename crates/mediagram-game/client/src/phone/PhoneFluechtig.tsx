@@ -4,6 +4,7 @@ import type { FluechtigPhone } from "../protocol/FluechtigPhone";
 import type { FluechtigTicket } from "../protocol/FluechtigTicket";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { TICKET_COLOR, TICKET_NAME, TICKET_SHORT } from "../ui/fluechtig-tickets";
+import { RoleBar, RoleCard, useRoleTheme } from "./FluechtigRole";
 import { Disc, HUNTER_KEYS, Hideouts, Log, Pieces, RUNNER_KEYS, RunnerHead, WaitHead, Wallet, seenLine } from "./fluechtig-phone-parts";
 import "./fluechtig-phone.css";
 
@@ -26,6 +27,7 @@ const chips = (ways: FluechtigTicket[]) => (ways.some((w) => w !== "schatten") ?
 export function PhoneFluechtig({ phone, me, conn }: { phone: FluechtigPhone; me: PlayerInfo; conn: Connection }) {
   const { ask } = phone;
   const runs = phone.hiding !== null;
+  useRoleTheme(runs);
   const opensAt = ask?.opens_at ?? null;
   // a timer opens the question; no clock re-renders the screen all game long
   const [live, setLive] = useState(false);
@@ -52,9 +54,12 @@ export function PhoneFluechtig({ phone, me, conn }: { phone: FluechtigPhone; me:
   // a click, not a pointer-down: a scroll that starts on a tile must not move the piece
   const press = (index: number) => ({ type: "button" as const, "aria-disabled": !live, onClick: () => pick(index) });
 
+  if (phone.intro) return <RoleCard phone={phone} me={me} conn={conn} />;
+
   if (!ask) {
     return (
       <section className="flp">
+        <RoleBar phone={phone} />
         <WaitHead phone={phone} />
         {runs ? (
           <>
@@ -63,8 +68,8 @@ export function PhoneFluechtig({ phone, me, conn }: { phone: FluechtigPhone; me:
           </>
         ) : (
           <>
-            <h3>Deine Jäger</h3>
-            <Pieces pieces={phone.pieces} color={me.color} />
+            <h3>{phone.pieces.length > 1 ? "Deine Figuren" : "Deine Figur"}</h3>
+            <Pieces pieces={phone.pieces} color={me.color} avatar={me.avatar} />
           </>
         )}
         <h3>{runs ? "Dein Fahrtenbuch" : `Fahrtenbuch von ${phone.fugitive}`}</h3>
@@ -78,14 +83,12 @@ export function PhoneFluechtig({ phone, me, conn }: { phone: FluechtigPhone; me:
     <RunnerHead phone={phone} seenAfter={ask.seen_after} />
   ) : (
     <header className="flp-head">
-      <Disc color={me.color} label={phone.mover?.piece ?? "?"} />
+      <Disc color={me.color} label={phone.mover?.piece ?? [...me.name][0] ?? "?"} avatar={me.avatar} />
       <div>
         <small>
           Du ziehst · Runde {phone.round} von {phone.rounds}
         </small>
-        <b>
-          Jäger {phone.mover?.piece} · Feld {ask.at}
-        </b>
+        <b>{phone.mover?.piece ? `Figur ${phone.mover.piece} · Feld ${ask.at}` : `Deine Figur · Feld ${ask.at}`}</b>
         <em>{seenLine(phone)}</em>
       </div>
     </header>
@@ -95,6 +98,7 @@ export function PhoneFluechtig({ phone, me, conn }: { phone: FluechtigPhone; me:
     const back = ask.options.findIndex((o) => o.kind === "back");
     return (
       <section className={`flp${live ? "" : " flp-shut"}`}>
+        <RoleBar phone={phone} />
         {head}
         <h2 className="flp-prompt">{ask.prompt}</h2>
         <div className="flp-tickets">
@@ -120,6 +124,7 @@ export function PhoneFluechtig({ phone, me, conn }: { phone: FluechtigPhone; me:
 
   return (
     <section className={`flp${live ? "" : " flp-shut"}`}>
+      <RoleBar phone={phone} />
       {head}
       {!runs && <Hideouts phone={phone} />}
       <Wallet tickets={ask.tickets} keys={runs ? RUNNER_KEYS : HUNTER_KEYS} />

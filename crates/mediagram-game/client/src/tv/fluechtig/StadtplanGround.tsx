@@ -3,8 +3,8 @@ import type { planLines } from "./plan-lines";
 import type { StadtplanArt } from "./stadtplan-art";
 
 /**
- * The city plan's ground: blocks, parks, the river with its ferry, the
- * streets and the bus and U-Bahn lines. None of it changes during a chase,
+ * The city plan's ground: blocks, parks, the river with its ferry and the
+ * bridges' decks, the streets and the bus and U-Bahn lines. None of it changes during a chase,
  * so it is drawn once and left alone while pieces move above it.
  */
 export const StadtplanGround = memo(function StadtplanGround({ art, lines }: { art: StadtplanArt; lines: ReturnType<typeof planLines> }) {
@@ -23,6 +23,8 @@ export const StadtplanGround = memo(function StadtplanGround({ art, lines }: { a
       <path className="sp-water" d={lines.river} />
       <path className="sp-ferry" d={lines.ferry} />
       <path className="sp-jetty" d={lines.jetties} />
+      <path className="sp-deck-edge" d={lines.bridges} />
+      <path className="sp-deck" d={lines.bridges} />
       {art.ferryName && (
         <text className="sp-ferry-name" x={art.ferryName.x} y={art.ferryName.y + 4 * u}>
           Fähre

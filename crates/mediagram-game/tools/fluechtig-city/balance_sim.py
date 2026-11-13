@@ -2,7 +2,8 @@
 
 usage: python3 balance_sim.py GAMES board[:rules] ...
   board = a city JSON (as generate_city.py writes) | a connections list ("a b kind" per line) | small
-  rules = game (the big city's rules as Flüchtig plays them, the default) | classic | small
+  rules = game5 | game4 | game3 | game2 (the big city's rules as Flüchtig plays them with that many
+          hunter figures, `Rules::big_for`; game = game5, the default) | classic | small
   HUNTERS=pack makes the hunters close in as one pack instead of each taking a target.
 
 The bots are simple (hunters close in on the possible hideouts, the fugitive keeps his distance),
@@ -16,6 +17,18 @@ CLASSIC = dict(name="classic", rounds=24, reveals={3, 8, 13, 18, 24}, hunters=5,
                fugitive=dict(taxi=4, bus=3, ubahn=3, black=5, double=2), double_fills_two_rounds=True)
 # game: the same numbers as Flüchtig plays them, where a double move is two rides in one round
 GAME = dict(CLASSIC, name="game", double_fills_two_rounds=False)
+
+
+def ladder(figures):
+    """Flüchtig's rules for a table hunting with `figures` (2 to 5), as `Rules::big_for` sets them:
+    fewer figures see the fugitive every third round and grant fewer shadow rides and double moves."""
+    reveals = {3, 8, 13, 18, 24} if figures == 5 else set(range(3, 25, 3))
+    black, double = {5: (5, 2), 4: (5, 2), 3: (2, 1), 2: (1, 0)}[figures]
+    return dict(GAME, name=f"game{figures}", hunters=figures, reveals=reveals, fugitive=dict(GAME["fugitive"], black=black, double=double))
+
+
+assert ladder(5)["reveals"] == GAME["reveals"] and ladder(5)["fugitive"] == GAME["fugitive"]
+assert ladder(2)["fugitive"] == dict(taxi=4, bus=3, ubahn=3, black=1, double=0) and ladder(3)["reveals"] == {3, 6, 9, 12, 15, 18, 21, 24}
 SMALL = dict(name="small", rounds=18, reveals={3, 8, 13, 18}, hunters=4, hunter=dict(taxi=10, bus=6, ubahn=3),
              fugitive=dict(taxi=4, bus=3, ubahn=2, black=3, double=1), double_fills_two_rounds=False)
 SMALL_STARTS = ([3, 14, 19, 28, 35, 44, 16, 41], [6, 10, 24, 27, 33, 46, 39, 12])
@@ -147,7 +160,7 @@ PACK = os.environ.get("HUNTERS") == "pack"
 games = int(sys.argv[1])
 for spec in sys.argv[2:]:
     name, _, which = spec.partition(":")
-    rules = {"classic": CLASSIC, "small": SMALL}.get(which, GAME)
+    rules = {"classic": CLASSIC, "small": SMALL, **{f"game{n}": ladder(n) for n in range(2, 6)}}.get(which, GAME)
     board = load(name)
     rng = random.Random(1)
     wins = sum(play(board, rules, rng) == "fugitive" for _ in range(games))

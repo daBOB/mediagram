@@ -12,9 +12,10 @@ use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
 
 pub use crate::fluechtig_config::FluechtigConfig;
+use crate::fluechtig_intro::Intro;
 use crate::fluechtig_map::Field;
-use crate::fluechtig_rules::{Chase, Move, Turn};
-use crate::game::{ActionError, Game, GameCtx, ViewCtx};
+use crate::fluechtig_rules::{Chase, Move, Rules, Turn};
+use crate::game::{ActionError, Game, GameCtx, ViewCtx, name};
 use crate::protocol::{Action, FluechtigSide as Side, FluechtigTicket as Ticket, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
 
@@ -47,14 +48,16 @@ pub struct FluechtigGame {
     pub(crate) cfg: FluechtigConfig,
     pub(crate) chase: Chase,
     pub(crate) fugitive: PlayerId,
-    /// Who moves each hunter piece, in turn order.
+    /// Who moves each hunter figure, in turn order.
     pub(crate) owners: Vec<PlayerId>,
     pub(crate) ask: Ask,
+    /// The rules card on the TV; None once the chase runs.
+    pub(crate) intro: Option<Intro>,
 }
 
 impl FluechtigGame {
-    /// One player at random runs; the rules' hunter pieces (five at six players)
-    /// are dealt round-robin to the others. The lobby starts this with two to six.
+    /// One player at random runs; every other player hunts with one figure, a
+    /// lone hunter (two players) with two. The lobby starts this with two to six.
     pub fn new(cfg: FluechtigConfig, players: &[Player], now: ServerTime) -> Self {
         let mut rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
         let ids: Vec<PlayerId> = players.iter().map(|p| p.id).collect();
@@ -64,14 +67,23 @@ impl FluechtigGame {
             // never from the lobby; a lone player hunting themself beats a crashed host
             hunters.push(fugitive);
         }
-        let city = cfg.rules.city.city();
-        let pieces = if ids.len() >= 6 { 5 } else { usize::from(cfg.rules.hunters) };
-        let owners = (0..pieces).map(|i| hunters[i % hunters.len()]).collect();
+        let figures = hunters.len().clamp(2, 5);
+        let rules = cfg.rules.clone().unwrap_or_else(|| Rules::big_for(figures as u8));
+        let city = rules.city.city();
+        let owners = (0..figures).map(|i| hunters[i % hunters.len()]).collect();
         let mut starts = city.hunter_starts.clone();
         starts.shuffle(&mut rng);
         let start = city.fugitive_starts[rng.random_range(0..city.fugitive_starts.len())];
-        let chase = Chase::new(cfg.rules.clone(), start, &starts[..pieces]);
-        Self { cfg, chase, fugitive, owners, ask: Ask { opens_at: now, step: Step::Field } }
+        let chase = Chase::new(rules, start, &starts[..figures]);
+        let intro = (cfg.intro_ms > 0.0).then_some(Intro { card: 0, at: now });
+        let mut game = Self { cfg, chase, fugitive, owners, ask: Ask { opens_at: now, step: Step::Field }, intro };
+        game.chase.names = (0..figures)
+            .map(|i| {
+                let player = name(players, game.owners[i]);
+                game.figure(i).map_or_else(|| player.to_string(), |k| format!("{player} (Figur {k})"))
+            })
+            .collect();
+        game
     }
 
     /// The player whose phone holds the move.
@@ -158,6 +170,9 @@ impl Game for FluechtigGame {
         let Action::Choose { index, at } = *action else {
             return Err(ActionError::Ignored);
         };
+        if self.intro.is_some() {
+            return self.skip_intro(ctx, player);
+        }
         if self.mover() != Some(player) || at < self.ask.opens_at - self.cfg.early_ms {
             return Err(ActionError::Ignored);
         }
@@ -167,6 +182,12 @@ impl Game for FluechtigGame {
     }
 
     fn on_tick(&mut self, ctx: &mut GameCtx) {
+        if let Some(Intro { at, .. }) = self.intro {
+            if ctx.now >= at + self.cfg.intro_ms {
+                self.next_card(ctx.now);
+            }
+            return;
+        }
         let Some(id) = self.mover() else { return };
         if !ctx.house_at(id, self.ask.opens_at).is_some_and(|at| ctx.now >= at) {
             return;
@@ -181,8 +202,8 @@ impl Game for FluechtigGame {
         self.phone_view(view, player)
     }
 
-    fn tv_scene(&self, _view: &ViewCtx) -> TvScene {
-        self.tv_view()
+    fn tv_scene(&self, view: &ViewCtx) -> TvScene {
+        self.tv_view(view)
     }
 
     fn is_finished(&self) -> bool {
@@ -192,4 +213,4 @@ impl Game for FluechtigGame {
 
 #[cfg(test)]
 #[path = "fluechtig_tests.rs"]
-mod tests;
+pub(crate) mod tests;

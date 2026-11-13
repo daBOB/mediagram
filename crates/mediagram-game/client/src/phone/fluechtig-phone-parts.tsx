@@ -3,17 +3,18 @@ import type { FluechtigPhone } from "../protocol/FluechtigPhone";
 import type { FluechtigPiece } from "../protocol/FluechtigPiece";
 import type { FluechtigTickets } from "../protocol/FluechtigTickets";
 import { TICKET_COLOR, TICKET_SHORT, type TicketKey } from "../ui/fluechtig-tickets";
+import { avatarHeadUrl } from "../ui/Token";
 
 export const RUNNER_KEYS: TicketKey[] = ["taxi", "bus", "ubahn", "schatten", "doppel"];
 export const HUNTER_KEYS: TicketKey[] = ["taxi", "bus", "ubahn"];
 
 const tint = (c: string) => ({ "--c": c }) as CSSProperties;
 
-/** A round badge in a player's colour: a hunter piece's number or an initial. */
-export function Disc({ color, label, size = 64 }: { color: string; label: string | number; size?: number }) {
+/** A round badge in a player's colour: their avatar's head, else a figure's number or an initial. */
+export function Disc({ color, label, avatar, size = 64 }: { color: string; label: string | number; avatar?: string | null; size?: number }) {
   return (
     <span className="flp-disc" style={{ background: color, width: size, height: size, fontSize: size * 0.45 }} aria-hidden="true">
-      {label}
+      {avatar ? <img className="flp-disc-head" src={avatarHeadUrl(avatar)} alt="" /> : label}
     </span>
   );
 }
@@ -51,7 +52,8 @@ export function seenLine(phone: FluechtigPhone) {
 export function WaitHead({ phone }: { phone: FluechtigPhone }) {
   const { mover, next } = phone;
   if (!mover) return null;
-  const after = !next ? "" : next.you ? `Danach bist du dran${next.piece ? ` mit Jäger ${next.piece}` : ""}` : `Danach: ${next.name}`;
+  const after = !next ? "" : next.you ? `Danach bist du dran${next.piece ? ` mit Figur ${next.piece}` : ""}` : `Danach: ${next.name}`;
+  const now = mover.runs ? `${mover.name} fährt geheim …` : mover.piece ? `${mover.name} zieht Figur ${mover.piece}` : `${mover.name} ist dran`;
   return (
     <header className="flp-head">
       <Disc color={mover.color} label={mover.piece ?? [...mover.name][0] ?? "?"} />
@@ -59,7 +61,7 @@ export function WaitHead({ phone }: { phone: FluechtigPhone }) {
         <small>
           Gerade dran · Runde {phone.round} von {phone.rounds}
         </small>
-        <b>{mover.piece ? `${mover.name} zieht Jäger ${mover.piece}` : `${mover.name} fährt geheim …`}</b>
+        <b>{now}</b>
         <em>{after}</em>
       </div>
     </header>
@@ -79,16 +81,16 @@ export function Wallet({ tickets, keys }: { tickets: FluechtigTickets; keys: Tic
   );
 }
 
-export function Pieces({ pieces, color }: { pieces: FluechtigPiece[]; color: string }) {
+/** This phone's hunter figures: one with the player's head, or a lone hunter's two by number. */
+export function Pieces({ pieces, color, avatar }: { pieces: FluechtigPiece[]; color: string; avatar: string | null }) {
+  const two = pieces.length > 1;
   return (
     <ul className="flp-pieces">
       {pieces.map((p) => (
         <li key={p.number}>
-          <Disc color={color} label={p.number} size={36} />
+          <Disc color={color} label={p.number} avatar={two ? null : avatar} size={36} />
           <div>
-            <b>
-              Jäger {p.number} · Feld {p.at}
-            </b>
+            <b>{two ? `Figur ${p.number} · Feld ${p.at}` : `Feld ${p.at}`}</b>
             {HUNTER_KEYS.map((k) => (
               <span key={k} className="flp-mini" style={{ background: TICKET_COLOR[k] }}>
                 {p.tickets[k]} {TICKET_SHORT[k]}

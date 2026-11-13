@@ -60,6 +60,9 @@ mod quiz_mix;
 mod quiz_views;
 mod fluechtig;
 mod fluechtig_config;
+mod fluechtig_intro;
+#[cfg(test)]
+mod fluechtig_intro_tests;
 mod fluechtig_map;
 mod fluechtig_moves;
 mod fluechtig_play;

@@ -2,6 +2,7 @@
 import type { FluechtigTickets } from "./FluechtigTickets";
 
 /**
- * A hunter piece: "Jäger `number`".
+ * A hunter figure; `number` is 1 or 2 within its player's figures (only a
+ * lone hunter has two).
  */
 export type FluechtigPiece = { number: number, at: number, tickets: FluechtigTickets, };
