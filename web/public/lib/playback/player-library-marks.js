@@ -55,7 +55,8 @@ export function mountPlayerLibraryMarks({ filmTime }) {
   let hideSaid = 0;
   async function mark() {
     if (!title || state.profileId() === null) return;
-    const at = Math.floor(filmTime());
+    // To the millisecond, as the sync record keeps it: the frame on screen, not the second it fell in.
+    const at = Math.round(filmTime() * 1000) / 1000;
     said.textContent = (await state.markScene(title.setId, at)) === null
       ? "Couldn't mark this scene"
       : `Scene marked at ${clockTime(at)}`;

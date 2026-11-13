@@ -118,6 +118,22 @@ describe("player library marks", () => {
     expect(env.node("mark-scene-said").textContent).toBe("");
   });
 
+  test("a mark keeps the frame on screen to the millisecond, not the whole second", async () => {
+    env.respondWith(async (url, options) => {
+      if (url === "/api/profiles/p/state") return Response.json({});
+      if (options?.method === "POST") return Response.json({ id: "m1" }, { status: 201 });
+      return new Response(null, { status: 404 });
+    });
+    await state.useProfile("p");
+    const marks = mountPlayerLibraryMarks({ filmTime: () => 3735.4567 });
+    marks.open({ setId: "film" });
+    await marks.mark();
+    const post = env.requests.find((request) => request.options?.method === "POST")!;
+    expect(JSON.parse(post.options!.body as string)).toEqual({ setId: "film", at: 3735.457 });
+    expect(env.node("mark-scene-said").textContent).toBe("Scene marked at 1:02:15");
+    await state.useProfile(null);
+  });
+
   test("a rating decides and is shown locked; an unrated title is for kids from an age, or not at all", () => {
     const marks = mountPlayerLibraryMarks({ filmTime: () => 0 });
     const kids = env.node("kids");
