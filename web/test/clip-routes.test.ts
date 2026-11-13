@@ -1,7 +1,7 @@
 /** The clip routes, at the router, over a registry that never runs ffmpeg. */
 
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -110,6 +110,17 @@ describe("clip routes", () => {
     expect(file.headers["content-type"]).toBe("video/mp4");
     expect(file.headers["content-disposition"]).toBe("attachment; filename*=UTF-8''A%20Film%20%E2%80%93%200h00m10s.mp4");
     expect(file.headers["content-length"]).toBe("7");
+  });
+
+  test("a finished file that has vanished is a 404", async () => {
+    const { call, profile, commands, exits } = harness();
+    const { id } = JSON.parse(new TextDecoder().decode(
+      (await call("POST", `/api/profiles/${profile}/clips`, good)).body as Uint8Array));
+    writeFileSync(commands[0]!.at(-1)!, "mp4data");
+    exits[0]!(0);
+    await new Promise((r) => setTimeout(r, 5));
+    rmSync(commands[0]!.at(-1)!);
+    expect((await call("GET", `/api/clips/${id}/file`, undefined, { profile })).status).toBe(404);
   });
 
   test("listing a profile's clips for a set", async () => {

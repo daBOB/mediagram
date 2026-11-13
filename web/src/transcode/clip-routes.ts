@@ -1,6 +1,7 @@
 /** The clip export routes: start, poll, list, and download. */
 
 import type { Database } from "bun:sqlite";
+import { existsSync } from "node:fs";
 
 import { playableSet } from "../catalog";
 import { jsonBody } from "../http/browser-write";
@@ -37,7 +38,8 @@ function start(profile: string, request: PlayerRequest, jobs: ClipJobs, db: Data
 
 function download(id: string, request: PlayerRequest, jobs: ClipJobs): PlayerResponse {
   const file = jobs.file(id);
-  if (!file) return bodiless(404);
+  // A sweep or shutdown can remove the file after the job was last looked at.
+  if (!file || !existsSync(file.path)) return bodiless(404);
   if (file.profileId !== request.profile) return bodiless(403);
   const bun = Bun.file(file.path);
   return {

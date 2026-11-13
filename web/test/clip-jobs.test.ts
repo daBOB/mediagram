@@ -120,6 +120,17 @@ describe("ClipJobs", () => {
     expect(existsSync(path)).toBe(false);
   });
 
+  test("a directory that cannot be made ends the job failed without throwing", () => {
+    const { directory } = harness();
+    const blocker = join(directory, "file");
+    writeFileSync(blocker, "x");
+    const jobs = new ClipJobs({ baseUrl: "http://x", pacedReads: false, directory: join(blocker, "clips"), spawn: () => fakeProcess().proc });
+    const started = jobs.start(spec) as { id: string };
+    expect(jobs.status(started.id)).toMatchObject({ state: "failed", error: "The clip could not be made." });
+    // Failed jobs do not hold the slot.
+    expect(jobs.start(spec)).not.toBe("busy");
+  });
+
   test("the file name strips unsafe characters", () => {
     const { jobs, spawned } = harness();
     const { id } = jobs.start({ ...spec, title: "AC/DC: Live?" }) as { id: string };

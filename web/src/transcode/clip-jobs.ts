@@ -68,7 +68,6 @@ interface Job {
 }
 
 const defaultSpawn = (command: string[]): ClipProcess => Bun.spawn(command, { stdout: "pipe", stderr: "pipe" });
-
 /** `Title – 1h02m00s.mp4`: what the viewer's Files app will show. */
 export function clipFileName(title: string, from: number): string {
   const safe = title.replace(/[/\\:*?"<>|\u0000-\u001f\u007f]/g, "").trim().slice(0, 80).trim() || "clip";
@@ -89,7 +88,6 @@ export class ClipJobs {
 
   start(spec: ClipSpec): { id: string } | "busy" {
     if ([...this.jobs.values()].some((j) => j.status.state === "running")) return "busy";
-    mkdirSync(this.options.directory, { recursive: true });
     const id = randomBytes(8).toString("hex");
     const path = join(this.options.directory, `${id}.mp4`);
     const job: Job = {
@@ -107,9 +105,10 @@ export class ClipJobs {
       hdr: spec.hdr, pacedReads: this.options.pacedReads,
     })];
     try {
+      mkdirSync(this.options.directory, { recursive: true });
       job.process = this.spawn(command);
     } catch (error) {
-      console.warn("clip: ffmpeg did not start", error);
+      console.warn("clip: could not start", error);
       this.end(job, false, spec.hdr);
       return { id };
     }
@@ -179,6 +178,8 @@ export class ClipJobs {
     })();
     const code = await proc.exited.catch(() => 1);
     await Promise.all([progress, errors]);
+    // Dropped by stopAll: a killed process at shutdown is not a failure.
+    if (this.jobs.get(job.status.id) !== job) return;
     if (code !== 0) console.warn(`clip: ffmpeg exited ${code}\n${job.stderr.join("\n")}`);
     this.end(job, code === 0, spec.hdr);
   }
