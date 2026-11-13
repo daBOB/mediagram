@@ -82,10 +82,11 @@ export class Connection {
     this.ws?.close();
   }
 
-  /** Re-sends hello, e.g. after the player typed a name. */
-  rehello() {
+  /** Re-sends hello, e.g. after the player typed a name; false when there was none to say. */
+  rehello(): boolean {
     const hello = this.hello();
     if (hello) this.send(hello);
+    return hello !== null;
   }
 
   send(msg: ClientMsg) {

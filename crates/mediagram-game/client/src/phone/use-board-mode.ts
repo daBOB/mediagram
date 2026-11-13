@@ -1,78 +1,100 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useReducer } from "react";
 import type { Connection } from "../net";
 import type { BoardScreen } from "../protocol/BoardScreen";
 import type { ClientMsg } from "../protocol/ClientMsg";
 import type { ServerMsg } from "../protocol/ServerMsg";
-import { memory } from "./app-bridge";
+import { boardCapable, memory } from "./app-bridge";
 import { NativeBoardFeed } from "./board-native";
 
-const BOARD_KEY = "spieltisch.board";
+// "board" or "player" once someone chose; unset, the app on an iPad is the board
+const CHOICE_KEY = "spieltisch.board";
 const BOARD_TOKEN_KEY = "spieltisch.board-token";
+
+type Conn = Pick<Connection, "serverNow" | "send" | "rehello">;
 
 /**
  * The page as the iPad's drawing board: it says hello as the board, drives the app's native board
- * and renders only the waits. Kept apart so PhoneApp only dispatches to it.
+ * and renders only the waits. The app on an iPad is the board by itself until someone picks
+ * „Doch mitspielen“; browsers and phones never are. Kept apart so PhoneApp only dispatches to it.
  */
-export function useBoardMode(conn: Connection) {
-  // a ref as well as state: a hello sent right after become/leave must already see the switch
-  const on = useRef(memory.get(BOARD_KEY) === "1");
-  const welcomed = useRef(false);
-  const [asBoard, setAsBoard] = useState(on.current);
-  const [screen, setScreen] = useState<BoardScreen | null>(null);
-  const feed = useMemo(() => new NativeBoardFeed(() => conn.serverNow(), (msg) => conn.send(msg)), [conn]);
+export class BoardMode {
+  asBoard = boardCapable() && memory.get(CHOICE_KEY) !== "player";
+  screen: BoardScreen | null = null;
+  readonly forward: NativeBoardFeed["forward"];
+  private feed: NativeBoardFeed;
+  private welcomed = false;
 
-  const turn = (board: boolean) => {
-    on.current = board;
-    setAsBoard(board);
-    memory.set(BOARD_KEY, board ? "1" : null);
+  constructor(
+    private conn: Conn,
+    private changed: () => void,
+  ) {
+    this.feed = new NativeBoardFeed(() => conn.serverNow(), (msg) => conn.send(msg));
+    this.forward = this.feed.forward;
+  }
+
+  /** „Als Zeichenbrett verwenden“, remembered across restarts. */
+  become = () => {
+    memory.set(CHOICE_KEY, "board");
+    this.asBoard = true;
+    this.changed();
+    this.conn.rehello();
   };
 
-  const become = () => {
-    turn(true);
-    conn.rehello();
+  /** „Doch mitspielen“, remembered across restarts: PhoneApp's hello takes over. */
+  leave = () => {
+    memory.set(CHOICE_KEY, "player");
+    this.stop();
+    // with no name yet PhoneApp says no hello, and the box would keep this socket as the board
+    if (!this.conn.rehello()) this.conn.send({ t: "hello", role: "phone", name: null, token: null });
   };
 
-  /** Back to playing; PhoneApp's hello takes over (a phone, or nothing until a name is entered). */
-  const leave = () => {
-    turn(false);
-    // the box drops the board in the lobby, the only place the board can be left
-    memory.set(BOARD_TOKEN_KEY, null);
-    feed.stop();
-    setScreen(null);
-    conn.rehello();
-  };
-
-  const hello = (): ClientMsg | null => {
-    if (!on.current) return null;
-    welcomed.current = false;
-    feed.welcome();
+  hello(): ClientMsg | null {
+    if (!this.asBoard) return null;
+    this.welcomed = false;
+    this.feed.welcome();
     return { t: "hello", role: "board", name: null, token: memory.get(BOARD_TOKEN_KEY) };
-  };
+  }
 
   /** True when board mode handled `msg`; everything else is PhoneApp's. */
-  const onMessage = (msg: ServerMsg): boolean => {
-    if (!on.current) return false;
+  onMessage(msg: ServerMsg): boolean {
+    if (!this.asBoard) return false;
     switch (msg.t) {
       case "welcome":
-        welcomed.current = true;
+        this.welcomed = true;
         if (msg.token) memory.set(BOARD_TOKEN_KEY, msg.token);
-        feed.welcome();
+        this.feed.welcome();
         return true;
       case "board":
-        feed.board(msg.screen);
-        setScreen(msg.screen);
+        this.feed.board(msg.screen);
+        this.screen = msg.screen;
+        this.changed();
         return true;
       case "draw":
-        feed.draw(msg);
+        this.feed.draw(msg);
         return true;
       case "error":
-        // the box refused the board (another device holds it): back to playing, and PhoneApp toasts why
-        if (!welcomed.current) leave();
+        // the box refused the board (another device holds it): play for now, keep the choice; PhoneApp toasts why
+        if (!this.welcomed) {
+          this.stop();
+          this.conn.rehello();
+        }
         return false;
       default:
         return false;
     }
-  };
+  }
 
-  return { asBoard, screen, hello, onMessage, become, leave, forward: feed.forward };
+  private stop() {
+    this.asBoard = false;
+    // a board token outlives neither a lobby nor a refusal
+    memory.set(BOARD_TOKEN_KEY, null);
+    this.feed.stop();
+    this.screen = null;
+    this.changed();
+  }
+}
+
+export function useBoardMode(conn: Connection): BoardMode {
+  const [, changed] = useReducer((n: number) => n + 1, 0);
+  return useMemo(() => new BoardMode(conn, changed), [conn]);
 }
