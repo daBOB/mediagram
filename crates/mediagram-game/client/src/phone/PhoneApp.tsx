@@ -12,7 +12,7 @@ import { PhonePriceKeypad } from "./PhonePriceKeypad";
 import { PhoneSheet } from "./PhoneSheet";
 import { buzz, memory as store } from "./app-bridge";
 import { rememberAvatar, rememberedAvatar } from "./avatar-memory";
-import { buzzFor } from "./buzz-moments";
+import { buzzForView } from "./buzz-moments";
 import { goFullscreen } from "./phone-fullscreen";
 
 const NAME_KEY = "spieltisch.name";
@@ -41,7 +41,7 @@ export function PhoneApp() {
         // the first avatar a phone gets is its choice until its player picks one themselves
         if (msg.view.me.avatar) rememberAvatar(msg.view.me.avatar, true);
         {
-          const kind = buzzFor(lastScreen.current, msg.view.screen);
+          const kind = buzzForView(lastScreen.current, msg.view.screen, msg.view.buzz);
           lastScreen.current = msg.view.screen;
           if (kind) buzz(kind);
         }

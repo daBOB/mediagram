@@ -1,6 +1,6 @@
 // Run with `bun test` in crates/mediagram-game/client.
 import { expect, test } from "bun:test";
-import { buzzFor } from "../src/phone/buzz-moments";
+import { buzzFor, buzzForView } from "../src/phone/buzz-moments";
 import type { PhoneScreen } from "../src/protocol/PhoneScreen";
 
 const option = { label: "A", color: "red" };
@@ -86,4 +86,19 @@ test("a Flüchtig move buzzes once, not again for its ticket question", () => {
   // the second ride of a double move starts from the new field
   expect(buzzFor(chase(1, 6), chase(1, 7))).toBe("turn");
   expect(buzzFor(chase(1, 6), chase(1, null))).toBeNull();
+});
+
+test("an asked buzz fires once when the screen changes", () => {
+  expect(buzzForView(lobby, wait, "turn")).toBe("turn");
+  expect(buzzForView(wait, wait, "turn")).toBeNull();
+  expect(buzzForView(null, wait, "turn")).toBe("turn");
+});
+
+test("an asked buzz overrides a quiet good outcome", () => {
+  expect(buzzForView(wait, outcome("good", "Richtig!"), "accepted")).toBe("accepted");
+});
+
+test("without an ask the old rules hold", () => {
+  expect(buzzForView(wait, outcome("good", "Richtig!"), null)).toBeNull();
+  expect(buzzForView(choice(1, null), choice(1, 2), null)).toBe("accepted");
 });
