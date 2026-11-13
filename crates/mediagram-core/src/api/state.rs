@@ -14,7 +14,7 @@
 use std::sync::Arc;
 
 use crate::state::households::device;
-use crate::state::{editors_choice, lists, profiles, rows};
+use crate::state::{editors_choice, lists, profiles, rows, scenes};
 
 use super::Core;
 
@@ -42,6 +42,10 @@ pub struct StateSnapshot {
     /// `StateSnapshot(…)` calls in Kotlin keep compiling.
     #[uniffi(default = [])]
     pub kids_from_six: Vec<String>,
+    /// This profile's live scene marks, newest first. Defaulted for the same
+    /// reason as `kids_from_six`.
+    #[uniffi(default = [])]
+    pub scenes: Vec<scenes::SceneMark>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -92,6 +96,7 @@ impl Core {
                         collections: lists::collections_for(conn, &profile_id)?,
                         editors_choice: editors_choice::editors_choice(conn)?,
                         kids_from_six: rows::kids_from_six(conn)?,
+                        scenes: scenes::live_for(conn, &profile_id)?,
                     })
                 })
                 .unwrap_or_default()

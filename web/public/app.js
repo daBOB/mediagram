@@ -169,6 +169,7 @@ function viewHome() {
   });
   renderHome(main, shelves, editorial, {
     play: (set) => play(set),
+    playScene: (set, options) => play(set, null, options), byId,
     openFilm,
     open: openShow,
   });
@@ -321,7 +322,7 @@ async function openTitle(set, queue, options, request) {
   // says which kind of start that is. Opening a title from a shelf carries
   // none, and the player warms it up and starts it once it holds enough.
   const autoplay = options.autoplay ?? null;
-  const { freshResume } = options;
+  const { freshResume, at, clip } = options;
 
   const { next, previous, inRun, preload } = playsNext(library, set, queue);
   requestPreload(preload);
@@ -329,7 +330,7 @@ async function openTitle(set, queue, options, request) {
     next, previous, inRun, collection: queue ? null : collectionOf(library, set),
     onOpenNext: (following, how) => play(following, queue, how),
     autoplay,
-    freshResume,
+    freshResume, at, clip,
   });
   dailyLimit.opened(freshResume);
   return true;

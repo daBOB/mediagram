@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use crate::state::record::{
     CollectionRow, DailyLimit, DayStatRow, HiddenSections, HouseholdAdmin, HouseholdName, KidsAge,
-    ListRow, PinRecord, ProfileHousehold, ProgressRow, SyncPreference, TitleStatRow, UnwatchedRow,
+    ListRow, PinRecord, ProfileHousehold, ProgressRow, SceneRow, SyncPreference, TitleStatRow, UnwatchedRow,
     WatchedRow,
 };
 
@@ -40,6 +40,7 @@ timestamped_by_own_field!(
     ListRow,
     CollectionRow,
     SyncPreference,
+    SceneRow,
     TitleStatRow,
     DayStatRow,
     KidsAge,

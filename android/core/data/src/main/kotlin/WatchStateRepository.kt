@@ -127,6 +127,16 @@ interface WatchStateRepository {
     )
 
     /**
+     * Marks the film second [at] of [setId] as a scene for the chosen
+     * profile. False when there is no chosen profile or the core would not
+     * keep the mark.
+     */
+    suspend fun markScene(
+        setId: String,
+        at: Double,
+    ): Boolean
+
+    /**
      * Marks a title for kids from [age] — 6 or 12 — or takes the mark away
      * with null. The mark is the household's, not the profile's, but still
      * requires a chosen profile; otherwise does nothing.
@@ -351,6 +361,11 @@ class DefaultWatchStateRepository(
     ) = writing { core, id ->
         core.setWatchlisted(id, setId, listed)
     }
+
+    override suspend fun markScene(
+        setId: String,
+        at: Double,
+    ): Boolean = listWriting { core, profileId -> core.markScene(profileId, setId, at) != null }
 
     override suspend fun watchedToday(profileId: String): Double {
         val core = coreProvider.awaitCore()

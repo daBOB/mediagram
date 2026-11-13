@@ -89,6 +89,11 @@ private class RecordingRepository : WatchStateRepository {
         listed: Boolean,
     ) = Unit
 
+    override suspend fun markScene(
+        setId: String,
+        at: Double,
+    ) = false
+
     override suspend fun setKids(
         setId: String,
         age: Int?,

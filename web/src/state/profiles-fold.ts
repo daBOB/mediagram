@@ -6,7 +6,7 @@
 import type { Database } from "bun:sqlite";
 
 /** Every table whose rows belong to one profile. */
-const OWN_ROWS = ["progress", "watched", "watchlist", "collections", "preferences", "stats_titles", "stats_days"];
+const OWN_ROWS = ["progress", "watched", "watchlist", "collections", "scenes", "preferences", "stats_titles", "stats_days"];
 
 /**
  * Moves `fromId`'s rows to `intoId`, points whatever named it at `intoId`, and

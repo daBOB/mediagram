@@ -57,7 +57,7 @@ class PlayerKidsChoiceTest {
         compose.runOnUiThread {
             plain = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             plain.get().setContent {
-                MaterialTheme { PlayerMarks(marks, PlayerMarksActions(onToggleWatchlist = {}, onKidsMark = {}, onSetInList = { _, _ -> }, onCreateList = {})) }
+                MaterialTheme { PlayerMarks(marks, PlayerMarksActions(onToggleWatchlist = {}, onKidsMark = {}, onSetInList = { _, _ -> }, onCreateList = {}, onMarkScene = {})) }
             }
         }
         compose.waitForIdle()

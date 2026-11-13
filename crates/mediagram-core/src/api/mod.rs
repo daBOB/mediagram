@@ -16,6 +16,7 @@ mod preferences;
 mod read;
 mod refresh;
 mod report;
+mod scenes;
 mod search;
 mod sessions;
 mod set_text;

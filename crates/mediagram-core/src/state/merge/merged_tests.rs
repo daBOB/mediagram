@@ -97,3 +97,49 @@ fn a_merged_state_survives_a_round_trip() {
     assert!(text.contains("\"editorsChoice\":[]"));
     assert_eq!(serde_json::from_str::<MergedState>(&text).unwrap(), state);
 }
+
+/// A scene mark is one row by its own id: the later edit wins outright, a
+/// removal included, whichever order the documents arrive in.
+#[test]
+fn the_later_edit_to_one_scene_id_wins() {
+    use crate::state::merge::merge_states;
+    use crate::state::record::{ProfileState, SYNC_FORMAT, SceneRow, SyncRecord};
+
+    let scene = |updated_at: f64, removed: bool| SceneRow {
+        id: "s1".into(),
+        set_id: "01A".into(),
+        at: 61.5,
+        updated_at,
+        removed,
+    };
+    let record = |device: &str, row: SceneRow| SyncRecord {
+        format: SYNC_FORMAT,
+        device: device.into(),
+        written_at: 1.0,
+        profiles: vec![ProfileState {
+            name: "André".into(),
+            local_id: None,
+            kids: false,
+            progress: vec![],
+            watched: vec![],
+            unwatched: vec![],
+            watchlist: vec![],
+            collections: vec![],
+            preferences: vec![],
+            scenes: vec![row],
+            title_stats: vec![],
+            day_stats: vec![],
+            roles: Default::default(),
+            names: Default::default(),
+        }],
+        kids: vec![],
+        editors_choice: vec![],
+        households: vec![],
+    };
+    let scenes_of = |records: &[SyncRecord]| merge_states(records).profiles.remove(0).scenes;
+
+    let removed_later = [record("a", scene(1000.0, false)), record("b", scene(2000.0, true))];
+    assert_eq!(scenes_of(&removed_later), [scene(2000.0, true)]);
+    let marked_later = [record("b", scene(2000.0, true)), record("a", scene(3000.0, false))];
+    assert_eq!(scenes_of(&marked_later), [scene(3000.0, false)]);
+}

@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::state::record::{
-    CollectionRow, DayStatRow, HouseholdEntry, ListRow, NameKeys, ProfileRoles, ProgressRow, SyncPreference, TitleStatRow,
+    CollectionRow, DayStatRow, HouseholdEntry, ListRow, NameKeys, ProfileRoles, ProgressRow, SceneRow, SyncPreference, TitleStatRow,
     UnwatchedRow, WatchedRow,
 };
 
@@ -33,6 +33,8 @@ pub struct MergedProfile {
     pub collections: Vec<CollectionRow>,
     #[serde(default)]
     pub preferences: Vec<SyncPreference>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub scenes: Vec<SceneRow>,
     /// Viewing stats: the newest copy of each device's row, per title and
     /// per day. Omitted when empty, like the record's own keys.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

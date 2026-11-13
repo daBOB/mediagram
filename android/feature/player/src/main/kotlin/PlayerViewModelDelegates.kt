@@ -54,6 +54,12 @@ fun PlayerViewModel.chooseFraming(next: Framing) = choicesController.chooseFrami
 fun PlayerViewModel.chooseDeinterlace(on: Boolean) = choicesController.chooseDeinterlace(on)
 
 fun PlayerViewModel.toggleWatchlist() = marksController.toggleWatchlist()
+/** Marks the film second playback is at — the one [ProgressRecorder] would save — as a scene of the open title. */
+fun PlayerViewModel.markScene() {
+    val atMs = handle.positionMs() ?: return
+    marksController.markScene(atMs / 1000.0)
+}
+
 fun PlayerViewModel.setKidsMark(age: Int?) = marksController.setKidsMark(age)
 fun PlayerViewModel.setInList(listId: String, included: Boolean) = marksController.setInList(listId, included)
 fun PlayerViewModel.createListAndAdd(name: String) = marksController.createListAndAdd(name)

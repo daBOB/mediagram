@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.179.0 — Clip a scene
+
+**Added**
+
+- Scene marks: a viewer marks a moment of a title and the mark syncs between devices like a position (web and `mediagram-core`); Android (phone, tablet, TV) has a "Mark scene" button.
+- The web player lists marks as "Marked scenes" on Home and exports a marked range as an MP4 (H.264 / AAC stereo, at most 1920 px wide, HDR tone-mapped to bt709) cut by the server's ffmpeg. Android only marks, deliberately; see `docs/web-player.md` § Differences from Android.
+
 ## Spieltisch 0.178.1 — Preisfrage's poster and backdrop
 
 **Added**

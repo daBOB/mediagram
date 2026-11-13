@@ -260,3 +260,16 @@ fn a_fold_leaves_the_roles_to_the_merge() {
     let at: i64 = conn.query_row("SELECT hidden_sections_updated_at FROM profiles", [], |row| row.get(0)).unwrap();
     assert_eq!(at, 1000);
 }
+
+/// A mark made under the folded row survives it, with its id, so a merge
+/// that carries the same mark finds it under the kept row.
+#[test]
+fn a_fold_moves_the_folded_rows_scene_marks() {
+    let (_dir, conn, older, newer) = two_rows();
+    let id = crate::state::scenes::mark(&conn, &newer, "01A", 61.5).unwrap().unwrap();
+
+    import(&conn, &celi());
+
+    let kept = crate::state::scenes::live_for(&conn, &older).unwrap();
+    assert_eq!(kept.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(), [id.as_str()]);
+}

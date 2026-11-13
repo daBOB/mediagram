@@ -160,6 +160,17 @@ const GROUPS: &[&[&str]] = &[
     roles::HIDDEN_SECTIONS,
     roles::HOUSEHOLDS,
     roles::RENAMES,
+    // v13 -> v14: marked scenes — the web's `SCENES_GROUP`. Keyed by their own
+    // id because one title holds many marks; a removal is a tombstone, as the
+    // watchlist's is, so a merge can see it.
+    &["CREATE TABLE IF NOT EXISTS scenes(
+       id TEXT PRIMARY KEY,
+       profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+       set_id TEXT NOT NULL,
+       at_seconds REAL NOT NULL,
+       marked_at INTEGER NOT NULL,
+       removed_at INTEGER
+     )"],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

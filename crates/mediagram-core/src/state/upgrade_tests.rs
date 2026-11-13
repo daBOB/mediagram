@@ -143,7 +143,7 @@ fn a_store_from_before_roles_keeps_every_kid_and_mark_at_twelve() {
         .unwrap();
     assert_eq!(age, None);
     let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
-    assert_eq!(version, 13);
+    assert_eq!(version, 14);
 }
 
 /// A store from before households puts every profile in Home, undated, makes
@@ -212,7 +212,7 @@ fn a_store_from_before_renames_reads_as_never_renamed() {
         .unwrap();
     assert_eq!(row, (0, "[]".to_string()));
     let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
-    assert_eq!(version, 13);
+    assert_eq!(version, 14);
     let text = serde_json::to_string(&exchange::export_record(&conn, "laptop").unwrap()).unwrap();
     assert!(!text.contains("renamedAt") && !text.contains("formerNames"), "{text}");
 }
