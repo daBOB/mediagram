@@ -58,6 +58,15 @@ public enum BoardAct: Encodable, Equatable, Sendable {
     }
 }
 
+/// The JavaScript that hands `act` to the page, which takes it as one string of JSON.
+public func boardReceiveScript(for act: BoardAct) -> String? {
+    guard let data = try? JSONEncoder().encode(act), let json = String(data: data, encoding: .utf8),
+          // a JSON array of the one string, brackets dropped, is that string quoted for JavaScript
+          let quoted = try? JSONSerialization.data(withJSONObject: [json]),
+          let array = String(data: quoted, encoding: .utf8) else { return nil }
+    return "window.mediagramBoard && window.mediagramBoard.receive(\(array.dropFirst().dropLast()))"
+}
+
 public struct BoardPlayer: Codable, Equatable, Sendable {
     public let id: Int
     public let name: String

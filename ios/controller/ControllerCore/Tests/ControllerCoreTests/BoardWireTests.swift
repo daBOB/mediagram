@@ -58,6 +58,17 @@ final class BoardWireTests: XCTestCase {
         XCTAssertEqual(picking.screen.turn, 3)
     }
 
+    func testAnActReachesThePageAsOneStringArgument() throws {
+        let script = try XCTUnwrap(boardReceiveScript(for: .draw(.line(color: 0, width: 1, points: [1200, 3400]))))
+        let call = "window.mediagramBoard && window.mediagramBoard.receive("
+        XCTAssertTrue(script.hasPrefix(call), script)
+        XCTAssertTrue(script.hasSuffix(")"), script)
+        // the argument is a quoted string whose text is the act's JSON, quotes and all
+        let argument = script.dropFirst(call.count).dropLast()
+        let text = try XCTUnwrap(JSONSerialization.jsonObject(with: Data("[\(argument)]".utf8)) as? [String]).first
+        XCTAssertEqual(try parsed(XCTUnwrap(text)), try parsed(#"{"t":"draw","op":{"t":"line","color":0,"width":1,"points":[1200,3400]}}"#))
+    }
+
     func testAnUnknownScreenKindFails() {
         let text = #"{"screen":{"kind":"lobby","turn":1},"ops":[],"resync":false}"#
         XCTAssertThrowsError(try JSONDecoder().decode(NativeBoardShow.self, from: Data(text.utf8)))
