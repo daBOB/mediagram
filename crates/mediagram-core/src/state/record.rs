@@ -120,8 +120,7 @@ pub struct ProfileState {
     /// bump — a build that predates it drops it and keeps merging.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub preferences: Vec<SyncPreference>,
-    /// Marked scenes, tombstones included; a new key like `preferences`,
-    /// written only when there are rows.
+    /// Marked scenes, tombstones included; written only when there are rows.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub scenes: Vec<SceneRow>,
     /// Viewing stats, every device's rows (`stats_record.rs`). New keys like

@@ -625,6 +625,12 @@ Android has a system screen and a playback-stats overlay
   `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md`
   §9: Android decodes natively and never transcodes, so there is no encoder,
   no session and nothing this group could report.
+- **Scenes: the web marks, lists and exports; Android only marks.** The web
+  player marks a scene, lists them as "Marked scenes" on Home and exports a
+  marked range as an MP4 clip. Android (phone, tablet, TV) only marks, so the
+  clip exists to be cut at a PC (the user's decision, 2026-11-10); there is no
+  list and no export there. The phone's cast-remote screen has no Mark button
+  yet.
 
 Three smaller readings come from measurements that were already being taken
 and thrown away — the buffer's fill rate in the HUD (`buffer-health.js`
