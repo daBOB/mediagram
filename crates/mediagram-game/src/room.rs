@@ -203,8 +203,16 @@ pub(crate) fn encode(msg: &ServerMsg) -> String {
 pub(crate) mod tests;
 
 #[cfg(test)]
+#[path = "room_sketch.rs"]
+mod sketch;
+
+#[cfg(test)]
 #[path = "room_board_tests.rs"]
 mod board_tests;
+
+#[cfg(test)]
+#[path = "room_draw_tests.rs"]
+mod draw_tests;
 
 #[cfg(test)]
 #[path = "room_avatar_tests.rs"]

@@ -57,8 +57,10 @@ impl Room {
         self.board.as_ref().is_some_and(|b| b.conn.is_some())
     }
 
-    /// Tells a game that was just created whether the board is already seated.
+    /// Runs when a game is created: no connection's drawing cursor may outlive the old game,
+    /// and the new game hears whether the board is already seated.
     pub(crate) fn announce_board(&mut self, now: ServerTime) {
+        self.conns.values_mut().for_each(|c| c.drawn = None);
         let present = self.board_connected();
         if let Some(g) = self.game.as_mut() {
             g.on_board_presence(now, present);
