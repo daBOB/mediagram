@@ -51,6 +51,8 @@ struct GameWebView: UIViewRepresentable {
 
     static func dismantleUIView(_ view: WKWebView, coordinator: Coordinator) {
         view.configuration.userContentController.removeScriptMessageHandler(forName: "mediagramApp")
+        // a re-created page shows the board again itself; until then no stale board
+        coordinator.board?.hide()
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
@@ -86,7 +88,7 @@ struct GameWebView: UIViewRepresentable {
                 board?.show(try JSONDecoder().decode(NativeBoardShow.self, from: Data(json.utf8)))
             } catch {
                 // a screen this app does not know yet: the page stays as it is
-                NSLog("Spieltisch: ignored a board show: \(error)")
+                NSLog("Spieltisch: ignored a board show: %@", "\(error)")
             }
         }
 
