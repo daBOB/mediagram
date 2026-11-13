@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.183.0 — The native core without its game list
+
+**Removed**
+
+- `game_catalogue()` and its `GameEntry` record from `spieltisch-core`'s native interface, with `wire_name()`, their tests and `mediagram-game`'s `CATALOGUE` re-export. Nothing called them since 0.179.0, when the app began listing the games from the web page; the Kotlin bindings are regenerated. Minor, not patch, because a public API goes.
+
 ## Spieltisch 0.182.0 — Preisfrage with sound
 
 **Added**

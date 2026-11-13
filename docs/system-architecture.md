@@ -1264,8 +1264,8 @@ phone's rail has no Games row, as before: Spieltisch is a television app
 when Spieltisch leaves the screen, and takes another port when 8080 is taken.
 
 **Its own native core.** `crates/spieltisch-core` links `mediagram-game`, not
-`mediagram-core`, and exports `start_night(config, images)`, `night_back`, `stop_night` and
-`game_catalogue` (`libspieltisch_core.so`, four ABIs, `scripts/build-spieltisch-core.sh`;
+`mediagram-core`, and exports `start_night(config, images)`, `night_back` and `stop_night`
+(`libspieltisch_core.so`, four ABIs, `scripts/build-spieltisch-core.sh`;
 bindings by `scripts/generate-spieltisch-bindings.sh`, committed under
 `android/spieltisch/src/main/kotlin/uniffi/`). One night per process, held in a
 static slot. `scripts/check.sh` regenerates the

@@ -95,7 +95,6 @@ mod schwimmen_views;
 mod server;
 mod titles;
 
-pub use catalogue::CATALOGUE;
 pub use game::{ActionError, Game, GameCtx, GameFactory, ViewCtx};
 pub use host::{Host, HostConfig, start_game_night};
 pub use articles::{Article, ArticleList, MAX_CENTS, article_photo_url};
