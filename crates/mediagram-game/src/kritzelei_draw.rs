@@ -5,7 +5,6 @@ use crate::kritzelei::KritzeleiGame;
 use crate::kritzelei_rules::check_op;
 use crate::protocol::DrawOp;
 
-#[cfg_attr(not(test), allow(dead_code))]
 impl KritzeleiGame {
     pub(crate) fn draw(&mut self, op: &DrawOp) -> Result<(), ActionError> {
         let line = matches!(op, DrawOp::Line { .. });

@@ -215,5 +215,9 @@ mod board_tests;
 mod draw_tests;
 
 #[cfg(test)]
+#[path = "room_kritzelei_tests.rs"]
+mod kritzelei_tests;
+
+#[cfg(test)]
 #[path = "room_avatar_tests.rs"]
 mod avatar_tests;

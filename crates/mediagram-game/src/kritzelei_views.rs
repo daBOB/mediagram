@@ -17,7 +17,6 @@ fn name_of(view: &ViewCtx, id: PlayerId) -> String {
     view.players.iter().find(|p| p.id == id).map_or_else(String::new, |p| p.name.clone())
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 impl KritzeleiGame {
     /// Who got it, as the reveal says it on every surface.
     fn verdict(&self, view: &ViewCtx, guesser: Option<PlayerId>) -> String {

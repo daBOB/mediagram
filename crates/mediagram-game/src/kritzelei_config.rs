@@ -3,7 +3,6 @@
 use crate::protocol::ServerTime;
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct KritzeleiConfig {
     pub draw_ms: ServerTime,
     pub reveal_ms: ServerTime,

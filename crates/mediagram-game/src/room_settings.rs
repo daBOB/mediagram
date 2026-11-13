@@ -28,6 +28,7 @@ pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kinder
 pub(crate) const DREIFELDER_NOT_FOR_KIDS: &str = "Dreifelder gibt es nicht im Kindermodus.";
 /// Preisfrage's gag-gift searches bring articles nobody checked for children.
 pub(crate) const PREISFRAGE_NOT_FOR_KIDS: &str = "Preisfrage gibt es nicht im Kindermodus.";
+pub(crate) const KRITZELEI_NEEDS_BOARD: &str = "Kritzelei braucht das iPad als Zeichenbrett.";
 pub(crate) const PREISFRAGE_NEEDS_ARTICLES: &str = "Preisfrage braucht Artikel: am PC „bun run fetch“ starten.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
@@ -75,6 +76,7 @@ impl Room {
             GameKind::Dreifelder if s.kids_only => return Some(DREIFELDER_NOT_FOR_KIDS.into()),
             GameKind::Preisfrage if s.kids_only => return Some(PREISFRAGE_NOT_FOR_KIDS.into()),
             GameKind::Preisfrage if !r.preisfrage => return Some(PREISFRAGE_NEEDS_ARTICLES.into()),
+            GameKind::Kritzelei if !self.board_connected() => return Some(KRITZELEI_NEEDS_BOARD.into()),
             _ => {}
         }
         let GameEntry { name, min, max, .. } = entry(s.game);

@@ -4,13 +4,11 @@ use crate::protocol::ServerTime;
 use crate::protocol_board::Clock;
 
 #[derive(Debug, Clone)]
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) struct TurnClock {
     left_ms: f64,
     since: Option<ServerTime>,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 impl TurnClock {
     pub(crate) fn new(ms: f64) -> Self {
         Self { left_ms: ms, since: None }

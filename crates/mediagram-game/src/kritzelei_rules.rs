@@ -13,7 +13,6 @@ const WIDTHS: u8 = 3;
 const COORD_MAX: u16 = 10_000;
 
 /// Connected players at the start, in seat order, twice when fewer than `two_rounds_below`.
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn turn_order(players: &[Player], two_rounds_below: usize) -> Vec<PlayerId> {
     let once: Vec<PlayerId> = players.iter().filter(|p| p.connected()).map(|p| p.id).collect();
     if once.len() < two_rounds_below { [once.clone(), once].concat() } else { once }
@@ -25,7 +24,6 @@ fn readable(points: &[u16], cfg: &KritzeleiConfig) -> bool {
 
 /// Points `op` adds, given the turn's `ops` so far and the `held` point count.
 /// Malformed is refused; over the cap, or `More` without a line before, is dropped.
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn check_op(op: &DrawOp, ops: &[DrawOp], held: usize, cfg: &KritzeleiConfig) -> Result<usize, ActionError> {
     let points = match op {
         DrawOp::Line { color, width, points } => {

@@ -11,7 +11,6 @@ use crate::room_seats::Player;
 const WHO: &str = "Wer soll das sein?";
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) enum Stage {
     /// The word stays hidden until the drawer taps "Ich bin dran".
     Handover,
@@ -22,7 +21,6 @@ pub(crate) enum Stage {
     Final,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 pub struct KritzeleiGame {
     pub(crate) cfg: KritzeleiConfig,
     /// Who draws each turn.
@@ -41,7 +39,6 @@ pub struct KritzeleiGame {
     pub(crate) board_present: bool,
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 impl KritzeleiGame {
     pub(crate) fn new(cfg: KritzeleiConfig, deck: Vec<&'static str>, players: &[Player], _now: ServerTime) -> Self {
         let turns = turn_order(players, cfg.two_rounds_below);
