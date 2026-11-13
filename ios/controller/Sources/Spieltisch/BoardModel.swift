@@ -4,7 +4,8 @@ import Combine
 /// The native drawing board the page drives: the screen it asked for, the drawing, and the acts going back.
 @MainActor final class BoardModel: ObservableObject {
     @Published private(set) var screen: NativeScreen?
-    @Published private(set) var ink = InkModel()
+    /// Not published: an own stroke batch must not re-render the views. Read it when `inkEpoch` moves.
+    private(set) var ink = InkModel()
     /// Bumped when the ink was replaced or changed by undo or clear (`ink.epoch`); not on an own stroke.
     @Published private(set) var inkEpoch = 0
     /// Set by GameWebView's coordinator: posts one act to the page.
@@ -27,7 +28,8 @@ import Combine
         send(act)
         if case let .draw(op) = act {
             ink.apply(op)
-            inkEpoch = ink.epoch
+            // assigning a @Published value publishes even when it is unchanged
+            if inkEpoch != ink.epoch { inkEpoch = ink.epoch }
         }
     }
 }

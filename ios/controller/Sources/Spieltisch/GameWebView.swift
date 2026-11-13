@@ -95,6 +95,11 @@ struct GameWebView: UIViewRepresentable {
             board?.hide()
         }
 
+        // a crashed page must not leave the board up on its last screen
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            board?.hide()
+        }
+
         // a link or redirect off the box would take the bridge with it
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             let target = action.request.url?.absoluteString ?? ""
