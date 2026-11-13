@@ -74,12 +74,22 @@ describe("clipArgs", () => {
     expect(vf).not.toContain("libplacebo");
   });
 
-  test.each(["HDR10", "HLG"] as const)("tone maps %s before it scales", (hdr) => {
+  test("widens anamorphic pixels to square before the fit, keeping the width even", () => {
+    for (const hdr of [null, "HDR10", "DV"] as const) {
+      const vf = valueOf(argsFor({ hdr }), "-vf")!;
+      expect(vf.startsWith("scale=trunc(iw*sar/2)*2:ih,setsar=1,")).toBe(true);
+      expect(vf.indexOf("setsar=1")).toBeLessThan(vf.indexOf("scale=w="));
+    }
+  });
+
+  test.each(["HDR10", "HLG"] as const)("scales %s to fit before it tone maps, then converts to 8-bit BT.709", (hdr) => {
     const vf = valueOf(argsFor({ hdr }), "-vf")!;
-    expect(vf).toContain("zscale=t=linear");
-    expect(vf).toContain("tonemap=tonemap=hable");
-    expect(vf).toContain("zscale=t=bt709:m=bt709:p=bt709");
-    expect(vf.indexOf("tonemap=")).toBeLessThan(vf.indexOf("scale=w="));
+    const order = ["scale=w=", "zscale=t=linear", "format=gbrpf32le", "tonemap=tonemap=hable", "zscale=t=bt709:m=bt709:p=bt709", "format=yuv420p"];
+    const at = order.map((step) => vf.indexOf(step));
+    expect(at.every((index) => index >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    // Nothing between the fit and the linearize drops the source's 10 bits.
+    expect(vf.slice(at[0]!, at[1]!)).not.toContain("format=");
   });
 
   test("sends Dolby Vision through libplacebo", () => {

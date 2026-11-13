@@ -30,6 +30,15 @@ export interface ClipRequest {
 export const CLIP_MAX_SECONDS = 180;
 
 /**
+ * Square pixels first. A DVD rip stores a squeezed picture and a sample
+ * aspect ratio that widens it on playback; the sites a clip is posted to show
+ * pixels square, so the widening is done here or the clip posts squeezed. The
+ * fit below works on stored sizes, so it must see the widened one. Even width
+ * for yuv420p; already-square pixels pass through untouched.
+ */
+const SQUARE_PIXELS = "scale=trunc(iw*sar/2)*2:ih,setsar=1";
+
+/**
  * Fits inside 1080p keeping the shape and never enlarges. Even sides because
  * yuv420p cannot represent an odd one. The quotes keep the commas in `min()`
  * from being read as the next filter in the chain.
@@ -39,8 +48,9 @@ const FIT_1080P =
 
 /**
  * HDR10 and HLG are folded to SDR in linear light: tone mapping gamma-encoded
- * values crushes the highlights. `npl=100` is SDR reference white. The scale
- * comes after, on the already-SDR picture.
+ * values crushes the highlights. `npl=100` is SDR reference white. It follows
+ * the fit, which scales in the source's own 10-bit format: tone mapping a 4K
+ * frame in float costs four times the 1080p one that is kept.
  */
 const TONE_MAP_HDR =
   "zscale=t=linear:npl=100,format=gbrpf32le,tonemap=tonemap=hable:desat=0," +
@@ -55,10 +65,10 @@ const TONE_MAP_HDR =
 const TONE_MAP_DV =
   "libplacebo=tonemapping=bt.2390:colorspace=bt709:color_primaries=bt709:color_trc=bt709:range=tv:format=yuv420p";
 
-function colourChain(hdr: ClipHdr): string[] {
-  if (hdr === "HDR10" || hdr === "HLG") return [TONE_MAP_HDR];
-  if (hdr === "DV") return [TONE_MAP_DV];
-  return [];
+function videoFilter(hdr: ClipHdr): string[] {
+  if (hdr === "HDR10" || hdr === "HLG") return [SQUARE_PIXELS, FIT_1080P, TONE_MAP_HDR];
+  if (hdr === "DV") return [SQUARE_PIXELS, TONE_MAP_DV, FIT_1080P];
+  return [SQUARE_PIXELS, FIT_1080P];
 }
 
 export function clipArgs(request: ClipRequest): string[] {
@@ -81,7 +91,7 @@ export function clipArgs(request: ClipRequest): string[] {
 
   args.push(
     "-vf",
-    [...colourChain(request.hdr), FIT_1080P, "format=yuv420p"].join(","),
+    [...videoFilter(request.hdr), "format=yuv420p"].join(","),
     "-c:v",
     "libx264",
     "-crf",
