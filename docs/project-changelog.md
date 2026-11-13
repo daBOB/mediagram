@@ -21,6 +21,29 @@ to `main`. Full phase-by-phase detail lives in
 - Texts name players instead of piece numbers ("Ben ist dran", "Cem fährt mit dem Bus nach 166.", "Deine Figur · Feld 106" with the avatar's head); figure numbers and badges on the plan appear only for a lone hunter's two figures.
 - The city has six bridges (55–73, 58–76, 68–105, 83–101, 89–108, 117–135), drawn as stone decks; no street or bus crosses open water any more. Buses are drawn along the streets between their stops as a stripe. Totals: taxi 342, bus 89 on 63 stops, U-Bahn 20 on 14, ferry 3 on 4 piers.
 
+## Spieltisch 0.178.1 — Preisfrage's poster and backdrop
+
+**Added**
+
+- Preisfrage has its poster and backdrop on the shelf (`game_{poster,backdrop}_preisfrage.webp`, 480×720 and 1920×1080), made by the user with GPT Image from the prompts in `plans/261112-0130-preisfrage/shelf-art-prompts.md`; the originals are in the main checkout's untracked `game_poster/`.
+
+## Spieltisch 0.178.0 — Preisfrage
+
+**Added**
+
+- Preisfrage, for one to eight players: an odd article from Amazon shows on the TV, everyone types its price on their phone, and the closer a guess either way, the more it scores: `round(1000 × (1 − distance ÷ price))`, nothing from twice the price on, 500 more for a guess to the cent (the user's choice from the rules prototype). Six articles a game, each 3 s alone, 20 s to guess (closing early once everyone here has guessed) and 7 s of reveal with the date the price was read; the final ranks by total, equal totals sharing a place. Running totals show as the players' scores.
+- The draw: one article from each price band (5-20, 20-50, 50-150, 150-500 €) and two from bands at random, articles with under 20 reviews first, none twice in a night until the list runs out, an empty band filled from the nearest.
+- The lobby blocks Preisfrage in kids mode ("Preisfrage gibt es nicht im Kindermodus.") and without at least three articles ("Preisfrage braucht Artikel: am PC „bun run fetch“ starten.").
+- Wire types: `GameKind::Preisfrage`, `TvScene::Preisfrage` (`PreisfrageScene`), `PhoneScreen::Price` (`PriceKeypad`), `Action::GuessPrice { cents }`.
+- The TV page in the shop-window look the user picked from three renders: the photo large on the left, the name and who has guessed on the right, a clock ring; at the reveal the price, the date it was read, and a line from 0 to twice the price with every guess as an avatar pin (close ones stacked) and the price as a flag. The phone has a calculator keypad (digits, comma, delete) that shows the price as typed, sends once and then shows the guess. No sound yet.
+- `tools/smoke.mjs --game preisfrage --articles DIR`: three scripted phones play a whole game against the dev host and check the scores against the rules prototype's formula.
+
+**Changed**
+
+- `game_factory` takes the night's `ArticleList` last.
+- The TV view's types moved to `protocol_tv.rs`.
+- `tools/preisfrage-articles`: the top price band (150-500 €) reads page 1 by relevance; newest-first and deeper pages there came back empty.
+
 ## Spieltisch 0.177.1 — posters for Kopfnuss, Dreifelder, Heimlauf and Flüchtig
 
 **Added**

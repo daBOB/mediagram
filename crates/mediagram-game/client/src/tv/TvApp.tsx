@@ -8,6 +8,7 @@ import { TvGrandAllee } from "./TvGrandAllee";
 import { TvLobby } from "./TvLobby";
 import { TvPoster } from "./TvPoster";
 import { TvCards } from "./TvCards";
+import { TvPreisfrage } from "./TvPreisfrage";
 import { TvQuiz } from "./TvQuiz";
 import { TvRace } from "./TvRace";
 
@@ -45,6 +46,8 @@ export function TvApp() {
         <TvFluechtig scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "grand_allee" ? (
         <TvGrandAllee key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
+      ) : view.scene.kind === "preisfrage" ? (
+        <TvPreisfrage scene={view.scene.scene} players={view.players} conn={conn} />
       ) : (
         <TvQuiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}

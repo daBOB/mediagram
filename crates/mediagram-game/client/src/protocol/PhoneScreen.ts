@@ -9,6 +9,7 @@ import type { GameEntry } from "./GameEntry";
 import type { HotelCard } from "./HotelCard";
 import type { LobbySettings } from "./LobbySettings";
 import type { OutcomeKey } from "./OutcomeKey";
+import type { PriceKeypad } from "./PriceKeypad";
 import type { SheetLine } from "./SheetLine";
 import type { Tone } from "./Tone";
 import type { Trick } from "./Trick";
@@ -53,4 +54,4 @@ keys: Array<OutcomeKey>,
 /**
  * The running score under the result; off where a game scores only at the end.
  */
-show_score: boolean, } | { "kind": "cards", desk: CardDesk, } | { "kind": "fluechtig", phone: FluechtigPhone, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };
+show_score: boolean, } | { "kind": "cards", desk: CardDesk, } | { "kind": "fluechtig", phone: FluechtigPhone, } | { "kind": "price", keypad: PriceKeypad, } | { "kind": "final", rank: number, of: number, score: number, can_restart: boolean, };

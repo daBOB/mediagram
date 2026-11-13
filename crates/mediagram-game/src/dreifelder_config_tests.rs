@@ -30,7 +30,7 @@ fn twelve_questions_at_most_three_films_and_none_repeated_tonight() {
 
 #[test]
 fn the_factory_builds_dreifelder() {
-    let mut factory = crate::factory::game_factory(Arc::new(TitlePool::new(vec![], false)), Arc::new(general_pack()), None);
+    let mut factory = crate::factory::game_factory(Arc::new(TitlePool::new(vec![], false)), Arc::new(general_pack()), None, Arc::default());
     let mut ps = players(2);
     let settings = LobbySettings { game: GameKind::Dreifelder, quiz_mode: QuizMode::Mixed, kids_only: false, kids_locked: false, adult: false };
     let game = factory(&mut GameCtx { now: 0.0, players: &mut ps }, &settings);

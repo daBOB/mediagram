@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Rules and game state"
-status: pending
+status: done
 priority: P1
 effort: "5h"
 dependencies: [4]
@@ -40,6 +40,13 @@ state machine in the room, like `dreifelder.rs`.
 - Modify: `src/factory.rs`, `src/lib.rs`, `tools/smoke.mjs` (a 3-phone Preisfrage run)
 
 ## Success Criteria
-- [ ] Every rule above seen failing first, then green; all suites green.
-- [ ] Smoke run: three scripted phones play 6 articles to the ranking on the dev host with `--articles`.
-- [ ] No file over 200 lines.
+- [x] Every rule above seen failing first, then green; all suites green.
+- [x] Smoke run: three scripted phones play 6 articles to the ranking on the dev host with `--articles`.
+- [x] No file over 200 lines.
+
+## As built
+- Smoke run on 2026-11-12 against the dev host over the 434-article dry run: six articles to the final and back
+  to the lobby; Ana (to the cent) 9000, Ben (10 % over) 5400, Cem (skips the first, then half) 2500, equal to
+  the prototype's JavaScript formula. `bun crates/mediagram-game/tools/smoke.mjs ws://127.0.0.1:PORT/ws
+  --game preisfrage --articles DIR`.
+- Points are worked out in whole numbers, rounding half up as `Math.round` did.

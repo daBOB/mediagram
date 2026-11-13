@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Protocol, lobby, article draw"
-status: pending
+status: done
 priority: P1
 effort: "4h"
 dependencies: [3]
@@ -38,5 +38,14 @@ Dreifelder's first phase (`plans/261109-1417-dreifelder-elimination-quiz/phase-0
   `src/room_settings.rs` (+ tests), `src/lib.rs`, `client/src/protocol/*` (generated), `client/src/ui/lobby.ts`
 
 ## Success Criteria
-- [ ] Tests seen failing first, then green; existing suites green; protocol diff committed.
-- [ ] Lobby on the dev host shows Preisfrage, blocked with the right reason with no list / with kids lock.
+- [x] Tests seen failing first, then green; existing suites green; protocol diff committed.
+- [x] Lobby on the dev host shows Preisfrage, blocked with the right reason with no list / with kids lock.
+
+## As built
+- Lobby texts: "Preisfrage gibt es nicht im Kindermodus." (the wording Kopfnuss and Dreifelder use) and
+  "Preisfrage braucht Artikel: am PC „bun run fetch“ starten."; readiness is `Readiness.preisfrage`, at least
+  three articles. Checked by `room_settings_tests`, not on the dev host's screen: the TV page comes in phase 6.
+- One `Guessing { opens_at, closes_at, guessed }` stage covers the intro (before `opens_at`), as Dreifelder does;
+  no separate `Intro`. The keypad carries `opens_at`, `closes_at`, `sent` and `max_cents`.
+- `protocol.rs` was at 199 lines: the TV view types moved to `protocol_tv.rs`.
+- Until phase 6 the TV renders nothing for a Preisfrage scene (`TvApp.tsx` routes the quiz explicitly).

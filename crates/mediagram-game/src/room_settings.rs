@@ -11,11 +11,13 @@ pub struct Readiness {
     pub poster: bool,
     /// Enough kid-safe posters, for when *Nur für Kinder* is on.
     pub poster_kids: bool,
+    /// Enough of Preisfrage's articles for a game.
+    pub preisfrage: bool,
 }
 
 impl Default for Readiness {
     fn default() -> Self {
-        Self { poster: true, poster_kids: true }
+        Self { poster: true, poster_kids: true, preisfrage: true }
     }
 }
 
@@ -24,6 +26,9 @@ pub(crate) const NOT_ENOUGH_POSTERS: &str = "Nicht genug Poster für dieses Spie
 pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kindermodus.";
 /// Dreifelder asks the general pack too, which is not checked for children.
 pub(crate) const DREIFELDER_NOT_FOR_KIDS: &str = "Dreifelder gibt es nicht im Kindermodus.";
+/// Preisfrage's gag-gift searches bring articles nobody checked for children.
+pub(crate) const PREISFRAGE_NOT_FOR_KIDS: &str = "Preisfrage gibt es nicht im Kindermodus.";
+pub(crate) const PREISFRAGE_NEEDS_ARTICLES: &str = "Preisfrage braucht Artikel: am PC „bun run fetch“ starten.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked, adult: false }
@@ -68,6 +73,8 @@ impl Room {
             }
             GameKind::Kopfnuss if s.kids_only => return Some(KOPFNUSS_NOT_FOR_KIDS.into()),
             GameKind::Dreifelder if s.kids_only => return Some(DREIFELDER_NOT_FOR_KIDS.into()),
+            GameKind::Preisfrage if s.kids_only => return Some(PREISFRAGE_NOT_FOR_KIDS.into()),
+            GameKind::Preisfrage if !r.preisfrage => return Some(PREISFRAGE_NEEDS_ARTICLES.into()),
             _ => {}
         }
         let GameEntry { name, min, max, .. } = entry(s.game);

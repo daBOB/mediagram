@@ -7,6 +7,7 @@ import type { GrandAlleeScene } from "./GrandAlleeScene";
 import type { KopfnussScene } from "./KopfnussScene";
 import type { LobbySettings } from "./LobbySettings";
 import type { PosterScene } from "./PosterScene";
+import type { PreisfrageScene } from "./PreisfrageScene";
 import type { QuizScene } from "./QuizScene";
 import type { RaceScene } from "./RaceScene";
 
@@ -18,4 +19,4 @@ blocked: string | null,
 /**
  * The game catalogue, in lobby order.
  */
-games: Array<GameEntry>, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, } | { "kind": "cards", scene: CardsScene, } | { "kind": "kopfnuss", scene: KopfnussScene, } | { "kind": "grand_allee", scene: GrandAlleeScene, } | { "kind": "dreifelder", scene: DreifelderScene, } | { "kind": "fluechtig", scene: FluechtigScene, };
+games: Array<GameEntry>, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, } | { "kind": "cards", scene: CardsScene, } | { "kind": "kopfnuss", scene: KopfnussScene, } | { "kind": "grand_allee", scene: GrandAlleeScene, } | { "kind": "dreifelder", scene: DreifelderScene, } | { "kind": "fluechtig", scene: FluechtigScene, } | { "kind": "preisfrage", scene: PreisfrageScene, };
