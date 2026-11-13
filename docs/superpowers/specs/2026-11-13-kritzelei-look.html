@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Kritzelei – Look</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --felt: #0f5a43; --felt-deep: #0a4433; --felt-line: #1c7258;
+  --ink: #0c2a22; --card: #fbf8f1; --card-edge: #ddd3bd; --muted: #a9cdbf;
+  --blue: #2c6bed; --blue-edge: #1b4cb3; --orange: #f2862e; --orange-edge: #b95f17;
+  --yellow: #f6c731; --yellow-edge: #b98f0d; --pink: #e5487f; --pink-edge: #a92d5a;
+  --display: "Bricolage Grotesque", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #161b19; color: #e8efe9; font-family: var(--body); padding: 28px 32px 80px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: 34px; margin: 0 0 4px; letter-spacing: -0.02em; }
+h2 { font-family: var(--display); font-weight: 800; font-size: 22px; margin: 44px 0 4px; }
+.sub { color: #9db3a8; margin: 0 0 18px; max-width: 70ch; }
+.cap { color: #9db3a8; font-size: 14px; margin-top: 10px; max-width: 60ch; }
+.cap b { color: #e8efe9; }
+
+/* pickable options */
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.option { border: 3px solid transparent; border-radius: 22px; padding: 14px; background: #1f2724; cursor: pointer; }
+.option:hover { border-color: #33463f; }
+.option.selected { border-color: var(--yellow); }
+.option h3 { font-family: var(--display); margin: 12px 4px 2px; font-size: 18px; }
+.option p { margin: 0 4px; color: #9db3a8; font-size: 14px; }
+
+/* ---------- device frames ---------- */
+.ipad { container-type: inline-size; width: 100%; aspect-ratio: 1133 / 744; background: #0b0d0c; border-radius: 30px; padding: 14px; box-shadow: 0 0 0 2px #2b302e; }
+.screen { position: relative; width: 100%; height: 100%; background: var(--felt); border-radius: 1.6cqw; overflow: hidden; color: var(--card); font-family: var(--body); }
+.tv { container-type: inline-size; width: 100%; aspect-ratio: 16 / 9; background: #050606; padding: 7px; border-radius: 6px; box-shadow: 0 0 0 2px #2b302e; }
+.tv .screen { border-radius: 0; }
+.phone { container-type: inline-size; width: 210px; aspect-ratio: 9 / 19.5; background: #0b0d0c; border-radius: 34px; padding: 9px; box-shadow: 0 0 0 2px #2b302e; }
+.phone .screen { border-radius: 26px; }
+
+/* ---------- shared bits ---------- */
+.token { display: inline-grid; place-items: center; border-radius: 50%; color: var(--ink); font-family: var(--display); font-weight: 800; box-shadow: inset 0 -0.25em 0 rgba(12,42,34,.28); flex: none; }
+.t-blue { background: var(--blue); color: var(--card); } .t-orange { background: var(--orange); }
+.t-yellow { background: var(--yellow); } .t-pink { background: var(--pink); color: var(--card); }
+.t-green { background: #6fcf97; }
+.key { border-radius: 1.4cqw; font-family: var(--display); font-weight: 800; text-align: center; color: var(--ink); }
+.key.yellow { background: var(--yellow); box-shadow: 0 0.55cqw 0 var(--yellow-edge); }
+.key.quiet { background: var(--felt-line); color: var(--card); box-shadow: 0 0.55cqw 0 var(--felt-deep); }
+.paper { background: var(--card); border-radius: 1.2cqw; box-shadow: inset 0 0 0 0.25cqw var(--card-edge); position: relative; overflow: hidden; }
+.paper svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.wordcard { background: var(--card); color: var(--ink); font-family: var(--display); font-weight: 800; letter-spacing: 0.04em; border-radius: 1cqw; box-shadow: 0 0.45cqw 0 var(--card-edge); }
+.timer { font-family: var(--display); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* ---------- iPad board, top bar ---------- */
+.bar { position: absolute; left: 0; right: 0; top: 0; height: 9cqw; display: flex; align-items: center; gap: 1.6cqw; padding: 0 2cqw; }
+.bar .token { width: 5cqw; height: 5cqw; font-size: 2.4cqw; }
+.bar .who { font-family: var(--display); font-weight: 600; font-size: 2.1cqw; color: var(--muted); }
+.bar .who b { color: var(--card); font-weight: 800; }
+.bar .wordcard { font-size: 3.4cqw; padding: 0.8cqw 2.2cqw; margin-left: 0.6cqw; }
+.bar .timer { margin-left: auto; font-size: 3.4cqw; display: flex; align-items: center; gap: 1cqw; }
+.ring { width: 4.4cqw; height: 4.4cqw; border-radius: 50%; background: conic-gradient(var(--yellow) 0 80%, var(--felt-deep) 80% 100%); display: grid; place-items: center; }
+.ring::after { content: ""; width: 2.8cqw; height: 2.8cqw; border-radius: 50%; background: var(--felt); }
+
+/* tools */
+.swatch { width: 4.4cqw; height: 4.4cqw; border-radius: 50%; box-shadow: inset 0 -0.4cqw 0 rgba(0,0,0,.22); flex: none; }
+.swatch.on { outline: 0.5cqw solid var(--card); outline-offset: 0.45cqw; }
+.width { width: 4.6cqw; height: 4.6cqw; border-radius: 1.2cqw; display: grid; place-items: center; background: var(--felt-deep); flex: none; }
+.width.on { background: var(--felt-line); box-shadow: inset 0 0 0 0.35cqw var(--card); }
+.width i { display: block; background: var(--card); border-radius: 9cqw; width: 2.6cqw; }
+.tool { width: 4.6cqw; height: 4.6cqw; border-radius: 1.2cqw; display: grid; place-items: center; background: var(--felt-deep); flex: none; }
+.tool svg { width: 2.6cqw; height: 2.6cqw; stroke: var(--card); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sep { width: 0.25cqw; height: 4cqw; background: var(--felt-line); border-radius: 1cqw; flex: none; }
+
+/* layout A: tools along the bottom */
+.a .paper { position: absolute; left: 2cqw; right: 2cqw; top: 9cqw; bottom: 9.6cqw; }
+.a .tools { position: absolute; left: 2cqw; right: 2cqw; bottom: 1.6cqw; height: 6.4cqw; display: flex; align-items: center; gap: 1cqw; }
+.a .tools .key { font-size: 2.2cqw; padding: 1.2cqw 2cqw; }
+.a .tools .spacer { flex: 1; }
+
+/* layout B: tools in a left rail */
+.b .rail { position: absolute; left: 1.6cqw; top: 9cqw; bottom: 1.6cqw; width: 7.4cqw; display: flex; flex-direction: column; align-items: center; gap: 0.75cqw; padding-top: 0.6cqw; }
+.b .rail .swatch { width: 3.7cqw; height: 3.7cqw; }
+.b .rail .width, .b .rail .tool { width: 3.9cqw; height: 3.9cqw; }
+.b .rail .sep { width: 4cqw; height: 0.25cqw; }
+.b .paper { position: absolute; left: 10.4cqw; right: 2cqw; top: 9cqw; bottom: 1.6cqw; }
+.b .bar { gap: 1.2cqw; }
+.b .bar .who { white-space: nowrap; }
+.b .bar .wordcard { font-size: 3cqw; }
+.b .bar .keys { display: flex; gap: 1.2cqw; margin-left: 1.4cqw; }
+.b .bar .key { font-size: 2.1cqw; padding: 1cqw 2cqw; }
+
+/* ---------- iPad hand-over + who guessed ---------- */
+.center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2cqw; }
+.handover .token { width: 15cqw; height: 15cqw; font-size: 7cqw; }
+.handover .big { font-family: var(--display); font-weight: 800; font-size: 5.4cqw; letter-spacing: -0.02em; }
+.handover .small { color: var(--muted); font-size: 2.2cqw; margin-top: -1cqw; }
+.handover .key { font-size: 3.2cqw; padding: 2cqw 7cqw; margin-top: 1.5cqw; }
+.guessed .q { font-family: var(--display); font-weight: 800; font-size: 4.2cqw; }
+.guessed .grid { display: grid; grid-template-columns: repeat(3, 21cqw); gap: 2cqw; }
+.guessed .pl { background: var(--felt-deep); border-radius: 1.6cqw; padding: 1.6cqw; display: flex; align-items: center; gap: 1.4cqw; font-family: var(--display); font-weight: 800; font-size: 2.5cqw; box-shadow: 0 0.55cqw 0 #073326; }
+.guessed .pl .token { width: 5.2cqw; height: 5.2cqw; font-size: 2.4cqw; }
+.guessed .pl.drawer { opacity: .35; box-shadow: none; }
+.guessed .back { color: var(--muted); font-size: 2.2cqw; text-decoration: underline; text-underline-offset: 0.4cqw; }
+
+/* ---------- TV ---------- */
+.tvdraw .left { position: absolute; left: 3cqw; top: 3cqw; bottom: 3cqw; width: 19cqw; display: flex; flex-direction: column; gap: 1.6cqw; }
+.tvdraw .left .game { white-space: nowrap; font-family: var(--display); font-weight: 800; font-size: 1.55cqw; color: var(--muted); letter-spacing: 0.02em; }
+.tvdraw .drawer { display: flex; align-items: center; gap: 1.2cqw; }
+.tvdraw .drawer .token { width: 5cqw; height: 5cqw; font-size: 2.4cqw; }
+.tvdraw .drawer div { font-family: var(--display); font-weight: 800; font-size: 2.4cqw; line-height: 1.05; }
+.tvdraw .drawer div span { display: block; font-size: 1.4cqw; color: var(--muted); font-weight: 600; }
+.tvdraw .bigtimer { display: grid; place-items: center; width: 13cqw; height: 13cqw; border-radius: 50%; background: conic-gradient(var(--yellow) 0 80%, var(--felt-deep) 80% 100%); margin: 1cqw 0; }
+.tvdraw .bigtimer div { width: 10.4cqw; height: 10.4cqw; border-radius: 50%; background: var(--felt); display: grid; place-items: center; font-size: 3.6cqw; }
+.tvdraw .hint { margin-top: auto; font-family: var(--display); font-weight: 800; font-size: 2cqw; color: var(--yellow); line-height: 1.15; }
+.tvdraw .paper { position: absolute; left: 24cqw; top: 3cqw; bottom: 3cqw; width: 52cqw; border-radius: 0.8cqw; }
+.tvdraw .scores { position: absolute; right: 3cqw; top: 3cqw; width: 18cqw; display: flex; flex-direction: column; gap: 1cqw; }
+.tvdraw .scores .row { display: flex; align-items: center; gap: 1cqw; background: var(--felt-deep); border-radius: 0.8cqw; padding: 0.8cqw 1cqw; font-family: var(--display); font-weight: 800; font-size: 1.6cqw; }
+.tvdraw .scores .row .token { width: 2.8cqw; height: 2.8cqw; font-size: 1.3cqw; }
+.tvdraw .scores .row b { margin-left: auto; font-size: 1.8cqw; }
+.tvdraw .scores .row.drawing { box-shadow: inset 0 0 0 0.25cqw var(--yellow); }
+.tvdraw .scores .row .pen { font-size: 1.1cqw; color: var(--yellow); font-weight: 600; }
+.pendot { position: absolute; width: 1.5cqw; height: 1.5cqw; border-radius: 50%; background: #d8342b; box-shadow: 0 0 0 0.5cqw rgba(216,52,43,.25); }
+
+.tvreveal .center { gap: 1.4cqw; }
+.tvreveal .who { font-family: var(--display); font-weight: 800; font-size: 3.6cqw; }
+.tvreveal .wordcard { font-size: 7cqw; padding: 1.4cqw 5cqw; border-radius: 1.4cqw; box-shadow: 0 0.8cqw 0 var(--card-edge); }
+.tvreveal .pts { display: flex; gap: 2cqw; font-family: var(--display); font-weight: 800; font-size: 2.6cqw; }
+.tvreveal .pts span { display: flex; align-items: center; gap: 0.8cqw; }
+.tvreveal .pts .token { width: 3.8cqw; height: 3.8cqw; font-size: 1.8cqw; }
+.tvreveal .thumb { width: 26cqw; aspect-ratio: 52/48; margin-top: 0.6cqw; }
+
+/* ---------- phones ---------- */
+.ph .center { gap: 6cqw; padding: 10cqw; }
+.ph .token { width: 30cqw; height: 30cqw; font-size: 14cqw; }
+.ph .big { font-family: var(--display); font-weight: 800; font-size: 11cqw; line-height: 1.02; letter-spacing: -0.02em; }
+.ph .small { color: var(--muted); font-size: 6.2cqw; line-height: 1.3; }
+.ph .mega { font-family: var(--display); font-weight: 800; font-size: 19cqw; line-height: .95; color: var(--yellow); letter-spacing: -0.03em; }
+.ph .score { position: absolute; bottom: 9cqw; left: 0; right: 0; text-align: center; color: var(--muted); font-size: 5.6cqw; }
+
+.row-3 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+.flow { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.flow > div { flex: 1; min-width: 380px; }
+.phones { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.phones .cap { max-width: 210px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- Anna's lighthouse, drawn in strokes the way a Pencil would leave them -->
+    <g id="doodle" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M30 262 q18 -11 36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0" stroke="#2c6bed" stroke-width="5"/>
+      <path d="M60 282 q18 -10 36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0" stroke="#2c6bed" stroke-width="3"/>
+      <path d="M128 252 Q138 214 176 210 L262 209 Q300 214 312 252" stroke="#7a5230" stroke-width="5"/>
+      <path d="M186 210 L199 92 M255 210 L242 92" stroke="#1b1b1b" stroke-width="5"/>
+      <path d="M190 176 L251 176 M194 138 L247 138" stroke="#d8342b" stroke-width="15"/>
+      <path d="M196 92 L245 92 L245 62 L196 62 Z" stroke="#1b1b1b" stroke-width="5"/>
+      <path d="M189 62 L221 34 L252 62" stroke="#1b1b1b" stroke-width="5"/>
+      <path d="M213 210 L213 190 Q221 180 229 190 L229 210" stroke="#1b1b1b" stroke-width="4"/>
+      <path d="M200 77 L241 77" stroke="#f2a20e" stroke-width="12"/>
+      <path class="beam-l" d="M190 72 L96 46 M190 82 L96 112" stroke="#f2a20e" stroke-width="4"/>
+      <path class="beam-r" d="M252 72 L346 46 M252 82 L346 112" stroke="#f2a20e" stroke-width="4"/>
+      <path d="M330 150 q9 -9 18 0 q9 -9 18 0" stroke="#1b1b1b" stroke-width="3.5"/>
+    </g>
+    <g id="doodle-live" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M30 262 q18 -11 36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0" stroke="#2c6bed" stroke-width="5"/>
+      <path d="M128 252 Q138 214 176 210 L262 209 Q300 214 312 252" stroke="#7a5230" stroke-width="5"/>
+      <path d="M186 210 L199 92 M255 210 L242 92" stroke="#1b1b1b" stroke-width="5"/>
+      <path d="M190 176 L251 176" stroke="#d8342b" stroke-width="15"/>
+      <path d="M194 138 L232 138" stroke="#d8342b" stroke-width="15"/>
+      <path d="M196 92 L245 92 L245 62 L196 62 Z" stroke="#1b1b1b" stroke-width="5"/>
+      <path d="M189 62 L221 34 L252 62" stroke="#1b1b1b" stroke-width="5"/>
+    </g>
+  </defs>
+</svg>
+
+<h1>Kritzelei – so könnte es aussehen</h1>
+<p class="sub">Every screen uses the Spieltisch look you already have: felt green, cream paper, the keycap colours, the same two fonts. The iPad board is native, but it should feel like it belongs at the same table.</p>
+
+<h2>1 · The iPad while drawing: where do the tools go?</h2>
+<p class="sub">Same contents both times: drawer and word at the top, clock, 5 colours, 3 line widths, eraser, undo, clear, "Niemand" and "Erraten!". Click the one that feels right.</p>
+
+<div class="options">
+  <div class="option" data-choice="tools-bottom" onclick="toggleSelect(this)">
+    <div class="ipad"><div class="screen a">
+      <div class="bar">
+        <span class="token t-orange">A</span>
+        <span class="who"><b>Anna</b> zeichnet</span>
+        <span class="wordcard">LEUCHTTURM</span>
+        <span class="timer"><span class="ring"></span>1:12</span>
+      </div>
+      <div class="paper"><svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid meet"><use href="#doodle"/></svg></div>
+      <div class="tools">
+        <span class="swatch on" style="background:#1b1b1b"></span>
+        <span class="swatch" style="background:#d8342b"></span>
+        <span class="swatch" style="background:#2c6bed"></span>
+        <span class="swatch" style="background:#2f9e44"></span>
+        <span class="swatch" style="background:#f2a20e"></span>
+        <span class="sep"></span>
+        <span class="width"><i style="height:.45cqw"></i></span>
+        <span class="width on"><i style="height:.9cqw"></i></span>
+        <span class="width"><i style="height:1.6cqw"></i></span>
+        <span class="sep"></span>
+        <span class="tool"><svg viewBox="0 0 24 24"><path d="M16 3l5 5-11 11H5v-5z"/><path d="M5 19h15"/></svg></span>
+        <span class="tool"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></span>
+        <span class="tool"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+        <span class="spacer"></span>
+        <span class="key quiet">Niemand</span>
+        <span class="key yellow">Erraten!</span>
+      </div>
+    </div></div>
+    <h3>A · Tools along the bottom</h3>
+    <p>The widest drawing area; everything in one row under the paper, the big button under the drawing hand.</p>
+  </div>
+
+  <div class="option" data-choice="tools-rail" onclick="toggleSelect(this)">
+    <div class="ipad"><div class="screen b">
+      <div class="bar">
+        <span class="token t-orange">A</span>
+        <span class="who"><b>Anna</b> zeichnet</span>
+        <span class="wordcard">LEUCHTTURM</span>
+        <span class="timer"><span class="ring"></span>1:12</span>
+        <span class="keys"><span class="key quiet">Niemand</span><span class="key yellow">Erraten!</span></span>
+      </div>
+      <div class="rail">
+        <span class="swatch on" style="background:#1b1b1b"></span>
+        <span class="swatch" style="background:#d8342b"></span>
+        <span class="swatch" style="background:#2c6bed"></span>
+        <span class="swatch" style="background:#2f9e44"></span>
+        <span class="swatch" style="background:#f2a20e"></span>
+        <span class="sep"></span>
+        <span class="width"><i style="height:.45cqw"></i></span>
+        <span class="width on"><i style="height:.9cqw"></i></span>
+        <span class="width"><i style="height:1.6cqw"></i></span>
+        <span class="sep"></span>
+        <span class="tool"><svg viewBox="0 0 24 24"><path d="M16 3l5 5-11 11H5v-5z"/><path d="M5 19h15"/></svg></span>
+        <span class="tool"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></span>
+        <span class="tool"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+      </div>
+      <div class="paper"><svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid meet"><use href="#doodle"/></svg></div>
+    </div></div>
+    <h3>B · Tools in a rail on the left</h3>
+    <p>The free hand switches colours while the Pencil stays on the paper; the paper is taller. "Erraten!" sits up by the word.</p>
+  </div>
+</div>
+
+<h2>2 · Before and after the drawing, on the iPad</h2>
+<div class="flow">
+  <div>
+    <div class="ipad"><div class="screen handover"><div class="center">
+      <span class="token t-orange">A</span>
+      <div class="big">Anna ist dran</div>
+      <div class="small">Gib Anna das iPad. Das Wort kommt erst nach dem Tippen.</div>
+      <span class="key yellow">Ich bin dran</span>
+    </div></div></div>
+    <p class="cap"><b>Hand-over.</b> The word stays hidden while the iPad travels across the table. The clock starts with the tap.</p>
+  </div>
+  <div>
+    <div class="ipad"><div class="screen guessed"><div class="center">
+      <div class="q">Wer hat's erraten?</div>
+      <div class="grid">
+        <span class="pl"><span class="token t-blue">B</span>Ben</span>
+        <span class="pl"><span class="token t-yellow">C</span>Clara</span>
+        <span class="pl"><span class="token t-pink">D</span>Dennis</span>
+        <span class="pl"><span class="token t-green">E</span>Emil</span>
+        <span class="pl"><span class="token t-blue">F</span>Frieda</span>
+        <span class="pl drawer"><span class="token t-orange">A</span>Anna</span>
+      </div>
+      <span class="back">Doch nicht – weiterzeichnen</span>
+    </div></div></div>
+    <p class="cap"><b>After "Erraten!".</b> The drawer taps who said it first. The clock pauses meanwhile, and "Doch nicht" goes back to the drawing.</p>
+  </div>
+</div>
+
+<h2>3 · The TV</h2>
+<div class="row-3">
+  <div>
+    <div class="tv"><div class="screen tvdraw">
+      <div class="left">
+        <div class="game">KRITZELEI · Runde 1 von 2</div>
+        <div class="drawer"><span class="token t-orange">A</span><div><span>zeichnet gerade</span>Anna</div></div>
+        <div class="bigtimer"><div class="timer">1:12</div></div>
+        <div class="hint">Ruft laut,<br>was ihr seht!</div>
+      </div>
+      <div class="paper"><svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid meet"><use href="#doodle-live"/></svg><span class="pendot" style="left:53.4%;top:44.6%"></span></div>
+      <div class="scores">
+        <div class="row"><span class="token t-blue">B</span>Ben<b>4</b></div>
+        <div class="row"><span class="token t-yellow">C</span>Clara<b>3</b></div>
+        <div class="row drawing"><span class="token t-orange">A</span><span>Anna<br><span class="pen">zeichnet</span></span><b>2</b></div>
+        <div class="row"><span class="token t-pink">D</span>Dennis<b>2</b></div>
+        <div class="row"><span class="token t-green">E</span>Emil<b>0</b></div>
+        <div class="row"><span class="token t-blue">F</span>Frieda<b>0</b></div>
+      </div>
+    </div></div>
+    <p class="cap"><b>While drawing.</b> The picture grows line by line as Anna draws (the red dot is her Pencil right now). The word is never on the TV.</p>
+  </div>
+  <div>
+    <div class="tv"><div class="screen tvreveal"><div class="center">
+      <div class="who">Ben hat's erraten!</div>
+      <div class="wordcard">LEUCHTTURM</div>
+      <div class="pts"><span><span class="token t-blue">B</span>+2</span><span><span class="token t-orange">A</span>+1</span></div>
+      <div class="paper thumb"><svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid meet"><use href="#doodle"/></svg></div>
+    </div></div></div>
+    <p class="cap"><b>Turn ends.</b> Word, who got it and the points, with the finished drawing. After about 6 seconds the next drawer's hand-over follows. If nobody got it, this says "Keiner hat's erraten" and no points go to anyone.</p>
+  </div>
+</div>
+
+<h2>4 · The phones</h2>
+<div class="phones">
+  <div>
+    <div class="phone"><div class="screen ph"><div class="center">
+      <span class="token t-orange">A</span>
+      <div class="big">Du zeichnest!</div>
+      <div class="small">Hol dir das iPad.</div>
+    </div><div class="score">2 Punkte</div></div></div>
+    <p class="cap"><b>The drawer's phone</b> buzzes once ("your turn").</p>
+  </div>
+  <div>
+    <div class="phone"><div class="screen ph"><div class="center">
+      <div class="mega">Rate<br>laut!</div>
+      <div class="small">Anna zeichnet.<br>Schau auf den Fernseher.</div>
+    </div><div class="score">4 Punkte</div></div></div>
+    <p class="cap"><b>Everyone else</b>, in the app or the browser. Nothing to tap: eyes on the TV.</p>
+  </div>
+  <div>
+    <div class="phone"><div class="screen ph"><div class="center">
+      <div class="mega" style="color:var(--card)">+2</div>
+      <div class="big">Richtig!</div>
+      <div class="small">LEUCHTTURM</div>
+    </div><div class="score">6 Punkte</div></div></div>
+    <p class="cap"><b>Ben's phone</b> when Anna taps him: a "good" buzz, like a correct quiz answer.</p>
+  </div>
+</div>
+
+</body>
+</html>
