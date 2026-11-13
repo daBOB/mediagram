@@ -12,7 +12,7 @@ import { rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { clipArgs, type ClipHdr } from "./clip-args";
-import { parseProgress } from "./progress";
+import { keepTail, readProgress } from "./clip-pipes";
 
 export interface ClipProcess {
   stdout: ReadableStream<Uint8Array>;
@@ -49,12 +49,20 @@ export interface ClipJobsOptions {
   directory: string;
   spawn?: (command: string[]) => ClipProcess;
   now?: () => number;
+  /** Runs `run` after `ms`; answers how to call it off. */
+  schedule?: (run: () => void, ms: number) => () => void;
 }
 
 export const CLIP_BUSY = "Another clip is being made. Try again in a moment.";
 const DV_FAILED = "This title's Dolby Vision colours can't be converted yet.";
 const FAILED = "The clip could not be made.";
 const KEEP_MS = 3_600_000;
+/**
+ * Far past any three-minute encode, even of a 4K title at low priority: an
+ * ffmpeg still running then is stuck (a read that never returns), and while
+ * it runs no other export can start.
+ */
+const MAX_RUN_MS = 20 * 60_000;
 const STDERR_LINES = 20;
 
 interface Job {
@@ -68,6 +76,10 @@ interface Job {
 }
 
 const defaultSpawn = (command: string[]): ClipProcess => Bun.spawn(command, { stdout: "pipe", stderr: "pipe" });
+const defaultSchedule = (run: () => void, ms: number) => {
+  const timer = setTimeout(run, ms);
+  return () => clearTimeout(timer);
+};
 /** `Title – 1h02m00s.mp4`: what the viewer's Files app will show. */
 export function clipFileName(title: string, from: number): string {
   const safe = title.replace(/[/\\:*?"<>|\u0000-\u001f\u007f]/g, "").trim().slice(0, 80).trim() || "clip";
@@ -80,10 +92,12 @@ export class ClipJobs {
   private readonly jobs = new Map<string, Job>();
   private readonly spawn: (command: string[]) => ClipProcess;
   private readonly now: () => number;
+  private readonly schedule: (run: () => void, ms: number) => () => void;
 
   constructor(private readonly options: ClipJobsOptions) {
     this.spawn = options.spawn ?? defaultSpawn;
     this.now = options.now ?? Date.now;
+    this.schedule = options.schedule ?? defaultSchedule;
   }
 
   start(spec: ClipSpec): { id: string } | "busy" {
@@ -148,35 +162,19 @@ export class ClipJobs {
   }
 
   private async supervise(job: Job, proc: ClipProcess, spec: ClipSpec): Promise<void> {
-    // Both pipes are drained for as long as ffmpeg runs: an unread pipe fills and blocks it.
-    const progress = (async () => {
-      let carry = "";
-      const decoder = new TextDecoder();
-      try {
-        for await (const chunk of proc.stdout) {
-          const parsed = parseProgress(decoder.decode(chunk, { stream: true }), carry);
-          carry = parsed.carry;
-          for (const block of parsed.blocks) {
-            if (block.outSeconds === null) continue;
-            const fraction = block.outSeconds / (spec.to - spec.from);
-            job.status.progress = Math.min(1, Math.max(job.status.progress, fraction));
-          }
-        }
-      } catch { /* a lost reading only makes the bar stand still */ }
-    })();
-    const errors = (async () => {
-      let rest = "";
-      const decoder = new TextDecoder();
-      try {
-        for await (const chunk of proc.stderr) {
-          const lines = (rest + decoder.decode(chunk, { stream: true })).split("\n");
-          rest = lines.pop() ?? "";
-          job.stderr.push(...lines);
-          job.stderr.splice(0, Math.max(0, job.stderr.length - STDERR_LINES));
-        }
-      } catch { /* diagnosis only */ }
-    })();
+    // Ended here rather than on exit: a stuck process may not exit when told to.
+    const cancel = this.schedule(() => {
+      if (job.status.state !== "running") return;
+      console.warn(`clip: ffmpeg still running after ${MAX_RUN_MS / 60_000} minutes; stopped\n${job.stderr.join("\n")}`);
+      proc.kill();
+      this.end(job, false, null);
+    }, MAX_RUN_MS);
+    const progress = readProgress(proc.stdout, (seconds) => {
+      job.status.progress = Math.min(1, Math.max(job.status.progress, seconds / (spec.to - spec.from)));
+    });
+    const errors = keepTail(proc.stderr, job.stderr, STDERR_LINES);
     const code = await proc.exited.catch(() => 1);
+    cancel();
     await Promise.all([progress, errors]);
     // Dropped by stopAll: a killed process at shutdown is not a failure.
     if (this.jobs.get(job.status.id) !== job) return;

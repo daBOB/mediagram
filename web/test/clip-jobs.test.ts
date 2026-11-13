@@ -37,15 +37,22 @@ function harness(clock = { t: 0 }) {
   const directory = mkdtempSync(join(tmpdir(), "clips-"));
   dirs.push(directory);
   const spawned: { command: string[]; fake: ReturnType<typeof fakeProcess> }[] = [];
+  /** Timers the jobs asked for, run by hand; `cancelled` once called off. */
+  const timers: { run: () => void; ms: number; cancelled: boolean }[] = [];
   const jobs = new ClipJobs({
     baseUrl: "http://127.0.0.1:1", pacedReads: false, directory, now: () => clock.t,
+    schedule: (run, ms) => {
+      const timer = { run, ms, cancelled: false };
+      timers.push(timer);
+      return () => { timer.cancelled = true; };
+    },
     spawn: (command) => {
       const fake = fakeProcess();
       spawned.push({ command, fake });
       return fake.proc;
     },
   });
-  return { jobs, spawned, directory, clock };
+  return { jobs, spawned, directory, clock, timers };
 }
 
 describe("ClipJobs", () => {
@@ -129,6 +136,33 @@ describe("ClipJobs", () => {
     expect(jobs.status(started.id)).toMatchObject({ state: "failed", error: "The clip could not be made." });
     // Failed jobs do not hold the slot.
     expect(jobs.start(spec)).not.toBe("busy");
+  });
+
+  test("an export still running after twenty minutes is stopped and fails with the generic copy", async () => {
+    const { jobs, spawned, timers } = harness();
+    const stuck = jobs.start({ ...spec, hdr: "DV" }) as { id: string };
+    let killed = false;
+    const proc = spawned[0]!.fake.proc;
+    const kill = proc.kill.bind(proc);
+    proc.kill = () => { killed = true; kill(); };
+    expect(timers).toHaveLength(1);
+    expect(timers[0]!.ms).toBe(20 * 60_000);
+
+    timers[0]!.run();
+    expect(killed).toBe(true);
+    expect(jobs.status(stuck.id)).toMatchObject({ state: "failed", error: "The clip could not be made." });
+    // The slot is free at once, even if the process never exits.
+    expect(jobs.start(spec)).not.toBe("busy");
+  });
+
+  test("an export that ends in time calls its timer off", async () => {
+    const { jobs, spawned, timers } = harness();
+    const { id } = jobs.start(spec) as { id: string };
+    spawned[0]!.fake.finish(0);
+    await tick();
+    expect(timers[0]!.cancelled).toBe(true);
+    timers[0]!.run(); // a timer that fires anyway changes nothing
+    expect(jobs.status(id)).toMatchObject({ state: "done" });
   });
 
   test("the file name strips unsafe characters", () => {
