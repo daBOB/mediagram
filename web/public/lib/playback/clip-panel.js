@@ -157,11 +157,11 @@ export function mountClipPanel({ button, menus, transport, filmTime, runtime, au
     toggle,
     /** Whether playback should leave no trace: the panel is up, or a marked scene opened this title. */
     active: () => isOpen() || fromScene,
-    /** After `a` or `b`: the panel follows the loop, and keeps its range when a key clears it. */
-    refresh: () => {
-      if (!isOpen()) return;
-      const loop = transport.loop();
-      apply({ from: loop.from ?? range.from, to: loop.to ?? range.to });
+    /** `a` and `b` while the panel is up set that end to now; `false` leaves them to the loop. */
+    key: (end) => {
+      if (!isOpen()) return false;
+      move(end, null);
+      return true;
     },
     /** A new title: forget the last one's range and jobs; a marked scene opens ready to preview. */
     open(set, options = {}) {

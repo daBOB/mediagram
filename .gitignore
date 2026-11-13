@@ -41,3 +41,6 @@ android/spieltisch/src/main/assets/game-avatars/
 # game night web client
 crates/mediagram-game/client/node_modules/
 crates/mediagram-game/client/dist/
+
+# Tool cache with a telemetry id.
+web/graft/

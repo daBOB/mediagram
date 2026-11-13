@@ -61,3 +61,27 @@ test("initialization twice mounts controls and click listeners once", async () =
   expect(env.video.paused).toBe(false);
   expect(env.node("play-pause").getAttribute("aria-label")).toBe("Pause");
 });
+
+test("with the clip panel open, a and b set its ends to the playhead", async () => {
+  env = browserEnvironment();
+  const player = await freshPlayer();
+  player.initializePlayer();
+  player.openPlayer({ setId: "one", container: "mp4", vcodec: "h264", acodec: "aac", duration: 600 });
+  await settle();
+  const press = (key: string) => env!.node("player").dispatchEvent(Object.assign(new Event("keydown", { cancelable: true }), { key }));
+  const times = () => {
+    const panel = env!.node("card-dock").children[1];
+    const found: string[] = [];
+    const walk = (node: any) => { if (node.className === "cue-at") found.push(node.textContent); for (const child of node.children ?? []) walk(child); };
+    walk(panel);
+    return found;
+  };
+  press("x");
+  expect(times()).toEqual(["0:00", "0:15"]);
+  // End first: a start set past the end would be sorted with it, as the keys do.
+  env.video.currentTime = 130;
+  press("b");
+  env.video.currentTime = 100;
+  press("a");
+  expect(times()).toEqual(["1:40", "2:10"]);
+});

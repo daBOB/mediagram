@@ -861,7 +861,7 @@ function mountPlayer() {
     event.preventDefault();
     if (action.do === "markScene") void marks.mark();
     else if (action.do === "clip") clip.toggle();
-    else { transport.act(action); if (action.do === "loop") clip.refresh(); }
+    else if (!(action.do === "loop" && clip.key(action.end))) transport.act(action);
     hud.show();
   });
   video.addEventListener("ratechange", refreshEnds);
