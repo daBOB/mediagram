@@ -15,7 +15,20 @@ import { join } from "node:path";
 import { CACHE_CHUNK } from "../src/cache/key";
 import { MAX_RUN_BYTES } from "../src/cache/reader";
 import { ChunkCache } from "../src/cache/store";
-import { CachedReader } from "../src/cache/reader";
+import { CachedReader as Reader } from "../src/cache/reader";
+
+/**
+ * Every reader a test made, so teardown can wait for its background cache
+ * writes. Removing the directory while one is still in flight let the write
+ * recreate it, leaving a chunk-sized folder in the temp dir after every run.
+ */
+const readers: Reader[] = [];
+class CachedReader extends Reader {
+  constructor(...args: ConstructorParameters<typeof Reader>) {
+    super(...args);
+    readers.push(this);
+  }
+}
 
 const SET = "01SET0000000000000000001";
 let root: string;
@@ -24,6 +37,11 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "mediagram-reader-"));
 });
 afterEach(async () => {
+  // Twice: a speculative fetch that lands during the first wait queues its own write.
+  for (const reader of readers.splice(0)) {
+    await reader.stop();
+    await reader.settle();
+  }
   await rm(root, { recursive: true, force: true });
 });
 

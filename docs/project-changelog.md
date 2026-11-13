@@ -16,6 +16,13 @@ to `main`. Full phase-by-phase detail lives in
 - The art moved from `res/drawable-nodpi/game_{poster,backdrop}_<kind>.webp` to `assets/game-art/{poster,backdrop}-<kind>.webp` (kind with dashes), served to the page at `/game-art/` by `GamePageClient` like the ceremony avatars, so it is not embedded once per ABI with the web client. A game without art shows its name on the felt; so does every game on the dev host.
 - "The library's films aren't available right now" is now on the page (`?films=0`): "Die Filme der Mediathek sind gerade nicht erreichbar."
 
+## 0.179.0 — Clip a scene
+
+**Added**
+
+- Scene marks: a viewer marks a moment of a title and the mark syncs between devices like a position (web and `mediagram-core`); Android (phone, tablet, TV) has a "Mark scene" button.
+- The web player lists marks as "Marked scenes" on Home and exports a marked range as an MP4 (H.264 / AAC stereo, at most 1920 px wide, HDR tone-mapped to bt709) cut by the server's ffmpeg. Android only marks, deliberately; see `docs/web-player.md` § Differences from Android.
+
 ## Spieltisch 0.178.1 — Preisfrage's poster and backdrop
 
 **Added**

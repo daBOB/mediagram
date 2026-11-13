@@ -18,7 +18,10 @@
  */
 const SHORTEST = 1;
 
-/** Nothing set. The shape a loop has before anybody asks for one. */
+/**
+ * Nothing set. The shape a loop has before anybody asks for one.
+ * @type {{from: number|null, to: number|null}}
+ */
 export const NO_LOOP = { from: null, to: null };
 
 /**

@@ -9,6 +9,7 @@ import { bodiless } from "../response";
 import type { WatchState } from "./store";
 import { leftToday, profileRoute } from "./profiles-routes";
 import { householdRoute } from "./households-routes";
+import { sceneRoute } from "./scenes-routes";
 import { json, P } from "./route-shared";
 
 const STATE = new RegExp(`^/api/profiles/${P}/state$`);
@@ -151,6 +152,9 @@ export function createStateRouter(options: StateRouterOptions) {
       state.setWatchlisted(profileId, setId, method === "PUT");
       return bodiless(204);
     }
+
+    const scene = sceneRoute(request, state, isPlayable);
+    if (scene) return scene;
 
     const preference = PREFERENCE.exec(path);
     if (preference) {

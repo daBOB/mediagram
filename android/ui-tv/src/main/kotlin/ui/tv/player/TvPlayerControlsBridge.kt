@@ -11,6 +11,7 @@ import player.PlayerViewModel
 import player.ReportUi
 import player.UpNextUiState
 import player.createListAndAdd
+import player.markScene
 import player.onTogetherButton
 import player.playFromRun
 import player.previous
@@ -122,6 +123,7 @@ internal fun TvPlayerControlsForViewModel(
                         onToggleWatchlist = viewModel::toggleWatchlist,
                         onKids = actions.onKids,
                         onAddToList = actions.onAddToList,
+                        onMarkScene = viewModel::markScene,
                     ),
                 statsShown = view.statsShown,
                 onToggleStats = actions.onToggleStats,

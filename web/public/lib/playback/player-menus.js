@@ -25,6 +25,8 @@ export function mountPlayerMenus({ onClose, ids = { dialog: "player", dock: "car
   /** The button whose list or panel is open, and what it opened. */
   let opener = null;
   let shown = null;
+  /** What an open panel asked for: to hear it close, and where else it is worked from. */
+  let hooks = {};
 
   /** Closes whatever is open; answers the button that opened it, if any. */
   function close() {
@@ -32,7 +34,10 @@ export function mountPlayerMenus({ onClose, ids = { dialog: "player", dock: "car
     if (was === null) return null;
     shown.hidden = true;
     was.setAttribute("aria-expanded", "false");
+    const { closed } = hooks;
     opener = shown = null;
+    hooks = {};
+    closed?.();
     onClose?.();
     return was;
   }
@@ -87,9 +92,16 @@ export function mountPlayerMenus({ onClose, ids = { dialog: "player", dock: "car
     }, { signal });
   }
 
-  /** A panel opened from `button` that stays open while it is used. */
-  function panel(button, node) {
+  /**
+   * A panel opened from `button` that stays open while it is used.
+   * `closed` hears it close, however that came about. A tap inside
+   * `alongside` leaves it open: the clip panel is worked together with the
+   * seek bar and the transport on the card beneath it.
+   * @param {{closed?: () => void, alongside?: HTMLElement}} [options]
+   */
+  function panel(button, node, options = {}) {
     open(button, node);
+    hooks = options;
     node.focus();
   }
 
@@ -102,7 +114,8 @@ export function mountPlayerMenus({ onClose, ids = { dialog: "player", dock: "car
   }, { signal });
   // Anywhere else in the player is a viewer done with the list.
   dialog.addEventListener("pointerdown", (event) => {
-    if (opener !== null && !shown.contains(event.target) && !opener.contains(event.target)) close();
+    const inside = [shown, opener, hooks.alongside].some((node) => node?.contains(event.target));
+    if (opener !== null && !inside) close();
   }, { signal });
 
   return { list, panel, close, isOpen: () => opener !== null };

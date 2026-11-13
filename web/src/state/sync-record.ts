@@ -58,7 +58,9 @@ import { parseNameKeys, type NameKeys } from "./name-record";
 import { parsePreferenceRows, type PreferenceRow } from "./preferences-record";
 import { asArray, isStamp, numberFromScalar, objectRow, parseRows, text_ } from "./record-scalars";
 import { parseRoleKeys, type RoleKeys } from "./roles-record";
+import { sceneRow, type SceneRow } from "./scenes-record";
 import { parseDayStatRows, parseTitleStatRows, type StatsRows } from "./stats-record";
+export type { SceneRow };
 
 /** Bumped when a reader could no longer make sense of an older document. */
 export const SYNC_FORMAT = 1;
@@ -131,6 +133,8 @@ export interface ProfileState extends StatsRows, RoleKeys, NameKeys {
   unwatched?: UnwatchedRow[];
   watchlist?: ListRow[];
   collections?: CollectionRow[];
+  /** Absent from any build that predates scene marks. */
+  scenes?: SceneRow[];
   /** The synced subtitle choices; absent from any build that predates them. */
   preferences?: PreferenceRow[];
 }
@@ -206,6 +210,7 @@ export function parseRecord(text: string): SyncRecord | null {
       unwatched: row.unwatched === undefined ? undefined : parseRows(row.unwatched, unwatchedRow),
       watchlist: row.watchlist === undefined ? undefined : parseRows(row.watchlist, listRow),
       collections: row.collections === undefined ? undefined : parseRows(row.collections, collectionRow),
+      scenes: row.scenes === undefined ? undefined : parseRows(row.scenes, sceneRow),
       preferences: row.preferences === undefined ? undefined : parsePreferenceRows(row.preferences),
       titleStats: parseTitleStatRows(row.titleStats),
       dayStats: parseDayStatRows(row.dayStats),

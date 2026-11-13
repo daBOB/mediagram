@@ -25,6 +25,8 @@ import { beginTranscode, hlsResponse, type HlsServer } from "./transcode/routes"
 import type { TogetherHub } from "./together/hub";
 import { togetherRoute } from "./together/routes";
 import { reportRoute } from "./report/routes";
+import { clipRoute } from "./transcode/clip-routes";
+import type { ClipJobs } from "./transcode/clip-jobs";
 import type { ReportSender } from "./telegram/report-sender";
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
@@ -62,6 +64,8 @@ export interface RouterOptions extends CatalogRouterOptions {
   together?: TogetherHub;
   /** `POST /api/report`: a viewer's broken-video report, sent to the account's own chat. */
   report?: ReportSender;
+  /** `/api/clips`: scene exports; absent answers 404. */
+  clips?: ClipJobs;
   /** Maximum remote-link bitrate, in bits per second. */
   maxBitrate?: number;
   /**
@@ -128,6 +132,10 @@ export function createRouter(options: RouterOptions) {
     // answered here, where both are, rather than in the state router.
     const stats = options.state ? statsRoute(options.state, request, library) : null;
     if (stats) return stats;
+
+    // Before the state router, which answers every other path under a profile.
+    const clip = clipRoute(request, options.clips, db, options.state);
+    if (clip) return clip;
 
     const state = stateRoute?.(request);
     if (state) {

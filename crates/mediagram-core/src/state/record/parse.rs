@@ -11,6 +11,7 @@ use super::list_record::{collection_row, kids_row, list_row};
 use super::name_record::name_keys;
 use super::preference_record::preference_row;
 use super::roles_record::profile_roles;
+use super::scene_record::scene_row;
 use super::stats_record::{day_stat_row, title_stat_row};
 use super::{
     ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, UnwatchedRow, WatchedRow, is_stamp,
@@ -105,6 +106,10 @@ fn profile_state(raw: &Value) -> Option<ProfileState> {
         preferences: as_array(row.get("preferences"))
             .iter()
             .filter_map(preference_row)
+            .collect(),
+        scenes: as_array(row.get("scenes"))
+            .iter()
+            .filter_map(scene_row)
             .collect(),
         title_stats: as_array(row.get("titleStats"))
             .iter()

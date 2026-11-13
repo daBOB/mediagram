@@ -24,7 +24,7 @@ import player.listLabel
 /**
  * The three controls the web keeps in the player — "this is where a viewer
  * is when they find out what a film actually is" (`player.js:928-929`) —
- * My List, Kids, and Add to list, over [PlayerMarksState]. Absent
+ * My List, Kids, and Add to list, plus Mark scene, over [PlayerMarksState]. Absent
  * entirely with nothing open, the same as the web's three buttons before
  * `playing` is set.
  */
@@ -45,6 +45,7 @@ internal fun PlayerMarks(
         )
         if (marks.canMarkKids) KidsMark(marks, onChoose = actions.onKidsMark)
         MarkButton(label = "Add to list", onClick = { addingToList = true })
+        MarkButton(label = "Mark scene", onClick = actions.onMarkScene)
     }
 
     if (addingToList) {
@@ -59,13 +60,15 @@ internal fun PlayerMarks(
     }
 }
 
-/** The four writes [PlayerMarks] makes, kept as one bundle so its call site hands over one thing rather than four. */
+/** The writes [PlayerMarks] makes, kept as one bundle so its call site hands over one thing. */
 internal data class PlayerMarksActions(
     val onToggleWatchlist: () -> Unit,
     /** The age an unrated title is for kids from — 6 or 12 — or null for not for kids. */
     val onKidsMark: (age: Int?) -> Unit,
     val onSetInList: (id: String, included: Boolean) -> Unit,
     val onCreateList: (name: String) -> Unit,
+    /** Keeps the film second playback is at as a scene. */
+    val onMarkScene: () -> Unit,
 )
 
 /**

@@ -3,6 +3,7 @@ import type { LibraryEvent } from "../telegram/updates";
 import type { StateSync } from "../state/sync";
 import type { RunningServer } from "../server";
 import type { TranscodeRegistry } from "../transcode/registry";
+import type { ClipJobs } from "../transcode/clip-jobs";
 import type { CatalogEvents } from "../catalog-events";
 import type { CatalogFollower } from "./catalog-follow";
 import type { SeriesPreload } from "../cache/series-preload";
@@ -91,6 +92,7 @@ export interface ApplicationResources {
    * round so that round is never followed by a second, redundant one. */
   writeDebounce?: Pick<WriteDebounce, "stop">;
   transcodes?: Pick<TranscodeRegistry, "stopAll">;
+  clips?: Pick<ClipJobs, "stopAll">;
   preload?: Pick<SeriesPreload, "stop">;
   sheets?: Pick<SheetStore, "stop">;
   audio?: Pick<AudioTrackReader, "stop">;
@@ -127,6 +129,7 @@ export function shutdownFor(resources: ApplicationResources): () => Promise<void
     await attempt(() => syncOnce(resources.sync ?? null, "stopping"));
     await Promise.all(mediaStopping);
     await attempt(() => resources.transcodes?.stopAll());
+    await attempt(() => resources.clips?.stopAll());
     await attempt(() => resources.server?.close());
     await attempt(() => resources.state?.close());
     await attempt(() => resources.telegram?.disconnect());

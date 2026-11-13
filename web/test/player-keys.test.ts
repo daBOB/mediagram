@@ -49,6 +49,10 @@ describe("the handling keys", () => {
     expect(keyAction({ key: "]" })).toEqual({ do: "speed", by: 1 });
   });
 
+  test("n marks the scene", () => {
+    expect(keyAction({ key: "n" })).toEqual({ do: "markScene" });
+  });
+
   test("a and b mark out a loop", () => {
     expect(keyAction({ key: "a" })).toEqual({ do: "loop", end: "from" });
     expect(keyAction({ key: "b" })).toEqual({ do: "loop", end: "to" });

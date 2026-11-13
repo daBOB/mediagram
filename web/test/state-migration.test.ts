@@ -524,7 +524,7 @@ describe("v16 to v17", () => {
     try {
       expect(db.query("SELECT renamed_at AS renamedAt, former_names AS formerNames FROM profiles").all())
         .toEqual([{ renamedAt: 0, formerNames: "[]" }, { renamedAt: 0, formerNames: "[]" }]);
-      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "17" });
+      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "18" });
     } finally {
       db.close();
     }

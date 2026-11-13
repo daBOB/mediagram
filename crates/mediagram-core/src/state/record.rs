@@ -34,12 +34,14 @@ mod name_record;
 mod parse;
 mod preference_record;
 mod roles_record;
+mod scene_record;
 mod stats_record;
 pub(crate) use stats_record::is_day;
 pub use list_record::{CollectionRow, ListRow};
 pub use name_record::NameKeys;
 pub(crate) use name_record::{MAX_FORMER_NAMES, sorted_names};
 pub use preference_record::{SYNCED_NAMES, SyncPreference};
+pub use scene_record::SceneRow;
 pub use households_record::{HouseholdAdmin, HouseholdEntry, HouseholdName, ProfileHousehold};
 pub use parse::parse_record;
 pub use roles_record::{AdminClaim, DailyLimit, HiddenSections, KidsAge, PinRecord, ProfileRoles};
@@ -118,6 +120,9 @@ pub struct ProfileState {
     /// bump — a build that predates it drops it and keeps merging.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub preferences: Vec<SyncPreference>,
+    /// Marked scenes, tombstones included; written only when there are rows.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub scenes: Vec<SceneRow>,
     /// Viewing stats, every device's rows (`stats_record.rs`). New keys like
     /// `preferences`, written only when there are rows, so a document
     /// without stats reads exactly as it did before them.

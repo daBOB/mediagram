@@ -17,6 +17,7 @@ import player.setSpeed
 import player.setSubtitleBacking
 import player.setSubtitleSize
 import player.toggleSubtitles
+import player.markScene
 import player.toggleWatchlist
 
 /**
@@ -69,4 +70,5 @@ internal fun PlayerViewModel.marksActions(): PlayerMarksActions =
         onKidsMark = this::setKidsMark,
         onSetInList = this::setInList,
         onCreateList = this::createListAndAdd,
+        onMarkScene = this::markScene,
     )

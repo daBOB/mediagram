@@ -43,7 +43,7 @@ import kotlin.test.assertTrue
 class TvPlayerReportTest : TvPlayerScreenHarness() {
     @Test
     fun rightFromTheLastMarkReachesReportWhichEndsTheBar() {
-        toTopBar(hasText("Add to list"))
+        toTopBar(hasText("Mark scene"))
         press(Key.DirectionRight)
         compose.onNode(reportButton).assertIsFocused()
 
@@ -100,7 +100,7 @@ class TvPlayerReportTest : TvPlayerScreenHarness() {
 
         // Sent, it is still a stop that hands the remote on, not a dead end.
         press(Key.DirectionLeft)
-        compose.onNodeWithText("Add to list").assertIsFocused()
+        compose.onNodeWithText("Mark scene").assertIsFocused()
         press(Key.DirectionRight)
         compose.onNode(sentButton).assertIsFocused()
         press(Key.DirectionRight)

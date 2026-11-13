@@ -27,6 +27,7 @@ pub mod record;
 mod repair;
 pub mod rows;
 mod schema;
+pub mod scenes;
 pub mod stats;
 pub(crate) mod sync;
 
