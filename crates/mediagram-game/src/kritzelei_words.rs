@@ -1,8 +1,8 @@
 //! Word pool for Kritzelei, the drawing game.
-#![allow(dead_code)] // nothing draws from the pool until the game itself is wired in
 use rand::{seq::SliceRandom, Rng};
 
 /// Drawable German nouns; `true` = simple enough for kids mode.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) const WORDS: &[(&str, bool)] = &[
     ("Hund", true), ("Katze", true), ("Haus", true), ("Sonne", true), ("Mond", true), ("Stern", true), ("Baum", true),
     ("Blume", true), ("Auto", true), ("Boot", true), ("Ball", true), ("Fisch", true), ("Vogel", true), ("Maus", true),
@@ -89,6 +89,7 @@ pub(crate) const WORDS: &[(&str, bool)] = &[
 ];
 
 /// Every allowed word once, shuffled; only kid words when `kids_only`.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn deck(kids_only: bool, rng: &mut impl Rng) -> Vec<&'static str> {
     let mut words: Vec<&'static str> = WORDS.iter().filter(|(_, kid)| *kid || !kids_only).map(|(w, _)| *w).collect();
     words.shuffle(rng);

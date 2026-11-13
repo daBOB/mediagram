@@ -48,6 +48,8 @@ export function TvApp() {
         <TvGrandAllee key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "preisfrage" ? (
         <TvPreisfrage scene={view.scene.scene} players={view.players} conn={conn} />
+      ) : view.scene.kind === "kritzelei" ? (
+        <p className="tv-wait">Kritzelei</p>
       ) : (
         <TvQuiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}

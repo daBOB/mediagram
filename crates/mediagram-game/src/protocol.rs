@@ -18,6 +18,7 @@ pub use crate::protocol_cards::{
     ButtonNeeds, CardDesk, CardsBanner, CardsEvent, CardsEventKind, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard,
 };
 pub use crate::protocol_client::{Action, ClientMsg, Role};
+pub use crate::protocol_kritzelei::{KritzeleiScene, KritzeleiStage};
 pub use crate::protocol_kopfnuss::{Climber, KopfnussScene, KopfnussStage, Trick, TrickHit, TrickLoad};
 pub use crate::protocol_fluechtig::{
     FluechtigBoard, FluechtigHunter, FluechtigLink, FluechtigLogEntry, FluechtigScene, FluechtigSide, FluechtigSpot, FluechtigTicket,

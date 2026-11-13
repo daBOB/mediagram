@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::protocol::{
-    CardsScene, DreifelderScene, FluechtigScene, GameEntry, GrandAlleeScene, KopfnussScene, LobbySettings, PlayerInfo,
+    CardsScene, DreifelderScene, FluechtigScene, GameEntry, GrandAlleeScene, KopfnussScene, KritzeleiScene, LobbySettings, PlayerInfo,
     PosterScene, PreisfrageScene, QuizScene, RaceScene,
 };
 
@@ -41,4 +41,5 @@ pub enum TvScene {
     Dreifelder { scene: DreifelderScene },
     Fluechtig { scene: FluechtigScene },
     Preisfrage { scene: PreisfrageScene },
+    Kritzelei { scene: KritzeleiScene },
 }
