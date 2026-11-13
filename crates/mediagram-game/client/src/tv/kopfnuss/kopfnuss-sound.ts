@@ -1,11 +1,42 @@
 // Kopfnuss's sound on the TV: short game-show voices synthesised in Web Audio
 // (no files to license), plus the race board's wooden knock for each step up
-// the mountain and its goal jingle on the summit. Sound is extra: whatever
-// fails to load or play leaves the game silent, never broken.
+// the mountain and its goal jingle on the summit. Preisfrage plays the same
+// voices from its own cues. Sound is extra: whatever fails to load or play
+// leaves the game silent, never broken.
 
-import type { KopfnussScene } from "../../protocol/KopfnussScene";
+import { useEffect, useRef } from "react";
+import type { Connection } from "../../net";
 import { effectsGain, getSettings, subscribeSettings } from "../settings/tv-settings";
-import { newSoundState, soundsDue, type SoundName } from "./kopfnuss-sound-cues";
+import { newSoundState, type Cue, type SoundName, type SoundState } from "./kopfnuss-sound-cues";
+
+/** A game's cue picker, like Kopfnuss's `soundsDue`: the cues of `scene` to start now, each once. */
+export type SoundsDue<S> = (state: SoundState, scene: S, now: number, lookaheadMs: number) => (Cue & { at: number })[];
+
+/** Plays a game's sounds for as long as it is on the TV; silent if Web Audio fails. */
+export function useKopfnussSound<S>(scene: S, conn: Connection, due: SoundsDue<S>) {
+  const latest = useRef(scene);
+  latest.current = scene;
+  useEffect(() => {
+    let sound: KopfnussSound | null = null;
+    try {
+      sound = new KopfnussSound();
+    } catch {
+      return;
+    }
+    // the file sounds may fail to load; the synthesised ones still play
+    sound.load().catch(() => {});
+    let raf = 0;
+    const loop = () => {
+      sound?.update(due, latest.current, conn.serverNow());
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      sound?.dispose();
+    };
+  }, [conn, due]);
+}
 
 const FILES: Partial<Record<SoundName, { urls: string[]; gain: number }>> = {
   step: { urls: [1, 2, 3, 4, 5].map((i) => `/race/sound/pawn-knock-${i}.ogg`), gain: 0.55 },
@@ -64,11 +95,11 @@ export class KopfnussSound {
     );
   }
 
-  /** Called every frame: starts the scene's due sounds, each once. `now`: host time, ms. */
-  update(scene: KopfnussScene, now: number) {
+  /** Called every frame: starts the scene's sounds that `due` picks, each once. `now`: host time, ms. */
+  update<S>(due: SoundsDue<S>, scene: S, now: number) {
     // started early by the speaker's delay, so a sound lands with its picture
     const lagMs = (this.ctx.outputLatency || this.ctx.baseLatency || 0) * 1000;
-    for (const cue of soundsDue(this.state, scene, now, Math.max(150, lagMs + 50))) {
+    for (const cue of due(this.state, scene, now, Math.max(150, lagMs + 50))) {
       const when = this.ctx.currentTime + Math.max(0, cue.at - now + SCREEN_DELAY_MS - lagMs) / 1000;
       this.play(cue.sound, when);
     }

@@ -4,6 +4,8 @@ import type { PlayerInfo } from "../protocol/PlayerInfo";
 import type { PreisfrageScene } from "../protocol/PreisfrageScene";
 import { Token } from "../ui/Token";
 import { euro, linePlace, stackPins } from "../ui/price";
+import { useKopfnussSound } from "./kopfnuss/kopfnuss-sound";
+import { preisfrageSoundsDue } from "./preisfrage/preisfrage-sound-cues";
 import { TvFinal } from "./TvFinal";
 import "./preisfrage/preisfrage.css";
 
@@ -19,6 +21,7 @@ const PIN_GAP = 0.18;
  */
 export function TvPreisfrage({ scene, players, conn }: Props) {
   const now = useServerNow(conn);
+  useKopfnussSound(scene, conn, preisfrageSoundsDue);
   const { stage, article } = scene;
   // Running totals are the players' scores, so the ceremony ranks by them and equal totals share a place.
   if (stage.stage === "final") return <TvFinal players={players.filter((p) => stage.standings.some((s) => s.player === p.id))} conn={conn} />;

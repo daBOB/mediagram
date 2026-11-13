@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.182.0 — Preisfrage with sound
+
+**Added**
+
+- Preisfrage sounds, in Kopfnuss's game-show voices: a chime as each article appears, a beep as the keypads open, a click for each guess that comes in, a tick in each of the last three seconds, a bell with the price; the final ranking has the ceremony's jingle. It follows the TV's effects level and mute, and stays silent where the box has no Web Audio (`tv/preisfrage/preisfrage-sound-cues.ts`).
+
+**Changed**
+
+- Kopfnuss's sound hook and its once-per-cue bookkeeping (`useKopfnussSound`, `cuesDue`) take the game's cue list, so both games share them; Kopfnuss sounds as before.
+
 ## Spieltisch 0.181.1 — Preisfrage without near-twins
 
 **Fixed**

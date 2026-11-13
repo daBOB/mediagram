@@ -77,14 +77,21 @@ function cues(scene: KopfnussScene, since: number): Cue[] {
  * `lookaheadMs`: how early a cue is handed out, at least the speaker's delay.
  */
 export function soundsDue(state: SoundState, scene: KopfnussScene, now: number, lookaheadMs = LOOKAHEAD_MS): (Cue & { at: number })[] {
-  const stage = stageKey(scene);
+  return cuesDue(state, stageKey(scene), (since) => cues(scene, since), now, lookaheadMs);
+}
+
+/**
+ * The same for any game: `stage` names what the TV shows, `cuesOf` lists its
+ * cues given the host time the TV first saw it.
+ */
+export function cuesDue(state: SoundState, stage: string, cuesOf: (since: number) => Cue[], now: number, lookaheadMs = LOOKAHEAD_MS): (Cue & { at: number })[] {
   const firstSight = stage !== state.stage;
   if (firstSight) {
     state.stage = stage;
     state.since = now;
   }
   const out: (Cue & { at: number })[] = [];
-  for (const cue of cues(scene, state.since)) {
+  for (const cue of cuesOf(state.since)) {
     if (state.played.has(cue.key)) continue;
     if (firstSight && cue.onlyChanges) {
       state.played.add(cue.key);
