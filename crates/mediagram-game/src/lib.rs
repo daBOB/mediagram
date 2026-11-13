@@ -60,6 +60,7 @@ mod preisfrage;
 mod preisfrage_config;
 mod preisfrage_draw;
 mod preisfrage_rules;
+mod preisfrage_twins;
 mod preisfrage_views;
 mod quiz;
 mod quiz_config;

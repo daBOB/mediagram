@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.181.1 — Preisfrage without near-twins
+
+**Fixed**
+
+- A Preisfrage game no longer prices two near-identical articles, such as the same product from another seller, in another size or colour (three copper hot pots in one game). The draw skips an article whose title shares at least two telling words, and at least a third of the shorter title's words, with one already drawn; words that more than 12 titles use don't count, and words compare by their first six letters (`preisfrage_twins.rs`). It works on the article list already on the box, nothing is deleted from it. In 10,000 simulated games on a real list, games with a twin pair went from 546 to 0; an English "Hot Pot" and a German "Hotpot" still meet about 3 times.
+
+**Changed**
+
+- Flüchtig's phone question (its buttons and what a tap does) moved from `fluechtig.rs` to `fluechtig_picks.rs`, bringing `fluechtig.rs` back under the 200-line limit that `code_standards` enforces; no change in play.
+
 ## Spieltisch 0.181.0 — Flüchtig, made clear
 
 **Added**
