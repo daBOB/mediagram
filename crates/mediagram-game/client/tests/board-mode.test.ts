@@ -1,6 +1,7 @@
 // Run with `bun test` in crates/mediagram-game/client.
 import { afterEach, expect, test } from "bun:test";
 import { BoardMode } from "../src/phone/use-board-mode";
+import type { BoardScreen } from "../src/protocol/BoardScreen";
 import type { ClientMsg } from "../src/protocol/ClientMsg";
 
 type Bag = Record<string, string>;
@@ -9,16 +10,20 @@ const CHOICE = "spieltisch.board";
 const boardHello: ClientMsg = { t: "hello", role: "board", name: null, token: null };
 const phoneHello: ClientMsg = { t: "hello", role: "phone", name: "Ada", token: "p1" };
 
+// what the fake app's native board was told, in order: a show's resync flag, or "hide"
+let native: (boolean | "hide")[] = [];
+
 /** The app's bridge on an iPad (`board: true`) or an iPhone; every memory write, in order. */
 function fakeApp(stored: Bag, board: boolean) {
   const writes: [string, string | null][] = [];
+  native = [];
   g.mediagramApp = {
     board,
     vibrate: () => {},
     getMemory: () => JSON.stringify(stored),
     setMemory: (k: string, v: string | null) => writes.push([k, v]),
-    showBoard: () => {},
-    hideBoard: () => {},
+    showBoard: (json: string) => native.push(JSON.parse(json).resync),
+    hideBoard: () => native.push("hide"),
   };
   return writes;
 }
@@ -104,4 +109,42 @@ test("a refused board hello plays without forgetting the choice", () => {
   expect(sent).toEqual([boardHello, phoneHello]);
   expect(writes.filter(([k]) => k === CHOICE)).toEqual([]);
   expect(boardMode(true).mode.asBoard).toBe(true); // the next start tries again
+});
+
+const handover: BoardScreen = { kind: "handover", turn: 1, drawer: { id: 1, name: "Ada", color: "#2f6fde", avatar: null } };
+
+/** The socket opens: hello, Welcome, then the board screen. */
+function connect(mode: BoardMode) {
+  mode.hello();
+  mode.onMessage({ t: "welcome", player: null, token: "b1", now: 0 });
+  mode.onMessage({ t: "board", screen: handover });
+}
+
+test("a closed socket hides the native board", () => {
+  fakeApp({}, true);
+  const { mode } = boardMode(false);
+  connect(mode);
+  mode.connection("closed");
+  expect(native).toEqual([true, "hide"]);
+});
+
+test("a reconnect shows the board again with resync", () => {
+  fakeApp({}, true);
+  const { mode } = boardMode(false);
+  connect(mode);
+  mode.connection("closed");
+  mode.connection("connecting");
+  mode.connection("open");
+  connect(mode);
+  expect(native).toEqual([true, "hide", true]);
+});
+
+test("an open socket never hides the board", () => {
+  fakeApp({}, true);
+  const { mode } = boardMode(false);
+  mode.connection("connecting");
+  mode.connection("open");
+  connect(mode);
+  mode.connection("open");
+  expect(native).toEqual([true]);
 });

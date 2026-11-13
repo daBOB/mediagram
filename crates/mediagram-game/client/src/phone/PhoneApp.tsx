@@ -75,7 +75,7 @@ export function PhoneApp() {
         : null),
     onMessage,
   );
-  const mode = useBoardMode(conn);
+  const mode = useBoardMode(conn, status);
 
   useEffect(() => {
     if (!toast) return;
@@ -108,7 +108,7 @@ export function PhoneApp() {
       ) : (
         <Centered title="Einen Moment" text="Du wirst an den Tisch gesetzt." />
       )}
-      {status !== "open" && joined && <p className="banner">Verbindung zum Fernseher wird wiederhergestellt …</p>}
+      {status !== "open" && (joined || mode.asBoard) && <p className="banner">Verbindung zum Fernseher wird wiederhergestellt …</p>}
       {toast && (
         <p className="toast" role="alert">
           {toast}

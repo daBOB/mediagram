@@ -1,5 +1,5 @@
-import { useMemo, useReducer } from "react";
-import type { Connection } from "../net";
+import { useEffect, useMemo, useReducer } from "react";
+import type { Connection, Status } from "../net";
 import type { BoardScreen } from "../protocol/BoardScreen";
 import type { ClientMsg } from "../protocol/ClientMsg";
 import type { ServerMsg } from "../protocol/ServerMsg";
@@ -48,6 +48,11 @@ export class BoardMode {
     if (!this.conn.rehello()) this.conn.send({ t: "hello", role: "phone", name: null, token: null });
   };
 
+  /** A closed socket drops strokes anyway: the native board steps aside so the page's reconnect banner shows. */
+  connection(status: Status) {
+    if (status === "closed" && this.asBoard) this.feed.stop();
+  }
+
   hello(): ClientMsg | null {
     if (!this.asBoard) return null;
     this.welcomed = false;
@@ -94,7 +99,9 @@ export class BoardMode {
   }
 }
 
-export function useBoardMode(conn: Connection): BoardMode {
+export function useBoardMode(conn: Connection, status: Status): BoardMode {
   const [, changed] = useReducer((n: number) => n + 1, 0);
-  return useMemo(() => new BoardMode(conn, changed), [conn]);
+  const mode = useMemo(() => new BoardMode(conn, changed), [conn]);
+  useEffect(() => mode.connection(status), [mode, status]);
+  return mode;
 }

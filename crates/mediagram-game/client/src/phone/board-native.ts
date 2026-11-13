@@ -84,7 +84,7 @@ export class NativeBoardFeed {
     if (!this.resync) this.send({ t: "action", action: { t: "board", act } });
   };
 
-  /** Board mode ends: the native board goes away. */
+  /** The native board goes away (board mode ends, or the socket closed); the next show resyncs. */
   stop() {
     hideBoard();
     this.welcome();
