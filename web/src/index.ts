@@ -20,6 +20,7 @@ import { isExposed, reachableUrls } from "./application/listen-address";
 import { LanChunkServer } from "./cache/lan-chunk-server";
 import { CachedReader } from "./cache/reader";
 import { detectEncoder, detectPacedReads } from "./transcode/encoders";
+import { ClipJobs } from "./transcode/clip-jobs";
 import { FfmpegRunner } from "./transcode/ffmpeg";
 import { TranscodeRegistry } from "./transcode/registry";
 import { TranscodeFiles } from "./transcode/server";
@@ -200,6 +201,15 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       void transcodes.reapIdle().catch((error) => console.warn("transcode cleanup failed:", error));
     }, 60_000));
 
+    // Scene exports for posting; files live under the transcode dir, which is emptied at start.
+    const clips = new ClipJobs({
+      pacedReads,
+      get baseUrl() { return endpoint.baseUrl; },
+      directory: join(config.transcodeDir, "clips"),
+    });
+    resources.clips = clips;
+    resources.timers.push(setInterval(() => clips.sweep(), 5 * 60_000));
+
     // Reads a title's audio streams off the file, through this server's own Range
     // route, the first time a viewer opens it. The index cannot answer this: it
     // stores distinct language codes, not stream ordinals.
@@ -375,6 +385,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       state,
       onWrite: () => writeDebounce?.touch(),
       hls: new TranscodeFiles(transcodes),
+      clips,
       audio,
       subtitles,
       source: bytes,

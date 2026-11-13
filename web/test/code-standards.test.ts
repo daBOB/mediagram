@@ -119,6 +119,9 @@ const ROOT = join(import.meta.dir, "..");
  * `src/state/store.ts`, by 17 and `src/state/sync-record.ts`, by 5, to wire in marked scenes: the
  * route, the group, the store's three methods and export/import lines, and the profile's `scenes`
  * key; the rows, table and routes themselves are `scenes-*.ts`.
+ * Raised the same day for `src/index.ts`, by 11, `src/routes.ts`, by 3 and `src/server.ts`, by 2, to
+ * wire in clip exports: the jobs and their sweep, the route ahead of the state router, and the two
+ * query fields a clip download and listing read; the jobs and routes are `transcode/clip-*.ts`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 714,
@@ -141,9 +144,10 @@ const CEILINGS: Record<string, number> = {
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 271,
-  "src/index.ts": 455,
+  "src/index.ts": 466,
   "src/package/refresh.ts": 272,
-  "src/server.ts": 269,
+  "src/server.ts": 271,
+  "src/routes.ts": 203,
   "src/state/routes.ts": 213,
   "src/state/profiles-manage.ts": 194,
   "src/state/schema.ts": 247,
