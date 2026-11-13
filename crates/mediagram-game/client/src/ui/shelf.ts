@@ -1,17 +1,15 @@
-import type { GameKind } from "../protocol/GameKind";
-
 /**
- * Where the box's app answers a game's poster or backdrop from its own files. A game without art,
- * or a host without the app in front of it (the dev host), answers 404 and the page draws without.
+ * Where the box's app answers a game's poster or backdrop from its own files, by the game's kind or,
+ * for one not playable yet, its shelf key. A game without art, or a host without the app in front
+ * of it (the dev host), answers 404 and the page draws without.
  */
-export const gameArtUrl = (kind: GameKind, part: "poster" | "backdrop") => `/game-art/${part}-${kind.replace(/_/g, "-")}.webp`;
+export const gameArtUrl = (key: string, part: "poster" | "backdrop") => `/game-art/${part}-${key.replace(/_/g, "-")}.webp`;
 
 /** One step along the row, stopping at either end, as the remote's Left and Right do. */
 export const stepIndex = (i: number, dir: number, count: number) => Math.min(count - 1, Math.max(0, i + dir));
 
-/** The scroll offset that shows the item spanning `start`..`end` whole in a view `width` wide, now at `left`. */
-export const scrollToShow = (left: number, width: number, start: number, end: number) =>
-  start < left ? start : end > left + width ? end - width : left;
+/** The first of the `visible` posters the row shows, moved as little as it takes to keep `index` on screen. */
+export const windowStart = (start: number, index: number, visible: number) => Math.min(index, Math.max(start, index - visible + 1));
 
 export type ShelfFacts = {
   /** Phones at the table. */

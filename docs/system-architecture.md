@@ -1409,10 +1409,15 @@ the same key, `~/.android/debug.keystore`.
 
 **The shelf is the TV page.** The games shelf and the lobby are one screen, the
 host's TV page (`TvLobby.tsx`), which the app opens as soon as the host runs:
-the focused game's backdrop, its name and why it can or cannot start, a poster
-row, and a panel with the join code, who sits at the table and the TV's
-settings. It lists `CATALOGUE` in the lobby's order, so a game added there shows
-up with no Kotlin change. Its art stays in the APK, as the ceremony avatars do,
+the focused game's backdrop, its name, a short description and why it can or
+cannot start, a poster row, and a panel bottom right with the join code, who sits
+at the table and the TV's settings. The row shows one half at a time, Minispiele
+or Spiele, switched by tabs above it (Up from the row, Left/Right), five posters
+whole and the next peeking in. Each half lists its `CATALOGUE` games in the
+lobby's order, then the games being built (WIP) and the planned ones (Coming
+soon), which the page knows on its own (`ui/shelf-games.ts`) and never sends to
+the host as a pick. A game added to `CATALOGUE` shows up with no Kotlin change,
+but not before `shelf-games.ts` has its description and half. Its art stays in the APK, as the ceremony avatars do,
 so it is not embedded once per ABI with the web client:
 `assets/game-art/{poster,backdrop}-<kind>.webp` (kind with dashes), answered at
 `/game-art/` by `GamePageClient`; a game without art shows its name on the felt.

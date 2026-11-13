@@ -1,11 +1,13 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Connection } from "../net";
 import type { TvScene } from "../protocol/TvScene";
 import type { TvView } from "../protocol/TvView";
-import { gameLine } from "../ui/lobby";
-import { okStarts, scrollToShow, shelfLine, stepIndex } from "../ui/shelf";
+import { gameLine, seatsLine } from "../ui/lobby";
+import { okStarts, shelfLine, stepIndex } from "../ui/shelf";
+import { BADGE_TEXT, GROUPS, shelfItems, upcomingLine, type ShelfGroup, type ShelfItem } from "../ui/shelf-games";
 import { ShelfBackdrop } from "./lobby/ShelfBackdrop";
-import { ShelfPoster } from "./lobby/ShelfPoster";
+import { ShelfRow } from "./lobby/ShelfRow";
+import { ShelfTabs } from "./lobby/ShelfTabs";
 import { TablePanel } from "./lobby/TablePanel";
 import { useShelfPick } from "./lobby/use-shelf-pick";
 import { TvSettingsPanel } from "./settings/TvSettingsPanel";
@@ -18,24 +20,42 @@ const filmsAway = new URLSearchParams(location.search).get("films") === "0";
 
 /**
  * The night's home screen: the games as a poster row over the focused one's backdrop, and the
- * table beside them, with the code to join, who sits there and the TV's settings. Left and Right
- * pick a game, OK starts it, Up reaches the settings. After a game the room comes back here.
+ * table at the bottom right, with the code to join, who sits there and the TV's settings. The row
+ * shows one half of the shelf, the minigames or the full games, each ending with the games not
+ * playable yet; focusing one of those shows what it will be, and the room's pick stays where it was.
+ * Left and Right pick a game, OK starts it; Up reaches the switch between the halves, Up again the
+ * settings. After a game the room comes back here.
  */
 export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; conn: Connection }) {
   const { games, settings } = scene;
+  const items = useMemo(() => shelfItems(games), [games]);
   const { focus, setFocus, heard, start } = useShelfPick(settings, conn);
-  const index = Math.max(0, games.findIndex((g) => g.kind === focus));
-  const game = games[index];
+  // The key of a not-yet-playable game while one is focused. Any change of the room's pick, ours or
+  // a phone's, brings the row back to it.
+  const [browsing, setBrowsing] = useState<string | null>(null);
+  useEffect(() => setBrowsing(null), [focus]);
+  const item = items.find((i) => i.key === (browsing ?? focus)) ?? items[0];
+  const game = item.game;
+  // the row shows the focused game's half, so a pick from a phone brings its half along
+  const row = items.filter((i) => i.group === item.group);
+  const index = row.indexOf(item);
   const facts = {
     seated: view.players.filter((p) => p.connected).length,
     minPlayers: scene.min_players,
-    name: game.name,
+    name: item.name,
     heard,
     blocked: scene.blocked,
     leader: scene.leader_name,
   };
-  const line = shelfLine(facts);
-  const [zone, setZone] = useState<"row" | "settings">("row");
+  const line = item.badge ? upcomingLine(item.badge) : shelfLine(facts);
+  const startsNow = () => !!game && okStarts(facts);
+  const pick = (next: ShelfItem) => {
+    setBrowsing(next.game ? null : next.key);
+    if (next.game) setFocus(next.game.kind);
+  };
+  // the other half opens on its first game, which is playable unless none of it is yet
+  const switchTo = (group: ShelfGroup) => group !== item.group && pick(items.find((i) => i.group === group)!);
+  const [zone, setZone] = useState<"row" | "tabs" | "settings">("row");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Registered afresh each render, so the keys act on what is on screen now.
@@ -44,14 +64,16 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
     const onKey = (e: KeyboardEvent) => {
       const dx = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
       if (dx) {
-        if (zone === "row") setFocus(games[stepIndex(index, dx, games.length)].kind);
-      } else if (e.key === "ArrowUp") setZone("settings");
-      else if (e.key === "ArrowDown") setZone("row");
+        if (zone === "row") pick(row[stepIndex(index, dx, row.length)]);
+        else if (zone === "tabs") switchTo(GROUPS[stepIndex(GROUPS.indexOf(item.group), dx, GROUPS.length)]);
+      } else if (e.key === "ArrowUp") setZone(zone === "row" ? "tabs" : "settings");
+      else if (e.key === "ArrowDown") setZone(zone === "settings" ? "tabs" : "row");
       else if (e.key === "Enter") {
         // a held OK repeats: one start, one panel
         if (e.repeat) return e.preventDefault();
         if (zone === "settings") setSettingsOpen(true);
-        else if (okStarts(facts)) start();
+        else if (zone === "tabs") setZone("row");
+        else if (startsNow()) start();
       } else return;
       e.preventDefault();
     };
@@ -59,40 +81,28 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  // More games than the row shows: it scrolls to keep the focused poster, grown a little, in view.
-  // Back from a game, the row opens on the game just played rather than gliding there.
-  const row = useRef<HTMLUListElement>(null);
-  const arrived = useRef(false);
-  useLayoutEffect(() => {
-    const el = row.current;
-    const poster = el?.children[index] as HTMLElement | undefined;
-    if (!el || !poster) return;
-    const grow = poster.offsetWidth * 0.06;
-    const left = scrollToShow(el.scrollLeft, el.clientWidth, poster.offsetLeft - grow, poster.offsetLeft + poster.offsetWidth + grow);
-    if (left !== el.scrollLeft) el.scrollTo({ left, behavior: arrived.current ? "smooth" : "auto" });
-    arrived.current = true;
-  }, [index]);
-
   const closeSettings = () => {
     setSettingsOpen(false);
     setZone("row");
   };
   const pickOrStart = (i: number) => {
-    if (i !== index) setFocus(games[i].kind);
-    else if (okStarts(facts)) start();
+    if (i !== index) pick(row[i]);
+    else if (startsNow()) start();
   };
 
   return (
     <section className="tv-shelf">
-      <ShelfBackdrop kind={game.kind} />
+      <ShelfBackdrop art={item.key} />
       <header className="shelf-head">
         <p className="kicker kicker-tv">Spieleabend</p>
-        <h1 className="shelf-title">{game.name}</h1>
+        <h1 className="shelf-title">{item.name}</h1>
         <p className="shelf-sub">
-          {gameLine(game, settings.quiz_mode)}
+          {game ? gameLine(game, settings.quiz_mode) : seatsLine(item.min, item.max)}
+          {item.badge && <span className={`badge badge-${item.badge}`}>{BADGE_TEXT[item.badge]}</span>}
           {settings.kids_only && <span className="badge badge-on">Nur für Kinder</span>}
           {settings.adult && <span className="badge badge-on">Matratzensport · ab 18</span>}
         </p>
+        <p className="shelf-blurb">{item.blurb}</p>
         {line && <p className="shelf-line">{line}</p>}
       </header>
       <TablePanel
@@ -102,11 +112,8 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
         onSettings={() => setSettingsOpen(true)}
         filmsAway={filmsAway}
       />
-      <ul className="shelf-row" ref={row}>
-        {games.map((g, i) => (
-          <ShelfPoster key={g.kind} game={g} picked={i === index} focused={i === index && zone === "row"} onClick={() => pickOrStart(i)} />
-        ))}
-      </ul>
+      <ShelfTabs group={item.group} focused={zone === "tabs" && !settingsOpen} onPick={switchTo} />
+      <ShelfRow key={item.group} items={row} index={index} focused={zone === "row"} onPoster={pickOrStart} />
       {settingsOpen && <TvSettingsPanel onClose={closeSettings} />}
     </section>
   );
