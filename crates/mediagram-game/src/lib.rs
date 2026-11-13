@@ -68,6 +68,7 @@ mod preisfrage_views;
 mod kritzelei;
 mod kritzelei_clock;
 mod kritzelei_config;
+mod kritzelei_draw;
 mod kritzelei_rules;
 mod kritzelei_views;
 mod kritzelei_words;

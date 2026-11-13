@@ -4,7 +4,7 @@
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::kritzelei_clock::TurnClock;
 pub use crate::kritzelei_config::KritzeleiConfig;
-use crate::kritzelei_rules::{check_op, turn_order};
+use crate::kritzelei_rules::turn_order;
 use crate::protocol::{Action, BoardAct, DrawOp, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
 
@@ -36,6 +36,8 @@ pub struct KritzeleiGame {
     pub(crate) ops: Vec<DrawOp>,
     /// Points `ops` hold.
     pub(crate) held: usize,
+    /// The last Line was refused, so no `More` may continue the stroke before it.
+    pub(crate) line_refused: bool,
     pub(crate) board_present: bool,
 }
 
@@ -51,6 +53,7 @@ impl KritzeleiGame {
             index: 0,
             ops: Vec::new(),
             held: 0,
+            line_refused: false,
             board_present: true,
             cfg,
         }
@@ -94,22 +97,6 @@ impl KritzeleiGame {
         }
         self.stage = Stage::Reveal { guesser, ends_at: ctx.now + self.cfg.reveal_ms };
         Ok(())
-    }
-
-    fn draw(&mut self, op: &DrawOp) -> Result<(), ActionError> {
-        match check_op(op, &self.ops, self.held, &self.cfg) {
-            Ok(added) => {
-                self.held += added;
-                self.ops.push(op.clone());
-                Ok(())
-            }
-            Err(ActionError::Ignored) if matches!(op, DrawOp::Line { .. }) => {
-                // A line dropped for the cap fills the turn, so its `More`s can't land on the stroke before it.
-                self.held = self.cfg.max_points;
-                Err(ActionError::Ignored)
-            }
-            Err(e) => Err(e),
-        }
     }
 }
 

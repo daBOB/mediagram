@@ -1,7 +1,7 @@
 use super::*;
 use crate::protocol::{Clock, KritzeleiScene, KritzeleiStage};
 
-const WORDS: [&str; 8] = ["Hund", "Katze", "Haus", "Baum", "Sonne", "Mond", "Stern", "Boot"];
+pub(crate) const WORDS: [&str; 8] = ["Hund", "Katze", "Haus", "Baum", "Sonne", "Mond", "Stern", "Boot"];
 
 pub(crate) fn players(n: u8) -> Vec<Player> {
     (0..n).map(|i| Player::for_test(i, ["Ana", "Bo", "Cem", "Dana"][usize::from(i)], true)).collect()
@@ -35,7 +35,7 @@ pub(crate) fn pick(player: Option<PlayerId>) -> BoardAct {
     BoardAct::Pick { player }
 }
 
-fn line(points: Vec<u16>) -> BoardAct {
+pub(crate) fn line(points: Vec<u16>) -> BoardAct {
     BoardAct::Draw { op: DrawOp::Line { color: 0, width: 0, points } }
 }
 
@@ -146,35 +146,6 @@ fn skip_passes_the_turn_without_points() {
     assert!(ps.iter().all(|p| p.score == 0));
     act(&mut g, &mut ps, 1_000.0, BoardAct::Ready).unwrap();
     assert_eq!(act(&mut g, &mut ps, 2_000.0, BoardAct::Skip), Err(ActionError::Ignored), "only before the turn is taken");
-}
-
-#[test]
-fn strokes_count_only_while_drawing() {
-    let mut ps = players(2);
-    let mut g = game(&ps);
-    assert_eq!(act(&mut g, &mut ps, 0.0, line(vec![1, 1])), Err(ActionError::Ignored), "in the hand-over");
-    act(&mut g, &mut ps, 0.0, BoardAct::Ready).unwrap();
-    assert_eq!(act(&mut g, &mut ps, 100.0, line(vec![1, 1])), Ok(()));
-    assert_eq!(act(&mut g, &mut ps, 150.0, BoardAct::Draw { op: DrawOp::More { points: vec![2, 2] } }), Ok(()));
-    act(&mut g, &mut ps, 200.0, BoardAct::Guessed).unwrap();
-    assert_eq!(act(&mut g, &mut ps, 300.0, line(vec![3, 3])), Err(ActionError::Ignored), "while picking");
-    let ops = [DrawOp::Line { color: 0, width: 0, points: vec![1, 1] }, DrawOp::More { points: vec![2, 2] }];
-    assert_eq!(g.drawing(), Some((1, &ops[..])));
-}
-
-#[test]
-fn garbage_is_refused_and_a_full_turn_takes_no_more() {
-    let mut ps = players(2);
-    let cfg = KritzeleiConfig { max_points: 3, ..KritzeleiConfig::default() };
-    let mut g = KritzeleiGame::new(cfg, WORDS.to_vec(), &ps, 0.0);
-    act(&mut g, &mut ps, 0.0, BoardAct::Ready).unwrap();
-    assert!(matches!(act(&mut g, &mut ps, 10.0, line(vec![1, 2, 3])), Err(ActionError::NotAllowed(_))), "odd length");
-    assert!(matches!(act(&mut g, &mut ps, 20.0, line(vec![1, 10_001])), Err(ActionError::NotAllowed(_))), "off the paper");
-    assert_eq!(act(&mut g, &mut ps, 30.0, line(vec![1, 1, 2, 2])), Ok(()));
-    assert_eq!(act(&mut g, &mut ps, 40.0, line(vec![5, 5, 6, 6])), Err(ActionError::Ignored), "over the cap");
-    let more = BoardAct::Draw { op: DrawOp::More { points: vec![7, 7] } };
-    assert_eq!(act(&mut g, &mut ps, 50.0, more), Err(ActionError::Ignored), "never lands on the stroke before the dropped one");
-    assert_eq!(g.drawing().map(|(_, ops)| ops.len()), Some(1));
 }
 
 #[test]
