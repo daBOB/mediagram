@@ -45,7 +45,7 @@ class GamePageClientTest {
 
     @Test
     fun artThatIsNotThereIsAPlain404() {
-        val none = assertNotNull(client.shouldInterceptRequest(WebView(context), request("http://127.0.0.1:8080/game-art/poster-grand-allee.webp")))
+        val none = assertNotNull(client.shouldInterceptRequest(WebView(context), request("http://127.0.0.1:8080/game-art/poster-no-such-game.webp")))
         assertEquals(404, none.statusCode)
         val sideways = assertNotNull(client.shouldInterceptRequest(WebView(context), request("http://127.0.0.1:8080/game-art/../secret.webp")))
         assertEquals(404, sideways.statusCode)

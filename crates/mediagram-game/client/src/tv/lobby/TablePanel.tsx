@@ -3,7 +3,8 @@ import { Token } from "../../ui/Token";
 
 /**
  * Who sits at the table and how to join: the code is big while nobody has, smaller once someone
- * has (latecomers walk up to it). The settings button below takes the remote's Up.
+ * has (latecomers walk up to it). The settings button below takes the remote's Up from the halves'
+ * switch above the posters.
  */
 export function TablePanel({
   players,
@@ -19,7 +20,7 @@ export function TablePanel({
   filmsAway: boolean;
 }) {
   const empty = players.length === 0;
-  // more than four: two columns of seats and a smaller code, so eight still end above the posters
+  // more than four: two columns of seats and a smaller code, so eight still fit beside the posters
   const crowded = players.length > 4;
   return (
     <aside className={`table-panel${empty ? " is-empty" : ""}${crowded ? " is-crowded" : ""}`}>

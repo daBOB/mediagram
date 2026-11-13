@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.180.0 — Every game on the shelf, in two halves
+
+**Added**
+
+- The shelf shows every game we have, are building or plan: 11 playable, Kritzelei and Lebensweg as **WIP**, 18 more as **Coming soon** (`ui/shelf-games.ts`). A game not playable yet shows its seats, badge and description and "noch nicht spielbar"; OK does nothing and the room's pick stays. Denkzettel (same original as Kopfnuss) and Kings (no own name yet) are left off.
+- A short description of each game under its name.
+- Posters and backdrops for those 20 games and Grand Allee's missing pair, made with BudgetPixel gpt-image-2.6 from the cast sheet (`plans/261113-2325-shelf-all-games/`); the ten games that had art keep it.
+
+**Changed**
+
+- The row shows one half at a time, Minispiele or Spiele, switched by tabs above it: Up from the row, Left/Right, Up again for Einstellungen. A phone's pick in the other half brings its half along.
+- Posters are 20 % smaller, five whole on screen with the next peeking in and fading out, and move one at a time; they rise in one after another when a half opens.
+- The table panel moved to the bottom right, the QR code is about a third smaller, and a soft shade on the left of the backdrop keeps the name and description readable.
+
 ## Spieltisch 0.179.0 — The games shelf and the lobby in one screen
 
 **Changed**
