@@ -17,8 +17,9 @@ export function presetAround(at, runtime) {
   return { from: Math.max(0, at - AROUND), to: Math.min(runtime ?? Infinity, at + AROUND) };
 }
 
-/** Why this range cannot be exported, or `null` when it can. */
+/** Why this range cannot be exported, or `null` when it can. An unset end is a viewer still picking. */
 export function clipProblem(from, to) {
+  if (from === null || to === null) return "Seek, then set Start and End";
   const length = to - from;
   if (length > CLIP_MAX_SECONDS) return "Clips can be up to 3 minutes";
   return length < CLIP_MIN_SECONDS ? "Clips need at least a second" : null;

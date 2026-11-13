@@ -40,4 +40,10 @@ describe("clipProblem", () => {
     expect(clipProblem(0, 181)).toBe("Clips can be up to 3 minutes");
     expect(clipProblem(10, 10.5)).not.toBeNull();
   });
+
+  test("an end still being picked cannot be exported", () => {
+    expect(clipProblem(null, null)).toBe("Seek, then set Start and End");
+    expect(clipProblem(10, null)).toBe("Seek, then set Start and End");
+    expect(clipProblem(10.25, 40.5)).toBeNull();
+  });
 });

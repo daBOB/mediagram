@@ -111,6 +111,10 @@ into an MP4 that Instagram accepts, and the browser downloads it. On a phone the
   sets the loop, and `a`/`b` keep working and show here.
 - Start and End each show their time with **Set to now** and **−1 s / +1 s**, so a phone can do everything by touch.
   While both ends are set the loop plays, which is the preview.
+- The loop lasts only while the panel is open: closing it (a tap outside, Esc, Clip again) puts back the loop the
+  viewer had before opening it, usually none. Taps on the card beneath (seek bar, transport) leave it open, and
+  **Pick again** drops both ends so the viewer can seek anywhere and set Start and End there; the loop resumes once
+  both are set. *(added in review: a loop left behind turned a phone's seek bar into a way back to the scene.)*
 - Length is shown; ranges over **3 minutes** cannot be exported (Instagram's Reel limit). *(my call)*
 - **Export MP4** starts the job; the panel shows progress, then the browser downloads the file. Closing the panel
   does not cancel a running export; leaving the player does not either.

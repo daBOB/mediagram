@@ -10,20 +10,26 @@ function endRow(name, nudge) {
   const row = el("div", "cue-row clip-row");
   const time = el("span", "cue-at");
   const buttons = el("span", "clip-nudges");
-  const make = (label, by) => {
+  const make = (label, by, spoken) => {
     const button = el("button", "quiet", label);
     button.type = "button";
+    // Both ends have the same three buttons; the name says which end this one moves.
+    button.setAttribute("aria-label", `${name}: ${spoken}`);
     button.addEventListener("click", () => nudge(by));
     return button;
   };
+  const nudges = [make("−1 s", -1, "back 1 second"), make("+1 s", 1, "forward 1 second")];
   // `null` is "Set to now".
-  buttons.append(make("Set to now", null), make("−1 s", -1), make("+1 s", 1));
+  buttons.append(make("Set to now", null, "set to now"), ...nudges);
   row.append(el("span", null, name), time, buttons);
-  return { row, time };
+  return { row, time, nudges };
 }
 
-/** The panel in the card's dock, shut. `move(which, by)` hears every nudge. */
-export function buildClipPanel({ move }) {
+/**
+ * The panel in the card's dock, shut. `move(which, by)` hears every nudge;
+ * `pickAgain` drops both ends so the viewer can seek anywhere and set them anew.
+ */
+export function buildClipPanel({ move, pickAgain }) {
   const panel = el("div", "cue-panel clip-panel");
   panel.hidden = true;
   panel.tabIndex = -1;
@@ -32,14 +38,21 @@ export function buildClipPanel({ move }) {
   const start = endRow("Start", (by) => move("from", by));
   const end = endRow("End", (by) => move("to", by));
   const length = el("p", "clip-length");
+  const pick = el("button", "quiet clip-pick", "Pick again");
+  pick.type = "button";
+  pick.addEventListener("click", pickAgain);
+  const lengthRow = el("div", "cue-row clip-row");
+  lengthRow.append(length, pick);
   const exportButton = el("button", "quiet clip-export", "Export MP4");
   exportButton.type = "button";
+  // Announces what changed; the percentage beside it is not live, or it would be read out every second.
   const said = el("p", "clip-said");
   said.setAttribute("role", "status");
+  const progress = el("p", "clip-progress");
   const ready = el("div", "clip-ready");
-  panel.append(el("span", "clip-head", "Clip"), start.row, end.row, length, exportButton, said, ready);
+  panel.append(el("span", "clip-head", "Clip"), start.row, end.row, lengthRow, exportButton, said, progress, ready);
   document.getElementById("card-dock").append(panel);
-  return { panel, start, end, length, exportButton, said, ready };
+  return { panel, start, end, length, exportButton, said, progress, ready, card: document.getElementById("control-card") };
 }
 
 /** A finished clip as a link, for a viewer whose browser did not save it. */
