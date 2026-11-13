@@ -83,7 +83,7 @@ function mountPlayer() {
   const dialog = document.getElementById("player");
   const video = document.getElementById("video");
   const notes = mountPlayerNotes({ dialog });
-  const marks = mountPlayerLibraryMarks();
+  const marks = mountPlayerLibraryMarks({ filmTime: () => filmTime() });
   const menus = mountPlayerMenus({ onClose: () => hud.show() });
   const hud = mountPlayerHud({ dialog, video, card: document.getElementById("control-card"), holding: () => menus.isOpen() || upNext.sidebarOpen() });
   const note = document.getElementById("note");
@@ -847,7 +847,8 @@ function mountPlayer() {
     // Only what is actually taken. A blanket `preventDefault` here would stop
     // every key this player has no opinion about, including the browser's.
     event.preventDefault();
-    transport.act(action);
+    if (action.do === "markScene") void marks.mark();
+    else transport.act(action);
     hud.show();
   });
   video.addEventListener("ratechange", refreshEnds);

@@ -98,6 +98,9 @@ export function keyAction(press = {}) {
       return { do: "loop", end: "from" };
     case "b":
       return { do: "loop", end: "to" };
+    // Keeping a moment to come back to, or to clip.
+    case "n":
+      return { do: "markScene" };
     default:
       break;
   }

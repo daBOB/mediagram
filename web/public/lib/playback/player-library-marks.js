@@ -1,5 +1,6 @@
 /** My List, kids and collection controls for the title currently open. */
 import * as state from "../watch-state.js";
+import { clockTime } from "../format.js";
 import { ageLabel, kidsVerdict } from "../age-rating.js";
 
 /**
@@ -10,7 +11,9 @@ import { ageLabel, kidsVerdict } from "../age-rating.js";
 const YOUNGEST_KIDS_LIMIT = 6;
 const OLDEST_KIDS_LIMIT = 12;
 
-export function mountPlayerLibraryMarks() {
+export function mountPlayerLibraryMarks({ filmTime }) {
+  const markScene = document.getElementById("mark-scene");
+  const said = document.getElementById("mark-scene-said");
   const watchlist = document.getElementById("watchlist");
   const kids = document.getElementById("kids");
   const kidsAge = document.getElementById("kids-age");
@@ -48,6 +51,16 @@ export function mountPlayerLibraryMarks() {
     refreshKids();
   }
 
+  /** Marks the moment on screen and says so; cleared after a few seconds so the same words announce again. */
+  async function mark() {
+    if (!title || state.profileId() === null) return;
+    const at = Math.floor(filmTime());
+    said.textContent = (await state.markScene(title.setId, at)) === null
+      ? "Could not mark the scene"
+      : `Scene marked at ${clockTime(at)}`;
+    setTimeout(() => { said.textContent = ""; }, 4000);
+  }
+  markScene.addEventListener("click", mark);
   watchlist.addEventListener("click", () => {
     if (!title) return;
     state.setWatchlisted(title.setId, !state.isWatchlisted(title.setId));
@@ -71,5 +84,5 @@ export function mountPlayerLibraryMarks() {
     if (chosen) state.setInCollection(chosen.id, title.setId, true);
   });
 
-  return { open, clear: () => open(null) };
+  return { open, clear: () => open(null), mark };
 }
