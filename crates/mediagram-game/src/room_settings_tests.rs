@@ -151,6 +151,19 @@ fn the_tv_picks_the_game_but_keeps_the_kids_lock() {
 }
 
 #[test]
+fn the_tv_changes_only_the_game_whatever_else_it_sends() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    r.connect(9, true);
+    r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
+    // the leader turns kids mode on while the TV's pick, made before it, is on its way
+    configure(&mut r, 1, GameKind::Quiz, QuizMode::Films, true);
+    assert!(configure(&mut r, 9, GameKind::Race, QuizMode::Mixed, false).is_empty());
+    let s = r.settings();
+    assert_eq!((s.game, s.quiz_mode, s.kids_only), (GameKind::Race, QuizMode::Films, true));
+}
+
+#[test]
 fn settings_survive_a_game() {
     let mut r = room(8);
     hello(&mut r, 1, "Ana", None);

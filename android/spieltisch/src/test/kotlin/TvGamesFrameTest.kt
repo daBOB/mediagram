@@ -9,21 +9,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.SemanticsNodeInteraction
-import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.hasAnyDescendant
-import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,32 +22,32 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * The app's one screen: it opens on the poster shelf, a poster opens the host's TV page with that
- * game, Back from a running game stays on the page, Back from the lobby returns to the poster that
- * opened it with the host still running, and Back on the shelf leaves and stops it.
+ * The app's one screen: the host's TV page, the games shelf and lobby in one, opens as soon as the
+ * host runs. Back from a running game stays on the page, a second Back on the shelf leaves and stops
+ * the host, and a host that failed to start is tried again with OK.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvGamesFrameTest {
-    private val durakPage = "http://127.0.0.1:8080/tv?game=durak"
+    private val tvPage = "http://127.0.0.1:8080/tv"
 
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val core = FakeSpieltischCore()
     private var left = false
 
-    @Before
-    fun open() {
-        val model = GameNightViewModel(NightSession(core, RecordingAnnouncer(), CoroutineScope(Dispatchers.Unconfined), "", NoMediaApp, NoImages))
+    private fun show(media: MediaLibrary = MediaLibrary { MediaNight(kidsLocked = false, titles = "[]") }) {
+        val model = GameNightViewModel(NightSession(core, RecordingAnnouncer(), CoroutineScope(Dispatchers.Unconfined), "", media, NoImages))
         compose.setContent {
             // Leaving takes the frame away, as finishing the activity does.
             var shown by remember { mutableStateOf(true) }
             if (shown) {
                 SpieltischTheme {
-                    TvGamesFrame(model, shelfGames(Catalogue)) {
+                    TvGamesFrame(model) {
                         left = true
                         shown = false
                     }
@@ -66,26 +57,23 @@ class TvGamesFrameTest {
     }
 
     @Test
-    fun theShelfOpensAndAPosterOpensItsGame() {
-        compose.onNodeWithContentDescription("Buzzer-Quiz").assertExists()
-        assertEquals(null, webView())
+    fun thePageOpensAsSoonAsTheHostRuns() {
+        show()
 
-        pressPoster("Durak")
-
-        assertEquals(durakPage, shownUrl())
+        assertEquals(tvPage, shownUrl())
     }
 
     @Test
-    fun aGameWithArtShowsItsPosterAndOneWithoutShowsItsName() {
-        compose.onNodeWithText("Grand Allee").assertExists()
-        // The focused game's name is the heading; its poster carries the title in the art.
-        assertEquals(1, compose.onAllNodesWithText("Buzzer-Quiz").fetchSemanticsNodes().size)
+    fun withoutTheMediaAppThePageIsToldTheFilmsAreAway() {
+        show(NoMediaApp)
+
+        assertEquals("$tvPage?films=0", shownUrl())
     }
 
     // A WebView whose layout height is WRAP_CONTENT lays the page out at zero height: 100% and vh are 0.
     @Test
     fun theGamePageIsLaidOutAtTheFrameHeight() {
-        pressPoster("Durak")
+        show()
         shownUrl()
 
         val params = assertNotNull(webView()?.layoutParams)
@@ -94,7 +82,7 @@ class TvGamesFrameTest {
 
     @Test
     fun goingToTheBackgroundEndsTheNightAndLeaves() {
-        pressPoster("Durak")
+        show()
         shownUrl()
 
         compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
@@ -104,43 +92,61 @@ class TvGamesFrameTest {
     }
 
     @Test
-    fun backInTheLobbyReturnsToThePosterAndBackThereLeavesAndStopsTheHost() {
+    fun aSecondBackOnTheShelfLeavesAndStopsTheHost() {
         core.backAnswer = false
-        pressPoster("Durak")
+        show()
         shownUrl()
 
         back()
+        // The page never answers here, so Back goes on once its 400 ms have run out.
+        afterTheBackWindow()
 
-        // After the page's 400 ms to claim Back has run out.
-        compose.waitUntil(timeoutMillis = 5_000) { webView() == null }
-        compose.onNodeWithContentDescription("Durak").assertIsFocused()
-        assertEquals(0, core.stops)
+        // One Back would drop every phone at the table: it only asks.
+        compose.onNodeWithText("Press Back again to end the game night").assertExists()
+        assertFalse(left)
 
         back()
+        afterTheBackWindow()
 
         assertTrue(left)
         assertEquals(1, core.stops)
     }
 
     @Test
+    fun theQuestionGoesAwayAndOneBackThenOnlyAsksAgain() {
+        core.backAnswer = false
+        show()
+        shownUrl()
+        back()
+        afterTheBackWindow()
+
+        compose.mainClock.advanceTimeBy(LEAVE_WINDOW_MS + 100)
+        compose.onNodeWithText("Press Back again to end the game night").assertDoesNotExist()
+
+        back()
+        afterTheBackWindow()
+
+        assertFalse(left)
+        assertEquals(0, core.stops)
+    }
+
+    @Test
     fun backDuringAGameStaysOnThePage() {
         core.backAnswer = true
-        pressPoster("Durak")
+        show()
         shownUrl()
 
         back()
-        // The page never answers here, so Back goes to the host once its 400 ms have run out.
         afterTheBackWindow()
 
         assertEquals(1, core.backs)
-        assertEquals(durakPage, shownUrl())
+        assertEquals(tvPage, shownUrl())
         assertEquals(0, core.stops)
     }
 
     @Test
     fun backThePageClaimsGoesNoFurther() {
-        core.backAnswer = false
-        pressPoster("Durak")
+        show()
         shownUrl()
 
         back()
@@ -149,7 +155,31 @@ class TvGamesFrameTest {
         afterTheBackWindow()
 
         assertEquals(0, core.backs)
-        assertEquals(durakPage, shownUrl())
+        assertEquals(tvPage, shownUrl())
+    }
+
+    @Test
+    fun aHostThatFailedIsTriedAgain() {
+        core.startFailure = IllegalStateException("No network.")
+        show()
+        compose.onNodeWithText("No network.").assertExists()
+
+        core.startFailure = null
+        compose.onNodeWithText("Try again").performSemanticsAction(SemanticsActions.OnClick)
+
+        assertEquals(tvPage, shownUrl())
+        assertEquals(2, core.starts.size)
+    }
+
+    @Test
+    fun backBeforeThePageIsThereLeaves() {
+        core.startFailure = IllegalStateException("No network.")
+        show()
+        compose.onNodeWithText("No network.").assertExists()
+
+        back()
+
+        assertTrue(left)
     }
 
     private fun afterTheBackWindow() {
@@ -171,23 +201,6 @@ class TvGamesFrameTest {
             is ViewGroup -> (0 until childCount).firstNotNullOfOrNull { getChildAt(it).findWebView() }
             else -> null
         }
-
-    /**
-     * As the remote does it: the shelf scrolls to the poster (one off screen isn't composed), focus
-     * moves onto it, then OK. The focus is what Back from the game returns to.
-     */
-    private fun pressPoster(name: String) {
-        compose.onNode(hasScrollToIndexAction() and hasAnyDescendant(hasContentDescription("Buzzer-Quiz")))
-            .performScrollToNode(hasContentDescription(name))
-        val poster = compose.onNodeWithContentDescription(name)
-        poster.performSemanticsAction(SemanticsActions.RequestFocus)
-        press(poster)
-    }
-
-    private fun press(node: SemanticsNodeInteraction) {
-        node.performSemanticsAction(SemanticsActions.OnClick)
-        compose.waitForIdle()
-    }
 
     private fun back() {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }

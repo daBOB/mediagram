@@ -8,7 +8,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** The game page stays on the box's own host. */
@@ -31,6 +34,27 @@ class GamePageClientTest {
         assertTrue(leaves("https://example.com/"))
         assertTrue(leaves("http://192.168.0.2:8080/"))
         assertTrue(leaves("http://localhost:8080/tv"))
+    }
+
+    @Test
+    fun theShelfArtComesFromTheApk() {
+        val poster = assertNotNull(client.shouldInterceptRequest(WebView(context), request("http://127.0.0.1:8080/game-art/poster-quiz.webp")))
+        assertEquals("image/webp", poster.mimeType)
+        assertTrue(poster.data.readBytes().isNotEmpty())
+    }
+
+    @Test
+    fun artThatIsNotThereIsAPlain404() {
+        val none = assertNotNull(client.shouldInterceptRequest(WebView(context), request("http://127.0.0.1:8080/game-art/poster-grand-allee.webp")))
+        assertEquals(404, none.statusCode)
+        val sideways = assertNotNull(client.shouldInterceptRequest(WebView(context), request("http://127.0.0.1:8080/game-art/../secret.webp")))
+        assertEquals(404, sideways.statusCode)
+    }
+
+    @Test
+    fun everythingElseGoesToTheHost() {
+        assertNull(client.shouldInterceptRequest(WebView(context), request("http://127.0.0.1:8080/qr.svg")))
+        assertNull(client.shouldInterceptRequest(WebView(context), request("http://127.0.0.1:8080/game-art/poster-quiz.png")))
     }
 
     private fun request(url: String): WebResourceRequest =

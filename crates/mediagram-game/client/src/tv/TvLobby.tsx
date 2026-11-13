@@ -1,95 +1,113 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Connection } from "../net";
-import type { GameKind } from "../protocol/GameKind";
 import type { TvScene } from "../protocol/TvScene";
 import type { TvView } from "../protocol/TvView";
-import { gameBadge } from "../ui/lobby";
-import { Token } from "../ui/Token";
+import { gameLine } from "../ui/lobby";
+import { okStarts, scrollToShow, shelfLine, stepIndex } from "../ui/shelf";
+import { ShelfBackdrop } from "./lobby/ShelfBackdrop";
+import { ShelfPoster } from "./lobby/ShelfPoster";
+import { TablePanel } from "./lobby/TablePanel";
+import { useShelfPick } from "./lobby/use-shelf-pick";
 import { TvSettingsPanel } from "./settings/TvSettingsPanel";
+import "./lobby/tv-shelf.css";
 
 type Lobby = Extract<TvScene, { kind: "lobby" }>;
 
-// The game the box's poster shelf picked (`/tv?game=durak`). Asked for once per page load: after
-// a game the room keeps whatever the leader's phone has chosen since. The host checks the name.
-let picked = new URLSearchParams(location.search).get("game") as GameKind | null;
+// The box's app adds `?films=0` when the media app did not answer this night.
+const filmsAway = new URLSearchParams(location.search).get("films") === "0";
 
+/**
+ * The night's home screen: the games as a poster row over the focused one's backdrop, and the
+ * table beside them, with the code to join, who sits there and the TV's settings. Left and Right
+ * pick a game, OK starts it, Up reaches the settings. After a game the room comes back here.
+ */
 export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; conn: Connection }) {
+  const { games, settings } = scene;
+  const { focus, setFocus, heard, start } = useShelfPick(settings, conn);
+  const index = Math.max(0, games.findIndex((g) => g.kind === focus));
+  const game = games[index];
+  const facts = {
+    seated: view.players.filter((p) => p.connected).length,
+    minPlayers: scene.min_players,
+    name: game.name,
+    heard,
+    blocked: scene.blocked,
+    leader: scene.leader_name,
+  };
+  const line = shelfLine(facts);
+  const [zone, setZone] = useState<"row" | "settings">("row");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Registered afresh each render, so the keys act on what is on screen now.
   useEffect(() => {
-    if (!picked) return;
-    const { quiz_mode, kids_only, adult } = scene.settings;
-    if (picked !== scene.settings.game) conn.send({ t: "action", action: { t: "configure", game: picked, quiz_mode, kids_only, adult } });
-    picked = null;
-  }, [conn, scene.settings]);
-  const seated = view.players.filter((p) => p.connected);
-  const canStart = seated.length >= scene.min_players && !scene.blocked;
-  const [settings, setSettings] = useState(false);
-  const settingsBtn = useRef<HTMLButtonElement>(null);
-  const startBtn = useRef<HTMLButtonElement>(null);
+    if (settingsOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      const dx = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
+      if (dx) {
+        if (zone === "row") setFocus(games[stepIndex(index, dx, games.length)].kind);
+      } else if (e.key === "ArrowUp") setZone("settings");
+      else if (e.key === "ArrowDown") setZone("row");
+      else if (e.key === "Enter") {
+        // a held OK repeats: one start, one panel
+        if (e.repeat) return e.preventDefault();
+        if (zone === "settings") setSettingsOpen(true);
+        else if (okStarts(facts)) start();
+      } else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  // More games than the row shows: it scrolls to keep the focused poster, grown a little, in view.
+  // Back from a game, the row opens on the game just played rather than gliding there.
+  const row = useRef<HTMLUListElement>(null);
+  const arrived = useRef(false);
+  useLayoutEffect(() => {
+    const el = row.current;
+    const poster = el?.children[index] as HTMLElement | undefined;
+    if (!el || !poster) return;
+    const grow = poster.offsetWidth * 0.06;
+    const left = scrollToShow(el.scrollLeft, el.clientWidth, poster.offsetLeft - grow, poster.offsetLeft + poster.offsetWidth + grow);
+    if (left !== el.scrollLeft) el.scrollTo({ left, behavior: arrived.current ? "smooth" : "auto" });
+    arrived.current = true;
+  }, [index]);
+
   const closeSettings = () => {
-    setSettings(false);
-    settingsBtn.current?.focus();
+    setSettingsOpen(false);
+    setZone("row");
   };
-  // Left/Right on the remote moves between the two buttons
-  const hop = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft") settingsBtn.current?.focus();
-    else if (e.key === "ArrowRight") startBtn.current?.focus();
+  const pickOrStart = (i: number) => {
+    if (i !== index) setFocus(games[i].kind);
+    else if (okStarts(facts)) start();
   };
+
   return (
-    <section className="tv-lobby">
-      <div className="tv-lobby-intro">
+    <section className="tv-shelf">
+      <ShelfBackdrop kind={game.kind} />
+      <header className="shelf-head">
         <p className="kicker kicker-tv">Spieleabend</p>
-        <h1 className="tv-headline">Handy-Kamera auf den Code</h1>
-        <p className="tv-url">{view.join_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
-        <p className="badges">
-          <span className="badge">{gameBadge(scene)}</span>
-          {scene.settings.kids_only && <span className="badge badge-on">Nur für Kinder</span>}
-          {scene.settings.adult && <span className="badge badge-on">Matratzensport · ab 18</span>}
+        <h1 className="shelf-title">{game.name}</h1>
+        <p className="shelf-sub">
+          {gameLine(game, settings.quiz_mode)}
+          {settings.kids_only && <span className="badge badge-on">Nur für Kinder</span>}
+          {settings.adult && <span className="badge badge-on">Matratzensport · ab 18</span>}
         </p>
-      </div>
-      <figure className="qr-card">
-        <img src="/qr.svg" alt={`QR-Code für ${view.join_url}`} />
-      </figure>
-      <div className="tv-seats">
-        <div className="tv-seats-main">
-          {view.players.length === 0 ? (
-            <p className="tv-empty">Noch niemand am Tisch.</p>
-          ) : (
-            <ul className="seat-list">
-              {view.players.map((p) => (
-                <li key={p.id} className="seat">
-                  <Token player={p} />
-                  <span className="seat-name">
-                    {p.name}
-                    {p.leader && " ★"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {scene.blocked && <p className="lobby-blocked lobby-blocked-tv">{scene.blocked}</p>}
-          {seated.length > 0 && (
-            <p className="tv-footnote">
-              {seated.length} am Tisch
-              {scene.leader_name && ` · ${scene.leader_name} startet, oder OK auf der Fernbedienung`}
-            </p>
-          )}
-        </div>
-        <div className="tv-seats-buttons" onKeyDown={hop}>
-          <button ref={settingsBtn} className="cta cta-tv cta-tv-quiet" onClick={() => setSettings(true)}>
-            Einstellungen
-          </button>
-          <button
-            ref={startBtn}
-            className="cta cta-tv"
-            autoFocus
-            aria-disabled={!canStart}
-            onClick={() => canStart && conn.send({ t: "action", action: { t: "start_game" } })}
-          >
-            {seated.length < scene.min_players ? `Wartet auf ${scene.min_players - seated.length} Spieler` : "Los geht's"}
-          </button>
-        </div>
-      </div>
-      {settings && <TvSettingsPanel onClose={closeSettings} />}
+        {line && <p className="shelf-line">{line}</p>}
+      </header>
+      <TablePanel
+        players={view.players}
+        joinUrl={view.join_url}
+        settingsFocused={zone === "settings" && !settingsOpen}
+        onSettings={() => setSettingsOpen(true)}
+        filmsAway={filmsAway}
+      />
+      <ul className="shelf-row" ref={row}>
+        {games.map((g, i) => (
+          <ShelfPoster key={g.kind} game={g} picked={i === index} focused={i === index && zone === "row"} onClick={() => pickOrStart(i)} />
+        ))}
+      </ul>
+      {settingsOpen && <TvSettingsPanel onClose={closeSettings} />}
     </section>
   );
 }

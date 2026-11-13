@@ -1,0 +1,239 @@
+/* The night's home screen: backdrop, game name top left, the table top right, posters along the bottom.
+   Sized in vw/vh so the box's WebView, whatever its CSS pixel size, lays it out as the 1080p mockup. */
+.tv-shelf {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--felt);
+}
+
+.shelf-backdrop img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 400ms ease-out;
+}
+
+.shelf-backdrop img.is-shown {
+  opacity: 1;
+}
+
+.shelf-head {
+  position: absolute;
+  left: 5vw;
+  top: 7vh;
+  right: 30vw;
+  display: grid;
+  justify-items: start;
+  gap: 1.2vh;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.shelf-head .kicker {
+  margin: 0;
+}
+
+.shelf-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 6.2vw;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.shelf-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8vw;
+  margin: 0;
+  font-size: 1.6vw;
+  color: rgba(251, 248, 241, 0.88);
+}
+
+.shelf-sub .badge {
+  font-size: 1.2vw;
+  text-shadow: none;
+}
+
+.shelf-line {
+  margin: 0.8vh 0 0;
+  padding: 0.9vh 1.1vw;
+  border-radius: 10px;
+  background: rgba(10, 68, 51, 0.88);
+  font-size: 1.5vw;
+  text-shadow: none;
+}
+
+/* The table: code, seats, settings. It ends above the focused poster's top, whatever the table's size. */
+.table-panel {
+  position: absolute;
+  right: 5vw;
+  top: 5vh;
+  width: 21vw;
+  max-height: 55vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.3vh;
+  padding: 1.1vw;
+  overflow: hidden;
+  border-radius: 20px;
+  background: rgba(10, 68, 51, 0.92);
+}
+
+.table-qr {
+  margin: 0;
+  padding: 0.8vw;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 6px 0 var(--card-edge);
+}
+
+.table-qr img {
+  display: block;
+  width: min(11vw, 20vh);
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.table-panel.is-empty .table-qr img {
+  width: min(16.5vw, 30vh);
+}
+
+.table-panel.is-crowded .table-qr img {
+  width: min(8vw, 14vh);
+}
+
+.table-url {
+  margin: 0;
+  font-size: 1.3vw;
+  color: var(--muted);
+}
+
+.table-empty,
+.table-note {
+  margin: 0;
+  font-size: 1.3vw;
+  color: var(--muted);
+  text-align: center;
+}
+
+.table-seats {
+  align-self: stretch;
+  min-height: 0;
+  display: grid;
+  gap: 0.8vh 0.8vw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.is-crowded .table-seats {
+  grid-template-columns: 1fr 1fr;
+}
+
+.table-seat {
+  display: flex;
+  align-items: center;
+  gap: 0.6vw;
+  min-width: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.6vw;
+}
+
+.table-seat .token {
+  width: 2.8vw;
+  height: 2.8vw;
+}
+
+.is-crowded .table-seat {
+  font-size: 1.2vw;
+}
+
+.is-crowded .table-seat .token {
+  width: 2.1vw;
+  height: 2.1vw;
+}
+
+.table-seat-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.table-settings {
+  align-self: stretch;
+  padding: 0.9vh 0;
+  border-radius: 12px;
+  background: var(--felt-line);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.3vw;
+  outline: 4px solid transparent;
+}
+
+.table-settings.is-focused {
+  outline-color: var(--yellow);
+  background: var(--felt);
+}
+
+/* Seven posters across, the eighth peeking in; the focused one grows from its foot. The row's side
+   padding leaves room for that growth at either end, where the scroll stops. */
+.shelf-row {
+  position: absolute;
+  left: 4vw;
+  right: 4vw;
+  bottom: 5.5vh;
+  display: flex;
+  gap: 1.15vw;
+  margin: 0;
+  padding: 4vh 1vw 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.shelf-poster {
+  position: relative;
+  flex: none;
+  width: 11.1vw;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--felt-deep);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transform-origin: bottom center;
+  transition: transform 150ms ease-out;
+  cursor: pointer;
+}
+
+.shelf-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shelf-poster.is-picked {
+  transform: scale(1.06);
+}
+
+.shelf-poster.is-focused {
+  outline: 0.3vw solid var(--yellow);
+  outline-offset: -0.3vw;
+}
+
+.shelf-poster-name {
+  position: absolute;
+  left: 0.7vw;
+  right: 0.7vw;
+  bottom: 0.7vw;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.4vw;
+}

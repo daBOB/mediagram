@@ -11,9 +11,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import uniffi.spieltisch_core.gameCatalogue
 
-/** The app is the game night: it opens on the shelf, and leaving the shelf leaves the app. */
+/** The app is the game night: it opens on the games shelf, and leaving the shelf leaves the app. */
 class MainActivity : ComponentActivity() {
     private val model by viewModels<GameNightViewModel> {
         viewModelFactory { initializer { GameNightViewModel((application as SpieltischApp).night) } }
@@ -50,7 +49,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun showNight() {
-        val games = shelfGames(gameCatalogue())
-        setContent { SpieltischTheme { TvGamesFrame(model, games, leave = ::finish) } }
+        setContent { SpieltischTheme { TvGamesFrame(model, leave = ::finish) } }
     }
 }
