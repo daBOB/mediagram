@@ -13,6 +13,7 @@ use ts_rs::TS;
 pub use crate::avatars::AvatarSlot;
 pub use crate::cards::{Card, Rank, Suit};
 pub use crate::catalogue::GameEntry;
+pub use crate::protocol_board::{BoardAct, BoardPlayer, BoardScreen, Buzz, Clock, DrawOp};
 pub use crate::protocol_cards::{
     ButtonNeeds, CardDesk, CardsBanner, CardsEvent, CardsEventKind, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard,
 };
@@ -49,6 +50,10 @@ pub enum ServerMsg {
     Pong { t0: f64, now: ServerTime },
     Phone { view: PhoneView },
     Tv { view: TvView },
+    /// The drawing board's screen.
+    Board { screen: BoardScreen },
+    /// Drawing ops of `turn` from index `from` on, for the board and the TV.
+    Draw { turn: u32, from: u32, ops: Vec<DrawOp> },
     Error { code: ErrorCode, message: String },
 }
 
@@ -86,6 +91,9 @@ pub struct PlayerInfo {
 pub struct PhoneView {
     pub me: PlayerInfo,
     pub screen: PhoneScreen,
+    /// A vibration to play with this view.
+    #[serde(default)]
+    pub buzz: Option<Buzz>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

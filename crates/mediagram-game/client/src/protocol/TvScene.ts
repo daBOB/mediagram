@@ -19,4 +19,8 @@ blocked: string | null,
 /**
  * The game catalogue, in lobby order.
  */
-games: Array<GameEntry>, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, } | { "kind": "cards", scene: CardsScene, } | { "kind": "kopfnuss", scene: KopfnussScene, } | { "kind": "grand_allee", scene: GrandAlleeScene, } | { "kind": "dreifelder", scene: DreifelderScene, } | { "kind": "fluechtig", scene: FluechtigScene, } | { "kind": "preisfrage", scene: PreisfrageScene, };
+games: Array<GameEntry>, 
+/**
+ * A drawing board is connected.
+ */
+board: boolean, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, } | { "kind": "cards", scene: CardsScene, } | { "kind": "kopfnuss", scene: KopfnussScene, } | { "kind": "grand_allee", scene: GrandAlleeScene, } | { "kind": "dreifelder", scene: DreifelderScene, } | { "kind": "fluechtig", scene: FluechtigScene, } | { "kind": "preisfrage", scene: PreisfrageScene, };

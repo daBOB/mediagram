@@ -41,10 +41,12 @@ impl Room {
                             leader_name: self.leader_name(),
                             blocked: self.blocked(),
                             games: CATALOGUE.to_vec(),
+                            board: false,
                         },
                     },
                 },
             }),
+            Role::Board => None,
             Role::Phone => {
                 let p = self.player(c.player?)?;
                 let screen = match &self.game {
@@ -66,7 +68,7 @@ impl Room {
                         }
                     }
                 };
-                Some(ServerMsg::Phone { view: PhoneView { me: self.info(p), screen } })
+                Some(ServerMsg::Phone { view: PhoneView { me: self.info(p), screen, buzz: None } })
             }
         }
     }

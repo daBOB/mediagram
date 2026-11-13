@@ -29,6 +29,8 @@ pub enum TvScene {
         blocked: Option<String>,
         /// The game catalogue, in lobby order.
         games: Vec<GameEntry>,
+        /// A drawing board is connected.
+        board: bool,
     },
     Quiz { scene: QuizScene },
     Poster { scene: PosterScene },

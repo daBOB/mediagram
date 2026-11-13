@@ -103,6 +103,8 @@ impl Room {
                 self.release(conn, now);
                 Some(ServerMsg::Welcome { player: None, token: None, now })
             }
+            // The board is seated by the room later; until then it is refused.
+            ClientMsg::Hello { role: Role::Board, .. } => Some(not_allowed()),
             ClientMsg::Hello { role: Role::Phone, name, token, avatar } => {
                 self.release(conn, now);
                 Some(match self.seat_phone(conn, name, token, avatar) {

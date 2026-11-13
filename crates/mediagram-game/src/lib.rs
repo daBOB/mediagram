@@ -29,6 +29,9 @@ pub mod grand_allee;
 pub mod host;
 pub mod lan;
 pub mod protocol;
+mod protocol_board;
+#[cfg(test)]
+mod protocol_board_tests;
 mod protocol_cards;
 mod protocol_choice;
 mod protocol_dreifelder;

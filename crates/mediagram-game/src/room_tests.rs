@@ -20,6 +20,7 @@ impl Game for Idle {
             leader_name: None,
             blocked: None,
             games: Vec::new(),
+            board: false,
         }
     }
     fn is_finished(&self) -> bool {
