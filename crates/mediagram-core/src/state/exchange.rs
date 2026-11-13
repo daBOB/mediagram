@@ -15,6 +15,7 @@ mod lists;
 mod names;
 mod preferences;
 mod roles;
+mod scenes;
 mod watched;
 
 /// What this device has to say about where things were left off.
@@ -39,6 +40,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         let watchlist = lists::export_watchlist(conn, &profile.id)?;
         let collections = lists::export_collections(conn, &profile.id)?;
         let preferences = preferences::export_preferences(conn, &profile.id)?;
+        let scenes = scenes::export_scenes(conn, &profile.id)?;
         let (title_stats, day_stats) = stats::exchange::export(conn, &profile.id)?;
         let roles = roles::export(conn, &profile.id)?;
         let names = names::export(conn, &profile.id)?;
@@ -52,6 +54,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             watchlist,
             collections,
             preferences,
+            scenes,
             title_stats,
             day_stats,
             roles,
@@ -112,6 +115,7 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         changed += lists::import_watchlist(conn, &profile_id, &profile.watchlist)?;
         changed += lists::import_collections(conn, &profile_id, &profile.collections)?;
         changed += preferences::import_preferences(conn, &profile_id, &profile.preferences)?;
+        changed += scenes::import_scenes(conn, &profile_id, &profile.scenes)?;
         changed +=
             stats::exchange::import(conn, &profile_id, &profile.title_stats, &profile.day_stats)?;
     }

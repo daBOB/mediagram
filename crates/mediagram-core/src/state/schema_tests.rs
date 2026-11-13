@@ -65,6 +65,7 @@ fn every_step_applies_in_turn_to_an_empty_file() {
             "preferences",
             "profiles",
             "progress",
+            "scenes",
             "state_meta",
             "stats_days",
             "stats_titles",
