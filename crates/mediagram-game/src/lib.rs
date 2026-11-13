@@ -73,6 +73,7 @@ mod fluechtig_intro;
 mod fluechtig_intro_tests;
 mod fluechtig_map;
 mod fluechtig_moves;
+mod fluechtig_picks;
 mod fluechtig_play;
 mod fluechtig_rules;
 mod fluechtig_views;
