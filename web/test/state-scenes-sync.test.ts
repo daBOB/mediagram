@@ -111,6 +111,7 @@ describe("merging and parsing scene rows", () => {
       { id: "x", setId: "01A", at: -1, updatedAt: 5 },
       { id: 5, setId: "01A", at: 1, updatedAt: 5 },
       { id: "x", setId: "", at: 1, updatedAt: 5 },
+      { id: "a-b", setId: "01A", at: 1, updatedAt: 5 },
       good,
     ]));
     expect(parsed!.profiles[0]!.scenes).toEqual([good]);

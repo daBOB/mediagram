@@ -60,6 +60,7 @@ import { asArray, isStamp, numberFromScalar, objectRow, parseRows, text_ } from 
 import { parseRoleKeys, type RoleKeys } from "./roles-record";
 import { sceneRow, type SceneRow } from "./scenes-record";
 import { parseDayStatRows, parseTitleStatRows, type StatsRows } from "./stats-record";
+export type { SceneRow };
 
 /** Bumped when a reader could no longer make sense of an older document. */
 export const SYNC_FORMAT = 1;

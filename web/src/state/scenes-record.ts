@@ -24,10 +24,12 @@ export function sceneRow(value: unknown): SceneRow | null {
   const raw = objectRow(value);
   if (raw === null) return null;
   const id = text_(raw.id);
+  // Only what the DELETE route can address, so a synced mark can always be removed.
+  if (id === null || !/^[A-Za-z0-9]{1,64}$/.test(id)) return null;
   const setId = text_(raw.setId);
   const at = numberFromScalar(raw.at);
   const updatedAt = numberFromScalar(raw.updatedAt);
-  if (id === null || setId === null || !Number.isFinite(at) || at < 0 || !isStamp(updatedAt)) return null;
+  if (setId === null || !Number.isFinite(at) || at < 0 || !isStamp(updatedAt)) return null;
   return raw.removed === true ? { id, setId, at, updatedAt, removed: true } : { id, setId, at, updatedAt };
 }
 

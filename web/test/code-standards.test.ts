@@ -116,7 +116,7 @@ const ROOT = join(import.meta.dir, "..");
  * server's address and token and hand it to the byte source; the client itself is its own file,
  * `src/cache/lan-chunk-server.ts`.
  * Raised 2026-11-13 for `src/state/routes.ts`, by 4, `src/state/schema.ts`, by 2,
- * `src/state/store.ts`, by 17 and `src/state/sync-record.ts`, by 4, to wire in marked scenes: the
+ * `src/state/store.ts`, by 17 and `src/state/sync-record.ts`, by 5, to wire in marked scenes: the
  * route, the group, the store's three methods and export/import lines, and the profile's `scenes`
  * key; the rows, table and routes themselves are `scenes-*.ts`.
  */
@@ -148,7 +148,7 @@ const CEILINGS: Record<string, number> = {
   "src/state/profiles-manage.ts": 194,
   "src/state/schema.ts": 247,
   "src/state/store.ts": 760,
-  "src/state/sync-record.ts": 303,
+  "src/state/sync-record.ts": 304,
   "src/transcode/registry.ts": 338,
 };
 
