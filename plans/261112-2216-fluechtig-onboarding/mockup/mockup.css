@@ -1,0 +1,97 @@
+/* Throwaway mockup styles: the proposed parts over the real Flüchtig screens. */
+
+.mk-tv, .mk-phone {
+  --taxi: #8b95a1;
+  --bus: #0f766e;
+  --ubahn: #6d28d9;
+  --schatten: #1f2937;
+  --river: #a9cfe4;
+  --u: 1;
+}
+
+.mk-y { color: var(--yellow); font-weight: 800; }
+
+/* ---- the rules cards: the plan dimmed behind a felt card, like Grand Allee's */
+.mk-intro { position: fixed; inset: 0; z-index: 5; }
+.mk-dim { position: absolute; inset: 0; background: rgba(12, 42, 34, 0.55); }
+.mk-tv:has(.mk-intro) .fl-tc, .mk-tv:has(.mk-intro) .fl-tr { display: none; }
+/* the card about the travel log leaves the log's band undimmed and rings it */
+.mk-lift-log .mk-dim { bottom: 64px; }
+.mk-tv:has(.mk-lift-log) .fl-bl { outline: 3px solid var(--yellow); }
+.mk-tv:has(.mk-lift-log) .mk-card { top: 62px; }
+.mk-line { background: #f3ecdc; border-radius: 4px; }
+
+.mk-card {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  transform: translateX(-50%);
+  width: 590px;
+  box-sizing: border-box;
+  padding: 22px 32px 18px;
+  background: var(--felt);
+  color: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 6px 0 var(--felt-deep), 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+.mk-card > small { font: 700 13px var(--body); letter-spacing: 0.08em; color: var(--muted); }
+.mk-card h1 { margin: 2px 0 12px; font: 800 36px var(--display); }
+.mk-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.mk-card li { display: flex; gap: 12px; align-items: center; font-size: 19px; line-height: 1.25; }
+.mk-card li > :first-child { flex: none; }
+.mk-two { display: flex; }
+.mk-two .token + .token { margin-left: -8px; }
+.mk-big { width: 34px; text-align: center; font: 800 26px var(--display); color: var(--yellow); }
+.mk-dot { width: 10px; height: 10px; margin: 0 8px; border-radius: 50%; background: var(--yellow); }
+.mk-lead { margin: 0 0 10px; font-size: 18px; }
+.mk-lines { border-spacing: 0 6px; font-size: 18px; }
+.mk-lines td { padding: 0 10px 0 0; vertical-align: middle; }
+.mk-line { display: block; }
+.mk-card footer { display: flex; gap: 8px; align-items: center; margin-top: 18px; }
+.mk-card footer i { width: 46px; height: 6px; border-radius: 3px; background: rgba(255, 244, 226, 0.22); }
+.mk-card footer i.mk-done { background: var(--card); }
+.mk-card footer i.mk-now { background: linear-gradient(90deg, var(--yellow) 60%, rgba(255, 244, 226, 0.22) 60%); }
+.mk-card footer span { margin-left: auto; font-size: 13px; color: var(--muted); }
+.mk-owners { display: flex; gap: 28px; margin: 4px 0 12px 30px; }
+.mk-owners > span { display: flex; align-items: flex-end; gap: 4px; font-size: 19px; }
+.mk-owners b { margin: 0 8px 0 4px; align-self: center; }
+
+/* one figure each: the piece's number badge has nothing left to tell */
+.mk-one .fl-pawn:not(.fl-pawn-seen) :is(.fl-badge, .fl-badge-text) { display: none; }
+
+.mk-cast { display: flex; gap: 22px; align-items: stretch; margin-bottom: 14px; }
+.mk-side { flex: 1; display: grid; justify-items: center; gap: 4px; padding: 10px 8px 8px; border-radius: 14px; background: var(--felt-deep); text-align: center; font-size: 17px; }
+.mk-side p { margin: 0; }
+.mk-side-run { flex: 0 0 150px; }
+.mk-row { display: flex; gap: 10px; }
+.mk-figure { display: grid; justify-items: center; font-size: 14px; }
+.mk-figure img { display: block; filter: drop-shadow(0 3px 0 var(--c)); }
+.mk-figure b { margin-top: 2px; padding: 0 8px; border-radius: 8px; background: var(--c); color: #fff; }
+
+/* ---- the legend that stays on the TV, bottom right */
+.mk-legend { right: 14px; bottom: 12px; padding: 5px 10px; display: grid; grid-template-columns: repeat(3, auto); grid-auto-flow: column; grid-template-rows: auto auto; gap: 2px 12px; font: 700 11px var(--body); color: var(--card); }
+.mk-legend > span { display: flex; gap: 4px; align-items: center; }
+.mk-legend > span:last-child { grid-row: span 2; }
+
+/* ---- the phone: the role card at the start, the role bar all game */
+.mk-phone { min-height: 100vh; box-sizing: border-box; background: var(--felt); }
+/* the fugitive's phone: night, with the hideout's orange as its accent */
+.mk-theme-night { --felt: #1a1d29; --felt-deep: #0f111a; --felt-line: #2c3146; --muted: #9ba3bd; --yellow: #f2a14b; }
+.mk-theme-night .mk-rolebar b { color: var(--orange); }
+/* police blue for the hunters, as the alternative to the house green */
+.mk-theme-blue { --felt: #173f73; --felt-deep: #0f2d55; --felt-line: #24559a; --muted: #a9c2e3; }
+.mk-role > small { font: 700 12px var(--body); letter-spacing: 0.08em; color: var(--muted); }
+.mk-role h1 { margin: 4px 0 18px; font: 800 38px var(--display); color: var(--card); }
+.mk-role ul { margin: 18px 0; padding-left: 20px; display: grid; gap: 12px; font-size: 17px; line-height: 1.3; color: var(--card); }
+.mk-role b { color: var(--yellow); }
+.mk-hide, .mk-mine { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; background: var(--felt-deep); color: var(--card); font-size: 17px; }
+.mk-hide p, .mk-mine p { margin: 0; }
+.mk-mine { gap: 4px; }
+.mk-mine p { margin-left: 12px; }
+.mk-tvhint { margin: 8px 0 18px; color: var(--muted); font-size: 15px; }
+.mk-skip { width: 100%; }
+.mk-rolebar { display: flex; justify-content: space-between; align-items: center; margin: -8px 0 14px; padding: 6px 12px; border-radius: 12px; background: var(--felt-deep); color: var(--card); font-size: 14px; }
+.mk-rolebar b { font: 800 16px var(--display); }
+.mk-rolebar span { display: flex; gap: 2px; color: var(--muted); }
+.mk-rolebar-run b { color: var(--orange); }
+.mk-index { font: 18px var(--body); }

@@ -1,0 +1,78 @@
+/* Flüchtig's rules cards over the dimmed plan, and the line legend. */
+
+.fl-y { color: var(--yellow); font-weight: 800; }
+
+.fl-intro { position: absolute; inset: 0; z-index: 5; }
+.fl-intro-dim { position: absolute; inset: 0; background: rgba(12, 42, 34, 0.55); }
+/* the card about the travel log leaves the log's band undimmed and rings it */
+.fl-intro-log .fl-intro-dim { bottom: 64px; }
+.fl-log-lit .fl-bl { outline: 3px solid var(--yellow); }
+.fl-intro-log .fl-card { top: 62px; }
+
+.fl-card {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  transform: translateX(-50%);
+  width: 590px;
+  box-sizing: border-box;
+  padding: 22px 32px 18px;
+  background: var(--felt);
+  color: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 6px 0 var(--felt-deep), 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+.fl-card > small { font: 700 13px var(--body); letter-spacing: 0.08em; color: var(--muted); }
+.fl-card h1 { margin: 2px 0 12px; font: 800 36px var(--display); }
+.fl-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.fl-card li { display: flex; gap: 12px; align-items: center; font-size: 19px; line-height: 1.25; }
+.fl-card li > :first-child { flex: none; }
+.fl-dot { width: 10px; height: 10px; margin: 0 8px; border-radius: 50%; background: var(--yellow); }
+.fl-lead { margin: 0 0 10px; font-size: 18px; }
+.fl-lines { border-spacing: 0 6px; font-size: 18px; }
+.fl-lines td { padding: 0 10px 0 0; vertical-align: middle; }
+.fl-swatch { display: block; background: #f3ecdc; border-radius: 4px; }
+
+/* the dots count the cards; the current one fills over its time */
+.fl-card footer { display: flex; gap: 8px; align-items: center; margin-top: 18px; }
+.fl-card footer i { width: 46px; height: 6px; border-radius: 3px; background: rgba(255, 244, 226, 0.22); }
+.fl-card footer i.fl-done { background: var(--card); }
+.fl-card footer i.fl-now {
+  background: linear-gradient(90deg, var(--yellow) 50%, rgba(255, 244, 226, 0.22) 50%) 100% 0 / 200% 100% no-repeat;
+  animation: fl-fill var(--ms, 10000ms) linear forwards;
+}
+.fl-card footer span { margin-left: auto; font-size: 13px; color: var(--muted); }
+@keyframes fl-fill {
+  to { background-position: 0 0; }
+}
+
+.fl-cast { display: flex; gap: 22px; align-items: stretch; margin-bottom: 14px; }
+.fl-card-wide { width: 720px; }
+.fl-side { flex: 1; min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 10px 8px 8px; border-radius: 14px; background: var(--felt-deep); text-align: center; font-size: 17px; }
+.fl-side p { margin: 0; }
+.fl-side-run { flex: 0 0 150px; }
+.fl-row { display: flex; gap: 10px; max-width: 100%; }
+/* a figure never grows wider than its share of the row; a long name wraps under it */
+.fl-figure { flex: 0 1 auto; min-width: 0; display: grid; justify-items: center; align-content: end; font-size: 14px; }
+.fl-figure img { display: block; height: 74px; filter: drop-shadow(0 3px 0 var(--c)); }
+.fl-row-many { gap: 8px; }
+.fl-row-many .fl-figure { font-size: 13px; }
+.fl-row-many .fl-figure img { height: 56px; }
+.fl-figure > i { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 6px; border-radius: 50%; background: var(--c); color: #fff; font: 800 26px var(--display); font-style: normal; }
+.fl-figure b { max-width: 100%; box-sizing: border-box; margin-top: 2px; padding: 0 8px; border-radius: 8px; background: var(--c); color: #fff; text-align: center; overflow-wrap: anywhere; }
+
+/* ---- the legend, bottom right, always on */
+.fl-legend {
+  right: 14px;
+  bottom: 12px;
+  padding: 5px 10px;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: auto auto;
+  grid-auto-flow: column;
+  gap: 2px 12px;
+  font: 700 11px var(--body);
+  color: var(--card);
+}
+.fl-legend > span { display: flex; gap: 4px; align-items: center; }
+.fl-legend > .fl-legend-hideout { grid-row: span 2; }

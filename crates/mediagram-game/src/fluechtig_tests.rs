@@ -2,24 +2,24 @@ use super::*;
 use crate::fluechtig_rules::Rules;
 use crate::protocol::{FluechtigOption, FluechtigPhone, FluechtigSeen, FluechtigTurn};
 
-const NAMES: [&str; 6] = ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay"];
+pub(crate) const NAMES: [&str; 6] = ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay"];
 
-fn table(n: u8, connected: bool) -> Vec<Player> {
+pub(crate) fn table(n: u8, connected: bool) -> Vec<Player> {
     (0..n).map(|i| Player::for_test(i, NAMES[usize::from(i)], connected)).collect()
 }
 
 fn game(players: &[Player], seed: u64) -> FluechtigGame {
-    FluechtigGame::new(FluechtigConfig { seed: Some(seed), rules: Rules::small(), ..FluechtigConfig::default() }, players, 0.0)
+    FluechtigGame::new(FluechtigConfig { seed: Some(seed), rules: Some(Rules::small()), intro_ms: 0.0, ..FluechtigConfig::default() }, players, 0.0)
 }
 
-fn tap(g: &mut FluechtigGame, players: &mut [Player], who: PlayerId, index: usize, now: f64) -> Result<(), ActionError> {
+pub(crate) fn tap(g: &mut FluechtigGame, players: &mut [Player], who: PlayerId, index: usize, now: f64) -> Result<(), ActionError> {
     g.on_action(&mut GameCtx { now, players }, who, &Action::Choose { index: index as u8, at: now })
 }
 
 /// What `who`'s phone shows.
-fn phone(g: &FluechtigGame, players: &[Player], who: PlayerId) -> FluechtigPhone {
+pub(crate) fn phone(g: &FluechtigGame, players: &[Player], who: PlayerId) -> FluechtigPhone {
     match g.phone_screen(&ViewCtx { now: 0.0, players, leader: Some(0) }, who) {
-        PhoneScreen::Fluechtig { phone } => phone,
+        PhoneScreen::Fluechtig { phone } => *phone,
         other => panic!("expected the Flüchtig phone, got {other:?}"),
     }
 }
@@ -44,31 +44,37 @@ fn play(g: &mut FluechtigGame, players: &mut [Player], mv: Move, now: f64) -> f6
 }
 
 fn scene(g: &FluechtigGame) -> crate::protocol::FluechtigScene {
-    match g.tv_view() {
+    scene_with(g, &[])
+}
+
+/// The TV scene, with the room's players for the leader's name.
+pub(crate) fn scene_with(g: &FluechtigGame, players: &[Player]) -> crate::protocol::FluechtigScene {
+    match g.tv_view(&ViewCtx { now: 0.0, players, leader: Some(0) }) {
         TvScene::Fluechtig { scene } => scene,
         other => panic!("expected the Flüchtig scene, got {other:?}"),
     }
 }
 
 #[test]
-fn the_room_plays_the_big_city_with_five_hunters_over_24_rounds() {
-    let players = table(3, true);
-    let g = FluechtigGame::new(FluechtigConfig { seed: Some(1), ..FluechtigConfig::default() }, &players, 0.0);
-    let s = scene(&g);
-    assert_eq!((s.board.spots.len(), s.board.width, s.board.height), (199, 1168, 540));
-    assert!(s.board.river.len() > 2);
-    assert_eq!((s.rounds, s.reveal_rounds.clone(), s.hunters.len()), (24, vec![3, 8, 13, 18, 24], 5));
-    // the two hunting players take the five pieces in turn
-    let owners: Vec<PlayerId> = s.hunters.iter().map(|h| h.player).collect();
-    assert_eq!((owners[0], owners[1]), (owners[2], owners[3]));
-    assert_eq!(owners[0], owners[4]);
-    assert_ne!(owners[0], owners[1]);
-    assert!(!owners.contains(&s.fugitive));
+fn every_hunter_moves_one_figure_and_a_lone_hunter_moves_two() {
+    for (n, figures) in [(2u8, 2usize), (3, 2), (4, 3), (5, 4), (6, 5)] {
+        let p = table(n, true);
+        let g = FluechtigGame::new(FluechtigConfig { seed: Some(1), ..FluechtigConfig::default() }, &p, 0.0);
+        let hunters: Vec<PlayerId> = (0..n).filter(|&id| id != g.fugitive).collect();
+        let expect = if hunters.len() == 1 { vec![hunters[0]; 2] } else { hunters.clone() };
+        assert_eq!(g.owners, expect, "{n} players");
+        let s = scene(&g);
+        assert_eq!(s.hunters.len(), figures, "{n} players");
+        assert_eq!(g.chase.rules, Rules::big_for(figures as u8), "{n} players");
+        assert_eq!((s.board.spots.len(), s.board.width, s.board.height), (199, 1168, 540));
+        assert!(s.board.river.len() > 2);
+        assert_eq!(s.rounds, 24);
+    }
 }
 
 #[test]
 fn one_player_runs_and_the_others_share_the_hunters() {
-    for (n, pieces, each) in [(2, 4, 4), (3, 4, 2), (6, 5, 1)] {
+    for (n, pieces, each) in [(2, 2, 2), (3, 2, 1), (6, 5, 1)] {
         let g = game(&table(n, true), 3);
         assert_eq!(g.owners.len(), pieces, "{n} players");
         assert!(!g.owners.contains(&g.fugitive));
@@ -131,8 +137,8 @@ fn a_hunter_with_one_ticket_to_the_field_goes_in_one_tap() {
     let mv = g.chase.moves()[0];
     play(&mut g, &mut p, mv, 0.0);
     let hunter = g.owners[0];
-    let ask = phone(&g, &p, hunter).ask.expect("Jäger 1 moves");
-    assert_eq!(ask.prompt, "Wohin fährt Jäger 1?");
+    let ask = phone(&g, &p, hunter).ask.expect("the first hunter moves");
+    assert_eq!(ask.prompt, "Wohin fährst du?");
     let single = ask.options.iter().position(|o| matches!(o, FluechtigOption::Field { ways, .. } if ways.len() == 1)).expect("a one-way field");
     let FluechtigOption::Field { field, .. } = ask.options[single] else { unreachable!() };
     tap(&mut g, &mut p, hunter, single, 1000.0).unwrap();
@@ -161,7 +167,9 @@ fn only_the_mover_may_tap() {
     assert_eq!(ph.ask, None);
     let mover = ph.mover.unwrap();
     assert_eq!((mover.name.as_str(), mover.piece, mover.you), (NAMES[usize::from(g.fugitive)], None, false));
-    assert_eq!(ph.next.unwrap().piece, Some(1));
+    // one figure each: the next mover is named, not numbered
+    let next = ph.next.unwrap();
+    assert_eq!((next.piece, next.runs, next.you), (None, false, true));
 }
 
 #[test]
@@ -232,6 +240,44 @@ fn hunters_see_their_pieces_and_the_last_reveal_never_the_field() {
     let ph = phone(&g, &p, g.owners[0]);
     assert_eq!(ph.seen, Some(FluechtigSeen { field: seen, round: 3 }));
     assert_eq!(ph.hiding, None);
-    assert_eq!(ph.pieces.iter().map(|x| x.number).collect::<Vec<_>>(), vec![1, 3]);
-    assert_eq!(ph.ask.unwrap().prompt, "Wohin fährt Jäger 1?");
+    assert_eq!(ph.pieces.iter().map(|x| x.number).collect::<Vec<_>>(), vec![1], "one figure per hunting player");
+    assert_eq!(ph.ask.unwrap().prompt, "Wohin fährst du?");
+}
+
+#[test]
+fn news_and_prompts_name_the_hunting_player() {
+    let mut p = table(4, true);
+    let mut g = game(&p, 1);
+    let mv = g.chase.moves()[0];
+    let now = play(&mut g, &mut p, mv, 0.0);
+    let hunter = g.owners[0];
+    let ph = phone(&g, &p, hunter);
+    assert_eq!(ph.ask.as_ref().unwrap().prompt, "Wohin fährst du?");
+    let mover = ph.mover.unwrap();
+    assert_eq!((mover.piece, mover.runs, mover.you), (None, false, true));
+    assert_eq!(ph.pieces.iter().map(|x| x.number).collect::<Vec<_>>(), vec![1]);
+    assert!(phone(&g, &p, g.fugitive).next.is_some_and(|n| !n.runs));
+    let mv = g.chase.moves()[0];
+    play(&mut g, &mut p, mv, now);
+    let name = NAMES[usize::from(hunter)];
+    assert!(g.chase.news[0].starts_with(&format!("{name} fährt ")), "{:?}", g.chase.news);
+}
+
+#[test]
+fn a_lone_hunter_numbers_their_two_figures() {
+    let mut p = table(2, true);
+    let mut g = game(&p, 1);
+    let hunter = g.owners[0];
+    assert_eq!(g.owners, vec![hunter, hunter]);
+    assert_eq!(phone(&g, &p, hunter).pieces.iter().map(|x| x.number).collect::<Vec<_>>(), vec![1, 2]);
+    let mv = g.chase.moves()[0];
+    let now = play(&mut g, &mut p, mv, 0.0);
+    let ph = phone(&g, &p, hunter);
+    assert_eq!(ph.ask.unwrap().prompt, "Wohin fährt Figur 1?");
+    assert_eq!(ph.mover.unwrap().piece, Some(1));
+    assert_eq!(ph.next.unwrap().piece, Some(2));
+    let mv = g.chase.moves()[0];
+    play(&mut g, &mut p, mv, now);
+    let name = NAMES[usize::from(hunter)];
+    assert!(g.chase.news[0].starts_with(&format!("{name} (Figur 1) fährt ")), "{:?}", g.chase.news);
 }

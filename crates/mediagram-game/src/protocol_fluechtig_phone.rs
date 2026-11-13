@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::protocol::{FluechtigLogEntry, FluechtigTicket, FluechtigTickets, ServerTime};
+use crate::protocol::{FluechtigIntro, FluechtigLogEntry, FluechtigTicket, FluechtigTickets, ServerTime};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -12,6 +12,8 @@ pub struct FluechtigPhone {
     pub round: u8,
     pub rounds: u8,
     pub next_reveal: Option<u8>,
+    /// Rounds whose fugitive move ends in plain sight.
+    pub reveal_rounds: Vec<u8>,
     /// The fugitive's name.
     pub fugitive: String,
     /// Where the fugitive is; set on their own phone only.
@@ -20,15 +22,22 @@ pub struct FluechtigPhone {
     pub seen: Option<FluechtigSeen>,
     /// Every field the fugitive may be on.
     pub hideouts: Vec<u8>,
-    /// The hunter pieces this phone moves; empty on the fugitive's.
+    /// The hunter figures this phone moves; empty on the fugitive's.
     pub pieces: Vec<FluechtigPiece>,
     pub fugitive_tickets: FluechtigTickets,
     pub log: Vec<FluechtigLogEntry>,
     /// Who moves now, and who after; None once the chase is over.
     pub mover: Option<FluechtigMover>,
     pub next: Option<FluechtigMover>,
-    /// The question this phone answers; None while someone else moves.
+    /// The question this phone answers; None while someone else moves and
+    /// while the rules cards run.
     pub ask: Option<FluechtigAsk>,
+    /// The rules card on the TV; the phone shows its role card meanwhile.
+    pub intro: Option<FluechtigIntro>,
+    /// This phone may skip the rules cards: the room's leader's, while they run.
+    pub may_skip: bool,
+    /// The other hunting players' names in turn order; empty on the fugitive's.
+    pub partners: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
@@ -38,7 +47,8 @@ pub struct FluechtigSeen {
     pub round: u8,
 }
 
-/// A hunter piece: "Jäger `number`".
+/// A hunter figure; `number` is 1 or 2 within its player's figures (only a
+/// lone hunter has two).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct FluechtigPiece {
@@ -47,13 +57,16 @@ pub struct FluechtigPiece {
     pub tickets: FluechtigTickets,
 }
 
-/// The fugitive (no piece) or the player moving a hunter piece.
+/// The fugitive or the player moving a hunter figure.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct FluechtigMover {
     pub name: String,
     pub color: String,
+    /// Which of the player's figures moves; only for a player with two.
     pub piece: Option<u8>,
+    /// It is the fugitive.
+    pub runs: bool,
     /// It is this phone's player.
     pub you: bool,
 }

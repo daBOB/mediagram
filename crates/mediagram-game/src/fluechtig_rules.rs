@@ -10,8 +10,6 @@ use crate::protocol::{FluechtigSide as Side, FluechtigTicket as Ticket, Fluechti
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rules {
     pub city: CityKind,
-    /// Hunter pieces at fewer than six players; six players always hunt with five.
-    pub hunters: u8,
     pub rounds: u8,
     /// Rounds whose fugitive move ends in plain sight.
     pub reveal_rounds: Vec<u8>,
@@ -22,38 +20,40 @@ pub struct Rules {
 }
 
 impl Rules {
-    /// The chase as the room plays it: the big city with the numbers of the
-    /// genre's classic, which the city's balance was measured with.
-    pub fn big() -> Self {
+    /// The big city for a table hunting with `figures` (clamped to 2..=5).
+    /// Fewer figures see the fugitive more often and grant fewer shadow rides
+    /// and double moves, which keeps the chase near even: bots won 43.0 / 45.6
+    /// / 48.7 / 49.5 % as the fugitive with 5 / 4 / 3 / 2 figures on the
+    /// bridged city. Five figures play the genre classic's numbers.
+    pub fn big_for(figures: u8) -> Self {
+        let figures = figures.clamp(2, 5);
+        let (reveal_rounds, schatten, doppel) = match figures {
+            5 => (vec![3, 8, 13, 18, 24], 5, 2),
+            4 => ((3..=24).step_by(3).collect(), 5, 2),
+            3 => ((3..=24).step_by(3).collect(), 2, 1),
+            _ => ((3..=24).step_by(3).collect(), 1, 0),
+        };
         Self {
             city: CityKind::Big,
-            hunters: 5,
             rounds: 24,
-            reveal_rounds: vec![3, 8, 13, 18, 24],
+            reveal_rounds,
             hunter_tickets: Tickets { taxi: 10, bus: 8, ubahn: 4, schatten: 0, doppel: 0 },
-            fugitive_tickets: Tickets { taxi: 4, bus: 3, ubahn: 3, schatten: 5, doppel: 2 },
+            fugitive_tickets: Tickets { taxi: 4, bus: 3, ubahn: 3, schatten, doppel },
             inflow: true,
         }
     }
 
-    /// The short chase in the small city.
+    /// The short chase in the small city, for tests.
     #[cfg_attr(not(test), allow(dead_code))]
     pub fn small() -> Self {
         Self {
             city: CityKind::Small,
-            hunters: 4,
             rounds: 18,
             reveal_rounds: vec![3, 8, 13, 18],
             hunter_tickets: Tickets { taxi: 10, bus: 6, ubahn: 3, schatten: 0, doppel: 0 },
             fugitive_tickets: Tickets { taxi: 4, bus: 3, ubahn: 2, schatten: 3, doppel: 1 },
             inflow: true,
         }
-    }
-}
-
-impl Default for Rules {
-    fn default() -> Self {
-        Self::big()
     }
 }
 
@@ -116,6 +116,8 @@ pub(crate) struct Chase {
     /// Steps left of an announced double move: 2 before its first, 1 before its second.
     pub double_left: u8,
     pub hunters: Vec<Piece>,
+    /// What the news calls each hunter figure.
+    pub names: Vec<String>,
     pub log: Vec<Entry>,
     /// Every field the fugitive may be on, from public information only.
     pub hideouts: BTreeSet<Field>,
@@ -134,6 +136,7 @@ impl Chase {
             fugitive: Piece { at: fugitive, tickets: rules.fugitive_tickets },
             double_left: 0,
             hunters: hunters.iter().map(|&at| Piece { at, tickets: rules.hunter_tickets }).collect(),
+            names: (1..=hunters.len()).map(|i| format!("Jäger {i}")).collect(),
             log: Vec::new(),
             hideouts: city.fugitive_starts.iter().copied().filter(|f| !hunters.contains(f)).collect(),
             news: Vec::new(),

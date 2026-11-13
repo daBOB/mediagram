@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.181.0 — Flüchtig, made clear
+
+**Added**
+
+- Three rules cards on the TV before round 1 ("Wer ist wer?", "Die Linien", "Unsichtbar – fast immer"), 10 s each, drawn from the scene: the players' figures, the city's own line rings, the sighting rounds and the fugitive's tickets. The room's leader can skip them from the phone; nobody moves and the house plays for nobody while they run (`FluechtigConfig.intro_ms`, `FluechtigScene.intro`).
+- A role card on every phone during the cards ("Du bist flüchtig" with the hideout, or "Du bist Jäger" with your figure and who hunts with you), and a role bar on top of every Flüchtig phone screen all game.
+- Role colours on the phones: dark night for the fugitive, police blue for the hunters; the final screen is the house green again.
+- A line legend at the TV's bottom right: Taxi, U-Bahn, Bus, Fähre and the hideout mark.
+- `tools/fluechtig-city/add_bridges.py`: the step after `generate_city.py` that puts streets and buses over the river on chosen bridges only, lays streets where a bus would cut through a block and splits rides at the stops they pass. Idempotent.
+
+**Changed**
+
+- One figure per player: every hunter moves exactly one figure, a lone hunter (two players) moves two. The rules follow the figure count (`Rules::big_for`): 5 figures play 3/8/13/18/24 sightings with 5 shadow rides and 2 double moves; 4 figures every third round with 5/2; 3 figures every third round with 2/1; 2 figures every third round with 1/0. Bots win as the fugitive 43.0 / 45.6 / 48.7 / 49.5 % (`balance_sim.py` `game5`…`game2`, 1,500 games each).
+- Texts name players instead of piece numbers ("Ben ist dran", "Cem fährt mit dem Bus nach 166.", "Deine Figur · Feld 106" with the avatar's head); figure numbers and badges on the plan appear only for a lone hunter's two figures.
+- The city has six bridges (55–73, 58–76, 68–105, 83–101, 89–108, 117–135), drawn as stone decks; no street or bus crosses open water any more. Buses are drawn along the streets between their stops as a stripe. Totals: taxi 342, bus 89 on 63 stops, U-Bahn 20 on 14, ferry 3 on 4 piers.
+
 ## Spieltisch 0.180.0 — Every game on the shelf, in two halves
 
 **Added**
