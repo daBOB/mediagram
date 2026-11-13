@@ -1,6 +1,10 @@
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
 import { Token } from "../../ui/Token";
 
+/** A note line takes a seat's room: more than four seats, or more than two beside a note, go two to a row
+ * with a smaller code, so the panel still ends above the posters. */
+export const isCrowded = (seats: number, noted: boolean) => seats > (noted ? 2 : 4);
+
 /**
  * Who sits at the table and how to join: the code is big while nobody has, smaller once someone
  * has (latecomers walk up to it). The settings button below takes the remote's Up.
@@ -22,8 +26,7 @@ export function TablePanel({
   boardChip?: boolean;
 }) {
   const empty = players.length === 0;
-  // more than four: two columns of seats and a smaller code, so eight still end above the posters
-  const crowded = players.length > 4;
+  const crowded = isCrowded(players.length, filmsAway || boardChip !== undefined);
   return (
     <aside className={`table-panel${empty ? " is-empty" : ""}${crowded ? " is-crowded" : ""}`}>
       <figure className="table-qr">
