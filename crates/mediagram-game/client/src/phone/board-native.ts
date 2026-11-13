@@ -48,7 +48,7 @@ export function nativeShow(
 
 /**
  * Feeds the native board from what the box sends. A show goes out only when the screen's JSON changes;
- * a wait hides the board. Draws alone never show: they echo the board's own strokes, which it already has,
+ * a wait hides the board, and the next show after a hide resyncs. Draws alone never show: they echo the board's own strokes, which it already has,
  * and re-sending the whole drawing per op would grow with its square. After each Welcome the box sends the
  * drawing from 0 and then the screen, so the show for that screen carries `resync` even when it looks the
  * same as before: strokes drawn while the socket was down never reached the box, and the board must match
@@ -93,8 +93,9 @@ export class NativeBoardFeed {
   private push(screen: BoardScreen) {
     this.shown = JSON.stringify(screen);
     const show = nativeShow(screen, this.ink.ops, this.resync, this.serverNow(), Date.now());
-    if (!show) return hideBoard();
-    showBoard(show);
-    this.resync = false;
+    // after a hide the board may come back to a new game's turn of the same number: its old ink must go
+    this.resync = !show;
+    if (show) showBoard(show);
+    else hideBoard();
   }
 }

@@ -144,3 +144,14 @@ test("acts between a hello and the resync show are dropped, later ones are sent"
   feed.forward(ready);
   expect(sent).toEqual([{ t: "action", action: { t: "board", act: ready } }]);
 });
+
+test("the first show after a hide resyncs", () => {
+  const calls = fakeApp();
+  const feed = newFeed();
+  feed.welcome();
+  feed.board(handover(1));
+  feed.board(drawing(40_000));
+  feed.board(wait); // e.g. the game was abandoned; a new game's turn 1 must not keep the old ink
+  feed.board(handover(1));
+  expect(brief(calls)).toEqual([["handover", true, 0], ["drawing", false, 0], "hide", ["handover", true, 0]]);
+});
