@@ -57,6 +57,30 @@ fn a_night_repeats_no_article_until_the_list_runs_out() {
 }
 
 #[test]
+fn a_game_prices_at_most_one_of_three_sellers_hot_pots() {
+    let mut l = list(10);
+    // Known articles in the hot pots' band, so a second pick there would be a hot pot if it could.
+    l.articles.iter_mut().filter(|a| band_of(a.cents) == 2).for_each(|a| a.reviews = 4000);
+    let titles = [
+        "CIRONI Hot Pot Kupferkohle Chinesischer Kochtopf Suppe Alt Großer traditioneller Koch Kochen für ungewöhnliches Geschenk, Kupfer. (Größe: 28 cm)",
+        "Chinesischer Hot Pot,Kupfer Hot Pot, Chafing Dishes, chinesischer traditioneller Alter Holzkohle-Kupfer-Hot Pot, Pot Shabu, Camping, Heimgebrauch, Kochen, Kochen, for ungewöhnliches Geschenk(28cm)",
+        "Traditioneller alter chinesischer Peking-Hotpot aus Kupfer mit Holzkohle, Shabu-Topf, für den Heimgebrauch beim Camping, zum Kochen und für ungewöhnliche Geschenke (Farbe: Messing, Größe: 28 cm)",
+    ];
+    for (i, title) in titles.iter().enumerate() {
+        l.articles.push(Article { asin: format!("B0HOTPOT0{i}"), name: title.to_string(), title: title.to_string(), cents: 12_359, reviews: 0 });
+    }
+    let mut seconds = 0;
+    for seed in 0..40 {
+        let drawn = draw(&l, 6, &mut HashSet::new(), &mut StdRng::seed_from_u64(seed));
+        assert_eq!(drawn.len(), 6);
+        let hot_pots = drawn.iter().filter(|a| a.asin.starts_with("B0HOTPOT")).count();
+        assert_eq!(hot_pots, 1, "seed {seed}: the first pick in their band is a hot pot, and only that one");
+        seconds += usize::from(bands(&drawn).iter().filter(|&&b| b == 2).count() > 1);
+    }
+    assert!(seconds > 0, "some game took a second article from the hot pots' band");
+}
+
+#[test]
 fn an_empty_band_is_filled_from_the_nearest_one() {
     let mut l = list(4);
     l.articles.retain(|a| band_of(a.cents) != 3);

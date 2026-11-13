@@ -1,6 +1,6 @@
 use super::*;
-use crate::fluechtig_rules::Rules;
-use crate::protocol::{FluechtigOption, FluechtigPhone, FluechtigSeen, FluechtigTurn};
+use crate::fluechtig_rules::{Move, Rules};
+use crate::protocol::{FluechtigOption, FluechtigPhone, FluechtigSeen, FluechtigSide as Side, FluechtigTurn};
 
 pub(crate) const NAMES: [&str; 6] = ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay"];
 

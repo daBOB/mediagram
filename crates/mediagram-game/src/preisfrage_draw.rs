@@ -1,5 +1,6 @@
 //! Which articles a game prices: one from each price band and the rest from
-//! bands at random, articles nobody knows first, none twice in a night.
+//! bands at random, articles nobody knows first, none twice in a night and no
+//! two near-twins in one game.
 
 use std::collections::HashSet;
 
@@ -8,6 +9,7 @@ use rand::seq::{IndexedRandom, SliceRandom};
 
 use crate::articles::{Article, ArticleList};
 use crate::preisfrage_config::{FEW_REVIEWS, MIN_ARTICLES};
+use crate::preisfrage_twins::TitleWords;
 
 /// Where the bands end, in cents: 20, 50 and 150 €; the last band takes the rest.
 const BAND_TOPS: [u32; 3] = [2_000, 5_000, 15_000];
@@ -33,9 +35,14 @@ pub(crate) fn draw(list: &ArticleList, count: usize, used: &mut HashSet<String>,
     let mut wants: Vec<usize> = (0..BANDS).chain((BANDS..count).map(|_| rng.random_range(0..BANDS))).collect();
     wants.shuffle(rng);
     wants.truncate(count);
-    let mut drawn = Vec::new();
+    let words = TitleWords::of(&list.articles);
+    let mut drawn: Vec<Article> = Vec::new();
     for band in wants {
-        let left: Vec<&Article> = list.articles.iter().filter(|a| !used.contains(&a.asin)).collect();
+        let left: Vec<&Article> = list
+            .articles
+            .iter()
+            .filter(|a| !used.contains(&a.asin) && !drawn.iter().any(|d| words.twins(a, d)))
+            .collect();
         // The wanted band, else the nearest one that has any left.
         let Some(near) = (0..BANDS).map(|d| nearest(&left, band, d)).find(|c| !c.is_empty()) else { break };
         let unknown: Vec<&Article> = near.iter().copied().filter(|a| a.reviews < FEW_REVIEWS).collect();
