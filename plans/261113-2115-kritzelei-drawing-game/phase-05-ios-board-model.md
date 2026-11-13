@@ -18,6 +18,7 @@ Phase 06 only wires these to views.
 - `ios/controller/ControllerCore` already runs XCTest on Linux: `swift test` → "Executed 9 tests, with 0 failures".
 - Swift's `JSONEncoder` orders keys differently from serde. Compare JSON as parsed objects (`JSONSerialization`), not as strings.
 - The page sends snake_case keys (`ends_at_epoch_ms`, `left_ms`, `total_ms`, `can_go_back`). Use explicit `CodingKeys`, not a global key strategy, so the wire spelling stays visible.
+- `ControllerCore` compiles in Swift 6 mode (its `Package.swift` is tools 6.0). New types are value types and `Sendable` where they cross actors.
 - Paper style values must equal `client/src/ink/ink-style.ts` (phase 04), because the TV and the iPad draw the same strokes.
 
 ## Task 1: Wire types and paper style
@@ -34,8 +35,8 @@ public struct BoardPlayer: Codable, Equatable { public let id: Int; public let n
 public struct NativeClock: Codable, Equatable { public let endsAtEpochMs: Double?; public let leftMs: Double; public let totalMs: Double }
 public enum NativeScreen: Decodable, Equatable {                                                                                // "kind"
     case handover(turn: Int, drawer: BoardPlayer)
-    case drawing(turn: Int, word: String, clock: NativeClock)
-    case picking(turn: Int, word: String, clock: NativeClock, guessers: [BoardPlayer], canGoBack: Bool)
+    case drawing(turn: Int, drawer: BoardPlayer, word: String, clock: NativeClock)
+    case picking(turn: Int, drawer: BoardPlayer, word: String, clock: NativeClock, guessers: [BoardPlayer], canGoBack: Bool)
     public var turn: Int { get }
 }
 public struct NativeBoardShow: Decodable, Equatable { public let screen: NativeScreen; public let ops: [DrawOp]; public let resync: Bool }
@@ -56,7 +57,7 @@ public enum PaperStyle {
 - [ ] **Step 1: Failing tests:**
   - `testActsEncodeAsTheBoxReadsThem`: each `BoardAct`, parsed with `JSONSerialization`, equals the parsed form of the phase 02 strings: `{"t":"ready"}`, `{"t":"keep_drawing"}`, `{"t":"pick","player":3}`, `{"t":"pick","player":null}`, `{"t":"draw","op":{"t":"line","color":0,"width":1,"points":[10,20,30,40]}}`, `{"t":"draw","op":{"t":"undo"}}`.
   - `testAPickOfNobodySendsNull`: the key `player` is present with `NSNull`.
-  - `testTheShowDecodesFromThePage`: one JSON per screen kind, with snake_case clock keys and `ends_at_epoch_ms: null`, plus ops of all four kinds and `resync: true` → the expected values.
+  - `testTheShowDecodesFromThePage`: one JSON per screen kind (drawing and picking carry `drawer`), with snake_case clock keys and `ends_at_epoch_ms: null`, plus ops of all four kinds and `resync: true` → the expected values.
   - `testQuantizeClampsToThePaper`: (−5, 50) on 1000×562.5 → (0, 889); (1000, 0) → (10000, 0); (500, 281.25) → (5000, 5000).
   - `testTheEraserIsThreeTimesWider`: `lineWidth(color: 5, width: 1, paperWidth: 1000) == 30`, and colour 0 → 10.
 - [ ] **Step 2:** `cd ios/controller/ControllerCore && swift test` → FAIL (compile).
@@ -87,6 +88,8 @@ public struct InkModel {
     public init()
     public mutating func apply(_ op: DrawOp)
     /// Takes the box's drawing when `resync` or a new turn; keeps this board's own strokes otherwise. True when it replaced them.
+    /// Bumps `epoch` whenever strokes are replaced, undone or cleared, but not on an own append.
+    public private(set) var epoch: Int
     @discardableResult public mutating func show(turn: Int, ops: [DrawOp], resync: Bool) -> Bool
 }
 public enum BoardClock {
@@ -111,6 +114,7 @@ public enum BoardClock {
     - `testANewTurnTakesTheBoxDrawing`
     - `testTheSameTurnKeepsWhatThisBoardDrew` (show with other ops, resync false → strokes unchanged, returns false)
     - `testResyncTakesTheBoxDrawing`
+    - `testTheEpochMovesOnReplaceUndoAndClearButNotOnOwnStrokes`
   - Clock:
     - `testARunningClockCountsDown`: ends 100_000, now 40_000 → 60_000.
     - `testAPausedClockStands`

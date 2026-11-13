@@ -43,7 +43,8 @@ export function strokesOf(ops: DrawOp[]): Stroke[];
 export class InkLog {
   turn: number | null; ops: DrawOp[];
   apply(msg: { turn: number; from: number; ops: DrawOp[] }): "reset" | "append" | "ignored";
-  subscribe(fn: (change: "reset" | "append") => void): () => void;
+  /** "reset" = the drawing was replaced, repaint from scratch; "append" = ops[from..] are new, paint just those. */
+  subscribe(fn: (change: "reset" | "append", from: number) => void): () => void;
 }
 
 // paint-ink.ts
@@ -57,6 +58,7 @@ Round caps and joins. Smooth through the midpoints with `quadraticCurveTo`.
   - `from 0 starts afresh`
   - `a continuation appends`
   - `a gap is ignored` (from ≠ ops.length)
+  - `subscribers hear reset on a replacement and append with from on a continuation`
   - `a new turn from 0 resets`
   - `line then more is one stroke`
   - `undo drops the last stroke`
@@ -75,7 +77,7 @@ Round caps and joins. Smooth through the midpoints with `quadraticCurveTo`.
 
 **Interfaces:** `InkCanvas({ ink }: { ink: InkLog })` is a 16:9 canvas sized to its box at `devicePixelRatio`. It subscribes to `ink`:
 - `reset` → `paintAll`
-- `append` → `paintTail`, or `paintAll` when that returns false
+- `append` (with `from`) → `paintTail(ctx, ops, from, …)`, or `paintAll` when that returns false
 - a resize → `paintAll`
 
 **Layout (my call; the mockup's TV paper was near-square):** the paper is 16:9, about 1400 px wide at 1080p. Drawer avatar and name, the clock ring (from `useServerNow`) and the hint sit to its left; the scores sit to its right. Per stage:
@@ -103,7 +105,7 @@ When `scene.board` is false outside Final, a banner reads „Das Zeichenbrett is
 - With `ask` set: buzz when `prev` is null or its JSON differs from `next`.
 - Otherwise: `buzzFor(prev, next)`.
 
-`PhoneApp` calls it with `msg.view.buzz`.
+`PhoneApp` calls it with `msg.view.buzz`. That is a dispatch line only; the logic stays in `buzz-moments.ts`.
 
 - [ ] **Step 1: Failing tests:**
   - `an asked buzz fires once when the screen changes`: lobby → drawer's Wait with ask `turn` → `"turn"`; the same Wait again → `null`.
@@ -116,7 +118,7 @@ When `scene.board` is false outside Final, a banner reads „Das Zeichenbrett is
 **Files:**
 - Modify: `client/src/phone/app-bridge.ts`
 - Create: `client/src/phone/board-native.ts`, `client/src/phone/use-board-mode.ts`, `client/src/phone/BoardPage.tsx`
-- Modify: `client/src/phone/PhoneApp.tsx`, `client/src/phone/PhoneLobby.tsx`
+- Modify: `client/src/phone/PhoneApp.tsx` (dispatch lines only), `client/src/phone/PhoneLobby.tsx`
 - Test: `client/tests/app-bridge.test.ts`, `client/tests/board-native.test.ts`
 
 **Interfaces:**
@@ -132,8 +134,8 @@ export function listenToBoard(onAct: (act: BoardAct) => void): () => void;
 export type NativeClock = { ends_at_epoch_ms: number | null; left_ms: number; total_ms: number };
 export type NativeScreen =
   | { kind: "handover"; turn: number; drawer: BoardPlayer }
-  | { kind: "drawing"; turn: number; word: string; clock: NativeClock }
-  | { kind: "picking"; turn: number; word: string; clock: NativeClock; guessers: BoardPlayer[]; can_go_back: boolean };
+  | { kind: "drawing"; turn: number; drawer: BoardPlayer; word: string; clock: NativeClock }
+  | { kind: "picking"; turn: number; drawer: BoardPlayer; word: string; clock: NativeClock; guessers: BoardPlayer[]; can_go_back: boolean };
 export type NativeBoardShow = { screen: NativeScreen; ops: DrawOp[]; resync: boolean };
 /** What the app shows for `screen`, or null when the page draws it (wait). */
 export function nativeShow(screen: BoardScreen, ops: DrawOp[], resync: boolean, serverNow: number, dateNow: number): NativeBoardShow | null;
@@ -151,9 +153,10 @@ export function useBoardMode(): {
 - `BoardPage({ mode, conn, onLeave })`:
   - It always forwards board acts as `{ t: "action", action: { t: "board", act } }`.
   - On every change of `JSON.stringify(screen)` it calls `showBoard(nativeShow(…))` and then sets `resync.current = false`, or `hideBoard()` for a wait screen. It also hides on unmount.
+  - The first board screen after each (re)connection is shown with `resync: true` even when its JSON is unchanged. `use-board-mode.ts` bumps a counter on every Welcome, and `BoardPage` keys the show on the screen JSON and that counter.
   - Wait screens render like `Centered`, plus a „Doch mitspielen“ button when `can_leave`.
 - `PhoneLobby` gets `onBecomeBoard`. It shows „Als Zeichenbrett verwenden“ only when `boardCapable() && screen.settings.game === "kritzelei"`.
-- `PhoneApp`:
+- `PhoneApp` gets dispatch lines only; the logic lives in `use-board-mode.ts` and `BoardPage.tsx`:
   - the hello is `mode.hello()` while `asBoard`
   - messages go through `mode.onMessage` first
   - it renders `BoardPage` while `asBoard`
@@ -167,6 +170,7 @@ export function useBoardMode(): {
     - turns a running clock into wall time (serverNow 10_000, dateNow 1_700_000_000_000, ends_at 40_000 → 1_700_000_030_000)
     - keeps a paused clock paused
     - carries the ops and the resync flag
+  - `a_reconnect_reshows_an_unchanged_screen_with_resync` (in `use-board-mode`'s tests, or `board-native.test.ts`): the same board screen after a second Welcome yields a show with `resync: true`, then the next change `false`.
 - [ ] **Step 2–4:** FAIL → implement → PASS, typecheck clean.
 - [ ] **Step 5: Commit** — `feat(spieltisch): an iPad's page can become the drawing board`.
 
@@ -196,7 +200,7 @@ No code. Verification uses gstack `/browse`, never the Chrome MCP tools.
   - the word shows nowhere but `__shown` until the reveal
   - Bo's phone reads „Richtig!“ +2
   - after 6 s, turn 2 begins on a blank paper
-- [ ] **Step 5:** Reload the TV tab mid-turn. Expected: the whole drawing comes back. Reload Cy mid-turn (re-inject the bridge). Expected: the last `__shown` entry has `resync: true` and all the turn's ops.
+- [ ] **Step 5:** Reload the TV tab mid-turn. Expected: the whole drawing comes back. Drop Cy's socket mid-turn without reloading (a reload would kill the fake bridge and its memory). Before the page loads, wrap `window.WebSocket` to keep the instance (`window.__ws`); `Connection.ws` is private (`net.ts`). Then run `window.__ws.close()` and let `net.ts` reconnect. Expected: the last `__shown` entry has `resync: true` and all the turn's ops. Reload and app-kill recovery is walked on the real iPad in phase 06 Task 4.
 - [ ] **Step 6:** Play to the ceremony. Write findings in `plans/261113-2115-kritzelei-drawing-game/reports/web-walk-report.md`, then fix anything wrong (TDD, its own commit).
 
 ## Success criteria

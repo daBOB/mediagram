@@ -6,15 +6,15 @@
 
 **Architecture:** The box gains a third role, the board, held by the iPad's phone page. The page drives a native SwiftUI/UIKit board over the `window.mediagramApp` bridge and forwards its strokes to the box on its one WebSocket. The box keeps each turn's drawing as an append-only list of ops and sends TV and board only what was added (`ServerMsg::Draw`), outside the snapshot views.
 
-**Tech Stack:** Rust (mediagram-game, ts-rs), React/TS (game client, bun test), Swift 6 toolchain in Swift 5 mode (xtool, ControllerCore with XCTest on Linux).
+**Tech Stack:** Rust (mediagram-game, ts-rs), React/TS (game client, bun test), Swift 6 toolchain (xtool; app target in Swift 5 mode, ControllerCore in Swift 6 mode with XCTest on Linux).
 
 **Spec:** `docs/superpowers/specs/2026-11-13-kritzelei-drawing-game-design.md`, look: `docs/superpowers/specs/2026-11-13-kritzelei-look.html` (layout A).
 
 ## Global Constraints
 
-- Build in a worktree `../mediagram-kritzelei` on `feat/kritzelei`, cut from `main`, merged back to `main`.
+- Build in the worktree `/home/andre/Workspace/spieltisch/mediagram-kritzelei` on `feat/kritzelei`, cut from `main`, merged back to `main`.
 - The drawing iPad: iPad (5th gen) `iPad6,11`, iOS 16.7.12, udid `82f1e9524ba059e46e46f8f458e6e3530ed3ae3d`. Finger only: no Pencil, no pressure.
-- iOS app stays `.iOS(.v16)`, Swift 5 language mode. UIKit/WebKit only in `Sources/Spieltisch`, pure logic in `ControllerCore` (runs `swift test` on Linux).
+- iOS app stays `.iOS(.v16)`; the app target is in Swift 5 language mode. ControllerCore stays as configured (tools 6.0, Swift 6 mode), so its new types must compile in Swift 6 mode (value types, `Sendable` where needed). UIKit/WebKit only in `Sources/Spieltisch`, pure logic in `ControllerCore` (runs `swift test` on Linux).
 - Paper 16:9. Points are x,y pairs, each `0..=10000` of paper width/height. Colours `#1b1b1b #d8342b #2c6bed #2f9e44 #f2a20e`, index 5 = eraser in paper colour `#fbf8f1`. Widths as a fraction of paper width `[0.005, 0.01, 0.017]`, the eraser 3× wider.
 - Clock 90 s, reveal 6 s, guesser +2, drawer +1, two rounds below 5 players, minimum 2 players.
 - The word reaches only the board until the reveal. Never in a TV scene or phone screen before it.
