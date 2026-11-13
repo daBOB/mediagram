@@ -1,8 +1,10 @@
 // What the page hands the iPad app's native drawing board, and when.
 
 import { InkLog } from "../ink/ink-log";
+import type { BoardAct } from "../protocol/BoardAct";
 import type { BoardPlayer } from "../protocol/BoardPlayer";
 import type { BoardScreen } from "../protocol/BoardScreen";
+import type { ClientMsg } from "../protocol/ClientMsg";
 import type { Clock } from "../protocol/Clock";
 import type { DrawOp } from "../protocol/DrawOp";
 import { hideBoard, showBoard } from "./app-bridge";
@@ -50,7 +52,8 @@ export function nativeShow(
  * and re-sending the whole drawing per op would grow with its square. After each Welcome the box sends the
  * drawing from 0 and then the screen, so the show for that screen carries `resync` even when it looks the
  * same as before: strokes drawn while the socket was down never reached the box, and the board must match
- * the TV again.
+ * the TV again. Until that show goes out the board's acts are dropped: the box would apply them after
+ * building the resync show, so the TV would keep strokes the board throws away.
  */
 export class NativeBoardFeed {
   readonly ink = new InkLog();
@@ -58,8 +61,12 @@ export class NativeBoardFeed {
   private shown: string | null = null;
   private resync = true;
 
-  constructor(private serverNow: () => number) {}
+  constructor(
+    private serverNow: () => number,
+    private send: (msg: ClientMsg) => void,
+  ) {}
 
+  /** On the hello and again on the Welcome: nothing for the board arrives between the two. */
   welcome() {
     this.resync = true;
     this.shown = null;
@@ -72,6 +79,10 @@ export class NativeBoardFeed {
   draw(msg: { turn: number; from: number; ops: DrawOp[] }) {
     this.ink.apply(msg);
   }
+
+  forward = (act: BoardAct) => {
+    if (!this.resync) this.send({ t: "action", action: { t: "board", act } });
+  };
 
   /** Board mode ends: the native board goes away. */
   stop() {

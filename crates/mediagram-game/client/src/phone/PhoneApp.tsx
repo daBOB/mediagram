@@ -100,7 +100,7 @@ export function PhoneApp() {
   return (
     <main className="phone">
       {mode.asBoard ? (
-        <BoardPage screen={mode.screen} conn={conn} onLeave={mode.leave} />
+        <BoardPage screen={mode.screen} forward={mode.forward} onLeave={mode.leave} />
       ) : !joined ? (
         <JoinScreen name={name} setName={setName} onJoin={join} disabled={status !== "open"} />
       ) : view ? (

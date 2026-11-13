@@ -1,8 +1,10 @@
 // Run with `bun test` in crates/mediagram-game/client.
 import { afterEach, expect, test } from "bun:test";
 import { NativeBoardFeed, nativeShow, type NativeBoardShow } from "../src/phone/board-native";
+import type { BoardAct } from "../src/protocol/BoardAct";
 import type { BoardPlayer } from "../src/protocol/BoardPlayer";
 import type { BoardScreen } from "../src/protocol/BoardScreen";
+import type { ClientMsg } from "../src/protocol/ClientMsg";
 import type { DrawOp } from "../src/protocol/DrawOp";
 
 const g = globalThis as Record<string, unknown>;
@@ -30,6 +32,7 @@ function fakeApp() {
   };
   return calls;
 }
+const newFeed = (sent: ClientMsg[] = []) => new NativeBoardFeed(() => 10_000, (msg) => sent.push(msg));
 const brief = (calls: (NativeBoardShow | "hide")[]) =>
   calls.map((c) => (c === "hide" ? c : [c.screen.kind, c.resync, c.ops.length]));
 
@@ -83,7 +86,7 @@ test("a show carries the ops and the resync flag", () => {
 
 test("a reconnect reshows an unchanged screen with resync", () => {
   const calls = fakeApp();
-  const feed = new NativeBoardFeed(() => 10_000);
+  const feed = newFeed();
   feed.welcome();
   feed.board(handover(1));
   feed.board(handover(1)); // the box sending the same screen again shows nothing
@@ -104,7 +107,7 @@ test("a reconnect reshows an unchanged screen with resync", () => {
 
 test("echoed draws under an unchanged screen show nothing; a screen change carries the current ops", () => {
   const calls = fakeApp();
-  const feed = new NativeBoardFeed(() => 10_000);
+  const feed = newFeed();
   feed.welcome();
   feed.board(drawing(40_000));
   feed.draw({ turn: 1, from: 0, ops: [line] });
@@ -119,11 +122,25 @@ test("echoed draws under an unchanged screen show nothing; a screen change carri
 
 test("a wait hides the board and the first native show after the Welcome still resyncs", () => {
   const calls = fakeApp();
-  const feed = new NativeBoardFeed(() => 10_000);
+  const feed = newFeed();
   feed.welcome();
   feed.board(wait);
   feed.draw({ turn: 1, from: 0, ops: [] }); // a draw under a wait shows nothing
   feed.board(handover(1));
   feed.stop();
   expect(brief(calls)).toEqual(["hide", ["handover", true, 0], "hide"]);
+});
+
+test("acts between a hello and the resync show are dropped, later ones are sent", () => {
+  fakeApp();
+  const sent: ClientMsg[] = [];
+  const feed = newFeed(sent);
+  const ready: BoardAct = { t: "ready" };
+  feed.welcome(); // the hello
+  feed.forward({ t: "draw", op: more }); // the box applies it after the resync show was built: the TV would keep it
+  feed.welcome(); // the Welcome
+  feed.draw({ turn: 1, from: 0, ops: [line] });
+  feed.board(handover(1));
+  feed.forward(ready);
+  expect(sent).toEqual([{ t: "action", action: { t: "board", act: ready } }]);
 });

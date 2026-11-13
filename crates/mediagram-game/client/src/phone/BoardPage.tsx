@@ -1,13 +1,13 @@
 import { useEffect } from "react";
-import type { Connection } from "../net";
+import type { BoardAct } from "../protocol/BoardAct";
 import type { BoardScreen } from "../protocol/BoardScreen";
 import { listenToBoard } from "./app-bridge";
 
-type Props = { screen: BoardScreen | null; conn: Connection; onLeave: () => void };
+type Props = { screen: BoardScreen | null; forward: (act: BoardAct) => void; onLeave: () => void };
 
 /** The page under the native board: it passes the board's acts to the box and draws the waits itself. */
-export function BoardPage({ screen, conn, onLeave }: Props) {
-  useEffect(() => listenToBoard((act) => conn.send({ t: "action", action: { t: "board", act } })), [conn]);
+export function BoardPage({ screen, forward, onLeave }: Props) {
+  useEffect(() => listenToBoard(forward), [forward]);
 
   const wait = screen?.kind === "wait" ? screen : null;
   return (

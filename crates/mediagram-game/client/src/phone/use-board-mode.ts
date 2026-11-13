@@ -19,7 +19,7 @@ export function useBoardMode(conn: Connection) {
   const welcomed = useRef(false);
   const [asBoard, setAsBoard] = useState(on.current);
   const [screen, setScreen] = useState<BoardScreen | null>(null);
-  const feed = useMemo(() => new NativeBoardFeed(() => conn.serverNow()), [conn]);
+  const feed = useMemo(() => new NativeBoardFeed(() => conn.serverNow(), (msg) => conn.send(msg)), [conn]);
 
   const turn = (board: boolean) => {
     on.current = board;
@@ -45,6 +45,7 @@ export function useBoardMode(conn: Connection) {
   const hello = (): ClientMsg | null => {
     if (!on.current) return null;
     welcomed.current = false;
+    feed.welcome();
     return { t: "hello", role: "board", name: null, token: memory.get(BOARD_TOKEN_KEY) };
   };
 
@@ -73,5 +74,5 @@ export function useBoardMode(conn: Connection) {
     }
   };
 
-  return { asBoard, screen, hello, onMessage, become, leave };
+  return { asBoard, screen, hello, onMessage, become, leave, forward: feed.forward };
 }
