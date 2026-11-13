@@ -55,7 +55,10 @@ chmod 600 ~/.ssh/authorized_keys
 grep -qF "$DEV_KEY" ~/.ssh/authorized_keys || echo "$DEV_KEY" >>~/.ssh/authorized_keys
 
 step "packages (and the rest of the system up to date)"
-sudo pacman -Syu --needed --noconfirm plasma-bigscreen waydroid chromium git rustup bun ffmpeg swayidle
+sudo pacman -Syu --needed --noconfirm plasma-bigscreen waydroid chromium git rustup bun ffmpeg swayidle avahi
+
+step "announced on the network as $(hostname).local"
+sudo systemctl enable --now avahi-daemon
 
 step "mediagram source (public repo, updated on every run)"
 [ -d "$REPO/.git" ] || git clone "$REPO_URL" "$REPO"
@@ -78,7 +81,7 @@ sudo systemctl enable mediagram-cache
 # restart, not just start: a re-run that pulled new code must load the new binary.
 sudo systemctl restart mediagram-cache
 
-step "web player on port 8770"
+step "web player on port 8770, and on 80 for a bare http://funstation.local"
 (cd "$REPO/web" && bun install --frozen-lockfile)
 mkdir -p ~/.cache ~/.local/share/mediagram-player ~/.local/share/mediagram
 # The player's own Telegram session and the library channel, kept root-only and never
@@ -161,6 +164,34 @@ sudo systemctl enable mediagram-player
 sudo systemctl restart mediagram-player
 sudo ufw allow 7788/tcp comment "mediagram cache server"
 sudo ufw allow 8770/tcp comment "mediagram web player"
+# A browser given the bare name (http://funstation.local) asks port 80. The kernel hands
+# that to the player rather than a proxy relaying it, so the player still sees each
+# viewer's own address, which decides direct play and who may see its panel. A table of
+# its own, which ufw leaves alone; nftables.service stays off, its config flushes ufw's too.
+sudo tee /etc/funstation-http.nft >/dev/null <<'EOF'
+destroy table inet funstation_http
+table inet funstation_http {
+  chain prerouting {
+    type nat hook prerouting priority dstnat; policy accept;
+    fib daddr type local tcp dport 80 redirect to :8770
+  }
+}
+EOF
+sudo tee /etc/systemd/system/funstation-http.service >/dev/null <<'EOF'
+[Unit]
+Description=Port 80 reaches the mediagram web player
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/bin/nft -f /etc/funstation-http.nft
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable funstation-http
+sudo systemctl restart funstation-http
 
 step "Plasma never dims, blanks, sleeps or locks: funstation's own idle step below darkens it"
 kwriteconfig6 --file powerdevilrc --group AC --group SuspendAndShutdown --key AutoSuspendAction 0
@@ -320,6 +351,49 @@ systemctl --user enable funstation-idle.service
 if waydroid status 2>/dev/null | grep -q 'Session:.*RUNNING'; then
   sudo waydroid shell -- pm disable-user --user 0 com.google.android.apps.mediashell >/dev/null
 fi
+
+step "the remote's battery at the foot of the mediagram rail"
+# Android under WayDroid cannot see the Bluetooth remote, which is paired to this host.
+# UPower reads its battery here, and the app takes the number from a broadcast that only
+# root and the shell may send; a device nobody tells, like the TV box, never shows one.
+mkdir -p ~/.local/bin
+cat >~/.local/bin/funstation-remote-battery <<'EOF'
+#!/usr/bin/env bash
+# Sent when it changes, and every ten minutes for an app that was not running to hear it.
+last='' sent=0
+while :; do
+  pct=''
+  for dev in $(upower -e); do
+    info=$(upower -i "$dev")
+    if grep -qi 'model:.*remote' <<<"$info"; then
+      pct=$(awk '/percentage:/ { print int($2); exit }' <<<"$info")
+      break
+    fi
+  done
+  now=$(date +%s)
+  if [ -n "$pct" ] && { [ "$pct" != "$last" ] || [ $((now - sent)) -ge 600 ]; }; then
+    sudo -n waydroid shell -- am broadcast -a com.mediagram.android.REMOTE_BATTERY \
+      -p com.mediagram.android --ei percent "$pct" >/dev/null 2>&1 && { last=$pct; sent=$now; }
+  fi
+  sleep 60
+done
+EOF
+chmod +x ~/.local/bin/funstation-remote-battery
+cat >~/.config/systemd/user/funstation-remote-battery.service <<'EOF'
+[Unit]
+Description=The TV remote's battery, handed to the mediagram app in Android
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=%h/.local/bin/funstation-remote-battery
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+systemctl --user daemon-reload 2>/dev/null || true
+systemctl --user enable funstation-remote-battery.service
 
 step "Bluetooth on the USB stick only"
 # The remote and controllers pair on a USB Bluetooth stick (the user's choice). With the

@@ -30,6 +30,17 @@ to `main`. Full phase-by-phase detail lives in
 - The art moved from `res/drawable-nodpi/game_{poster,backdrop}_<kind>.webp` to `assets/game-art/{poster,backdrop}-<kind>.webp` (kind with dashes), served to the page at `/game-art/` by `GamePageClient` like the ceremony avatars, so it is not embedded once per ABI with the web client. A game without art shows its name on the felt; so does every game on the dev host.
 - "The library's films aren't available right now" is now on the page (`?films=0`): "Die Filme der Mediathek sind gerade nicht erreichbar."
 
+## 0.180.0 — The remote's battery on funstation
+
+**Added**
+
+- On funstation, the foot of the TV rail shows the Bluetooth remote's battery: a remote icon over its percentage. Android under WayDroid cannot see the remote, which is paired to the Linux host, so the host's `funstation-remote-battery` user service (from `scripts/setup-funstation.sh`) reads it from UPower and hands it to the app with a broadcast that only root and the shell may send: on a change, and every ten minutes. The app keeps the last number across launches. Funstation only, deliberately: the TV box, phones and the web player are never told a number and show nothing.
+
+**Fixed**
+
+- A scene clip no longer carries the film's chapter at the cut as a text track of its own (`-map_chapters -1`).
+- funstation answers as `funstation.local` and on port 80 (avahi, and an nftables redirect to the web player's 8770).
+
 ## 0.179.0 — Clip a scene
 
 **Added**

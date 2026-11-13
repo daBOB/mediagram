@@ -88,6 +88,8 @@ export function clipArgs(request: ClipRequest): string[] {
   // Named explicitly for the reasons given in `transcodeArgs`: the default
   // "best" audio is often a commentary, and a subtitle track can stall.
   args.push("-map", "0:v:0", "-map", `0:a:${request.audioTrack}`, "-sn", "-dn");
+  // The MP4 muxer would turn the film's chapter at the cut into a text track of its own.
+  args.push("-map_chapters", "-1");
 
   args.push(
     "-vf",

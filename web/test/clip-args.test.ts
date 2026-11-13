@@ -41,6 +41,10 @@ describe("clipArgs", () => {
     expect(args).toContain("-dn");
   });
 
+  test("carries none of the film's chapters", () => {
+    expect(valueOf(argsFor(), "-map_chapters")).toBe("-1");
+  });
+
   test("encodes H.264 and stereo AAC into a fast-start MP4", () => {
     const args = argsFor();
     expect(valueOf(args, "-c:v")).toBe("libx264");

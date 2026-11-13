@@ -105,6 +105,7 @@ internal fun TvLibraryRail(
     var expanded by remember { mutableStateOf(false) }
     val width by animateDpAsState(if (expanded) RailOpenWidth else RailCollapsedWidth, label = "tvRailWidth")
     val tones = LocalCatalogueTones.current
+    val remoteBattery = rememberRemoteBattery()
 
     Column(
         modifier =
@@ -125,7 +126,30 @@ internal fun TvLibraryRail(
                         }
                     }
                 }
-                .focusGroup()
+                .focusGroup(),
+    ) {
+        RailRows(expanded, active, counts, tally, rowRequesters, onSelect, Modifier.weight(1f))
+        if (remoteBattery != null) {
+            // Under the icon column at either width, so opening the rail leaves it where it was.
+            TvRemoteBattery(remoteBattery, Modifier.width(RailCollapsedWidth).padding(bottom = Overscan.vertical))
+        }
+    }
+}
+
+@Composable
+private fun RailRows(
+    expanded: Boolean,
+    active: RailItem?,
+    counts: ChromeCounts,
+    tally: List<String>,
+    rowRequesters: Map<RailItem, FocusRequester>,
+    onSelect: (RailItem) -> Unit,
+    modifier: Modifier,
+) {
+    val tones = LocalCatalogueTones.current
+    Column(
+        modifier =
+            modifier
                 .verticalScroll(rememberScrollState())
                 // Top and bottom on the screen's vertical overscan, not the web's 26 / 28.
                 .padding(start = RailSide, end = RailSide, top = Overscan.vertical, bottom = Overscan.vertical),
