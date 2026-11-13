@@ -64,6 +64,7 @@ mod preisfrage_config;
 mod preisfrage_draw;
 mod preisfrage_rules;
 mod preisfrage_views;
+mod kritzelei_words;
 mod quiz;
 mod quiz_config;
 mod quiz_mix;
