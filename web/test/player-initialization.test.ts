@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
+import * as state from "../public/lib/watch-state.js";
 import { browserEnvironment, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment> | null = null;
@@ -84,4 +85,45 @@ test("with the clip panel open, a and b set its ends to the playhead", async () 
   env.video.currentTime = 100;
   press("a");
   expect(times()).toEqual(["1:40", "2:10"]);
+});
+
+test("clip mode saves no position on a grown-up's profile, still saves a kid's, and leaving it saves again", async () => {
+  env = browserEnvironment();
+  env.respondWith(async (url) => {
+    if (url === "/api/profiles") return Response.json({ profiles: [{ id: "grown", name: "G" }, { id: "kid", name: "K", kids: true }] });
+    if (url.endsWith("/state")) return Response.json({});
+    return new Response(null, { status: 204 });
+  });
+  await state.loadProfiles();
+  const player = await freshPlayer();
+  player.initializePlayer();
+  const press = (key: string) => env!.node("player").dispatchEvent(Object.assign(new Event("keydown", { cancelable: true }), { key }));
+  const saved = () => env!.requests.filter((r) => r.url.includes("/progress/") && r.options?.method === "PUT").length;
+  /** Positions written over one ten-second save tick while playing. */
+  const tick = async () => {
+    const before = saved();
+    env!.advance(10_000);
+    await settle();
+    return saved() - before;
+  };
+  try {
+    for (const [profile, kids] of [["grown", false], ["kid", true]] as const) {
+      await state.useProfile(profile);
+      expect(state.profile()?.kids === true).toBe(kids);
+      player.openPlayer({ setId: "one", container: "mp4", vcodec: "h264", acodec: "aac", duration: 600 });
+      await settle();
+      env.video.currentTime = 100;
+      env.video.paused = false;
+      expect(await tick()).toBe(1);
+      press("x");
+      // A daily limit counts a kid's minutes from these writes, so clipping must not stop them.
+      expect(await tick()).toBe(kids ? 1 : 0);
+      press("x");
+      expect(await tick()).toBe(1);
+      env.node("player").close();
+      await settle();
+    }
+  } finally {
+    await state.useProfile(null);
+  }
 });
