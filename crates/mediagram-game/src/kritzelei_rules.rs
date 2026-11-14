@@ -2,7 +2,7 @@
 
 use crate::game::ActionError;
 use crate::kritzelei_config::KritzeleiConfig;
-use crate::protocol::PlayerId;
+use crate::protocol::{GameLength, PlayerId};
 use crate::protocol_board::DrawOp;
 use crate::Player;
 
@@ -12,10 +12,11 @@ const COLOURS: u8 = 6;
 const WIDTHS: u8 = 3;
 const COORD_MAX: u16 = 10_000;
 
-/// Connected players at the start, in seat order, twice when fewer than `two_rounds_below`.
-pub(crate) fn turn_order(players: &[Player], two_rounds_below: usize) -> Vec<PlayerId> {
+/// Connected players at the start, in seat order: twice round the table when fewer than
+/// `two_rounds_below`, else once, and that scaled by the lobby's length.
+pub(crate) fn turn_order(players: &[Player], two_rounds_below: usize, length: GameLength) -> Vec<PlayerId> {
     let once: Vec<PlayerId> = players.iter().filter(|p| p.connected()).map(|p| p.id).collect();
-    if once.len() < two_rounds_below { [once.clone(), once].concat() } else { once }
+    once.repeat(length.scale(if once.len() < two_rounds_below { 2 } else { 1 }))
 }
 
 fn readable(points: &[u16], cfg: &KritzeleiConfig) -> bool {

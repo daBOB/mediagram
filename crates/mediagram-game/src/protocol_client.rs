@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::protocol::{BoardAct, GameKind, GameSpeed, QuizMode, ServerTime};
+use crate::protocol::{BoardAct, GameKind, GameLength, GameSpeed, QuizMode, ServerTime};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
@@ -50,6 +50,9 @@ pub enum Action {
         /// Older clients leave it out: normal.
         #[serde(default)]
         speed: GameSpeed,
+        /// Older clients leave it out: normal.
+        #[serde(default)]
+        length: GameLength,
         kids_only: bool,
     },
     StartGame,

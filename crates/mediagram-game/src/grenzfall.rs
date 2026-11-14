@@ -32,20 +32,29 @@ pub(crate) struct Country {
 pub(crate) static COUNTRIES: LazyLock<Vec<Country>> =
     LazyLock::new(|| serde_json::from_str(include_str!("../questions/laender.json")).expect("bundled outlines parse"));
 
-/// The tier of each round, in the order they are asked.
-const TIERS: [u8; 10] = [1, 1, 1, 2, 2, 2, 2, 3, 3, 3];
+/// Rounds at normal length: three well-known shapes, four middle ones, three hard ones.
+const ROUNDS: usize = 10;
 
 pub fn grenzfall_config() -> QuizConfig {
-    QuizConfig { rounds: TIERS.len(), ..QuizConfig::default() }
+    QuizConfig { rounds: ROUNDS, ..QuizConfig::default() }
 }
 
-/// A game's questions, easiest first. Countries shown tonight (`used`) come
+/// The tier of each of `rounds` rounds, easiest first: three tenths well-known,
+/// three tenths hard, the middle ones between.
+pub(crate) fn tiers(rounds: usize) -> Vec<u8> {
+    let outer = (rounds * 3 + 5) / 10;
+    let middle = rounds.saturating_sub(2 * outer);
+    [(1, outer), (2, middle), (3, outer)].into_iter().flat_map(|(tier, n)| std::iter::repeat_n(tier, n)).collect()
+}
+
+/// A game's `rounds` questions, easiest first. Countries shown tonight (`used`) come
 /// back only once their tier has none left; then the tier starts over, the
 /// ones not yet shown first.
-pub fn grenzfall_questions(rng: &mut impl Rng, used: &mut HashSet<String>) -> Vec<Question> {
+pub fn grenzfall_questions(rounds: usize, rng: &mut impl Rng, used: &mut HashSet<String>) -> Vec<Question> {
+    let tiers = tiers(rounds);
     let mut asked: Vec<&Country> = Vec::new();
     for tier in 1..=3 {
-        let wanted = TIERS.iter().filter(|&&t| t == tier).count();
+        let wanted = tiers.iter().filter(|&&t| t == tier).count();
         let in_tier = || COUNTRIES.iter().filter(move |c| c.tier == tier);
         let mut fresh: Vec<&Country> = in_tier().filter(|c| !used.contains(&shown_key(c))).collect();
         fresh.shuffle(rng);

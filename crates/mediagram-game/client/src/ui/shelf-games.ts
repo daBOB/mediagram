@@ -25,7 +25,7 @@ export type ShelfItem = {
 
 /** What the shelf says about each game the host offers. No wildcard: a new game does not compile without its text. */
 const PLAYABLE: Record<GameKind, { blurb: string; group: ShelfGroup }> = {
-  quiz: { group: "mini", blurb: "Acht Runden Fragen aus Filmen, Allgemeinwissen oder beidem. Wer zuerst richtig drückt, holt die meisten Punkte." },
+  quiz: { group: "mini", blurb: "Fragen aus Filmen, Allgemeinwissen oder beidem. Wer zuerst richtig drückt, holt die meisten Punkte." },
   poster: { group: "mini", blurb: "Ein Film- oder Serienplakat wird Schritt für Schritt schärfer. Wer es zuerst erkennt, gewinnt die Runde – falsch getippt heißt aussetzen." },
   grenzfall: { group: "mini", blurb: "Auf dem Fernseher erscheint nur der Umriss eines Landes. Welches ist es? Erst die bekannten, am Ende die kniffligen – je schneller richtig, desto mehr Punkte." },
   zuendstoff: { group: "mini", blurb: "Eine Bombe mit verstecktem Zünder wandert von Handy zu Handy. Nur wer seine Frage richtig beantwortet, darf sie weiterwerfen – an wen er will. Wer sie beim Knall hält, verliert ein Leben." },

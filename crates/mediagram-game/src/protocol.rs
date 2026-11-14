@@ -36,7 +36,7 @@ pub use crate::protocol_zuendstoff::{ZuendstoffScene, ZuendstoffSeat, Zuendstoff
 pub use crate::protocol_preisfrage::{ArticleView, PreisfrageScene, PreisfrageStage, PriceKeypad, PriceRow, PriceStanding};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
-pub use crate::protocol_settings::{GameKind, GameSpeed, LobbySettings, QuizMode};
+pub use crate::protocol_settings::{GameKind, GameLength, GameSpeed, LobbySettings, QuizMode};
 pub use crate::protocol_tv::{TvScene, TvView};
 
 pub type PlayerId = u8;

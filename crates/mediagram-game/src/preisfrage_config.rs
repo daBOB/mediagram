@@ -1,6 +1,6 @@
 //! Preisfrage's numbers, in one place.
 
-use crate::protocol::{GameSpeed, ServerTime};
+use crate::protocol::{GameLength, GameSpeed, ServerTime};
 
 /// Fewer articles than this and the lobby says the game needs some.
 pub(crate) const MIN_ARTICLES: usize = 3;
@@ -27,6 +27,12 @@ impl Default for PreisfrageConfig {
 }
 
 impl PreisfrageConfig {
+    /// At the lobby's length: the number of articles.
+    pub fn sized(mut self, length: GameLength) -> Self {
+        self.rounds = length.scale(self.rounds);
+        self
+    }
+
     /// At the lobby's tempo: 2 min to guess, 1 min, or 30 s.
     pub fn at(mut self, speed: GameSpeed) -> Self {
         self.guess_ms = speed.stretch(self.guess_ms);

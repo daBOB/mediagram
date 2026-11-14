@@ -1,3 +1,4 @@
+use crate::protocol::GameLength::{Long, Normal, Short};
 use super::*;
 
 fn table(n: u8, offline: &[u8]) -> Vec<Player> {
@@ -14,17 +15,17 @@ fn refused(r: Result<usize, ActionError>) -> bool {
 
 #[test]
 fn turns_go_round_the_table_twice_below_five() {
-    assert_eq!(turn_order(&table(3, &[]), 5), [0, 1, 2, 0, 1, 2]);
+    assert_eq!(turn_order(&table(3, &[]), 5, Normal), [0, 1, 2, 0, 1, 2]);
 }
 
 #[test]
 fn five_players_draw_once_each() {
-    assert_eq!(turn_order(&table(5, &[]), 5), [0, 1, 2, 3, 4]);
+    assert_eq!(turn_order(&table(5, &[]), 5, Normal), [0, 1, 2, 3, 4]);
 }
 
 #[test]
 fn a_disconnected_player_at_the_start_is_left_out() {
-    assert_eq!(turn_order(&table(4, &[1]), 5), [0, 2, 3, 0, 2, 3]);
+    assert_eq!(turn_order(&table(4, &[1]), 5, Normal), [0, 2, 3, 0, 2, 3]);
 }
 
 #[test]
@@ -69,4 +70,12 @@ fn undo_and_clear_always_pass() {
     let cfg = KritzeleiConfig::default();
     assert_eq!(check_op(&DrawOp::Undo, &[], 20_000, &cfg), Ok(0));
     assert_eq!(check_op(&DrawOp::Clear, &[], 20_000, &cfg), Ok(0));
+}
+
+#[test]
+fn the_lobby_length_sets_how_often_everyone_draws() {
+    assert_eq!(turn_order(&table(3, &[]), 5, Short), [0, 1, 2], "once round a small table");
+    assert_eq!(turn_order(&table(3, &[]), 5, Long), [0, 1, 2, 0, 1, 2, 0, 1, 2], "three times");
+    assert_eq!(turn_order(&table(5, &[]), 5, Short), [0, 1, 2, 3, 4], "never less than once");
+    assert_eq!(turn_order(&table(5, &[]), 5, Long), [0, 1, 2, 3, 4, 0, 1, 2, 3, 4], "twice round a big table");
 }

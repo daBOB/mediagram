@@ -28,6 +28,10 @@
   line-height: 1.05;
 }
 
+.choice-label {
+  margin: 0.2rem 0.2rem 0.35rem;
+}
+
 .seg {
   display: flex;
   gap: 0.3rem;

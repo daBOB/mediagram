@@ -20,17 +20,17 @@ fn every_bundled_outline_has_a_unique_name_a_tier_and_a_path() {
     }
     for tier in 1..=3 {
         let in_tier = COUNTRIES.iter().filter(|c| c.tier == tier).count();
-        let rounds = TIERS.iter().filter(|&&t| t == tier).count();
+        let rounds = tiers(ROUNDS).iter().filter(|&&t| t == tier).count();
         assert!(in_tier >= 3 * rounds, "tier {tier} has {in_tier} countries for {rounds} rounds");
     }
 }
 
 #[test]
 fn a_game_asks_ten_countries_easiest_first_each_with_its_outline() {
-    let questions = grenzfall_questions(&mut StdRng::seed_from_u64(7), &mut HashSet::new());
+    let questions = grenzfall_questions(ROUNDS, &mut StdRng::seed_from_u64(7), &mut HashSet::new());
     assert_eq!(questions.len(), grenzfall_config().rounds);
     let tiers: Vec<u8> = questions.iter().map(|q| country(&q.correct).tier).collect();
-    assert_eq!(tiers, TIERS);
+    assert_eq!(tiers, super::tiers(ROUNDS));
     let answers: HashSet<&str> = questions.iter().map(|q| q.correct.as_str()).collect();
     assert_eq!(answers.len(), questions.len(), "no country is asked twice");
     for q in &questions {
@@ -68,8 +68,8 @@ fn an_easy_round_offers_only_other_famous_shapes() {
 fn a_second_game_tonight_shows_other_countries_until_a_tier_runs_out() {
     let mut used = HashSet::new();
     let mut rng = StdRng::seed_from_u64(11);
-    let first: HashSet<String> = grenzfall_questions(&mut rng, &mut used).into_iter().map(|q| q.correct).collect();
-    let second: HashSet<String> = grenzfall_questions(&mut rng, &mut used).into_iter().map(|q| q.correct).collect();
+    let first: HashSet<String> = grenzfall_questions(ROUNDS, &mut rng, &mut used).into_iter().map(|q| q.correct).collect();
+    let second: HashSet<String> = grenzfall_questions(ROUNDS, &mut rng, &mut used).into_iter().map(|q| q.correct).collect();
     assert!(first.is_disjoint(&second));
 }
 
@@ -84,19 +84,19 @@ fn a_used_up_tier_starts_over_with_the_unseen_ones_first_and_without_repeats() {
     let mut shown = HashSet::new();
     let mut last = Vec::new();
     for _ in 0..22 {
-        last = grenzfall_questions(&mut rng, &mut used);
+        last = grenzfall_questions(ROUNDS, &mut rng, &mut used);
         shown.extend(hard(&last));
     }
     let unseen: HashSet<String> =
         COUNTRIES.iter().filter(|c| c.tier == 3 && !shown.contains(&c.name)).map(|c| c.name.clone()).collect();
     assert_eq!(unseen.len(), 2);
-    let next = grenzfall_questions(&mut rng, &mut used);
+    let next = grenzfall_questions(ROUNDS, &mut rng, &mut used);
     assert!(unseen.is_subset(&hard(&next)), "the unseen ones come first");
     // Thirty easy countries made ten games; after the restart they do not repeat back to back.
     let easy = |qs: &[Question]| -> HashSet<String> {
         qs.iter().filter(|q| country(&q.correct).tier == 1).map(|q| q.correct.clone()).collect()
     };
-    let after = grenzfall_questions(&mut rng, &mut used);
+    let after = grenzfall_questions(ROUNDS, &mut rng, &mut used);
     assert!(easy(&next).is_disjoint(&easy(&after)));
     assert!(easy(&last).is_disjoint(&easy(&next)));
 }

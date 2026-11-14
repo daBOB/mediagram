@@ -20,4 +20,8 @@ max: number,
 /**
  * The lobby's tempo sets its clocks; turn-based games have none.
  */
-timed: boolean, };
+timed: boolean, 
+/**
+ * The lobby's length sets how much of it is played; games played to the end have none.
+ */
+sized: boolean, };

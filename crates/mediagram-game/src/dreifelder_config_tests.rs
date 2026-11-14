@@ -7,7 +7,7 @@ use super::*;
 use crate::dreifelder::tests::players;
 use crate::game::{GameCtx, ViewCtx};
 use crate::general::general_pack;
-use crate::protocol::{GameKind, GameSpeed, LobbySettings, QuizMode, TvScene};
+use crate::protocol::{GameKind, GameLength, GameSpeed, LobbySettings, QuizMode, TvScene};
 use crate::titles::TitlePool;
 
 #[test]
@@ -32,7 +32,7 @@ fn twelve_questions_at_most_three_films_and_none_repeated_tonight() {
 fn the_factory_builds_dreifelder() {
     let mut factory = crate::factory::game_factory(Arc::new(TitlePool::new(vec![], false)), Arc::new(general_pack()), None, Arc::default());
     let mut ps = players(2);
-    let settings = LobbySettings { game: GameKind::Dreifelder, quiz_mode: QuizMode::Mixed, speed: GameSpeed::Normal, kids_only: false, kids_locked: false };
+    let settings = LobbySettings { game: GameKind::Dreifelder, quiz_mode: QuizMode::Mixed, speed: GameSpeed::Normal, length: GameLength::Normal, kids_only: false, kids_locked: false };
     let game = factory(&mut GameCtx { now: 0.0, players: &mut ps }, &settings);
     let TvScene::Dreifelder { scene } = game.tv_scene(&ViewCtx { now: 0.0, players: &ps, leader: Some(0) }) else {
         panic!("not Dreifelder")
