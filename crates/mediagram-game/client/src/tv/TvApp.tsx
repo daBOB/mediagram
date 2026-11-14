@@ -3,6 +3,7 @@ import { InkLog } from "../ink/ink-log";
 import { useConnection, type Connection } from "../net";
 import type { TvView } from "../protocol/TvView";
 import { TvDreifelder } from "./TvDreifelder";
+import { TvZuendstoff } from "./TvZuendstoff";
 import { TvKritzelei } from "./TvKritzelei";
 import { TvKopfnuss } from "./TvKopfnuss";
 import { TvFluechtig } from "./TvFluechtig";
@@ -73,6 +74,8 @@ export function TvApp() {
         <TvCards key={view.scene.scene.game + view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "kopfnuss" ? (
         <TvKopfnuss scene={view.scene.scene} players={view.players} conn={conn} />
+      ) : view.scene.kind === "zuendstoff" ? (
+        <TvZuendstoff scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "dreifelder" ? (
         <TvDreifelder scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "fluechtig" ? (

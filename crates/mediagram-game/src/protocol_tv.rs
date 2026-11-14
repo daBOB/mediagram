@@ -6,7 +6,7 @@ use ts_rs::TS;
 
 use crate::protocol::{
     CardsScene, DreifelderScene, FluechtigScene, GameEntry, GrandAlleeScene, KopfnussScene, KritzeleiScene, LobbySettings, PlayerInfo,
-    PosterScene, PreisfrageScene, QuizScene, RaceScene,
+    PosterScene, PreisfrageScene, QuizScene, RaceScene, ZuendstoffScene,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -42,4 +42,5 @@ pub enum TvScene {
     Fluechtig { scene: FluechtigScene },
     Preisfrage { scene: PreisfrageScene },
     Kritzelei { scene: KritzeleiScene },
+    Zuendstoff { scene: ZuendstoffScene },
 }

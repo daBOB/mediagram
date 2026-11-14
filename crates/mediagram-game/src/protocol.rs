@@ -32,6 +32,7 @@ pub use crate::protocol_grand_allee::{
 pub use crate::protocol_dreifelder::{DreifelderScene, DreifelderStage, FieldPick, OutPlayer};
 pub use crate::protocol_choice::{AnswerColor, BidRange, ChoiceOption, ChoiceStatus, HotelCard, OutcomeKey, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
+pub use crate::protocol_zuendstoff::{ZuendstoffScene, ZuendstoffSeat, ZuendstoffStage};
 pub use crate::protocol_preisfrage::{ArticleView, PreisfrageScene, PreisfrageStage, PriceKeypad, PriceRow, PriceStanding};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};

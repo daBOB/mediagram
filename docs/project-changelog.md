@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.187.0 — Zündstoff, the bomb passed until one is left
+
+**Added**
+
+- Zündstoff (`plans/261114-1220-zuendstoff-bomb-game/plan.md`), the second minigame from the user's first list that had been left unbuilt: a bomb with a hidden fuse goes from phone to phone. Whoever holds it answers a quick question from the general pack on their phone; a right answer lets them throw the bomb to a player of their choice, a wrong one brings the next question after a 2-second pause. When the fuse runs out (18 to 40 seconds a round) the holder loses one of three lives and starts the next round; out at zero, the last one left wins, ranked by when the others went out. The house throws for a holder who is away. The holder's phone buzzes on the catch and at the bang.
+- The TV shows the bomb with its holder, the question and its answers big, who threw to whom, a "BUMM!" with the life it cost, and everyone's lives along the bottom; the fuse is never shown.
+- Zündstoff's shelf poster and backdrop.
 ## Spieltisch 0.186.0 — A tempo for Preisfrage
 
 **Added**

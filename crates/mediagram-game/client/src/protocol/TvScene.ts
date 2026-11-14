@@ -11,6 +11,7 @@ import type { PosterScene } from "./PosterScene";
 import type { PreisfrageScene } from "./PreisfrageScene";
 import type { QuizScene } from "./QuizScene";
 import type { RaceScene } from "./RaceScene";
+import type { ZuendstoffScene } from "./ZuendstoffScene";
 
 export type TvScene = { "kind": "lobby", min_players: number, settings: LobbySettings, leader_name: string | null, 
 /**
@@ -24,4 +25,4 @@ games: Array<GameEntry>,
 /**
  * A drawing board is connected.
  */
-board: boolean, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, } | { "kind": "cards", scene: CardsScene, } | { "kind": "kopfnuss", scene: KopfnussScene, } | { "kind": "grand_allee", scene: GrandAlleeScene, } | { "kind": "dreifelder", scene: DreifelderScene, } | { "kind": "fluechtig", scene: FluechtigScene, } | { "kind": "preisfrage", scene: PreisfrageScene, } | { "kind": "kritzelei", scene: KritzeleiScene, };
+board: boolean, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, } | { "kind": "cards", scene: CardsScene, } | { "kind": "kopfnuss", scene: KopfnussScene, } | { "kind": "grand_allee", scene: GrandAlleeScene, } | { "kind": "dreifelder", scene: DreifelderScene, } | { "kind": "fluechtig", scene: FluechtigScene, } | { "kind": "preisfrage", scene: PreisfrageScene, } | { "kind": "kritzelei", scene: KritzeleiScene, } | { "kind": "zuendstoff", scene: ZuendstoffScene, };

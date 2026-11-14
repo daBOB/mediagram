@@ -31,6 +31,8 @@ pub enum GameKind {
     Kritzelei,
     /// Grenzfall: name the country from its outline on the TV.
     Grenzfall,
+    /// Zündstoff: answer to throw the bomb on before its hidden fuse runs out.
+    Zuendstoff,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

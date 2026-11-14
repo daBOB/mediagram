@@ -27,6 +27,7 @@ pub const CATALOGUE: &[GameEntry] = &[
     entry(GameKind::Quiz),
     entry(GameKind::Poster),
     entry(GameKind::Grenzfall),
+    entry(GameKind::Zuendstoff),
     entry(GameKind::Kopfnuss),
     entry(GameKind::Dreifelder),
     entry(GameKind::Preisfrage),
@@ -45,6 +46,8 @@ pub(crate) const fn entry(kind: GameKind) -> GameEntry {
         GameKind::Quiz => ("Buzzer-Quiz", 1, ROOM_CAP),
         GameKind::Poster => ("Poster-Raten", 1, ROOM_CAP),
         GameKind::Grenzfall => ("Grenzfall", 1, ROOM_CAP),
+        // A bomb needs someone to throw it to.
+        GameKind::Zuendstoff => ("Zündstoff", 2, ROOM_CAP),
         // Kopfnuss needs someone to send a trick to; any room size plays.
         GameKind::Kopfnuss => ("Kopfnuss", 2, ROOM_CAP),
         // Dreifelder needs someone to outlast.

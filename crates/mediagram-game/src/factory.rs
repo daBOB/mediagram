@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use rand::SeedableRng;
 use rand::rngs::StdRng;
+use rand::seq::IndexedRandom;
 
 use crate::articles::ArticleList;
 use crate::dreifelder::DreifelderGame;
@@ -36,6 +37,10 @@ use crate::quiz_mix::quiz_questions;
 use crate::race::{RaceConfig, RaceGame};
 use crate::schwimmen::{SchwimmenConfig, SchwimmenGame};
 use crate::titles::TitlePool;
+use crate::zuendstoff::{ZuendstoffConfig, ZuendstoffGame};
+
+/// Unasked general questions a Zündstoff game wants tonight before the pack starts over.
+const ZUENDSTOFF_QUESTIONS: usize = 60;
 
 /// The lobby blocks starting a game its pool cannot supply, so neither arm
 /// is built without enough titles.
@@ -78,6 +83,16 @@ pub fn game_factory(
             GameKind::Grenzfall => {
                 let questions = grenzfall_questions(&mut StdRng::from_os_rng(), &mut history);
                 Box::new(Quiz::new(grenzfall_config(), questions, ctx.now))
+            }
+            GameKind::Zuendstoff => {
+                drop(history);
+                // Marked asked one by one as the bomb comes round; the whole pack is the fallback.
+                let mut supply = QuestionSupply::new(general.clone(), Vec::new(), used.clone(), ZUENDSTOFF_QUESTIONS);
+                let pack = general.clone();
+                let deck = Box::new(move |rng: &mut StdRng| {
+                    supply.deck(1, rng).pop().unwrap_or_else(|| pack.choose(rng).cloned().expect("the bundled pack is never empty"))
+                });
+                Box::new(ZuendstoffGame::new(ZuendstoffConfig::default(), deck, ctx.players, ctx.now))
             }
             GameKind::Race => Box::new(RaceGame::new(RaceConfig::default(), ctx.players, ctx.now)),
             GameKind::MauMau => Box::new(MauMauGame::new(MauMauConfig::default(), ctx.players, ctx.now)),
