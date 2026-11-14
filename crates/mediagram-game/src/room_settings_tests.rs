@@ -13,42 +13,35 @@ fn lobby_of(room: &mut Room, conn: ConnId) -> PhoneScreen {
 }
 
 fn configure(room: &mut Room, conn: ConnId, game: GameKind, quiz_mode: QuizMode, kids_only: bool) -> Outbox {
-    action(room, conn, Action::Configure { game, quiz_mode, speed: GameSpeed::Normal, kids_only, adult: false })
-}
-
-fn configure_adult(room: &mut Room, conn: ConnId, kids_only: bool) -> Outbox {
-    action(room, conn, Action::Configure { game: GameKind::Quiz, quiz_mode: QuizMode::General, speed: GameSpeed::Normal, kids_only, adult: true })
+    action(room, conn, Action::Configure { game, quiz_mode, speed: GameSpeed::Normal, kids_only })
 }
 
 #[test]
-fn adult_questions_need_the_switch_and_no_kids_mode() {
+fn adult_questions_are_asked_unless_kids_mode_is_on() {
     let mut r = room(8);
     hello(&mut r, 1, "Ana", None);
-    assert!(!r.settings().asks_adult_questions(), "off by default");
-    configure_adult(&mut r, 1, false);
-    assert!(r.settings().adult && r.settings().asks_adult_questions());
-    configure_adult(&mut r, 1, true);
-    assert!(!r.settings().adult, "kids mode switches it off");
+    assert!(r.settings().asks_adult_questions(), "a grown-ups' evening by default");
+    configure(&mut r, 1, GameKind::Quiz, QuizMode::General, true);
+    assert!(!r.settings().asks_adult_questions(), "kids mode leaves them out");
     configure(&mut r, 1, GameKind::Quiz, QuizMode::General, false);
-    assert!(!r.settings().adult, "and it stays off until switched on again");
+    assert!(r.settings().asks_adult_questions());
 }
 
 #[test]
 fn a_kids_profile_never_gets_adult_questions() {
     let mut r = room_with(RoomConfig { kids_locked: true, ..cfg(8) });
     hello(&mut r, 1, "Ana", None);
-    configure_adult(&mut r, 1, false);
-    assert!(r.settings().kids_only && !r.settings().adult && !r.settings().asks_adult_questions());
+    configure(&mut r, 1, GameKind::Quiz, QuizMode::General, false);
+    assert!(r.settings().kids_only && !r.settings().asks_adult_questions());
 }
 
 #[test]
-fn a_configure_without_the_adult_field_means_off() {
+fn an_older_page_still_sending_the_adult_switch_is_accepted() {
     let mut r = room(8);
     hello(&mut r, 1, "Ana", None);
-    configure_adult(&mut r, 1, false);
-    let out = r.handle(1, r#"{"t":"action","action":{"t":"configure","game":"quiz","quiz_mode":"general","kids_only":false}}"#, 0.0);
+    let out = r.handle(1, r#"{"t":"action","action":{"t":"configure","game":"quiz","quiz_mode":"general","kids_only":true,"adult":true}}"#, 0.0);
     assert!(out.is_empty(), "accepted: {out:?}");
-    assert!(!r.settings().adult);
+    assert!(r.settings().kids_only && !r.settings().asks_adult_questions());
 }
 
 #[test]
@@ -170,7 +163,7 @@ fn the_leader_sets_the_tempo_the_tv_keeps_it_and_an_older_client_means_normal() 
     r.connect(9, true);
     r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
     assert_eq!(r.settings().speed, GameSpeed::Normal, "normal at the start of a night");
-    let tempo = |speed| Action::Configure { game: GameKind::Preisfrage, quiz_mode: QuizMode::Mixed, speed, kids_only: false, adult: false };
+    let tempo = |speed| Action::Configure { game: GameKind::Preisfrage, quiz_mode: QuizMode::Mixed, speed, kids_only: false };
     assert!(action(&mut r, 1, tempo(GameSpeed::Relaxed)).is_empty());
     assert_eq!(r.settings().speed, GameSpeed::Relaxed);
     assert!(action(&mut r, 9, tempo(GameSpeed::Speedrun)).is_empty());

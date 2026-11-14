@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.190.0 — Kids mode is the one content switch
+
+**Changed**
+
+- The Matratzensport switch is gone from the phone, and the setting from the box (user's decision): "Nur für Kinder" is the one content switch now. Without it, Quiz, Kopfnuss and Dreifelder also ask the adult questions about sexuality; with it, never. A grown-ups' evening no longer has to switch them on, and the TV lobby drops its "Matratzensport · ab 18" badge. A page still sending the old switch is accepted and the switch ignored. Breaking for the wire (`LobbySettings.adult` and `configure`'s `adult` are gone), so minor.
+
 ## Spieltisch 0.189.0 — The TV picks the game, Kritzelei on the iPad
 
 **Changed**

@@ -100,7 +100,6 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
           {game ? gameLine(game, settings) : seatsLine(item.min, item.max)}
           {item.badge && <span className={`badge badge-${item.badge}`}>{BADGE_TEXT[item.badge]}</span>}
           {settings.kids_only && <span className="badge badge-on">Nur für Kinder</span>}
-          {settings.adult && <span className="badge badge-on">Matratzensport · ab 18</span>}
         </p>
         <p className="shelf-blurb">{item.blurb}</p>
         {line && <p className="shelf-line">{line}</p>}

@@ -8,8 +8,4 @@ export type Action = { "t": "configure", game: GameKind, quiz_mode: QuizMode,
 /**
  * Older clients leave it out: normal.
  */
-speed: GameSpeed, kids_only: boolean, 
-/**
- * Older clients leave it out: off.
- */
-adult: boolean, } | { "t": "start_game" } | { "t": "back_to_lobby" } | { "t": "pick_avatar", id: string, } | { "t": "choose", index: number, at: number, } | { "t": "bid", amount: number, at: number, } | { "t": "guess_price", cents: number, } | { "t": "cards", button: string, hand: Array<number>, table: number | null, } | { "t": "board", act: BoardAct, };
+speed: GameSpeed, kids_only: boolean, } | { "t": "start_game" } | { "t": "back_to_lobby" } | { "t": "pick_avatar", id: string, } | { "t": "choose", index: number, at: number, } | { "t": "bid", amount: number, at: number, } | { "t": "guess_price", cents: number, } | { "t": "cards", button: string, hand: Array<number>, table: number | null, } | { "t": "board", act: BoardAct, };
