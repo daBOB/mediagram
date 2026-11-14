@@ -44,7 +44,7 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
         <Token player={me} size="lg" />
         <h1 className="screen-title">{me.name}</h1>
         <p className="screen-text">
-          {screen.leader_name ? `${screen.leader_name} wählt das Spiel …` : "Das Spiel wird gewählt …"}
+          {screen.leader_name ? `${screen.leader_name} startet das Spiel …` : "Das Spiel wird gewählt …"}
         </p>
         <p className="hint">
           {screen.players === 1 ? "Du bist allein am Tisch." : `Ihr seid zu ${screen.players}.`}
@@ -62,36 +62,31 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
       action: { t: "configure", game: next.game, quiz_mode: next.quiz_mode, kids_only: next.kids_only, adult: next.adult },
     });
   };
-  const quiz = settings.game === "quiz";
+  const gameName = screen.games.find((g) => g.kind === settings.game)?.name;
 
+  // The game is picked on the TV with the remote; the quiz's question mix has no place there, so it stays here.
   return (
     <section className="screen lobby lobby-leader" style={style}>
       <header className="lobby-head">
         <p className="kicker">Du startest</p>
-        <h1 className="lobby-title">Was spielen wir?</h1>
+        <h1 className="lobby-title">{gameName}</h1>
+        <p className="hint">Gewählt wird am Fernseher.</p>
       </header>
 
-      {screen.games.map(({ kind, name }) => (
-        <div key={kind} className={`game${settings.game === kind ? " is-selected" : ""}`}>
-          <button className="game-pick" aria-pressed={settings.game === kind} onClick={() => configure({ game: kind })}>
-            {name}
-          </button>
-          {quiz && kind === "quiz" && (
-            <div className="seg" role="group" aria-label="Fragen">
-              {QUIZ_MODES.map((m) => (
-                <button
-                  key={m.mode}
-                  className={`seg-btn${settings.quiz_mode === m.mode ? " is-selected" : ""}`}
-                  aria-pressed={settings.quiz_mode === m.mode}
-                  onClick={() => configure({ quiz_mode: m.mode })}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          )}
+      {settings.game === "quiz" && (
+        <div className="seg" role="group" aria-label="Fragen">
+          {QUIZ_MODES.map((m) => (
+            <button
+              key={m.mode}
+              className={`seg-btn${settings.quiz_mode === m.mode ? " is-selected" : ""}`}
+              aria-pressed={settings.quiz_mode === m.mode}
+              onClick={() => configure({ quiz_mode: m.mode })}
+            >
+              {m.label}
+            </button>
+          ))}
         </div>
-      ))}
+      )}
 
       <div className="toggle-row">
         <div>
@@ -108,22 +103,22 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
         />
       </div>
 
-      <div className="toggle-row">
-        <div>
-          <span id="adult-label">Matratzensport (ab 18)</span>
-          <p className="toggle-hint">
-            {settings.kids_only ? "Nicht im Kindermodus" : "Fragen zu Sexualität in Quiz, Kopfnuss und Dreifelder"}
-          </p>
+      {/* kids mode leaves the adult questions out altogether; the box switches them off with it */}
+      {!settings.kids_only && (
+        <div className="toggle-row">
+          <div>
+            <span id="adult-label">Matratzensport (ab 18)</span>
+            <p className="toggle-hint">Fragen zu Sexualität in Quiz, Kopfnuss und Dreifelder</p>
+          </div>
+          <button
+            className="switch"
+            role="switch"
+            aria-checked={settings.adult}
+            aria-labelledby="adult-label"
+            onClick={() => configure({ adult: !settings.adult })}
+          />
         </div>
-        <button
-          className="switch"
-          role="switch"
-          aria-checked={settings.adult}
-          aria-labelledby="adult-label"
-          disabled={settings.kids_only}
-          onClick={() => configure({ adult: !settings.adult })}
-        />
-      </div>
+      )}
 
       {picker}
 
