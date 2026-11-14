@@ -20,20 +20,16 @@ pub struct PreisfrageConfig {
     pub exact_bonus: u32,
 }
 
-impl PreisfrageConfig {
-    /// The game at the lobby's tempo: 2 min to guess, 1 min, or 20 s.
-    pub fn at(speed: GameSpeed) -> Self {
-        let guess_ms = match speed {
-            GameSpeed::Relaxed => 120_000.0,
-            GameSpeed::Normal => 60_000.0,
-            GameSpeed::Speedrun => 20_000.0,
-        };
-        Self { rounds: 6, intro_ms: 3_000.0, guess_ms, reveal_ms: 7_000.0, exact_bonus: 500 }
+impl Default for PreisfrageConfig {
+    fn default() -> Self {
+        Self { rounds: 6, intro_ms: 3_000.0, guess_ms: 60_000.0, reveal_ms: 7_000.0, exact_bonus: 500 }
     }
 }
 
-impl Default for PreisfrageConfig {
-    fn default() -> Self {
-        Self::at(GameSpeed::Normal)
+impl PreisfrageConfig {
+    /// At the lobby's tempo: 2 min to guess, 1 min, or 30 s.
+    pub fn at(mut self, speed: GameSpeed) -> Self {
+        self.guess_ms = speed.stretch(self.guess_ms);
+        self
     }
 }

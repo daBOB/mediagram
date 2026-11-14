@@ -60,9 +60,10 @@ pub fn game_factory(
         let general = if settings.asks_adult_questions() { &with_adult } else { &general };
         // A poisoned lock still holds a usable history; losing it only risks a repeat.
         let mut history = used.lock().unwrap_or_else(|e| e.into_inner());
+        let speed = settings.speed;
         match settings.game {
             GameKind::Kopfnuss => {
-                let cfg = KopfnussConfig::default();
+                let cfg = KopfnussConfig::default().at(speed);
                 // Up to three film rounds; drawn now, so they are marked as asked tonight.
                 let mut rng = StdRng::from_os_rng();
                 let films = film_questions(&pool, &pool.eligible(false), &mut rng, 3 * cfg.per_round, &mut history);
@@ -71,7 +72,7 @@ pub fn game_factory(
                 Box::new(KopfnussGame::new(cfg, supply, ctx.players, ctx.now)) as Box<dyn Game>
             }
             GameKind::Dreifelder => {
-                let cfg = DreifelderConfig::default();
+                let cfg = DreifelderConfig::default().at(speed);
                 let mut rng = StdRng::from_os_rng();
                 let films = film_questions(&pool, &pool.eligible(false), &mut rng, cfg.films, &mut history);
                 drop(history);
@@ -82,7 +83,7 @@ pub fn game_factory(
             }
             GameKind::Grenzfall => {
                 let questions = grenzfall_questions(&mut StdRng::from_os_rng(), &mut history);
-                Box::new(Quiz::new(grenzfall_config(), questions, ctx.now))
+                Box::new(Quiz::new(grenzfall_config().at(speed), questions, ctx.now))
             }
             GameKind::Zuendstoff => {
                 drop(history);
@@ -92,28 +93,28 @@ pub fn game_factory(
                 let deck = Box::new(move |rng: &mut StdRng| {
                     supply.deck(1, rng).pop().unwrap_or_else(|| pack.choose(rng).cloned().expect("the bundled pack is never empty"))
                 });
-                Box::new(ZuendstoffGame::new(ZuendstoffConfig::default(), deck, ctx.players, ctx.now))
+                Box::new(ZuendstoffGame::new(ZuendstoffConfig::default().at(speed), deck, ctx.players, ctx.now))
             }
             GameKind::Race => Box::new(RaceGame::new(RaceConfig::default(), ctx.players, ctx.now)),
             GameKind::MauMau => Box::new(MauMauGame::new(MauMauConfig::default(), ctx.players, ctx.now)),
             GameKind::Schwimmen => Box::new(SchwimmenGame::new(SchwimmenConfig::default(), ctx.players, ctx.now)),
             GameKind::Durak => Box::new(DurakGame::new(DurakConfig::default(), ctx.players, ctx.now)),
-            GameKind::GrandAllee => Box::new(GrandAlleeGame::new(GrandAlleeConfig::default(), ctx.players, ctx.now)),
+            GameKind::GrandAllee => Box::new(GrandAlleeGame::new(GrandAlleeConfig::default().at(speed), ctx.players, ctx.now)),
             GameKind::Fluechtig => Box::new(FluechtigGame::new(FluechtigConfig::default(), ctx.players, ctx.now)),
             GameKind::Preisfrage => {
-                let cfg = PreisfrageConfig::at(settings.speed);
+                let cfg = PreisfrageConfig::default().at(speed);
                 let drawn = draw(&articles, cfg.rounds, &mut shown, &mut StdRng::from_os_rng());
                 Box::new(PreisfrageGame::new(cfg, drawn, checked_label(&articles.fetched), ctx.players, ctx.now))
             }
             GameKind::Kritzelei => Box::new(KritzeleiGame::new(
-                KritzeleiConfig::default(),
+                KritzeleiConfig::default().at(speed),
                 deck(settings.kids_only, &mut StdRng::from_os_rng()),
                 ctx.players,
                 ctx.now,
             )),
             GameKind::Poster => {
                 let eligible = pool.eligible(settings.kids_only);
-                let cfg = PosterConfig::default();
+                let cfg = PosterConfig::default().at(speed);
                 let game = PosterGame::new(cfg, &pool, &eligible, &mut history, ctx.now);
                 if let Some(lookup) = &textless {
                     // Fetched ahead, so a round's poster is cached before it is shown.
@@ -124,7 +125,7 @@ pub fn game_factory(
                 Box::new(game)
             }
             GameKind::Quiz => {
-                let cfg = QuizConfig::default();
+                let cfg = QuizConfig::default().at(speed);
                 let mut rng = StdRng::from_os_rng();
                 let mut questions =
                     quiz_questions(settings.quiz_mode, &pool, settings.kids_only, general, &mut rng, cfg.rounds, &mut history);

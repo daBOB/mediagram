@@ -44,7 +44,8 @@ pub enum QuizMode {
     Mixed,
 }
 
-/// How long the clocks give: so far Preisfrage's time to guess a price.
+/// How long the clocks give: Entspannt doubles every game's time to think and
+/// act, Speedrun halves it. Animations and the fair-tap margins stay as they are.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
 #[ts(export)]
@@ -53,6 +54,17 @@ pub enum GameSpeed {
     #[default]
     Normal,
     Speedrun,
+}
+
+impl GameSpeed {
+    /// `ms`, a game's clock at normal tempo, at this tempo.
+    pub fn stretch(self, ms: f64) -> f64 {
+        match self {
+            GameSpeed::Relaxed => ms * 2.0,
+            GameSpeed::Normal => ms,
+            GameSpeed::Speedrun => ms / 2.0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -75,3 +87,7 @@ impl LobbySettings {
         self.adult && !self.kids_only
     }
 }
+
+#[cfg(test)]
+#[path = "game_speed_tests.rs"]
+mod tests;

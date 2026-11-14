@@ -2,6 +2,7 @@
 //! simulator change them, the room plays the defaults.
 
 use super::rules::Rules;
+use crate::protocol::GameSpeed;
 
 /// What a live game is set up with: its rules, the TV's animation times and the clocks.
 #[derive(Debug, Clone)]
@@ -47,5 +48,14 @@ impl Default for GrandAlleeConfig {
             seed: None,
             rolls: Vec::new(),
         }
+    }
+}
+
+impl GrandAlleeConfig {
+    /// At the lobby's tempo: the clocks on a decision and an auction.
+    pub fn at(mut self, speed: GameSpeed) -> Self {
+        self.ask_ms = speed.stretch(self.ask_ms);
+        self.auction_ms = speed.stretch(self.auction_ms);
+        self
     }
 }

@@ -2,7 +2,7 @@
 
 use rand::rngs::StdRng;
 
-use crate::protocol::{PlayerId, ServerTime};
+use crate::protocol::{GameSpeed, PlayerId, ServerTime};
 use crate::quiz_config::Question;
 
 /// Draws the next question; never runs dry (the factory falls back on the whole pack).
@@ -40,6 +40,15 @@ impl Default for ZuendstoffConfig {
             early_tolerance_ms: 150.0,
             seed: None,
         }
+    }
+}
+
+impl ZuendstoffConfig {
+    /// At the lobby's tempo: the fuse burns longer or shorter.
+    pub fn at(mut self, speed: GameSpeed) -> Self {
+        self.fuse_min_ms = speed.stretch(self.fuse_min_ms);
+        self.fuse_max_ms = speed.stretch(self.fuse_max_ms);
+        self
     }
 }
 

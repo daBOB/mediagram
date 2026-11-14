@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.188.0 — Tempo for every game with a clock
+
+**Added**
+
+- The lobby's *Tempo* (Entspannt, Normal, Speedrun) now sets the clocks of every game where players race one: Buzzer-Quiz and Grenzfall (time to answer), Poster-Raten (how fast the poster sharpens), Kopfnuss (the pick, every question and the summit climb), Dreifelder (time to pick a field), Kritzelei (time to draw), Zündstoff (the fuse), Preisfrage (time to guess) and Grand Allee (a decision's and an auction's clock). Entspannt doubles these times and Speedrun halves them; reveals, animations and the fair-tap margins stay as they are.
+- The leader's phone shows the tempo under each of these games, and the TV's line names it ("1–8 Spieler · Fragen: Gemischt · Tempo: Speedrun"). The setting belongs to the room, so it carries from one game to the next.
+- The catalogue marks which games have a clock (`GameEntry.timed`). Heimlauf, Flüchtig, Mau-Mau, Schwimmen and Durak are played turn by turn without one, so they show no tempo.
+
+**Changed**
+
+- Preisfrage's Speedrun gives 30 seconds to guess instead of 20, now that Speedrun means half the time in every game.
+
 ## Spieltisch 0.187.0 — Zündstoff, the bomb passed until one is left
 
 **Added**
