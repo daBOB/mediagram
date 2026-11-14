@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.186.0 — A tempo for Preisfrage
+
+**Added**
+
+- A lobby setting *Tempo* with Entspannt, Normal and Speedrun. The leader picks it on the phone under Preisfrage, and the TV shows it beside the game ("1–8 Spieler · Tempo: Entspannt"). It sets how long the keypads stay open for each article: 2 minutes, 1 minute or 20 seconds. Each night starts on Normal, and the TV's own game pick leaves it alone, as it does the other settings. Only Preisfrage reads it so far; the setting is named for the whole lobby so other games with a clock can follow.
+
+**Changed**
+
+- Preisfrage gives 1 minute to guess by default (Normal), instead of the 2 minutes of 0.184.1. The 2 minutes are now Entspannt.
+
 ## Spieltisch 0.185.0 — Grenzfall, the country by its outline
 
 **Added**

@@ -86,7 +86,7 @@ pub fn game_factory(
             GameKind::GrandAllee => Box::new(GrandAlleeGame::new(GrandAlleeConfig::default(), ctx.players, ctx.now)),
             GameKind::Fluechtig => Box::new(FluechtigGame::new(FluechtigConfig::default(), ctx.players, ctx.now)),
             GameKind::Preisfrage => {
-                let cfg = PreisfrageConfig::default();
+                let cfg = PreisfrageConfig::at(settings.speed);
                 let drawn = draw(&articles, cfg.rounds, &mut shown, &mut StdRng::from_os_rng());
                 Box::new(PreisfrageGame::new(cfg, drawn, checked_label(&articles.fetched), ctx.players, ctx.now))
             }

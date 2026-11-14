@@ -15,8 +15,8 @@ fn the_reveal_tells_each_phone_its_own_result_and_the_tv_everyones() {
     let article = crate::articles::Article { asin: "B000000001".into(), name: "Halter".into(), title: "Halter".into(), cents: 1000, reviews: 0 };
     let mut g = PreisfrageGame::new(PreisfrageConfig::default(), vec![article], "12.11.".into(), &ps, 0.0);
     g.on_action(&mut GameCtx { now: 4_000.0, players: &mut ps }, 0, &Action::GuessPrice { cents: 900 }).unwrap();
-    g.on_tick(&mut GameCtx { now: 123_000.0, players: &mut ps });
-    let view = ViewCtx { now: 123_000.0, players: &ps, leader: Some(0) };
+    g.on_tick(&mut GameCtx { now: 63_000.0, players: &mut ps });
+    let view = ViewCtx { now: 63_000.0, players: &ps, leader: Some(0) };
 
     let PhoneScreen::Outcome { title, text, tone, points, .. } = g.phone_screen(&view, 0) else { panic!() };
     assert_eq!((title.as_str(), text.as_deref(), tone, points), ("10,00 €", Some("Dein Tipp: 9,00 € · am nächsten dran"), Tone::Good, 900));
