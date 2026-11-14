@@ -1,5 +1,5 @@
 use crate::catalogue::CATALOGUE;
-use crate::protocol::{Action, GameKind, LobbySettings, PhoneScreen, QuizMode, ServerMsg, TvScene, TvView};
+use crate::protocol::{Action, GameKind, GameSpeed, LobbySettings, PhoneScreen, QuizMode, ServerMsg, TvScene, TvView};
 use crate::room::tests::{Idle, action, cfg, decode, hello, room, room_with};
 use crate::room::{ConnId, Outbox, Room, RoomConfig};
 use crate::room_settings::Readiness;
@@ -13,11 +13,11 @@ fn lobby_of(room: &mut Room, conn: ConnId) -> PhoneScreen {
 }
 
 fn configure(room: &mut Room, conn: ConnId, game: GameKind, quiz_mode: QuizMode, kids_only: bool) -> Outbox {
-    action(room, conn, Action::Configure { game, quiz_mode, kids_only, adult: false })
+    action(room, conn, Action::Configure { game, quiz_mode, speed: GameSpeed::Normal, kids_only, adult: false })
 }
 
 fn configure_adult(room: &mut Room, conn: ConnId, kids_only: bool) -> Outbox {
-    action(room, conn, Action::Configure { game: GameKind::Quiz, quiz_mode: QuizMode::General, kids_only, adult: true })
+    action(room, conn, Action::Configure { game: GameKind::Quiz, quiz_mode: QuizMode::General, speed: GameSpeed::Normal, kids_only, adult: true })
 }
 
 #[test]
@@ -161,6 +161,23 @@ fn the_tv_changes_only_the_game_whatever_else_it_sends() {
     assert!(configure(&mut r, 9, GameKind::Race, QuizMode::Mixed, false).is_empty());
     let s = r.settings();
     assert_eq!((s.game, s.quiz_mode, s.kids_only), (GameKind::Race, QuizMode::Films, true));
+}
+
+#[test]
+fn the_leader_sets_the_tempo_the_tv_keeps_it_and_an_older_client_means_normal() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    r.connect(9, true);
+    r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
+    assert_eq!(r.settings().speed, GameSpeed::Normal, "normal at the start of a night");
+    let tempo = |speed| Action::Configure { game: GameKind::Preisfrage, quiz_mode: QuizMode::Mixed, speed, kids_only: false, adult: false };
+    assert!(action(&mut r, 1, tempo(GameSpeed::Relaxed)).is_empty());
+    assert_eq!(r.settings().speed, GameSpeed::Relaxed);
+    assert!(action(&mut r, 9, tempo(GameSpeed::Speedrun)).is_empty());
+    assert_eq!(r.settings().speed, GameSpeed::Relaxed, "the TV's pick changes only the game");
+    let out = r.handle(1, r#"{"t":"action","action":{"t":"configure","game":"preisfrage","quiz_mode":"mixed","kids_only":false}}"#, 0.0);
+    assert!(out.is_empty(), "accepted: {out:?}");
+    assert_eq!(r.settings().speed, GameSpeed::Normal);
 }
 
 #[test]
