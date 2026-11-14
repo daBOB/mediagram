@@ -12,6 +12,7 @@ use crate::dreifelder::DreifelderGame;
 use crate::dreifelder_config::{DreifelderConfig, dreifelder_questions};
 use crate::game::{Game, GameFactory};
 use crate::general::adult_pack;
+use crate::grenzfall::{grenzfall_config, grenzfall_questions};
 use crate::kopfnuss::KopfnussGame;
 use crate::kritzelei::{KritzeleiConfig, KritzeleiGame};
 use crate::kritzelei_words::deck;
@@ -73,6 +74,10 @@ pub fn game_factory(
                 let mut supply = QuestionSupply::new(general.clone(), films, used.clone(), needed);
                 let questions = dreifelder_questions(&mut supply, &cfg, &mut rng);
                 Box::new(DreifelderGame::new(cfg, questions, ctx.players, ctx.now))
+            }
+            GameKind::Grenzfall => {
+                let questions = grenzfall_questions(&mut StdRng::from_os_rng(), &mut history);
+                Box::new(Quiz::new(grenzfall_config(), questions, ctx.now))
             }
             GameKind::Race => Box::new(RaceGame::new(RaceConfig::default(), ctx.players, ctx.now)),
             GameKind::MauMau => Box::new(MauMauGame::new(MauMauConfig::default(), ctx.players, ctx.now)),
