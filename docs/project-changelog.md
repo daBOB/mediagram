@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.184.2 — The latency test stays out of a game night
+
+**Fixed**
+
+- The latency test's stats box ("n=0") sat over the top left of every TV page since the spike was merged in 0.184.0, covering the lobby's and each game's heading. It shows only while test points arrive now.
+- The phone lobby's "Latenztest" button showed in every controller app; only the iOS controller has the test, so on Android a tap would have thrown. It shows only where the app offers the test.
+
 ## Spieltisch 0.184.1 — Preisfrage gives two minutes to guess
 
 **Changed**

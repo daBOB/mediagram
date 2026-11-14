@@ -58,7 +58,8 @@ export function TvApp() {
   return (
     <main className="tv">
       <canvas ref={canvas} style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none" }} />
-      <div style={{ position: "fixed", top: 16, left: 16, zIndex: 10000, font: "bold 64px monospace", color: "#fff", background: "#000a", padding: "8px 16px" }}>{stats}</div>
+      {/* only while a latency test sends points, so a game night never sees it */}
+      {stats !== "n=0" && <div style={{ position: "fixed", top: 16, left: 16, zIndex: 10000, font: "bold 64px monospace", color: "#fff", background: "#000a", padding: "8px 16px" }}>{stats}</div>}
       {!view ? (
         <p className="tv-wait">Verbinde mit dem Spieltisch …</p>
       ) : view.scene.kind === "lobby" ? (

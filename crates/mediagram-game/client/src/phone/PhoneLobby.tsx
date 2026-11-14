@@ -25,7 +25,12 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
   };
   const picker = (
     <>
-      {inApp() && <button type="button" onClick={() => (window as any).mediagramApp.spike()}>Latenztest</button>}
+      {/* only the iOS controller carries the latency test */}
+      {typeof (window as any).mediagramApp?.spike === "function" && (
+        <button type="button" onClick={() => (window as any).mediagramApp.spike()}>
+          Latenztest
+        </button>
+      )}
       <AvatarPicker avatars={screen.avatars} mine={me.avatar} conn={conn} />
       {!inApp() && (
         <p className="hint">Tipp: Schalte für den Spieleabend die automatische Bildschirmsperre deines Handys aus, sonst geht es mitten im Spiel aus.</p>
