@@ -1,7 +1,7 @@
 //! Lobby settings: what the leader picked, and whether it can be started.
 
 use crate::catalogue::{GameEntry, entry};
-use crate::protocol::{GameKind, LobbySettings, QuizMode};
+use crate::protocol::{GameKind, GameSpeed, LobbySettings, QuizMode};
 use crate::game::GameCtx;
 use crate::protocol::{ErrorCode, ServerMsg, ServerTime};
 use crate::room::{Room, error};
@@ -34,7 +34,14 @@ pub(crate) const KRITZELEI_NEEDS_BOARD: &str = "Kritzelei braucht das iPad als Z
 pub(crate) const PREISFRAGE_NEEDS_ARTICLES: &str = "Preisfrage braucht Artikel: am PC „bun run fetch“ starten.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
-    LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked, adult: false }
+    LobbySettings {
+        game: GameKind::Quiz,
+        quiz_mode: QuizMode::Mixed,
+        speed: GameSpeed::Normal,
+        kids_only: kids_locked,
+        kids_locked,
+        adult: false,
+    }
 }
 
 impl Room {
@@ -48,6 +55,7 @@ impl Room {
         allowed: bool,
         game: GameKind,
         quiz_mode: QuizMode,
+        speed: GameSpeed,
         kids_only: bool,
         adult: bool,
     ) -> bool {
@@ -56,10 +64,17 @@ impl Room {
         }
         self.settings.game = game;
         self.settings.quiz_mode = quiz_mode;
+        self.settings.speed = speed;
         self.settings.kids_only = kids_only || self.settings.kids_locked;
         // kids mode switches the adult questions off, and they stay off until switched on again
         self.settings.adult = adult && !self.settings.kids_only;
         true
+    }
+
+    /// The TV's poster row picks only the game: a pick crossing the leader's kids-mode tap must not undo it.
+    pub(crate) fn pick_game(&mut self, game: GameKind) -> bool {
+        let LobbySettings { quiz_mode, speed, kids_only, adult, .. } = self.settings;
+        self.configure(true, game, quiz_mode, speed, kids_only, adult)
     }
 
     /// Seats only the connected players, zeroes scores and builds the chosen game.

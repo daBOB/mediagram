@@ -97,7 +97,7 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
         <p className="kicker kicker-tv">Spieleabend</p>
         <h1 className="shelf-title">{item.name}</h1>
         <p className="shelf-sub">
-          {game ? gameLine(game, settings.quiz_mode) : seatsLine(item.min, item.max)}
+          {game ? gameLine(game, settings) : seatsLine(item.min, item.max)}
           {item.badge && <span className={`badge badge-${item.badge}`}>{BADGE_TEXT[item.badge]}</span>}
           {settings.kids_only && <span className="badge badge-on">Nur für Kinder</span>}
           {settings.adult && <span className="badge badge-on">Matratzensport · ab 18</span>}

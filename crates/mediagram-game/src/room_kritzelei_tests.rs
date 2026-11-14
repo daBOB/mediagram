@@ -2,7 +2,7 @@ use std::sync::Arc;
 use super::sketch::{board_act, board_hello, tv_hello};
 use super::tests::{action, cfg, hello};
 use super::*;
-use crate::protocol::{BoardAct, DrawOp, GameKind, KritzeleiStage, QuizMode, TvScene, TvView};
+use crate::protocol::{BoardAct, DrawOp, GameKind, GameSpeed, KritzeleiStage, QuizMode, TvScene, TvView};
 use crate::titles::TitlePool;
 
 fn kritzelei_room() -> Room {
@@ -24,7 +24,7 @@ fn a_room_with_a_board_plays_kritzelei_to_the_final_screen() {
     hello(&mut r, 2, "Ben", None);
     board_hello(&mut r, 3, None);
     tv_hello(&mut r, 4);
-    let configure = Action::Configure { game: GameKind::Kritzelei, quiz_mode: QuizMode::Mixed, kids_only: false, adult: false };
+    let configure = Action::Configure { game: GameKind::Kritzelei, quiz_mode: QuizMode::Mixed, speed: GameSpeed::Normal, kids_only: false, adult: false };
     assert!(action(&mut r, 1, configure).is_empty());
     assert!(action(&mut r, 4, Action::StartGame).is_empty());
     assert!(r.in_game());

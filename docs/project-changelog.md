@@ -5,13 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Spieltisch 0.186.0 — The TV picks the game, Kritzelei on the iPad
+## Spieltisch 0.188.0 — The TV picks the game, Kritzelei on the iPad
 
 **Changed**
 
-- The host's phone no longer lists the games: the game is picked on the TV with the remote, and the phone shows the pick as its title ("Gewählt wird am Fernseher."). The Buzzer-Quiz's question mix (Filme, Allgemein, Gemischt) stays on the phone, since the TV has no place for it. The other phones say "… startet das Spiel" instead of "… wählt das Spiel".
+- The host's phone no longer lists the games: the game is picked on the TV with the remote, and the phone shows the pick as its title ("Gewählt wird am Fernseher."). The Buzzer-Quiz's question mix (Filme, Allgemein, Gemischt) and Preisfrage's tempo stay on the phone, since the TV has no place for them. The other phones say "… startet das Spiel" instead of "… wählt das Spiel".
 - With "Nur für Kinder" on, the phone no longer shows the Matratzensport switch at all (the box already switched the adult questions off in kids mode).
-- The iOS controller's build number follows the Spieltisch version again (`CFBundleVersion` 186000); it had been left at 153003 while the version moved on.
+- The iOS controller's build number follows the Spieltisch version again (`CFBundleVersion` 188000); it had been left at 153003 while the version moved on.
 - An iPad that played before becomes the drawing board on its next launch; "Doch mitspielen" turns it back into a player and is remembered.
 
 **Fixed**
@@ -21,6 +21,23 @@ to `main`. Full phase-by-phase detail lives in
 **Removed**
 
 - The finger-to-TV latency test merged in 0.184.0 (its "Latenztest" button, the TV's stats overlay, the iPad's test view and the box's relay). It was a throwaway measurement. Its merge had also brought a dev-only search filter into the iOS app, which then found only a server announced as "Spieltisch dev" and never the TV box.
+
+## Spieltisch 0.187.0 — Zündstoff, the bomb passed until one is left
+
+**Added**
+
+- Zündstoff (`plans/261114-1220-zuendstoff-bomb-game/plan.md`), the second minigame from the user's first list that had been left unbuilt: a bomb with a hidden fuse goes from phone to phone. Whoever holds it answers a quick question from the general pack on their phone; a right answer lets them throw the bomb to a player of their choice, a wrong one brings the next question after a 2-second pause. When the fuse runs out (18 to 40 seconds a round) the holder loses one of three lives and starts the next round; out at zero, the last one left wins, ranked by when the others went out. The house throws for a holder who is away. The holder's phone buzzes on the catch and at the bang.
+- The TV shows the bomb with its holder, the question and its answers big, who threw to whom, a "BUMM!" with the life it cost, and everyone's lives along the bottom; the fuse is never shown.
+- Zündstoff's shelf poster and backdrop.
+## Spieltisch 0.186.0 — A tempo for Preisfrage
+
+**Added**
+
+- A lobby setting *Tempo* with Entspannt, Normal and Speedrun. The leader picks it on the phone under Preisfrage, and the TV shows it beside the game ("1–8 Spieler · Tempo: Entspannt"). It sets how long the keypads stay open for each article: 2 minutes, 1 minute or 20 seconds. Each night starts on Normal, and the TV's own game pick leaves it alone, as it does the other settings. Only Preisfrage reads it so far; the setting is named for the whole lobby so other games with a clock can follow.
+
+**Changed**
+
+- Preisfrage gives 1 minute to guess by default (Normal), instead of the 2 minutes of 0.184.1. The 2 minutes are now Entspannt.
 
 ## Spieltisch 0.185.0 — Grenzfall, the country by its outline
 

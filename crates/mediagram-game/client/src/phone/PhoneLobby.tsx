@@ -5,12 +5,32 @@ import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { boardCapable, inApp } from "./app-bridge";
 import { AvatarPicker } from "./AvatarPicker";
-import { QUIZ_MODES } from "../ui/lobby";
+import { QUIZ_MODES, SPEEDS } from "../ui/lobby";
 import { Token } from "../ui/Token";
 
 type Lobby = Extract<PhoneScreen, { kind: "lobby" }>;
 
 type Props = { me: PlayerInfo; screen: Lobby; conn: Connection; onBecomeBoard: () => void };
+
+type ChoiceProps<T> = { label: string; options: { mode: T; label: string }[]; value: T; pick: (mode: T) => void };
+
+/** One row of segment buttons under the chosen game: the quiz's questions, Preisfrage's tempo. */
+function Choice<T extends string>({ label, options, value, pick }: ChoiceProps<T>) {
+  return (
+    <div className="seg" role="group" aria-label={label}>
+      {options.map((m) => (
+        <button
+          key={m.mode}
+          className={`seg-btn${value === m.mode ? " is-selected" : ""}`}
+          aria-pressed={value === m.mode}
+          onClick={() => pick(m.mode)}
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
   const { settings } = screen;
@@ -53,12 +73,19 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
     const next = { ...settings, ...patch };
     conn.send({
       t: "action",
-      action: { t: "configure", game: next.game, quiz_mode: next.quiz_mode, kids_only: next.kids_only, adult: next.adult },
+      action: {
+        t: "configure",
+        game: next.game,
+        quiz_mode: next.quiz_mode,
+        speed: next.speed,
+        kids_only: next.kids_only,
+        adult: next.adult,
+      },
     });
   };
   const gameName = screen.games.find((g) => g.kind === settings.game)?.name;
 
-  // The game is picked on the TV with the remote; the quiz's question mix has no place there, so it stays here.
+  // The game is picked on the TV with the remote; the quiz's questions and Preisfrage's tempo have no place there, so they stay here.
   return (
     <section className="screen lobby lobby-leader" style={style}>
       <header className="lobby-head">
@@ -68,18 +95,10 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
       </header>
 
       {settings.game === "quiz" && (
-        <div className="seg" role="group" aria-label="Fragen">
-          {QUIZ_MODES.map((m) => (
-            <button
-              key={m.mode}
-              className={`seg-btn${settings.quiz_mode === m.mode ? " is-selected" : ""}`}
-              aria-pressed={settings.quiz_mode === m.mode}
-              onClick={() => configure({ quiz_mode: m.mode })}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        <Choice label="Fragen" options={QUIZ_MODES} value={settings.quiz_mode} pick={(quiz_mode) => configure({ quiz_mode })} />
+      )}
+      {settings.game === "preisfrage" && (
+        <Choice label="Tempo" options={SPEEDS} value={settings.speed} pick={(speed) => configure({ speed })} />
       )}
 
       <div className="toggle-row">

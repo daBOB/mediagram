@@ -3,11 +3,11 @@ use super::*;
 #[test]
 fn every_game_kind_is_listed_exactly_once() {
     use GameKind::*;
-    let kinds = [Quiz, Poster, Race, MauMau, Schwimmen, Durak, Kopfnuss, Dreifelder, GrandAllee, Fluechtig, Preisfrage, Kritzelei, Grenzfall];
+    let kinds = [Quiz, Poster, Race, MauMau, Schwimmen, Durak, Kopfnuss, Dreifelder, GrandAllee, Fluechtig, Preisfrage, Kritzelei, Grenzfall, Zuendstoff];
     for kind in kinds {
         // No wildcard: a new kind stops this test compiling until it joins `kinds`.
         match kind {
-            Quiz | Poster | Race | MauMau | Schwimmen | Durak | Kopfnuss | Dreifelder | GrandAllee | Fluechtig | Preisfrage | Kritzelei | Grenzfall => {}
+            Quiz | Poster | Race | MauMau | Schwimmen | Durak | Kopfnuss | Dreifelder | GrandAllee | Fluechtig | Preisfrage | Kritzelei | Grenzfall | Zuendstoff => {}
         }
         assert_eq!(CATALOGUE.iter().filter(|e| e.kind == kind).count(), 1, "{kind:?}");
     }

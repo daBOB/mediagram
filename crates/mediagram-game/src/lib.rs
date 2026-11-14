@@ -45,6 +45,7 @@ mod protocol_grand_allee;
 mod protocol_poster;
 mod protocol_preisfrage;
 mod protocol_quiz;
+mod protocol_zuendstoff;
 mod protocol_race;
 mod protocol_settings;
 mod protocol_tv;
@@ -107,6 +108,9 @@ mod schwimmen_turn;
 mod schwimmen_views;
 mod server;
 mod titles;
+mod zuendstoff;
+mod zuendstoff_config;
+mod zuendstoff_views;
 
 pub use game::{ActionError, Game, GameCtx, GameFactory, ViewCtx};
 pub use host::{Host, HostConfig, start_game_night};
