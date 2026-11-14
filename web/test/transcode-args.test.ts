@@ -162,6 +162,36 @@ describe("encoders", () => {
     // The device must be set up before the input it applies to.
     expect(args.indexOf("-vaapi_device")).toBeLessThan(args.indexOf("-i"));
   });
+
+  test("with GPU decoding the decoder, filters and encoder share one device, all before the input", () => {
+    const args = argsFor({
+      encoder: { kind: "vaapi", name: "h264_vaapi", device: "/dev/dri/renderD128" },
+      gpuDecode: true,
+    });
+
+    expect(valueOf(args, "-init_hw_device")).toBe("vaapi=va:/dev/dri/renderD128");
+    expect(valueOf(args, "-hwaccel")).toBe("vaapi");
+    expect(valueOf(args, "-hwaccel_device")).toBe("va");
+    expect(valueOf(args, "-filter_hw_device")).toBe("va");
+    // Frames stay on the GPU; without this they are copied back to the CPU, which costs most of the gain.
+    expect(valueOf(args, "-hwaccel_output_format")).toBe("vaapi");
+    expect(args).not.toContain("-vaapi_device");
+    for (const flag of ["-init_hw_device", "-hwaccel", "-hwaccel_output_format"]) {
+      expect(args.indexOf(flag)).toBeLessThan(args.indexOf("-i"));
+    }
+  });
+
+  test("GPU decoding asks nothing of a software encode or a copy", () => {
+    for (const over of [{ gpuDecode: true }, {
+      gpuDecode: true,
+      copyVideo: true,
+      encoder: { kind: "vaapi", name: "h264_vaapi", device: "/dev/dri/renderD128" },
+    }] as Partial<TranscodeRequest>[]) {
+      const args = argsFor(over);
+      expect(args).not.toContain("-hwaccel");
+      expect(args).not.toContain("-init_hw_device");
+    }
+  });
 });
 
 describe("the picture size", () => {
@@ -176,6 +206,14 @@ describe("the picture size", () => {
   test("with VAAPI the frame is fitted before it is uploaded, which is where the size is checked", () => {
     const vf = valueOf(argsFor({ encoder: { kind: "vaapi", name: "h264_vaapi", device: "/dev/dri/renderD128" } }), "-vf");
     expect(vf).toBe(`${FIT},format=nv12,hwupload`);
+  });
+
+  test("with GPU decoding the GPU fits the frame, after uploading any a decoder left in software", () => {
+    const vf = valueOf(argsFor({
+      encoder: { kind: "vaapi", name: "h264_vaapi", device: "/dev/dri/renderD128" },
+      gpuDecode: true,
+    }), "-vf");
+    expect(vf).toBe(`format=nv12|p010|vaapi,hwupload,scale_vaapi=${FIT.slice("scale=".length)}:format=nv12`);
   });
 });
 

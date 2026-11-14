@@ -80,6 +80,12 @@ to `main`. Full phase-by-phase detail lives in
 - The art moved from `res/drawable-nodpi/game_{poster,backdrop}_<kind>.webp` to `assets/game-art/{poster,backdrop}-<kind>.webp` (kind with dashes), served to the page at `/game-art/` by `GamePageClient` like the ceremony avatars, so it is not embedded once per ABI with the web client. A game without art shows its name on the felt; so does every game on the dev host.
 - "The library's films aren't available right now" is now on the page (`?films=0`): "Die Filme der Mediathek sind gerade nicht erreichbar."
 
+## 0.180.1 — The web player converts on the GPU end to end
+
+**Fixed**
+
+- A conversion for a browser that cannot play the original now decodes on the GPU too, not only encodes there (`web/src/transcode/vaapi-decode.ts`). On funstation, 4K HEVC 10-bit converted at barely real time with the CPU decoding (10 s of film in 9.9 s, 29 s of CPU), so the warm-up's 60 s buffer never filled and every start sat out the whole 45 s; decoded, fitted and encoded on the GPU it takes 4.7 s and under 1 s of CPU, with the same picture. AV1 keeps the CPU path: with `-hwaccel` ffmpeg picks an AV1 decoder with no software fallback, and funstation's GPU has no AV1. Sources the GPU cannot decode (H.264 High 10, pictures over 4096 wide) fall back to software within the same command.
+
 ## 0.180.0 — The remote's battery on funstation
 
 **Added**
