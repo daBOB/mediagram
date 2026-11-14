@@ -40,7 +40,6 @@ pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
         speed: GameSpeed::Normal,
         kids_only: kids_locked,
         kids_locked,
-        adult: false,
     }
 }
 
@@ -57,7 +56,6 @@ impl Room {
         quiz_mode: QuizMode,
         speed: GameSpeed,
         kids_only: bool,
-        adult: bool,
     ) -> bool {
         if !allowed || self.game.is_some() {
             return false;
@@ -66,15 +64,13 @@ impl Room {
         self.settings.quiz_mode = quiz_mode;
         self.settings.speed = speed;
         self.settings.kids_only = kids_only || self.settings.kids_locked;
-        // kids mode switches the adult questions off, and they stay off until switched on again
-        self.settings.adult = adult && !self.settings.kids_only;
         true
     }
 
     /// The TV's poster row picks only the game: a pick crossing the leader's kids-mode tap must not undo it.
     pub(crate) fn pick_game(&mut self, game: GameKind) -> bool {
-        let LobbySettings { quiz_mode, speed, kids_only, adult, .. } = self.settings;
-        self.configure(true, game, quiz_mode, speed, kids_only, adult)
+        let LobbySettings { quiz_mode, speed, kids_only, .. } = self.settings;
+        self.configure(true, game, quiz_mode, speed, kids_only)
     }
 
     /// Seats only the connected players, zeroes scores and builds the chosen game.

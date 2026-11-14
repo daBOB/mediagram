@@ -51,9 +51,6 @@ pub enum Action {
         #[serde(default)]
         speed: GameSpeed,
         kids_only: bool,
-        /// Older clients leave it out: off.
-        #[serde(default)]
-        adult: bool,
     },
     StartGame,
     BackToLobby,

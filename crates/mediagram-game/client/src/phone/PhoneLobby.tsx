@@ -79,7 +79,6 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
         quiz_mode: next.quiz_mode,
         speed: next.speed,
         kids_only: next.kids_only,
-        adult: next.adult,
       },
     });
   };
@@ -115,23 +114,6 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
           onClick={() => configure({ kids_only: !settings.kids_only })}
         />
       </div>
-
-      {/* kids mode leaves the adult questions out altogether; the box switches them off with it */}
-      {!settings.kids_only && (
-        <div className="toggle-row">
-          <div>
-            <span id="adult-label">Matratzensport (ab 18)</span>
-            <p className="toggle-hint">Fragen zu Sexualität in Quiz, Kopfnuss und Dreifelder</p>
-          </div>
-          <button
-            className="switch"
-            role="switch"
-            aria-checked={settings.adult}
-            aria-labelledby="adult-label"
-            onClick={() => configure({ adult: !settings.adult })}
-          />
-        </div>
-      )}
 
       {picker}
 

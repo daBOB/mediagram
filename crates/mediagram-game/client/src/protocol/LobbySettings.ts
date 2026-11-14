@@ -7,9 +7,4 @@ export type LobbySettings = { game: GameKind, quiz_mode: QuizMode, speed: GameSp
 /**
  * The kids-only toggle cannot be switched off (a kids profile started it).
  */
-kids_locked: boolean, 
-/**
- * *Matratzensport (ab 18)*: the quizzes also ask the adult questions about
- * sexuality. Never on together with `kids_only`.
- */
-adult: boolean, };
+kids_locked: boolean, };

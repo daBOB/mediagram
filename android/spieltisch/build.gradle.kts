@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         applicationId = "com.mediagram.spieltisch"
-        versionName = "0.189.0"
+        versionName = "0.190.0"
         versionCode = versionCodeOf(versionName!!)
         // Only a release build updates itself; debug builds are installed by adb.
         resValue("bool", "self_update", "false")
