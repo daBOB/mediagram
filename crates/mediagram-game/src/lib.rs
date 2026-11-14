@@ -97,6 +97,7 @@ mod room_board;
 mod room_loop;
 mod room_seats;
 mod room_settings;
+mod room_spike;
 mod room_views;
 mod schwimmen;
 mod schwimmen_config;
