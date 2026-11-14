@@ -16,10 +16,10 @@ fn every_game_kind_is_listed_exactly_once() {
 
 #[test]
 fn preisfrage_plays_alone_or_with_a_full_room() {
-    assert_eq!(entry(GameKind::Preisfrage), GameEntry { kind: GameKind::Preisfrage, name: "Preisfrage".into(), min: 1, max: 8 });
+    assert_eq!(entry(GameKind::Preisfrage), GameEntry { kind: GameKind::Preisfrage, name: "Preisfrage".into(), min: 1, max: 8, timed: true });
 }
 
 #[test]
 fn kritzelei_is_listed_for_two_to_eight() {
-    assert_eq!(entry(GameKind::Kritzelei), GameEntry { kind: GameKind::Kritzelei, name: "Kritzelei".into(), min: 2, max: 8 });
+    assert_eq!(entry(GameKind::Kritzelei), GameEntry { kind: GameKind::Kritzelei, name: "Kritzelei".into(), min: 2, max: 8, timed: true });
 }

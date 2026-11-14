@@ -20,6 +20,8 @@ pub struct GameEntry {
     pub min: u8,
     /// The most players the game starts with.
     pub max: u8,
+    /// The lobby's tempo sets its clocks; turn-based games have none.
+    pub timed: bool,
 }
 
 /// Every game, in the order the lobby lists them.
@@ -69,7 +71,23 @@ pub(crate) const fn entry(kind: GameKind) -> GameEntry {
         // Durak deals 36 cards, six each.
         GameKind::Durak => ("Durak", 2, 6),
     };
-    GameEntry { kind, name: Cow::Borrowed(name), min, max }
+    GameEntry { kind, name: Cow::Borrowed(name), min, max, timed: timed(kind) }
+}
+
+/// Whether a player races a clock in `kind`. No wildcard arm, so a new game decides.
+const fn timed(kind: GameKind) -> bool {
+    match kind {
+        GameKind::Quiz
+        | GameKind::Poster
+        | GameKind::Grenzfall
+        | GameKind::Zuendstoff
+        | GameKind::Kopfnuss
+        | GameKind::Dreifelder
+        | GameKind::Preisfrage
+        | GameKind::Kritzelei
+        | GameKind::GrandAllee => true,
+        GameKind::Race | GameKind::Fluechtig | GameKind::MauMau | GameKind::Schwimmen | GameKind::Durak => false,
+    }
 }
 
 #[cfg(test)]

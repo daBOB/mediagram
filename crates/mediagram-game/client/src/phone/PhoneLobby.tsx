@@ -14,7 +14,7 @@ type Props = { me: PlayerInfo; screen: Lobby; conn: Connection; onBecomeBoard: (
 
 type ChoiceProps<T> = { label: string; options: { mode: T; label: string }[]; value: T; pick: (mode: T) => void };
 
-/** One row of segment buttons under the chosen game: the quiz's questions, Preisfrage's tempo. */
+/** One row of segment buttons under the chosen game: the quiz's questions, a timed game's tempo. */
 function Choice<T extends string>({ label, options, value, pick }: ChoiceProps<T>) {
   return (
     <div className="seg" role="group" aria-label={label}>
@@ -83,21 +83,21 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
       },
     });
   };
-  const gameName = screen.games.find((g) => g.kind === settings.game)?.name;
+  const picked = screen.games.find((g) => g.kind === settings.game);
 
-  // The game is picked on the TV with the remote; the quiz's questions and Preisfrage's tempo have no place there, so they stay here.
+  // The game is picked on the TV with the remote; the quiz's questions and a timed game's tempo have no place there, so they stay here.
   return (
     <section className="screen lobby lobby-leader" style={style}>
       <header className="lobby-head">
         <p className="kicker">Du startest</p>
-        <h1 className="lobby-title">{gameName}</h1>
+        <h1 className="lobby-title">{picked?.name}</h1>
         <p className="hint">Gewählt wird am Fernseher.</p>
       </header>
 
       {settings.game === "quiz" && (
         <Choice label="Fragen" options={QUIZ_MODES} value={settings.quiz_mode} pick={(quiz_mode) => configure({ quiz_mode })} />
       )}
-      {settings.game === "preisfrage" && (
+      {picked?.timed && (
         <Choice label="Tempo" options={SPEEDS} value={settings.speed} pick={(speed) => configure({ speed })} />
       )}
 

@@ -7,7 +7,7 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rand::seq::{IndexedRandom, SliceRandom};
 
-use crate::protocol::{PlayerId, ServerTime};
+use crate::protocol::{GameSpeed, PlayerId, ServerTime};
 use crate::titles::{GameTitle, TitleKind, TitlePool};
 
 #[derive(Debug, Clone)]
@@ -42,6 +42,14 @@ impl Default for PosterConfig {
             early_tolerance_ms: 150.0,
             seed: None,
         }
+    }
+}
+
+impl PosterConfig {
+    /// At the lobby's tempo: the poster sharpens slower or faster.
+    pub fn at(mut self, speed: GameSpeed) -> Self {
+        self.step_ms = speed.stretch(self.step_ms);
+        self
     }
 }
 

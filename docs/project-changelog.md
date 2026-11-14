@@ -5,13 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Spieltisch 0.188.0 — The TV picks the game, Kritzelei on the iPad
+## Spieltisch 0.189.0 — The TV picks the game, Kritzelei on the iPad
 
 **Changed**
 
-- The host's phone no longer lists the games: the game is picked on the TV with the remote, and the phone shows the pick as its title ("Gewählt wird am Fernseher."). The Buzzer-Quiz's question mix (Filme, Allgemein, Gemischt) and Preisfrage's tempo stay on the phone, since the TV has no place for them. The other phones say "… startet das Spiel" instead of "… wählt das Spiel".
+- The host's phone no longer lists the games: the game is picked on the TV with the remote, and the phone shows the pick as its title ("Gewählt wird am Fernseher."). The Buzzer-Quiz's question mix (Filme, Allgemein, Gemischt) and the tempo of a game with a clock stay on the phone, since the TV has no place for them. The other phones say "… startet das Spiel" instead of "… wählt das Spiel".
 - With "Nur für Kinder" on, the phone no longer shows the Matratzensport switch at all (the box already switched the adult questions off in kids mode).
-- The iOS controller's build number follows the Spieltisch version again (`CFBundleVersion` 188000); it had been left at 153003 while the version moved on.
+- The iOS controller's build number follows the Spieltisch version again (`CFBundleVersion` 189000); it had been left at 153003 while the version moved on.
 - An iPad that played before becomes the drawing board on its next launch; "Doch mitspielen" turns it back into a player and is remembered.
 
 **Fixed**
@@ -21,6 +21,18 @@ to `main`. Full phase-by-phase detail lives in
 **Removed**
 
 - The finger-to-TV latency test merged in 0.184.0 (its "Latenztest" button, the TV's stats overlay, the iPad's test view and the box's relay). It was a throwaway measurement. Its merge had also brought a dev-only search filter into the iOS app, which then found only a server announced as "Spieltisch dev" and never the TV box.
+
+## Spieltisch 0.188.0 — Tempo for every game with a clock
+
+**Added**
+
+- The lobby's *Tempo* (Entspannt, Normal, Speedrun) now sets the clocks of every game where players race one: Buzzer-Quiz and Grenzfall (time to answer), Poster-Raten (how fast the poster sharpens), Kopfnuss (the pick, every question and the summit climb), Dreifelder (time to pick a field), Kritzelei (time to draw), Zündstoff (the fuse), Preisfrage (time to guess) and Grand Allee (a decision's and an auction's clock). Entspannt doubles these times and Speedrun halves them; reveals, animations and the fair-tap margins stay as they are.
+- The leader's phone shows the tempo under each of these games, and the TV's line names it ("1–8 Spieler · Fragen: Gemischt · Tempo: Speedrun"). The setting belongs to the room, so it carries from one game to the next.
+- The catalogue marks which games have a clock (`GameEntry.timed`). Heimlauf, Flüchtig, Mau-Mau, Schwimmen and Durak are played turn by turn without one, so they show no tempo.
+
+**Changed**
+
+- Preisfrage's Speedrun gives 30 seconds to guess instead of 20, now that Speedrun means half the time in every game.
 
 ## Spieltisch 0.187.0 — Zündstoff, the bomb passed until one is left
 
