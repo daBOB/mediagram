@@ -5,9 +5,9 @@ import { gameLine, seatsLine } from "../src/ui/lobby";
 import { gameArtUrl, okStarts, shelfLine, stepIndex, windowStart, type ShelfFacts } from "../src/ui/shelf";
 import { UPCOMING, shelfItems, upcomingLine } from "../src/ui/shelf-games";
 
-const quiz: GameEntry = { kind: "quiz", name: "Buzzer-Quiz", min: 1, max: 8 };
-const race: GameEntry = { kind: "race", name: "Heimlauf", min: 2, max: 4 };
-const preisfrage: GameEntry = { kind: "preisfrage", name: "Preisfrage", min: 1, max: 8 };
+const quiz: GameEntry = { kind: "quiz", name: "Buzzer-Quiz", min: 1, max: 8, timed: true };
+const race: GameEntry = { kind: "race", name: "Heimlauf", min: 2, max: 4, timed: false };
+const preisfrage: GameEntry = { kind: "preisfrage", name: "Preisfrage", min: 1, max: 8, timed: true };
 const facts = (f: Partial<ShelfFacts> = {}): ShelfFacts => ({
   seated: 3,
   minPlayers: 1,
@@ -18,8 +18,8 @@ const facts = (f: Partial<ShelfFacts> = {}): ShelfFacts => ({
   ...f,
 });
 
-test("the line under a game's name gives its seats, the quiz its questions, Preisfrage its tempo", () => {
-  expect(gameLine(quiz, { quiz_mode: "films", speed: "normal" })).toBe("1–8 Spieler · Fragen: Filme");
+test("the line under a game's name gives its seats, the quiz its questions, a timed game its tempo", () => {
+  expect(gameLine(quiz, { quiz_mode: "films", speed: "normal" })).toBe("1–8 Spieler · Fragen: Filme · Tempo: Normal");
   expect(gameLine(preisfrage, { quiz_mode: "mixed", speed: "relaxed" })).toBe("1–8 Spieler · Tempo: Entspannt");
   expect(gameLine(race, { quiz_mode: "mixed", speed: "speedrun" })).toBe("2–4 Spieler");
 });

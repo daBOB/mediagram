@@ -44,10 +44,10 @@ fn intro_guessing_reveal_for_each_article_then_the_final() {
 #[test]
 fn the_lobby_tempo_sets_the_time_to_guess() {
     let ps = players(1);
-    let window_at = |speed| window(&PreisfrageGame::new(PreisfrageConfig::at(speed), articles(1), "12.11.".into(), &ps, 0.0));
+    let window_at = |speed| window(&PreisfrageGame::new(PreisfrageConfig::default().at(speed), articles(1), "12.11.".into(), &ps, 0.0));
     assert_eq!(window_at(GameSpeed::Relaxed), (3_000.0, 123_000.0), "2 min");
     assert_eq!(window_at(GameSpeed::Normal), (3_000.0, 63_000.0), "1 min");
-    assert_eq!(window_at(GameSpeed::Speedrun), (3_000.0, 23_000.0), "20 s");
+    assert_eq!(window_at(GameSpeed::Speedrun), (3_000.0, 33_000.0), "30 s");
 }
 
 #[test]

@@ -1,6 +1,6 @@
 //! Kritzelei's numbers, in one place.
 
-use crate::protocol::ServerTime;
+use crate::protocol::{GameSpeed, ServerTime};
 
 #[derive(Debug, Clone)]
 pub struct KritzeleiConfig {
@@ -27,5 +27,13 @@ impl Default for KritzeleiConfig {
             max_points: 20_000,
             max_batch: 512,
         }
+    }
+}
+
+impl KritzeleiConfig {
+    /// At the lobby's tempo: the time to draw.
+    pub fn at(mut self, speed: GameSpeed) -> Self {
+        self.draw_ms = speed.stretch(self.draw_ms);
+        self
     }
 }

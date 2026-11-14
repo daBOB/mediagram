@@ -14,7 +14,7 @@ type Props = { me: PlayerInfo; screen: Lobby; conn: Connection; onBecomeBoard: (
 
 type ChoiceProps<T> = { label: string; options: { mode: T; label: string }[]; value: T; pick: (mode: T) => void };
 
-/** One row of segment buttons under the chosen game: the quiz's questions, Preisfrage's tempo. */
+/** One row of segment buttons under the chosen game: the quiz's questions, a timed game's tempo. */
 function Choice<T extends string>({ label, options, value, pick }: ChoiceProps<T>) {
   return (
     <div className="seg" role="group" aria-label={label}>
@@ -102,7 +102,7 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
         <h1 className="lobby-title">Was spielen wir?</h1>
       </header>
 
-      {screen.games.map(({ kind, name }) => (
+      {screen.games.map(({ kind, name, timed }) => (
         <div key={kind} className={`game${settings.game === kind ? " is-selected" : ""}`}>
           <button className="game-pick" aria-pressed={settings.game === kind} onClick={() => configure({ game: kind })}>
             {name}
@@ -110,7 +110,7 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
           {settings.game === kind && kind === "quiz" && (
             <Choice label="Fragen" options={QUIZ_MODES} value={settings.quiz_mode} pick={(quiz_mode) => configure({ quiz_mode })} />
           )}
-          {settings.game === kind && kind === "preisfrage" && (
+          {settings.game === kind && timed && (
             <Choice label="Tempo" options={SPEEDS} value={settings.speed} pick={(speed) => configure({ speed })} />
           )}
         </div>
