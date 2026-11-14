@@ -8,6 +8,7 @@ use crate::poster_config::PosterConfig;
 use crate::preisfrage_config::PreisfrageConfig;
 use crate::protocol::GameKind;
 use crate::quiz_config::QuizConfig;
+use crate::spruchreif::spruchreif_config;
 use crate::zuendstoff_config::ZuendstoffConfig;
 
 /// Each timed game's thinking clocks at `speed`, in a fixed order.
@@ -30,6 +31,7 @@ fn clocks(speed: GameSpeed) -> Vec<f64> {
         PreisfrageConfig::default().at(speed).guess_ms,
         allee.ask_ms,
         allee.auction_ms,
+        spruchreif_config().at(speed).answer_ms,
     ]
 }
 

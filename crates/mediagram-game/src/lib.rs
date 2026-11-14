@@ -25,6 +25,7 @@ pub mod game;
 mod game_log;
 pub mod general;
 mod grenzfall;
+mod spruchreif;
 mod image_files;
 pub mod grand_allee;
 pub mod host;
