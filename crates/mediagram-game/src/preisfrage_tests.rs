@@ -31,13 +31,13 @@ fn window(g: &PreisfrageGame) -> (f64, f64) {
 fn intro_guessing_reveal_for_each_article_then_the_final() {
     let mut ps = players(2);
     let mut g = game(2, &ps);
-    assert_eq!(window(&g), (3_000.0, 23_000.0), "3 s with the article alone, then 20 s to guess");
-    tick(&mut g, &mut ps, 23_000.0);
-    assert_eq!(g.stage, Stage::Reveal { ends_at: 30_000.0 }, "7 s of reveal");
-    tick(&mut g, &mut ps, 30_000.0);
-    assert_eq!((g.index, window(&g)), (1, (33_000.0, 53_000.0)));
-    tick(&mut g, &mut ps, 53_000.0);
-    tick(&mut g, &mut ps, 60_000.0);
+    assert_eq!(window(&g), (3_000.0, 123_000.0), "3 s with the article alone, then 2 min to guess");
+    tick(&mut g, &mut ps, 123_000.0);
+    assert_eq!(g.stage, Stage::Reveal { ends_at: 130_000.0 }, "7 s of reveal");
+    tick(&mut g, &mut ps, 130_000.0);
+    assert_eq!((g.index, window(&g)), (1, (133_000.0, 253_000.0)));
+    tick(&mut g, &mut ps, 253_000.0);
+    tick(&mut g, &mut ps, 260_000.0);
     assert!(g.is_finished());
 }
 
@@ -50,8 +50,8 @@ fn a_guess_is_taken_once_while_the_keypads_are_open() {
     assert_eq!(guess(&mut g, &mut ps, 4_000.0, 0, MAX_CENTS + 1), Err(ActionError::NotAllowed("Das ist kein Preis.")));
     assert_eq!(guess(&mut g, &mut ps, 4_000.0, 0, 900), Ok(()));
     assert_eq!(guess(&mut g, &mut ps, 5_000.0, 0, 1000), Err(ActionError::Ignored), "one locked guess");
-    tick(&mut g, &mut ps, 23_000.0);
-    assert_eq!(guess(&mut g, &mut ps, 23_100.0, 1, 1000), Err(ActionError::Ignored), "after the clock");
+    tick(&mut g, &mut ps, 123_000.0);
+    assert_eq!(guess(&mut g, &mut ps, 123_100.0, 1, 1000), Err(ActionError::Ignored), "after the clock");
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn points_go_to_the_scores_at_each_reveal() {
     assert_eq!((ps[0].score, ps[1].score), (900, 1500));
     tick(&mut g, &mut ps, 11_000.0);
     guess(&mut g, &mut ps, 15_000.0, 0, 2000).unwrap();
-    tick(&mut g, &mut ps, 34_000.0);
+    tick(&mut g, &mut ps, 134_000.0);
     assert_eq!((ps[0].score, ps[1].score), (2400, 1500), "no guess, no points");
 }
 
@@ -101,7 +101,7 @@ fn the_tv_shows_who_guessed_never_what() {
     guess(&mut g, &mut ps, 4_000.0, 1, 777).unwrap();
     let view = ViewCtx { now: 4_000.0, players: &ps, leader: Some(0) };
     let TvScene::Preisfrage { scene } = g.tv_scene(&view) else { panic!() };
-    assert_eq!(scene.stage, PreisfrageStage::Guessing { opens_at: 3_000.0, closes_at: 23_000.0, guessed: vec![1] });
+    assert_eq!(scene.stage, PreisfrageStage::Guessing { opens_at: 3_000.0, closes_at: 123_000.0, guessed: vec![1] });
     assert!(!serde_json::to_string(&scene).unwrap().contains("777"));
     let PhoneScreen::Price { keypad } = g.phone_screen(&view, 1) else { panic!() };
     assert_eq!(keypad.sent, Some(777), "a phone shows its own guess");

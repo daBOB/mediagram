@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.184.1 — Preisfrage gives two minutes to guess
+
+**Changed**
+
+- Preisfrage's keypads stay open for 2 minutes per article instead of 20 seconds. The reveal still comes as soon as everyone at the table has guessed, so the clock only matters for whoever is still thinking.
+
 ## Spieltisch 0.184.0 — Kritzelei, the drawing game, as far as it is built
 
 **Added**

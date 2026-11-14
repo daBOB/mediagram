@@ -21,6 +21,6 @@ pub struct PreisfrageConfig {
 
 impl Default for PreisfrageConfig {
     fn default() -> Self {
-        Self { rounds: 6, intro_ms: 3_000.0, guess_ms: 20_000.0, reveal_ms: 7_000.0, exact_bonus: 500 }
+        Self { rounds: 6, intro_ms: 3_000.0, guess_ms: 120_000.0, reveal_ms: 7_000.0, exact_bonus: 500 }
     }
 }
