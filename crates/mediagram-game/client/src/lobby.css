@@ -28,32 +28,9 @@
   line-height: 1.05;
 }
 
-.game {
-  padding: 0.35rem;
-  border-radius: 16px;
-  background: var(--felt-deep);
-  border: 3px solid transparent;
-}
-
-.game.is-selected {
-  border-color: var(--yellow);
-}
-
-.game-pick {
-  display: block;
-  width: 100%;
-  padding: 0.7rem 0.8rem;
-  background: none;
-  text-align: left;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 1.25rem;
-}
-
 .seg {
   display: flex;
   gap: 0.3rem;
-  padding: 0 0.35rem 0.35rem;
 }
 
 .seg-btn {

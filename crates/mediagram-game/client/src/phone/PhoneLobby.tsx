@@ -38,19 +38,8 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
   // A plain-HTTP page cannot keep the screen on (no Wake Lock outside HTTPS, and Chrome ignored a
   // hidden looping video), so the player turns the phone's screen timeout off themselves. The
   // controller apps keep the screen on, so they skip the hint.
-  // spike: the iPad's ink view calls this with {points, t}; t is the touch's epoch ms
-  (window as any).__spikeInk = (json: string) => {
-    const { points, t } = JSON.parse(json);
-    conn.send({ t: "action", action: { t: "spike_ink", points, at: conn.serverNow() - (Date.now() - t) } } as never);
-  };
   const picker = (
     <>
-      {/* only the iOS controller carries the latency test */}
-      {typeof (window as any).mediagramApp?.spike === "function" && (
-        <button type="button" onClick={() => (window as any).mediagramApp.spike()}>
-          Latenztest
-        </button>
-      )}
       <AvatarPicker avatars={screen.avatars} mine={me.avatar} conn={conn} />
       {!inApp() && (
         <p className="hint">Tipp: Schalte für den Spieleabend die automatische Bildschirmsperre deines Handys aus, sonst geht es mitten im Spiel aus.</p>
@@ -69,7 +58,7 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
         <Token player={me} size="lg" />
         <h1 className="screen-title">{me.name}</h1>
         <p className="screen-text">
-          {screen.leader_name ? `${screen.leader_name} wählt das Spiel …` : "Das Spiel wird gewählt …"}
+          {screen.leader_name ? `${screen.leader_name} startet das Spiel …` : "Das Spiel wird gewählt …"}
         </p>
         <p className="hint">
           {screen.players === 1 ? "Du bist allein am Tisch." : `Ihr seid zu ${screen.players}.`}
@@ -94,27 +83,23 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
       },
     });
   };
+  const picked = screen.games.find((g) => g.kind === settings.game);
 
+  // The game is picked on the TV with the remote; the quiz's questions and a timed game's tempo have no place there, so they stay here.
   return (
     <section className="screen lobby lobby-leader" style={style}>
       <header className="lobby-head">
         <p className="kicker">Du startest</p>
-        <h1 className="lobby-title">Was spielen wir?</h1>
+        <h1 className="lobby-title">{picked?.name}</h1>
+        <p className="hint">Gewählt wird am Fernseher.</p>
       </header>
 
-      {screen.games.map(({ kind, name, timed }) => (
-        <div key={kind} className={`game${settings.game === kind ? " is-selected" : ""}`}>
-          <button className="game-pick" aria-pressed={settings.game === kind} onClick={() => configure({ game: kind })}>
-            {name}
-          </button>
-          {settings.game === kind && kind === "quiz" && (
-            <Choice label="Fragen" options={QUIZ_MODES} value={settings.quiz_mode} pick={(quiz_mode) => configure({ quiz_mode })} />
-          )}
-          {settings.game === kind && timed && (
-            <Choice label="Tempo" options={SPEEDS} value={settings.speed} pick={(speed) => configure({ speed })} />
-          )}
-        </div>
-      ))}
+      {settings.game === "quiz" && (
+        <Choice label="Fragen" options={QUIZ_MODES} value={settings.quiz_mode} pick={(quiz_mode) => configure({ quiz_mode })} />
+      )}
+      {picked?.timed && (
+        <Choice label="Tempo" options={SPEEDS} value={settings.speed} pick={(speed) => configure({ speed })} />
+      )}
 
       <div className="toggle-row">
         <div>
@@ -131,22 +116,22 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
         />
       </div>
 
-      <div className="toggle-row">
-        <div>
-          <span id="adult-label">Matratzensport (ab 18)</span>
-          <p className="toggle-hint">
-            {settings.kids_only ? "Nicht im Kindermodus" : "Fragen zu Sexualität in Quiz, Kopfnuss und Dreifelder"}
-          </p>
+      {/* kids mode leaves the adult questions out altogether; the box switches them off with it */}
+      {!settings.kids_only && (
+        <div className="toggle-row">
+          <div>
+            <span id="adult-label">Matratzensport (ab 18)</span>
+            <p className="toggle-hint">Fragen zu Sexualität in Quiz, Kopfnuss und Dreifelder</p>
+          </div>
+          <button
+            className="switch"
+            role="switch"
+            aria-checked={settings.adult}
+            aria-labelledby="adult-label"
+            onClick={() => configure({ adult: !settings.adult })}
+          />
         </div>
-        <button
-          className="switch"
-          role="switch"
-          aria-checked={settings.adult}
-          aria-labelledby="adult-label"
-          disabled={settings.kids_only}
-          onClick={() => configure({ adult: !settings.adult })}
-        />
-      </div>
+      )}
 
       {picker}
 

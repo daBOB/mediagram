@@ -76,7 +76,6 @@ impl Room {
     /// errors). Views go out through [`Room::flush`].
     pub fn handle(&mut self, conn: ConnId, text: &str, now: ServerTime) -> Outbox {
         let reply = match serde_json::from_str::<ClientMsg>(text) {
-            Ok(ClientMsg::Action { action: Action::SpikeInk { points, at } }) => return self.relay_spike_ink(points, at),
             Ok(msg) => self.handle_msg(conn, msg, now),
             Err(_) => Some(error(ErrorCode::BadMessage, "Nachricht nicht lesbar.".into())),
         };
