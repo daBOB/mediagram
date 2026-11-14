@@ -14,6 +14,7 @@ use crate::dreifelder_config::{DreifelderConfig, dreifelder_questions};
 use crate::game::{Game, GameFactory};
 use crate::general::adult_pack;
 use crate::grenzfall::{grenzfall_config, grenzfall_questions};
+use crate::spruchreif::{spruchreif_config, spruchreif_questions};
 use crate::kopfnuss::KopfnussGame;
 use crate::kritzelei::{KritzeleiConfig, KritzeleiGame};
 use crate::kritzelei_words::deck;
@@ -84,6 +85,11 @@ pub fn game_factory(
             GameKind::Grenzfall => {
                 let cfg = grenzfall_config().at(speed).sized(length);
                 let questions = grenzfall_questions(cfg.rounds, &mut StdRng::from_os_rng(), &mut history);
+                Box::new(Quiz::new(cfg, questions, ctx.now))
+            }
+            GameKind::Spruchreif => {
+                let cfg = spruchreif_config().at(speed).sized(length);
+                let questions = spruchreif_questions(cfg.rounds, &mut StdRng::from_os_rng(), &mut history);
                 Box::new(Quiz::new(cfg, questions, ctx.now))
             }
             GameKind::Zuendstoff => {

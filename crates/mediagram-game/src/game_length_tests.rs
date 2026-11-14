@@ -3,6 +3,7 @@ use crate::catalogue::CATALOGUE;
 use crate::dreifelder_config::DreifelderConfig;
 use crate::grand_allee::live::GrandAlleeConfig;
 use crate::grenzfall::{grenzfall_config, tiers};
+use crate::spruchreif::spruchreif_config;
 use crate::kopfnuss_config::KopfnussConfig;
 use crate::poster_config::PosterConfig;
 use crate::preisfrage_config::PreisfrageConfig;
@@ -34,6 +35,7 @@ fn counts(length: GameLength) -> Vec<usize> {
         allee.round_turns as usize,
         allee.min_rounds as usize,
         allee.max_rounds as usize,
+        spruchreif_config().sized(length).rounds,
     ]
 }
 

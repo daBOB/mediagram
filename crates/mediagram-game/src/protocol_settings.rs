@@ -33,6 +33,8 @@ pub enum GameKind {
     Grenzfall,
     /// Zündstoff: answer to throw the bomb on before its hidden fuse runs out.
     Zuendstoff,
+    /// Spruchreif: finish the proverb on the TV, German and English by turns.
+    Spruchreif,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

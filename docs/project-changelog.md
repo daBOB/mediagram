@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.192.0 — Spruchreif, finish the proverb
+
+**Added**
+
+- A new minigame, *Spruchreif*: the TV shows the start of a proverb ("Wer anderen eine Grube gräbt, …", "Don't put all your eggs …"), the phones four endings, the real one and three that sound right and are not. It is the Buzzer-Quiz with bundled questions, like Grenzfall: faster right answers score more, the reveal and podium are the quiz's.
+- German and English proverbs by turns in every game, either language may open; the label shows 🇩🇪 Sprichwort or 🇬🇧 Proverb (user's decision: mixed, no lobby language setting).
+- 246 proverbs in `questions/sprichwoerter.json`, 139 German and 107 English, each with three handwritten wrong endings, in three tiers: well-known first, rare or old ones last (10 rounds; Kurz 5, Lang 15). A night repeats none until a language's tier runs out.
+- Shelf entry, poster and backdrop (BudgetPixel gpt-image-2.6: the granny telling a saying that trails off, the fox, panda and piglet finishing it on their phones, proverb sight gags and German and British bunting).
+
 ## Spieltisch 0.191.0 — Dauer: how much of a game is played
 
 **Added**
