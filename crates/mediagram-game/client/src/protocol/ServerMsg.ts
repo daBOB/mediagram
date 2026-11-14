@@ -5,4 +5,4 @@ import type { ErrorCode } from "./ErrorCode";
 import type { PhoneView } from "./PhoneView";
 import type { TvView } from "./TvView";
 
-export type ServerMsg = { "t": "welcome", player: number | null, token: string | null, now: number, } | { "t": "pong", t0: number, now: number, } | { "t": "phone", view: PhoneView, } | { "t": "tv", view: TvView, } | { "t": "board", screen: BoardScreen, } | { "t": "draw", turn: number, from: number, ops: Array<DrawOp>, } | { "t": "error", code: ErrorCode, message: string, };
+export type ServerMsg = { "t": "welcome", player: number | null, token: string | null, now: number, } | { "t": "pong", t0: number, now: number, } | { "t": "phone", view: PhoneView, } | { "t": "tv", view: TvView, } | { "t": "board", screen: BoardScreen, } | { "t": "draw", turn: number, from: number, ops: Array<DrawOp>, } | { "t": "error", code: ErrorCode, message: string, } | { "t": "spike_ink", points: Array<number>, at: number, };

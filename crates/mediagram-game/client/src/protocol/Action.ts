@@ -7,4 +7,4 @@ export type Action = { "t": "configure", game: GameKind, quiz_mode: QuizMode, ki
 /**
  * Older clients leave it out: off.
  */
-adult: boolean, } | { "t": "start_game" } | { "t": "back_to_lobby" } | { "t": "pick_avatar", id: string, } | { "t": "choose", index: number, at: number, } | { "t": "bid", amount: number, at: number, } | { "t": "guess_price", cents: number, } | { "t": "cards", button: string, hand: Array<number>, table: number | null, } | { "t": "board", act: BoardAct, };
+adult: boolean, } | { "t": "start_game" } | { "t": "back_to_lobby" } | { "t": "pick_avatar", id: string, } | { "t": "choose", index: number, at: number, } | { "t": "bid", amount: number, at: number, } | { "t": "guess_price", cents: number, } | { "t": "spike_ink", points: Array<number>, at: number, } | { "t": "cards", button: string, hand: Array<number>, table: number | null, } | { "t": "board", act: BoardAct, };

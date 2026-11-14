@@ -56,6 +56,7 @@ pub enum ServerMsg {
     /// Drawing ops of `turn` from index `from` on, for the board and the TV.
     Draw { turn: u32, from: u32, ops: Vec<DrawOp> },
     Error { code: ErrorCode, message: String },
+    SpikeInk { points: Vec<u16>, at: ServerTime },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

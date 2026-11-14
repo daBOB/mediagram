@@ -13,6 +13,8 @@ final class BoxFinder: ObservableObject {
         let browser = NWBrowser(for: .bonjourWithTXTRecord(type: "_mediagram-game._tcp", domain: nil), using: .tcp)
         browser.browseResultsChangedHandler = { [weak self] results, _ in
             let urls = results.compactMap { result -> String? in
+                // Throwaway: only the dev server, never another box on the Wi-Fi.
+                guard case .service(let name, _, _, _) = result.endpoint, name == "Spieltisch dev" else { return nil }
                 guard case .bonjour(let txt) = result.metadata, let url = txt["url"] else { return nil }
                 return lanGameURL(url)
             }

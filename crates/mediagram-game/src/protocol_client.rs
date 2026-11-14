@@ -76,6 +76,11 @@ pub enum Action {
     },
     /// A button of a `PhoneScreen::Cards` desk, with the cards picked for it
     /// (indices into the desk's hand and table).
+    /// Spike: ink points (x,y pairs, 0..10000) relayed to the TV.
+    SpikeInk {
+        points: Vec<u16>,
+        at: ServerTime,
+    },
     Cards {
         button: String,
         hand: Vec<u8>,
