@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.185.0 — Grenzfall, the country by its outline
+
+**Added**
+
+- Grenzfall (`plans/261114-1114-grenzfall-country-shapes/plan.md`), a minigame from the user's first list of minigames that had been left unbuilt: a country's outline on the TV, four country names on the phones, scored like the Buzzer-Quiz (the faster a right answer, the more points). Ten rounds: three well-known shapes, four middle ones, three hard ones. The wrong answers are other famous shapes in an easy round, countries of the same continent in a middle one and the neighbours in a hard one. A country shown tonight comes back only once its tier is used up. It runs the quiz engine with questions made from `questions/laender.json`.
+- 166 country outlines, built by `scripts/build_country_shapes.py` from Natural Earth's 1:50m countries (public domain): the UN members, each in its own Mercator view, overseas territory dropped (Alaska and Hawaii, French Guiana, the Canaries, Svalbard …), Somaliland and Northern Cyprus joined to Somalia and Cyprus. Left out: states whose statehood is disputed, and 28 states that are a blob or a few dots of atoll at that scale (Malta, Singapore, the small Caribbean and Pacific island states …).
+- Grenzfall's shelf poster and backdrop.
+
+**Changed**
+
+- A long answer on a phone's answer key breaks at a syllable ("Deutsch-land") instead of at any letter ("Deutschlan-d").
+
 ## Spieltisch 0.184.2 — The latency test stays out of a game night
 
 **Fixed**

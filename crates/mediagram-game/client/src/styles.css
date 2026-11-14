@@ -413,7 +413,11 @@ p {
   font-weight: 700;
   font-size: clamp(1.3rem, 6.5vw, 2rem);
   line-height: 1.15;
+  /* a syllable break ("Deutsch-land") where the browser can hyphenate German; `anywhere`
+     stays as the fallback and keeps a long name from widening its column */
   overflow-wrap: anywhere;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 /* Before the buttons go live they are unlit outlines; at opens_at every
@@ -560,6 +564,13 @@ html[data-surface="tv"] {
   max-width: 42vw;
   border-radius: 14px;
   object-fit: contain;
+}
+
+/* A country's outline in Grenzfall is the whole question, so it gets the room a still would share. */
+.qimg[src^="data:image/svg"] {
+  height: 34vh;
+  max-width: 40vw;
+  border-radius: 0;
 }
 
 .has-image .qtext {

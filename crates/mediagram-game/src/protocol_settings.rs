@@ -29,6 +29,8 @@ pub enum GameKind {
     Preisfrage,
     /// Kritzelei: one draws on the iPad, the room guesses out loud.
     Kritzelei,
+    /// Grenzfall: name the country from its outline on the TV.
+    Grenzfall,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
