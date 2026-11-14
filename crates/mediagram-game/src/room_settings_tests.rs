@@ -1,5 +1,5 @@
 use crate::catalogue::CATALOGUE;
-use crate::protocol::{Action, GameKind, GameSpeed, LobbySettings, PhoneScreen, QuizMode, ServerMsg, TvScene, TvView};
+use crate::protocol::{Action, GameKind, GameLength, GameSpeed, LobbySettings, PhoneScreen, QuizMode, ServerMsg, TvScene, TvView};
 use crate::room::tests::{Idle, action, cfg, decode, hello, room, room_with};
 use crate::room::{ConnId, Outbox, Room, RoomConfig};
 use crate::room_settings::Readiness;
@@ -13,7 +13,7 @@ fn lobby_of(room: &mut Room, conn: ConnId) -> PhoneScreen {
 }
 
 fn configure(room: &mut Room, conn: ConnId, game: GameKind, quiz_mode: QuizMode, kids_only: bool) -> Outbox {
-    action(room, conn, Action::Configure { game, quiz_mode, speed: GameSpeed::Normal, kids_only })
+    action(room, conn, Action::Configure { game, quiz_mode, speed: GameSpeed::Normal, length: GameLength::Normal, kids_only })
 }
 
 #[test]
@@ -163,7 +163,7 @@ fn the_leader_sets_the_tempo_the_tv_keeps_it_and_an_older_client_means_normal() 
     r.connect(9, true);
     r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
     assert_eq!(r.settings().speed, GameSpeed::Normal, "normal at the start of a night");
-    let tempo = |speed| Action::Configure { game: GameKind::Preisfrage, quiz_mode: QuizMode::Mixed, speed, kids_only: false };
+    let tempo = |speed| Action::Configure { game: GameKind::Preisfrage, quiz_mode: QuizMode::Mixed, speed, length: GameLength::Normal, kids_only: false };
     assert!(action(&mut r, 1, tempo(GameSpeed::Relaxed)).is_empty());
     assert_eq!(r.settings().speed, GameSpeed::Relaxed);
     assert!(action(&mut r, 9, tempo(GameSpeed::Speedrun)).is_empty());
@@ -171,6 +171,23 @@ fn the_leader_sets_the_tempo_the_tv_keeps_it_and_an_older_client_means_normal() 
     let out = r.handle(1, r#"{"t":"action","action":{"t":"configure","game":"preisfrage","quiz_mode":"mixed","kids_only":false}}"#, 0.0);
     assert!(out.is_empty(), "accepted: {out:?}");
     assert_eq!(r.settings().speed, GameSpeed::Normal);
+}
+
+#[test]
+fn the_leader_sets_the_length_the_tv_keeps_it_and_an_older_client_means_normal() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    r.connect(9, true);
+    r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
+    assert_eq!(r.settings().length, GameLength::Normal, "normal at the start of a night");
+    let length = |length| Action::Configure { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, speed: GameSpeed::Normal, length, kids_only: false };
+    assert!(action(&mut r, 1, length(GameLength::Long)).is_empty());
+    assert_eq!(r.settings().length, GameLength::Long);
+    assert!(action(&mut r, 9, length(GameLength::Short)).is_empty());
+    assert_eq!(r.settings().length, GameLength::Long, "the TV's pick changes only the game");
+    let out = r.handle(1, r#"{"t":"action","action":{"t":"configure","game":"quiz","quiz_mode":"mixed","kids_only":false}}"#, 0.0);
+    assert!(out.is_empty(), "accepted: {out:?}");
+    assert_eq!(r.settings().length, GameLength::Normal);
 }
 
 #[test]

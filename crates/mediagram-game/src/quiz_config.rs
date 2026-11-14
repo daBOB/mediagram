@@ -3,7 +3,7 @@
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 
-use crate::protocol::{GameSpeed, ServerTime};
+use crate::protocol::{GameLength, GameSpeed, ServerTime};
 
 /// One multiple-choice question. `correct` is shuffled in among `wrong`.
 #[derive(Debug, Clone)]
@@ -49,6 +49,12 @@ impl Default for QuizConfig {
 }
 
 impl QuizConfig {
+    /// At the lobby's length: the number of questions.
+    pub fn sized(mut self, length: GameLength) -> Self {
+        self.rounds = length.scale(self.rounds);
+        self
+    }
+
     /// At the lobby's tempo: the time to answer stretches, the fair-tap margins do not.
     pub fn at(mut self, speed: GameSpeed) -> Self {
         self.answer_ms = speed.stretch(self.answer_ms);

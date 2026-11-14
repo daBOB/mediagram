@@ -4,7 +4,7 @@ use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 
 use crate::kopfnuss_supply::{FILMS, QuestionSupply};
-use crate::protocol::GameSpeed;
+use crate::protocol::{GameLength, GameSpeed};
 use crate::quiz_config::{Question, QuizConfig};
 
 #[derive(Debug, Clone)]
@@ -29,6 +29,13 @@ impl Default for DreifelderConfig {
 }
 
 impl DreifelderConfig {
+    /// At the lobby's length: the cap on questions, and the film questions among them.
+    pub fn sized(mut self, length: GameLength) -> Self {
+        self.quiz = self.quiz.sized(length);
+        self.films = length.scale(self.films);
+        self
+    }
+
     /// At the lobby's tempo: the time to pick a field.
     pub fn at(mut self, speed: GameSpeed) -> Self {
         self.quiz = self.quiz.at(speed);

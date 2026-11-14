@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.191.0 — Dauer: how much of a game is played
+
+**Added**
+
+- A lobby setting *Dauer* with Kurz, Normal and Lang, beside Tempo: Kurz halves how much of a game is played, Lang adds half again, both rounded up. Buzzer-Quiz 4 / 8 / 12 questions, Poster-Raten 5 / 10 / 15 posters, Grenzfall 5 / 10 / 15 outlines (still easy first, hard last), Kopfnuss 4 / 7 / 11 rounds before the climb (each still three questions), Dreifelder a cap of 6 / 12 / 18 questions, Preisfrage 3 / 6 / 9 articles, Zündstoff 2 / 3 / 5 lives, Kritzelei once / as now / once more round the table (a small table draws three times on Lang), Grand Allee's round limit and its bounds.
+- The leader's phone shows it under Tempo for these games, and the TV's line names it ("1–8 Spieler · Fragen: Gemischt · Tempo: Normal · Dauer: Lang"). Like Tempo it belongs to the room, starts each night on Normal and is left alone by the TV's game pick.
+- The catalogue marks which games have a length (`GameEntry.sized`). Heimlauf, Flüchtig, Mau-Mau, Schwimmen and Durak are played to their end and show none.
+
+**Changed**
+
+- Each setting row on the leader's phone is named above its buttons (Fragen, Tempo, Dauer), since Tempo and Dauer both have a Normal.
+- The Buzzer-Quiz's description on the shelf no longer says "Acht Runden", which a Kurz or Lang game would contradict.
+
 ## Spieltisch 0.190.0 — Kids mode is the one content switch
 
 **Changed**

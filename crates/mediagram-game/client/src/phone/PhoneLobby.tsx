@@ -5,7 +5,7 @@ import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { boardCapable, inApp } from "./app-bridge";
 import { AvatarPicker } from "./AvatarPicker";
-import { QUIZ_MODES, SPEEDS } from "../ui/lobby";
+import { LENGTHS, QUIZ_MODES, SPEEDS } from "../ui/lobby";
 import { Token } from "../ui/Token";
 
 type Lobby = Extract<PhoneScreen, { kind: "lobby" }>;
@@ -14,20 +14,25 @@ type Props = { me: PlayerInfo; screen: Lobby; conn: Connection; onBecomeBoard: (
 
 type ChoiceProps<T> = { label: string; options: { mode: T; label: string }[]; value: T; pick: (mode: T) => void };
 
-/** One row of segment buttons under the chosen game: the quiz's questions, a timed game's tempo. */
+/** One named row of segment buttons for the chosen game: its questions, tempo or length. */
 function Choice<T extends string>({ label, options, value, pick }: ChoiceProps<T>) {
   return (
-    <div className="seg" role="group" aria-label={label}>
-      {options.map((m) => (
-        <button
-          key={m.mode}
-          className={`seg-btn${value === m.mode ? " is-selected" : ""}`}
-          aria-pressed={value === m.mode}
-          onClick={() => pick(m.mode)}
-        >
-          {m.label}
-        </button>
-      ))}
+    <div role="group" aria-label={label}>
+      <p className="kicker choice-label" aria-hidden="true">
+        {label}
+      </p>
+      <div className="seg">
+        {options.map((m) => (
+          <button
+            key={m.mode}
+            className={`seg-btn${value === m.mode ? " is-selected" : ""}`}
+            aria-pressed={value === m.mode}
+            onClick={() => pick(m.mode)}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -78,13 +83,14 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
         game: next.game,
         quiz_mode: next.quiz_mode,
         speed: next.speed,
+        length: next.length,
         kids_only: next.kids_only,
       },
     });
   };
   const picked = screen.games.find((g) => g.kind === settings.game);
 
-  // The game is picked on the TV with the remote; the quiz's questions and a timed game's tempo have no place there, so they stay here.
+  // The game is picked on the TV with the remote; the quiz's questions, a game's tempo and length have no place there, so they stay here.
   return (
     <section className="screen lobby lobby-leader" style={style}>
       <header className="lobby-head">
@@ -98,6 +104,9 @@ export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
       )}
       {picked?.timed && (
         <Choice label="Tempo" options={SPEEDS} value={settings.speed} pick={(speed) => configure({ speed })} />
+      )}
+      {picked?.sized && (
+        <Choice label="Dauer" options={LENGTHS} value={settings.length} pick={(length) => configure({ length })} />
       )}
 
       <div className="toggle-row">

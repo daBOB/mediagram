@@ -129,8 +129,8 @@ impl Room {
         let player = c.player;
         let is_leader = player.is_some() && player == self.leader();
         match action {
-            Action::Configure { game, quiz_mode, speed, kids_only } => {
-                let ok = if is_tv { self.pick_game(game) } else { self.configure(is_leader, game, quiz_mode, speed, kids_only) };
+            Action::Configure { game, quiz_mode, speed, length, kids_only } => {
+                let ok = if is_tv { self.pick_game(game) } else { self.configure(is_leader, game, quiz_mode, speed, length, kids_only) };
                 ok.then_some(()).ok_or_else(not_allowed)
             }
             Action::StartGame if !(is_tv || is_leader) || self.game.is_some() => Err(not_allowed()),

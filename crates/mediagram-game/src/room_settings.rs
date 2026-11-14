@@ -1,7 +1,7 @@
 //! Lobby settings: what the leader picked, and whether it can be started.
 
 use crate::catalogue::{GameEntry, entry};
-use crate::protocol::{GameKind, GameSpeed, LobbySettings, QuizMode};
+use crate::protocol::{GameKind, GameLength, GameSpeed, LobbySettings, QuizMode};
 use crate::game::GameCtx;
 use crate::protocol::{ErrorCode, ServerMsg, ServerTime};
 use crate::room::{Room, error};
@@ -38,6 +38,7 @@ pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
         game: GameKind::Quiz,
         quiz_mode: QuizMode::Mixed,
         speed: GameSpeed::Normal,
+        length: GameLength::Normal,
         kids_only: kids_locked,
         kids_locked,
     }
@@ -55,6 +56,7 @@ impl Room {
         game: GameKind,
         quiz_mode: QuizMode,
         speed: GameSpeed,
+        length: GameLength,
         kids_only: bool,
     ) -> bool {
         if !allowed || self.game.is_some() {
@@ -63,14 +65,15 @@ impl Room {
         self.settings.game = game;
         self.settings.quiz_mode = quiz_mode;
         self.settings.speed = speed;
+        self.settings.length = length;
         self.settings.kids_only = kids_only || self.settings.kids_locked;
         true
     }
 
     /// The TV's poster row picks only the game: a pick crossing the leader's kids-mode tap must not undo it.
     pub(crate) fn pick_game(&mut self, game: GameKind) -> bool {
-        let LobbySettings { quiz_mode, speed, kids_only, .. } = self.settings;
-        self.configure(true, game, quiz_mode, speed, kids_only)
+        let LobbySettings { quiz_mode, speed, length, kids_only, .. } = self.settings;
+        self.configure(true, game, quiz_mode, speed, length, kids_only)
     }
 
     /// Seats only the connected players, zeroes scores and builds the chosen game.

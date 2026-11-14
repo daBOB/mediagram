@@ -2,7 +2,7 @@
 
 use rand::rngs::StdRng;
 
-use crate::protocol::{GameSpeed, PlayerId, ServerTime};
+use crate::protocol::{GameLength, GameSpeed, PlayerId, ServerTime};
 use crate::quiz_config::Question;
 
 /// Draws the next question; never runs dry (the factory falls back on the whole pack).
@@ -44,6 +44,12 @@ impl Default for ZuendstoffConfig {
 }
 
 impl ZuendstoffConfig {
+    /// At the lobby's length: the lives each player starts with.
+    pub fn sized(mut self, length: GameLength) -> Self {
+        self.lives = length.scale(self.lives.into()) as u8;
+        self
+    }
+
     /// At the lobby's tempo: the fuse burns longer or shorter.
     pub fn at(mut self, speed: GameSpeed) -> Self {
         self.fuse_min_ms = speed.stretch(self.fuse_min_ms);

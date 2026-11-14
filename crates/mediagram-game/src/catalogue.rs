@@ -22,6 +22,8 @@ pub struct GameEntry {
     pub max: u8,
     /// The lobby's tempo sets its clocks; turn-based games have none.
     pub timed: bool,
+    /// The lobby's length sets how much of it is played; games played to the end have none.
+    pub sized: bool,
 }
 
 /// Every game, in the order the lobby lists them.
@@ -71,11 +73,28 @@ pub(crate) const fn entry(kind: GameKind) -> GameEntry {
         // Durak deals 36 cards, six each.
         GameKind::Durak => ("Durak", 2, 6),
     };
-    GameEntry { kind, name: Cow::Borrowed(name), min, max, timed: timed(kind) }
+    GameEntry { kind, name: Cow::Borrowed(name), min, max, timed: timed(kind), sized: sized(kind) }
 }
 
 /// Whether a player races a clock in `kind`. No wildcard arm, so a new game decides.
 const fn timed(kind: GameKind) -> bool {
+    match kind {
+        GameKind::Quiz
+        | GameKind::Poster
+        | GameKind::Grenzfall
+        | GameKind::Zuendstoff
+        | GameKind::Kopfnuss
+        | GameKind::Dreifelder
+        | GameKind::Preisfrage
+        | GameKind::Kritzelei
+        | GameKind::GrandAllee => true,
+        GameKind::Race | GameKind::Fluechtig | GameKind::MauMau | GameKind::Schwimmen | GameKind::Durak => false,
+    }
+}
+
+/// Whether `kind` has a count the lobby's length can set (rounds, articles, lives, the round
+/// limit). Heimlauf, Flüchtig and the card games are played to their end. No wildcard arm.
+const fn sized(kind: GameKind) -> bool {
     match kind {
         GameKind::Quiz
         | GameKind::Poster

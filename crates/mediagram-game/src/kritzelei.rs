@@ -41,7 +41,7 @@ pub struct KritzeleiGame {
 
 impl KritzeleiGame {
     pub(crate) fn new(cfg: KritzeleiConfig, deck: Vec<&'static str>, players: &[Player], _now: ServerTime) -> Self {
-        let turns = turn_order(players, cfg.two_rounds_below);
+        let turns = turn_order(players, cfg.two_rounds_below, cfg.length);
         Self {
             clock: TurnClock::new(cfg.draw_ms),
             stage: if turns.is_empty() { Stage::Final } else { Stage::Handover },

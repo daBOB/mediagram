@@ -1,6 +1,6 @@
 //! Kopfnuss tuning: every count and timing of a game, in one place.
 
-use crate::protocol::{GameSpeed, ServerTime};
+use crate::protocol::{GameLength, GameSpeed, ServerTime};
 use crate::quiz_config::QuizConfig;
 
 #[derive(Debug, Clone)]
@@ -63,6 +63,12 @@ impl Default for KopfnussConfig {
 }
 
 impl KopfnussConfig {
+    /// At the lobby's length: the rounds before the climb; each still asks `per_round` questions.
+    pub fn sized(mut self, length: GameLength) -> Self {
+        self.rounds = length.scale(self.rounds);
+        self
+    }
+
     /// At the lobby's tempo: the pick, every question and the summit climb.
     pub fn at(mut self, speed: GameSpeed) -> Self {
         self.pick_ms = speed.stretch(self.pick_ms);
