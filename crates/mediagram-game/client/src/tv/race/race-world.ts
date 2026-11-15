@@ -56,9 +56,6 @@ const image = (url: string) =>
     i.src = url;
   });
 
-/** An image, or null if it does not load: a missing avatar picture falls back to the pawn or the initial. */
-export const imageOrNull = (url: string) => image(url).catch(() => null);
-
 export function canvasOf(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) {
   const c = document.createElement("canvas");
   c.width = w;
@@ -89,7 +86,7 @@ const FIGURE_H = 1.3;
  * Both figure styles are built up front so switching them mid-game creates nothing.
  */
 export async function buildWorld(
-  canvas: HTMLCanvasElement,
+  renderer: THREE.WebGLRenderer,
   seats: { corner: number; color: string; figure: HTMLImageElement | null }[],
 ): Promise<World> {
   const [woodBoard, woodFrame, woodTable] = await Promise.all([
@@ -97,9 +94,6 @@ export async function buildWorld(
     image("/race/frame-dark-wood.jpg"),
     image("/race/table-lacquered-cherry.jpg"),
   ]);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.autoClear = false;
   const camera = new THREE.PerspectiveCamera(36, 16 / 9, 0.1, 300);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#1a110b");

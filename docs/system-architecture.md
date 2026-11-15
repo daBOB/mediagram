@@ -1071,11 +1071,12 @@ winner's banner on the board for 4 s, then the shared final ranking.
 **The race board has sound, on the TV only.** `race-sound-cues.ts` turns each
 stage into timed cues from the host's times alone (the die's clatter at its
 first touch of the table, a knock per hop, thunk and jingle at a capture, a
-jingle into the goal, the winner's jingle); `race-sound.ts` schedules them
-once per stage on the Web Audio clock and skips any already past, so a TV
-that reconnects never replays a backlog. Each sound starts early by the
-speaker delay, read every frame from `getOutputTimestamp()` and smoothed: the
-box's WebView takes ~370 ms (±50) from start to speaker. That is longer than
+jingle into the goal, the winner's jingle); the shared TV sound engine
+`client/src/tv/table/tv-sound.ts` (the race's, the card table's and Grand
+Allee's) schedules them once per stage on the Web Audio clock and skips any
+already past, so a TV that reconnects never replays a backlog. Each sound
+starts early by the speaker delay, read every frame from `getOutputTimestamp()`
+and smoothed: the box's WebView takes ~370 ms (±50) from start to speaker. That is longer than
 a hop, so the host starts a move `lead_ms` (200) after deciding it; without
 that lead the first knock of every move could only come late. The background music is an `<audio>`
 element fed blob URLs, two tracks in turn: decoded into Web Audio, three
