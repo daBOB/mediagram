@@ -42,7 +42,7 @@ fn the_host_sees_the_answers_and_who_gave_them() {
     t.answer(a, 1);
     t.open();
     t.buzz(b).unwrap();
-    let PhoneScreen::LetztesWort { phone: LetztesWortPhone::Host { answers, floor, .. } } = phone(&t, t.game.host) else { panic!() };
+    let PhoneScreen::LetztesWort { phone: LetztesWortPhone::Host { answers, floor, .. } } = phone(&t, t.game.host()) else { panic!() };
     assert_eq!(answers.len(), t.game.prompt.answers.len());
     assert_eq!(answers[1].given_by.as_deref(), Some(t.players.iter().find(|p| p.id == a).unwrap().name.as_str()));
     assert_eq!(answers[0].given_by, None);

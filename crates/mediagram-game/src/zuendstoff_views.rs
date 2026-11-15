@@ -48,17 +48,17 @@ impl ZuendstoffGame {
                 keys: Vec::new(),
                 show_score: false,
             },
-            Stage::Lit { holder, .. } if holder != player => PhoneScreen::Wait {
-                title: format!("{} hat die Bombe", name(view.players, holder)),
+            Stage::Lit { ask, .. } if ask.who() != player => PhoneScreen::Wait {
+                title: format!("{} hat die Bombe", name(view.players, ask.who())),
                 text: Some(if mine > 0 {
                     format!("{} Halte dich bereit!", lives_text(mine))
                 } else {
                     "Du bist raus – schau zu, wer übrig bleibt.".into()
                 }),
             },
-            Stage::Lit { since, step: Step::Throw, .. } => {
+            Stage::Lit { ask, step: Step::Throw } => {
                 let names = self.targets(view.players, player).into_iter().map(|id| name(view.players, id).to_string());
-                choice("Richtig! Wirf die Bombe – an wen?".into(), buttons(names), since, None)
+                choice("Richtig! Wirf die Bombe – an wen?".into(), buttons(names), ask.opened_at(), None)
             }
             Stage::Lit { step: Step::Answer { opens_at, wrong }, .. } => choice(
                 self.question.text.clone(),
@@ -80,13 +80,13 @@ impl ZuendstoffGame {
         let stage = match self.stage {
             Stage::Final => ZuendstoffStage::Final { order: self.order.clone() },
             Stage::Boom { victim, .. } => ZuendstoffStage::Boom { victim, out: !self.alive(victim) },
-            Stage::Lit { holder, step: Step::Throw, .. } => ZuendstoffStage::Throw { holder },
-            Stage::Lit { holder, step: Step::Answer { opens_at, wrong }, .. } => ZuendstoffStage::Answer {
-                holder,
+            Stage::Lit { ask, step: Step::Throw } => ZuendstoffStage::Throw { holder: ask.who() },
+            Stage::Lit { ask, step: Step::Answer { opens_at, wrong } } => ZuendstoffStage::Answer {
+                holder: ask.who(),
                 question: self.question.view(),
                 opens_at,
                 wrong,
-                thrown_by: self.thrown.filter(|&(_, to)| to == holder).map(|(from, _)| from),
+                thrown_by: self.thrown.filter(|&(_, to)| to == ask.who()).map(|(from, _)| from),
             },
         };
         TvScene::Zuendstoff { scene: ZuendstoffScene { round: self.round, seats, stage } }

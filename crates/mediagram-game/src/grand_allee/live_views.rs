@@ -153,9 +153,9 @@ impl GrandAlleeGame {
                 let (prompt, skip) = self.intro_phone(view, player, *card);
                 sheet(prompt, buttons(skip), 0.0, None, None)
             }
-            Stage::Ask { ask, since, step } if me == self.turn => {
-                let options = buttons(ask.opts.iter().map(|&o| self.label(view, o, step)));
-                sheet(ask.prompt.du.clone(), options, *since, Some(since + self.cfg.ask_ms), None)
+            Stage::Ask { choices, ask, step } if me == self.turn => {
+                let options = buttons(choices.opts.iter().map(|&o| self.label(view, o, step)));
+                sheet(choices.prompt.du.clone(), options, ask.opened_at(), ask.closes_at(), None)
             }
             Stage::Auction(a) => match a.bids.iter().find(|(b, _)| *b == me) {
                 Some(&(_, answer)) => {

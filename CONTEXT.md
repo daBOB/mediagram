@@ -97,7 +97,9 @@ _Avoid_: timeout, delay
 
 **Ask**:
 One thing the host wants one player to decide on their phone. It opens at a
-moment the host names, may run on a clock, and takes one answer.
+moment the host names, may run on a clock, and takes one answer. Several
+players can each have an ask open at once, as every bidder in Grand Allee's
+auction does; the house bids for an absent one after Grace.
 A question put to every player at once is not an ask: it closes once every
 present player has answered or its clock runs out, and the house never
 answers it, so an absent player holds no one up.

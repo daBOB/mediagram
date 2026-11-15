@@ -29,7 +29,7 @@ fn rig(hands: Vec<Vec<Card>>, top: Card, deck: Vec<Card>) -> (MauMauGame, Vec<Pl
     g.suit = Some(top.suit);
     g.owed = 0;
     g.turn = 0;
-    g.stage = Stage::Turn { since: 0.0 };
+    g.stage = Stage::Turn { ask: g.ask(0, 0.0) };
     (g, p)
 }
 

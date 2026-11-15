@@ -13,6 +13,7 @@
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 
+use crate::ask::Ask;
 use crate::cards::{Card, Rank, deck_from, shuffled};
 use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::durak_rules::{DEAL, auto_attack, auto_defence, beats, can_throw, first_attacker};
@@ -45,11 +46,11 @@ pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {
     /// The attacker leads the first card of a bout.
-    Attack { since: ServerTime },
+    Attack { ask: Ask },
     /// The defender beats an attack card or takes.
-    Defend { since: ServerTime },
+    Defend { ask: Ask },
     /// The thrower may add a card or end their turn; `taking` when the defender gave up.
-    Throw { since: ServerTime, taking: bool },
+    Throw { ask: Ask, taking: bool },
     /// Bito or taken, shown on the table before the cards move on.
     Settle { since: ServerTime, taken: bool },
     /// Seats in the order they got out; a last one still holding cards is the Durak.
@@ -85,8 +86,9 @@ impl DurakGame {
         let trump = deck[0];
         let mut hands: Vec<Vec<Card>> = players.iter().map(|_| deck.split_off(deck.len() - DEAL)).collect();
         hands.iter_mut().for_each(|h| h.sort());
+        let attacker = first_attacker(trump.suit, &hands);
         Self {
-            attacker: first_attacker(trump.suit, &hands),
+            attacker,
             cfg,
             ids: players.iter().map(|p| p.id).collect(),
             hands,
@@ -96,7 +98,7 @@ impl DurakGame {
             limit: 0,
             thrower: 0,
             out: Vec::new(),
-            stage: Stage::Attack { since: now },
+            stage: Stage::Attack { ask: Ask::open(players[attacker].id, now, None) },
             events: Vec::new(),
             banner: None,
             next_event: 0,
@@ -170,8 +172,8 @@ impl Game for DurakGame {
             }
             return;
         }
-        let (Some(seat), Some(since)) = (self.actor(), self.since()) else { return };
-        if ctx.house_at(self.player_at(seat), since).is_some_and(|at| ctx.now >= at) {
+        let (Some(seat), Some(ask)) = (self.actor(), self.open_ask()) else { return };
+        if ask.house_decides(ctx) {
             self.auto_play(ctx, seat);
         }
     }

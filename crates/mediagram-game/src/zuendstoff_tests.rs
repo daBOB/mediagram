@@ -2,7 +2,7 @@ use rand::rngs::StdRng;
 
 use super::*;
 use crate::quiz_config::Question;
-use crate::game::HOUSE_GRACE_MS;
+use crate::ask::HOUSE_GRACE_MS;
 use crate::protocol::{TvScene, ZuendstoffStage};
 
 const FUSE: f64 = 30_000.0;
@@ -37,7 +37,7 @@ impl Table {
 
     fn holder(&self) -> PlayerId {
         match self.game.stage {
-            Stage::Lit { holder, .. } => holder,
+            Stage::Lit { ask, .. } => ask.who(),
             other => panic!("nobody holds the bomb: {other:?}"),
         }
     }

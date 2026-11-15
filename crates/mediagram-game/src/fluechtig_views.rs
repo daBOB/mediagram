@@ -125,12 +125,12 @@ impl FluechtigGame {
             })
             .collect();
         let seen_after = c.turn == Turn::Fugitive && c.double_left != 2 && c.rules.reveal_rounds.contains(&c.round);
-        FluechtigAsk { opens_at: self.ask.opens_at, prompt: self.prompt(), at, tickets, seen_after, options }
+        FluechtigAsk { opens_at: self.ask.opened_at(), prompt: self.prompt(), at, tickets, seen_after, options }
     }
 
     fn prompt(&self) -> String {
         let c = &self.chase;
-        match (self.ask.step, c.turn) {
+        match (self.step, c.turn) {
             (Step::Ticket(to), _) => format!("Nach Feld {to} – womit?"),
             (Step::Field, Turn::Hunter(i)) => self.figure(i).map_or_else(|| "Wohin fährst du?".into(), |k| format!("Wohin fährt Figur {k}?")),
             (Step::Field, _) => match c.double_left {

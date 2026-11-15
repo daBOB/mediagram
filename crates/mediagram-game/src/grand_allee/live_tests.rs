@@ -50,7 +50,7 @@ pub(super) fn pick(g: &mut GrandAlleeGame, p: &mut [Player], who: PlayerId, labe
     let labels = options(g, p, who, now);
     let index = labels.iter().position(|l| l == label).unwrap_or_else(|| panic!("no {label:?} in {labels:?}"));
     let at = match &g.stage {
-        Stage::Ask { since, .. } => since.max(now),
+        Stage::Ask { ask, .. } => ask.opened_at().max(now),
         Stage::Auction(a) => a.since.max(now),
         _ => now,
     };
@@ -105,10 +105,10 @@ fn after_a_six_a_playing_bot_rolls_again_and_the_house_lets_it_go() {
     use super::live::HOUSE;
     let (mut g, mut p) = game(2, &[6]);
     let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
-    let Stage::Ask { ask, .. } = g.stage.clone() else { panic!("no ask: {:?}", g.stage) };
+    let Stage::Ask { choices, .. } = g.stage.clone() else { panic!("no ask: {:?}", g.stage) };
     assert_eq!(options(&g, &p, ANA, now), ["Nochmal würfeln", "Lieber nicht"]);
-    assert_eq!(Bot { style: Style::Cautious, house: false }.pick(&g.t, 0, &ask), 0);
-    assert_eq!(HOUSE.pick(&g.t, 0, &ask), 1);
+    assert_eq!(Bot { style: Style::Cautious, house: false }.pick(&g.t, 0, &choices), 0);
+    assert_eq!(HOUSE.pick(&g.t, 0, &choices), 1);
 }
 
 #[test]

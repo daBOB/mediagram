@@ -21,7 +21,7 @@ fn rig(hands: Vec<Vec<Card>>, deck: Vec<Card>) -> (DurakGame, Vec<Player>) {
     g.deck = deck;
     g.trump = c(Hearts, Six);
     g.attacker = 0;
-    g.stage = Stage::Attack { since: 0.0 };
+    g.stage = Stage::Attack { ask: g.ask(0, 0.0) };
     (g, p)
 }
 
@@ -276,7 +276,7 @@ fn at_most_six_attacks_per_bout() {
     // five attacks already beaten, so the sixth is the last one allowed
     g.bout = [Seven, Eight, Nine, Ten, Jack].map(|r| (c(Diamonds, r), Some(c(Hearts, r)))).to_vec();
     g.limit = 6;
-    g.stage = Stage::Throw { since: 0.0, taking: false };
+    g.stage = Stage::Throw { ask: g.ask(0, 0.0), taking: false };
     press(&mut g, &mut p, 0, "play", &[c(Clubs, Seven)], None).unwrap();
     press(&mut g, &mut p, 1, "beat", &[c(Clubs, Eight)], Some(c(Clubs, Seven))).unwrap();
     assert_eq!(g.bout.len(), 6);

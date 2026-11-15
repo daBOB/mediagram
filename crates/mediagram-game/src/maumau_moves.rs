@@ -1,6 +1,7 @@
 //! The moves of a Mau-Mau turn: drawing, playing, wishing and finishing, and the
 //! bookkeeping (events, banners, the draw pile) they share.
 
+use crate::ask::Ask;
 use crate::cards::{Card, Rank, Suit, shuffled};
 use crate::game::GameCtx;
 use crate::maumau::{MauMauGame, Stage};
@@ -23,7 +24,7 @@ fn drawn_text(n: usize) -> String {
 impl MauMauGame {
     pub(crate) fn advance(&mut self, now: ServerTime, steps: usize) {
         self.turn = (self.turn + steps) % self.ids.len();
-        self.stage = Stage::Turn { since: now };
+        self.stage = Stage::Turn { ask: self.ask(self.turn, now) };
     }
 
     pub(crate) fn event(&mut self, now: ServerTime, player: PlayerId, kind: CardsEventKind) {
@@ -75,7 +76,7 @@ impl MauMauGame {
         }
         // The turn pauses on every drawn card, so nobody can tell from outside whether it fits.
         match self.give(now, seat, 1).first() {
-            Some(&card) => self.stage = Stage::Drawn { card, since: now },
+            Some(&card) => self.stage = Stage::Drawn { card, ask: self.ask(seat, now) },
             None => self.advance(now, 1),
         }
         self.say(now, player, " zieht eine Karte");
@@ -102,7 +103,7 @@ impl MauMauGame {
                 self.say(now, self.player_at((seat + 1) % self.ids.len()), " setzt aus");
                 self.advance(now, 2);
             }
-            Rank::Jack => self.stage = Stage::Wish { since: now },
+            Rank::Jack => self.stage = Stage::Wish { ask: self.ask(seat, now) },
             _ => self.advance(now, 1),
         }
         if self.hands[seat].len() == 1 {
@@ -146,10 +147,11 @@ impl MauMauGame {
     pub(crate) fn index_of(&self, card: Card) -> usize {
         self.hands[self.turn].iter().position(|&c| c == card).expect("the drawn card is in hand")
     }
-    /// When the current stage began.
-    pub(crate) fn since(&self) -> Option<ServerTime> {
+
+    /// What the player whose turn it is is being asked; nothing once the game is over.
+    pub(crate) fn open_ask(&self) -> Option<Ask> {
         match self.stage {
-            Stage::Turn { since } | Stage::Drawn { since, .. } | Stage::Wish { since, .. } => Some(since),
+            Stage::Turn { ask } | Stage::Drawn { ask, .. } | Stage::Wish { ask } => Some(ask),
             Stage::Final { .. } => None,
         }
     }

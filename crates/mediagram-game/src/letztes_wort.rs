@@ -9,6 +9,7 @@ use rand::rngs::StdRng;
 use rand::seq::IndexedRandom;
 use rand::{Rng, SeedableRng};
 
+use crate::ask::Ask;
 pub use crate::letztes_wort_config::{LetztesWortConfig, Prompt};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::letztes_wort_config::PROMPTS;
@@ -34,7 +35,8 @@ pub struct LetztesWortGame {
     pub(crate) rounds: u8,
     /// Who hosts each round, in seat order from a random start; round `r` is `order[(r - 1) % len]`.
     order: Vec<PlayerId>,
-    pub(crate) host: PlayerId,
+    /// The host's ask: they judge this round's answers, from when they took the round over.
+    ask: Ask,
     pub(crate) prompt: &'static Prompt,
     /// This round's right answers: the listed one (none: "Auch richtig") and who gave it.
     pub(crate) given: Vec<(Option<usize>, PlayerId)>,
@@ -45,8 +47,6 @@ pub struct LetztesWortGame {
     pub(crate) time_up_at: ServerTime,
     /// Buzzes taken this round, so the TV plays each one once.
     pub(crate) buzzes: u16,
-    /// When the host took this round over, for the away-host grace.
-    since: ServerTime,
     prompts: Vec<&'static Prompt>,
     rng: StdRng,
 }
@@ -64,7 +64,7 @@ impl LetztesWortGame {
             stage: Stage::Final,
             round: 1,
             rounds,
-            host: order.first().copied().unwrap_or(0),
+            ask: Ask::open(order.first().copied().unwrap_or(0), now, None),
             order,
             prompt: &PROMPTS[0],
             given: Vec::new(),
@@ -72,12 +72,16 @@ impl LetztesWortGame {
             out: BTreeSet::new(),
             time_up_at: now,
             buzzes: 0,
-            since: now,
             prompts,
             rng,
         };
-        game.start_round(game.host, now);
+        game.start_round(game.host(), now);
         game
+    }
+
+    /// Who hosts this round.
+    pub(crate) fn host(&self) -> PlayerId {
+        self.ask.who()
     }
 
     /// Who hosts round `round` (1-based).
@@ -92,7 +96,7 @@ impl LetztesWortGame {
 
     /// Whether `player` may buzz now: not hosting, not out, not holding the stick.
     pub(crate) fn may_buzz(&self, player: PlayerId) -> bool {
-        player != self.host && !self.out.contains(&player) && self.holder != Some(player)
+        player != self.host() && !self.out.contains(&player) && self.holder != Some(player)
     }
 
     /// The listed answer `index` has been given this round.
@@ -101,8 +105,7 @@ impl LetztesWortGame {
     }
 
     fn start_round(&mut self, host: PlayerId, now: ServerTime) {
-        self.host = host;
-        self.since = now;
+        self.ask = Ask::open(host, now, None);
         self.prompt = self.prompts.pop().unwrap_or_else(|| PROMPTS.choose(&mut self.rng).expect("the bundled pack is never empty"));
         self.given.clear();
         self.holder = None;
@@ -117,15 +120,15 @@ impl LetztesWortGame {
 impl Game for LetztesWortGame {
     fn on_action(&mut self, ctx: &mut GameCtx, player: PlayerId, action: &Action) -> Result<(), ActionError> {
         let Action::Choose { index, .. } = *action else { return Err(ActionError::Ignored) };
-        if player == self.host { self.judge(ctx, index) } else { self.buzz(player, ctx.now) }
+        if player == self.host() { self.judge(ctx, index) } else { self.buzz(player, ctx.now) }
     }
 
     fn on_tick(&mut self, ctx: &mut GameCtx) {
         let now = ctx.now;
         match self.stage {
-            Stage::Open { .. } | Stage::Floor { .. } if ctx.house_at(self.host, self.since).is_some_and(|at| now >= at) => {
+            Stage::Open { .. } | Stage::Floor { .. } if self.ask.house_decides(ctx) => {
                 // Nobody can judge for an absent host: the next one present takes the round over afresh.
-                if let Some(host) = Self::present_from(ctx.players, self.host, true) {
+                if let Some(host) = Self::present_from(ctx.players, self.host(), true) {
                     self.start_round(host, now);
                 }
             }
@@ -159,7 +162,7 @@ impl Game for LetztesWortGame {
 
     fn phone_buzz(&self, _view: &ViewCtx, player: PlayerId) -> Option<Buzz> {
         match self.stage {
-            Stage::Floor { .. } if player == self.host => Some(Buzz::Turn),
+            Stage::Floor { .. } if player == self.host() => Some(Buzz::Turn),
             Stage::Floor { player: p, .. } if p == player => Some(Buzz::Accepted),
             _ => None,
         }

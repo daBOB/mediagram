@@ -5,6 +5,7 @@
 
 mod article_photos;
 mod articles;
+mod ask;
 pub mod avatars;
 mod cards;
 mod catalogue;

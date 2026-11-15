@@ -9,6 +9,7 @@
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 
+use crate::ask::Ask;
 use crate::cards::{Card, Rank, deck_from, shuffled};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::maumau_rules::sort_hand;
@@ -19,7 +20,7 @@ use crate::schwimmen_rules::{FEUER, HAND, KNOCK_AT, LIVES, Swap, best_swap, valu
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {
-    Turn { since: ServerTime },
+    Turn { ask: Ask },
     /// All hands are face up; the next round follows.
     Reveal { since: ServerTime },
     Final { ranking: Vec<usize> },
@@ -72,7 +73,7 @@ impl SchwimmenGame {
             turn: 0,
             knocker: None,
             passes: 0,
-            stage: Stage::Turn { since: now },
+            stage: Stage::Turn { ask: Ask::open(players[0].id, now, None) },
             events: vec![],
             banner: None,
             next_event: 0,
@@ -126,7 +127,7 @@ impl SchwimmenGame {
         self.knocker = None;
         self.passes = 0;
         self.turn = self.starter;
-        self.stage = Stage::Turn { since: now };
+        self.stage = Stage::Turn { ask: self.ask(self.turn, now) };
         if self.alive().into_iter().any(|s| value(&self.hands[s]) == FEUER) {
             self.reveal_round(now);
         }
@@ -162,8 +163,8 @@ impl Game for SchwimmenGame {
                 self.starter = self.after(self.starter);
                 self.deal(ctx.now);
             }
-            Stage::Turn { since } => {
-                if !ctx.house_at(self.player_at(self.turn), since).is_some_and(|at| ctx.now >= at) {
+            Stage::Turn { ask } => {
+                if !ask.house_decides(ctx) {
                     return;
                 }
                 let hand = &self.hands[self.turn];

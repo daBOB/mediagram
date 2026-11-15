@@ -1,6 +1,7 @@
 //! Where everyone sits in Durak: seats, the table, whose move it is, and the
 //! events and banner the views read.
 
+use crate::ask::Ask;
 use crate::cards::{Card, Suit};
 use crate::durak::{DurakGame, Stage};
 use crate::protocol::{CardsBanner, CardsEvent, CardsEventKind, PlayerId, ServerTime};
@@ -47,11 +48,17 @@ impl DurakGame {
         }
     }
 
-    pub(crate) fn since(&self) -> Option<ServerTime> {
+    /// What the seat that has to act is being asked; nothing while the table settles or once the game is over.
+    pub(crate) fn open_ask(&self) -> Option<Ask> {
         match self.stage {
-            Stage::Attack { since } | Stage::Defend { since } | Stage::Throw { since, .. } | Stage::Settle { since, .. } => Some(since),
-            Stage::Final { .. } => None,
+            Stage::Attack { ask } | Stage::Defend { ask } | Stage::Throw { ask, .. } => Some(ask),
+            Stage::Settle { .. } | Stage::Final { .. } => None,
         }
+    }
+
+    /// Asks `seat` from `now`, with no clock: the table waits for a player who is there.
+    pub(crate) fn ask(&self, seat: usize, now: ServerTime) -> Ask {
+        Ask::open(self.ids[seat], now, None)
     }
 
     pub(crate) fn event(&mut self, now: ServerTime, player: PlayerId, kind: CardsEventKind) {

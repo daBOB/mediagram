@@ -1,5 +1,5 @@
 use super::*;
-use crate::game::HOUSE_GRACE_MS;
+use crate::ask::HOUSE_GRACE_MS;
 
 /// The hidden time of every test round: buzzers open at INTRO, time is up at INTRO + TIME.
 const INTRO: f64 = 3000.0;
@@ -23,7 +23,7 @@ impl Table {
 
     /// The players who play this round (everyone but the host), in seat order.
     pub fn others(&self) -> Vec<PlayerId> {
-        self.players.iter().map(|p| p.id).filter(|&p| p != self.game.host).collect()
+        self.players.iter().map(|p| p.id).filter(|&p| p != self.game.host()).collect()
     }
 
     pub fn tap(&mut self, player: PlayerId, index: u8) -> Result<(), ActionError> {
@@ -37,14 +37,14 @@ impl Table {
 
     /// The host judges: a listed answer, Falsch or Auch richtig.
     pub fn judge(&mut self, verdict: u8) -> Result<(), ActionError> {
-        let host = self.game.host;
+        let host = self.game.host();
         let listed = self.game.prompt.answers.len() as u8;
         self.tap(host, if verdict == FALSCH { listed } else { verdict })
     }
 
     pub fn also_right(&mut self) -> Result<(), ActionError> {
         let listed = self.game.prompt.answers.len() as u8;
-        let host = self.game.host;
+        let host = self.game.host();
         self.tap(host, listed + 1)
     }
 
@@ -243,13 +243,13 @@ fn a_verdict_without_a_floor_is_ignored() {
 fn the_host_rotates_in_seat_order_and_everyone_hosts_equally() {
     let mut t = Table::new(&["Ada", "Bo", "Cy"]);
     assert_eq!(t.game.rounds, 6, "two laps of three");
-    let mut hosts = vec![t.game.host];
+    let mut hosts = vec![t.game.host()];
     let mut now = 0.0;
     while t.game.stage != Stage::Final {
         now += 1000.0;
         t.at(now);
         if matches!(t.game.stage, Stage::Open { .. }) && hosts.len() < usize::from(t.game.round) {
-            hosts.push(t.game.host);
+            hosts.push(t.game.host());
         }
     }
     assert_eq!(hosts.len(), 6);
@@ -262,17 +262,17 @@ fn the_host_rotates_in_seat_order_and_everyone_hosts_equally() {
 #[test]
 fn an_away_host_hands_the_round_on() {
     let mut t = Table::new(&["Ada", "Bo", "Cy", "Dee"]);
-    let host = t.game.host;
+    let host = t.game.host();
     let first = t.game.prompt.q.clone();
     let seat = t.players.iter().position(|p| p.id == host).unwrap();
     let name = t.players[seat].name.clone();
     t.players[seat] = Player::for_test(host, &name, false);
     t.players[seat].left_at = Some(0.0);
     t.at(HOUSE_GRACE_MS - 1.0);
-    assert_eq!(t.game.host, host);
+    assert_eq!(t.game.host(), host);
     t.at(HOUSE_GRACE_MS);
     let next = t.players[(seat + 1) % 4].id;
-    assert_eq!((t.game.host, t.game.round), (next, 1), "the next seat hosts the same round");
+    assert_eq!((t.game.host(), t.game.round), (next, 1), "the next seat hosts the same round");
     assert_ne!(t.game.prompt.q, first, "with a new question");
 }
 
@@ -314,7 +314,7 @@ fn an_away_next_host_is_passed_over_at_once() {
     t.at(INTRO + TIME);
     t.at(INTRO + TIME + 5000.0);
     assert_eq!(t.game.round, 2);
-    assert_eq!(t.game.host, t.players[(seat + 1) % 4].id);
+    assert_eq!(t.game.host(), t.players[(seat + 1) % 4].id);
 }
 
 #[test]

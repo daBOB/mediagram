@@ -9,6 +9,7 @@
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
+use crate::ask::Ask;
 use crate::cards::{Card, Rank, Suit, deck_from, shuffled};
 use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
@@ -41,11 +42,11 @@ pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {
-    Turn { since: ServerTime },
+    Turn { ask: Ask },
     /// Drew a card: play it if it fits, or keep it.
-    Drawn { card: Card, since: ServerTime },
+    Drawn { card: Card, ask: Ask },
     /// Played a jack and picks the suit.
-    Wish { since: ServerTime },
+    Wish { ask: Ask },
     Final { ranking: Vec<usize> },
 }
 
@@ -89,7 +90,7 @@ impl MauMauGame {
             suit: (start.rank != Rank::Jack).then_some(start.suit),
             wish: None,
             owed: if start.rank == Rank::Seven { SEVEN_DRAWS } else { 0 },
-            stage: Stage::Turn { since: now },
+            stage: Stage::Turn { ask: Ask::open(players[0].id, now, None) },
             events: Vec::new(),
             banner: None,
             queued: None,
@@ -114,6 +115,10 @@ impl MauMauGame {
         self.ids.iter().position(|&p| p == player)
     }
 
+    /// Asks `seat` from `now`, with no clock: the table waits for a player who is there.
+    pub(crate) fn ask(&self, seat: usize, now: ServerTime) -> Ask {
+        Ask::open(self.ids[seat], now, None)
+    }
 }
 
 impl Game for MauMauGame {
@@ -152,8 +157,7 @@ impl Game for MauMauGame {
     }
 
     fn on_tick(&mut self, ctx: &mut GameCtx) {
-        let Some(since) = self.since() else { return };
-        if !ctx.house_at(self.player_at(self.turn), since).is_some_and(|at| ctx.now >= at) {
+        if !self.open_ask().is_some_and(|ask| ask.house_decides(ctx)) {
             return;
         }
         match self.stage.clone() {

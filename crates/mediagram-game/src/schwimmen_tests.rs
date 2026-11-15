@@ -35,7 +35,7 @@ fn rig(hands: Vec<Vec<Card>>, middle: Vec<Card>) -> (SchwimmenGame, Vec<Player>)
     g.passes = 0;
     g.starter = 0;
     g.turn = 0;
-    g.stage = Stage::Turn { since: 0.0 };
+    g.stage = Stage::Turn { ask: g.ask(0, 0.0) };
     (g, p)
 }
 
@@ -284,7 +284,7 @@ fn losing_the_last_life_means_swimming_and_the_next_loss_is_out() {
     // one more round with Ana still lowest
     g.hands = three_dull();
     g.hands[0] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];
-    g.stage = Stage::Turn { since: 10.0 };
+    g.stage = Stage::Turn { ask: g.ask(0, 10.0) };
     g.revealed = false;
     g.knocker = None;
     g.turn = 0;
@@ -314,7 +314,7 @@ fn the_last_player_left_wins_and_the_rest_rank_by_when_they_went_out() {
     g.hands[0] = vec![c(Hearts, Ace), c(Hearts, King), c(Hearts, Nine)];
     g.hands[2] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];
     g.lives[2] = 0;
-    g.stage = Stage::Turn { since: 10.0 };
+    g.stage = Stage::Turn { ask: g.ask(0, 10.0) };
     g.revealed = false;
     g.knocker = None;
     g.turn = 0;

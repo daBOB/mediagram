@@ -34,7 +34,7 @@ impl DurakGame {
         self.thrower = 0;
         self.put_on_table(now, self.attacker, index);
         self.say(now, self.player_at(self.attacker), " greift an");
-        self.stage = Stage::Defend { since: now };
+        self.stage = Stage::Defend { ask: self.ask(self.defender(), now) };
     }
 
     /// The thrower adds a card; the defender must answer it, unless they are already taking.
@@ -44,7 +44,7 @@ impl DurakGame {
         self.say(now, self.player_at(seat), " legt dazu");
         match self.stage {
             Stage::Throw { taking: true, .. } => self.seek(now, true),
-            _ => self.stage = Stage::Defend { since: now },
+            _ => self.stage = Stage::Defend { ask: self.ask(self.defender(), now) },
         }
     }
 
@@ -57,7 +57,7 @@ impl DurakGame {
         if self.bout.iter().all(|&(_, d)| d.is_some()) {
             self.seek(now, false);
         } else {
-            self.stage = Stage::Defend { since: now };
+            self.stage = Stage::Defend { ask: self.ask(defender, now) };
         }
     }
 
@@ -88,7 +88,7 @@ impl DurakGame {
             self.thrower += 1;
         }
         self.stage = if self.thrower < n {
-            Stage::Throw { since: now, taking }
+            Stage::Throw { ask: self.ask(self.thrower_seat(), now), taking }
         } else {
             let defender = self.player_at(self.defender());
             let text = if taking { " nimmt die Karten auf" } else { " hat alles geschlagen – Bito!" };
@@ -129,7 +129,7 @@ impl DurakGame {
             return self.finish(ctx);
         }
         self.attacker = if taken || self.out.contains(&defender) { self.next_active(defender) } else { defender };
-        self.stage = Stage::Attack { since: now };
+        self.stage = Stage::Attack { ask: self.ask(self.attacker, now) };
         self.say(now, self.player_at(self.attacker), " greift an");
     }
 

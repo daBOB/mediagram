@@ -10,6 +10,7 @@ use std::collections::VecDeque;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
+use crate::ask::Ask;
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
 pub use crate::race_config::RaceConfig;
@@ -19,8 +20,9 @@ use crate::room_seats::Player;
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {
     /// Waiting for the roll. `tries`: rolls left this turn (three when only a 6 helps).
-    Roll { since: ServerTime, tries: u8, again: bool },
-    Rolled { value: u8, at: ServerTime, moves: Vec<Move>, tries: u8 },
+    Roll { ask: Ask, tries: u8, again: bool },
+    /// The die flies from `at`; with more than one move the player picks from when it lands.
+    Rolled { value: u8, at: ServerTime, moves: Vec<Move>, tries: u8, ask: Ask },
     Moving { value: u8, mv: Move, at: ServerTime, ends_at: ServerTime },
     Final { winner: usize },
 }
@@ -56,17 +58,22 @@ impl RaceGame {
         at + self.cfg.roll_ms
     }
 
+    /// Asks the player whose turn it is from `at`, with no clock: the table waits for a player who is there.
+    fn ask(&self, at: ServerTime) -> Ask {
+        Ask::open(self.player_at(self.turn), at, None)
+    }
+
     fn start_turn(&mut self, now: ServerTime, seat: usize, again: bool) {
         self.turn = seat;
         let tries = if self.seats[seat].three_tries() { 3 } else { 1 };
-        self.stage = Stage::Roll { since: now, tries, again };
+        self.stage = Stage::Roll { ask: self.ask(now), tries, again };
     }
 
     fn roll(&mut self, now: ServerTime, tries: u8) {
         let value = self.rolls.pop_front().unwrap_or_else(|| self.rng.random_range(1..=6));
         self.die = Some(value);
         let moves = legal_moves(&self.seats, self.turn, value);
-        self.stage = Stage::Rolled { value, at: now, moves, tries };
+        self.stage = Stage::Rolled { value, at: now, moves, tries, ask: self.ask(self.lands_at(now)) };
     }
 
     fn play(&mut self, ctx: &mut GameCtx, value: u8, mv: Move) {
@@ -112,8 +119,8 @@ impl Game for RaceGame {
         }
         match self.stage.clone() {
             Stage::Roll { tries, .. } if index == 0 => self.roll(ctx.now, tries),
-            Stage::Rolled { value, at, moves, .. }
-                if moves.len() > 1 && ctx.now >= self.lands_at(at) - self.cfg.early_ms =>
+            Stage::Rolled { value, moves, ask, .. }
+                if moves.len() > 1 && ctx.now >= ask.opened_at() - self.cfg.early_ms =>
             {
                 let mv = *moves.get(usize::from(index)).ok_or(ActionError::NotAllowed("Diesen Zug gibt es nicht."))?;
                 self.play(ctx, value, mv);
@@ -125,23 +132,22 @@ impl Game for RaceGame {
 
     fn on_tick(&mut self, ctx: &mut GameCtx) {
         let now = ctx.now;
-        let house_acts = |since: ServerTime| ctx.house_at(self.player_at(self.turn), since).is_some_and(|at| now >= at);
         match self.stage.clone() {
-            Stage::Roll { since, tries, .. } if house_acts(since) => {
+            Stage::Roll { ask, tries, .. } if ask.house_decides(ctx) => {
                 self.roll(now, tries);
             }
-            Stage::Rolled { value, at, moves, tries } => {
+            Stage::Rolled { value, at, moves, tries, ask } => {
                 let landed = self.lands_at(at);
                 match moves.len() {
                     0 if now >= landed + self.cfg.pass_ms => {
                         if tries > 1 && value != 6 {
-                            self.stage = Stage::Roll { since: now, tries: tries - 1, again: false };
+                            self.stage = Stage::Roll { ask: self.ask(now), tries: tries - 1, again: false };
                         } else {
                             self.end_turn(now, value);
                         }
                     }
                     1 if now >= landed + self.cfg.show_ms => self.play(ctx, value, moves[0]),
-                    n if n > 1 && house_acts(landed) => {
+                    n if n > 1 && ask.house_decides(ctx) => {
                         self.play(ctx, value, auto_pick(&moves));
                     }
                     _ => {}

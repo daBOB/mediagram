@@ -1,5 +1,6 @@
 //! One turn of Schwimmen: the four moves and what follows each of them.
 
+use crate::ask::Ask;
 use crate::game::ActionError;
 use crate::protocol::{CardsEventKind, ServerTime};
 use crate::maumau_rules::sort_hand;
@@ -7,6 +8,11 @@ use crate::schwimmen::{SchwimmenGame, Stage};
 use crate::schwimmen_rules::{FEUER, HAND, Swap, apply, value};
 
 impl SchwimmenGame {
+    /// Asks `seat` from `now`, with no clock: the table waits for a player who is there.
+    pub(crate) fn ask(&self, seat: usize, now: ServerTime) -> Ask {
+        Ask::open(self.ids[seat], now, None)
+    }
+
     pub(crate) fn swap(&mut self, now: ServerTime, swap: Swap) {
         let (seat, player) = (self.turn, self.player_at(self.turn));
         let before = self.hands[seat].clone();
@@ -61,7 +67,7 @@ impl SchwimmenGame {
             return self.reveal_round(now);
         }
         self.turn = next;
-        self.stage = Stage::Turn { since: now };
+        self.stage = Stage::Turn { ask: self.ask(next, now) };
     }
 
     pub(crate) fn pick_swap(&self, hand: &[u8], table: Option<u8>) -> Result<Swap, ActionError> {

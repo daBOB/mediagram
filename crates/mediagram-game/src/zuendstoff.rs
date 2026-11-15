@@ -10,6 +10,7 @@ use rand::seq::IndexedRandom;
 use rand::{Rng, SeedableRng};
 
 pub use crate::zuendstoff_config::{QuestionDeck, ZuendstoffConfig};
+use crate::ask::Ask;
 use crate::dreifelder_rules::placement_scores;
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, AnswerColor, Buzz, PhoneScreen, PlayerId, ServerTime, TvScene};
@@ -77,19 +78,19 @@ impl ZuendstoffGame {
         self.round += 1;
         self.thrown = None;
         self.fuse_at = now + self.rng.random_range(self.cfg.fuse_min_ms..=self.cfg.fuse_max_ms);
-        self.ask(holder, now, now + self.cfg.intro_ms, false);
+        self.ask(Ask::open(holder, now, None), now + self.cfg.intro_ms, false);
     }
 
-    /// Hands `holder` a fresh question whose keys go live at `opens_at`.
-    fn ask(&mut self, holder: PlayerId, since: ServerTime, opens_at: ServerTime, wrong: bool) {
+    /// Hands the holder `ask` asks a fresh question whose keys go live at `opens_at`.
+    fn ask(&mut self, ask: Ask, opens_at: ServerTime, wrong: bool) {
         let q = (self.deck)(&mut self.rng);
         self.question = Round::shuffled(q, &mut self.rng, AnswerColor::ALL.len());
-        self.stage = Stage::Lit { holder, since, step: Step::Answer { opens_at, wrong } };
+        self.stage = Stage::Lit { ask, step: Step::Answer { opens_at, wrong } };
     }
 
     fn throw(&mut self, from: PlayerId, to: PlayerId, now: ServerTime) {
         self.thrown = Some((from, to));
-        self.ask(to, now, now + self.cfg.catch_ms, false);
+        self.ask(Ask::open(to, now, None), now + self.cfg.catch_ms, false);
     }
 
     fn explode(&mut self, victim: PlayerId, now: ServerTime) {
@@ -116,8 +117,8 @@ impl ZuendstoffGame {
 impl Game for ZuendstoffGame {
     fn on_action(&mut self, ctx: &mut GameCtx, player: PlayerId, action: &Action) -> Result<(), ActionError> {
         let Action::Choose { index, .. } = *action else { return Err(ActionError::Ignored) };
-        let Stage::Lit { holder, since, step } = self.stage else { return Err(ActionError::Ignored) };
-        if player != holder {
+        let Stage::Lit { ask, step } = self.stage else { return Err(ActionError::Ignored) };
+        if player != ask.who() {
             return Err(ActionError::Ignored);
         }
         let now = ctx.now;
@@ -130,16 +131,16 @@ impl Game for ZuendstoffGame {
                     return Err(ActionError::NotAllowed("Diese Antwort gibt es nicht."));
                 }
                 if index == self.question.correct {
-                    self.stage = Stage::Lit { holder, since, step: Step::Throw };
+                    self.stage = Stage::Lit { ask, step: Step::Throw };
                 } else {
-                    self.ask(holder, since, now + self.cfg.wrong_wait_ms, true);
+                    self.ask(ask, now + self.cfg.wrong_wait_ms, true);
                 }
             }
             Step::Throw => {
-                let Some(&to) = self.targets(ctx.players, holder).get(usize::from(index)) else {
+                let Some(&to) = self.targets(ctx.players, ask.who()).get(usize::from(index)) else {
                     return Err(ActionError::NotAllowed("Diesen Mitspieler gibt es nicht."));
                 };
-                self.throw(holder, to, now);
+                self.throw(ask.who(), to, now);
             }
         }
         Ok(())
@@ -148,13 +149,13 @@ impl Game for ZuendstoffGame {
     fn on_tick(&mut self, ctx: &mut GameCtx) {
         let now = ctx.now;
         match self.stage {
-            Stage::Lit { holder, .. } if now >= self.fuse_at => self.explode(holder, now),
-            Stage::Lit { holder, since, .. } => {
+            Stage::Lit { ask, .. } if now >= self.fuse_at => self.explode(ask.who(), now),
+            Stage::Lit { ask, .. } => {
                 // A holder who is away has the house throw for them, without a question.
-                if ctx.house_at(holder, since).is_some_and(|at| now >= at) {
-                    let targets = self.targets(ctx.players, holder);
+                if ask.house_decides(ctx) {
+                    let targets = self.targets(ctx.players, ask.who());
                     if let Some(&to) = targets.choose(&mut self.rng) {
-                        self.throw(holder, to, now);
+                        self.throw(ask.who(), to, now);
                     }
                 }
             }
@@ -186,7 +187,7 @@ impl Game for ZuendstoffGame {
 
     fn phone_buzz(&self, _view: &ViewCtx, player: PlayerId) -> Option<Buzz> {
         match self.stage {
-            Stage::Lit { holder, .. } if holder == player => Some(Buzz::Turn),
+            Stage::Lit { ask, .. } if ask.who() == player => Some(Buzz::Turn),
             Stage::Boom { victim, .. } if victim == player => Some(Buzz::Wrong),
             _ => None,
         }

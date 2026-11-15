@@ -28,12 +28,17 @@ The phone's `opens_at`/`closes_at` are derived per game.
 
 ## Steps
 
-- [ ] Ask module + its tests (opened, clock, Grace from the later of leaving
-      and opening, house due, answered).
-- [ ] Turn games, Zündstoff's holder, Race, Flüchtig, Grand Allee use it.
-- [ ] Simulator reads through it; default simulator run still passes and takes
-      about as long (~0.8 s for 4 000 games).
-- [ ] Delete per-game timing tests now covered by the Ask's; rule tests stay.
+- [x] Ask module + its tests (opened, clock, Grace from the later of leaving
+      and opening, house due, a player who comes back; no `answered`: nobody
+      needed it).
+- [x] Turn games, Zündstoff's holder, Race, Flüchtig, Grand Allee use it.
+      Grand Allee's debt auction too: each sealed bid waits like an ask (clock,
+      or Grace for an absent bidder), so `GameCtx::house_at` is gone and
+      `GameCtx::absent_since` is all the Ask reads from the room.
+- [x] Simulator reads through it; default simulator run still passes and takes
+      about as long (~0.8 s for 4 000 games): 0.819 s at HEAD, 0.817 s after,
+      same table and the same 2 800 seeded records.
+- [x] Delete per-game timing tests now covered by the Ask's; rule tests stay.
 - [ ] `cargo test -p mediagram-game`; check.sh.
 - [ ] Spieltisch patch bump; commit; merge; check.sh.
 

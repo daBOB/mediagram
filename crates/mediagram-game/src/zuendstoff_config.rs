@@ -4,6 +4,7 @@
 use rand::rngs::StdRng;
 use rand::seq::IndexedRandom;
 
+use crate::ask::Ask;
 use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::factory::Night;
 use crate::game::{Game, GameCtx};
@@ -88,8 +89,8 @@ fn start(night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box<
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Stage {
-    /// `holder` has had the bomb since `since`.
-    Lit { holder: PlayerId, since: ServerTime, step: Step },
+    /// The player `ask` asks has held the bomb since it opened; a wrong answer keeps it open.
+    Lit { ask: Ask, step: Step },
     /// The fuse ran out in `victim`'s hands.
     Boom { victim: PlayerId, ends_at: ServerTime },
     Final,

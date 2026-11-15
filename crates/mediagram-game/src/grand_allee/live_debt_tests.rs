@@ -1,7 +1,8 @@
 use super::live::{GrandAlleeGame, Stage};
 use super::rules::Rules;
 use super::live_tests::{game, game_with, options, own, pick, place, until, waiting, ANA, BEN, CEM};
-use crate::game::{ActionError, Game, GameCtx, ViewCtx, HOUSE_GRACE_MS};
+use crate::ask::HOUSE_GRACE_MS;
+use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, BidRange, GrandAlleeTurn, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
 
@@ -147,18 +148,10 @@ fn a_bid_must_be_whole_hundreds_within_the_bidders_cash() {
 fn an_open_decision_is_taken_by_the_house_when_its_clock_runs_out() {
     let (mut g, mut p) = game(2, &[4]);
     let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
-    let Stage::Ask { since, .. } = g.stage else { panic!("no ask") };
+    let Stage::Ask { ask, .. } = g.stage else { panic!("no ask") };
     let now = until(&mut g, &mut p, now, |g| g.t.estate(6).owner.is_some());
-    assert!(now >= since + g.cfg.ask_ms, "the house waits for the clock");
+    assert!(now >= ask.opened_at() + g.cfg.ask_ms, "the house waits for the clock");
     assert_eq!(g.t.estate(6).owner, Some(0), "the balanced bot takes the bigger plot");
-}
-
-#[test]
-fn an_absent_player_plays_itself_after_a_moment() {
-    let (mut g, mut p) = game(2, &[1]);
-    p[0].conn = None;
-    let now = until(&mut g, &mut p, 0.0, |g| matches!(g.stage, Stage::Rolled { .. }));
-    assert_eq!(now, HOUSE_GRACE_MS);
 }
 
 #[test]

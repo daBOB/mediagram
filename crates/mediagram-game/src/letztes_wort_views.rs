@@ -29,7 +29,7 @@ impl LetztesWortGame {
                     None => PhoneScreen::Wait { title: "Zeit! Niemand hatte den Stab".into(), text: Some(text.into()) },
                 }
             }
-            _ if player == self.host => {
+            _ if player == self.host() => {
                 let answers = self.prompt.answers.iter().enumerate().map(|(i, text)| HostAnswer {
                     text: text.clone(),
                     given_by: self.given.iter().find(|&&(a, _)| a == Some(i)).map(|&(_, p)| named(p)),
@@ -53,9 +53,9 @@ impl LetztesWortGame {
             }
             Stage::Floor { player: p, .. } => {
                 let (button, line) = if p == player {
-                    ("Du bist dran!".into(), format!("Sag deine Antwort laut – {} entscheidet", named(self.host)))
+                    ("Du bist dran!".into(), format!("Sag deine Antwort laut – {} entscheidet", named(self.host())))
                 } else {
-                    (format!("{} ist dran", named(p)), format!("{} hat gebuzzert – {} entscheidet", named(p), named(self.host)))
+                    (format!("{} ist dran", named(p)), format!("{} hat gebuzzert – {} entscheidet", named(p), named(self.host())))
                 };
                 me(LetztesWortPhone::Buzzer { question, opens_at: 0.0, live: false, button, line })
             }
@@ -85,7 +85,7 @@ impl LetztesWortGame {
                 round: self.round,
                 rounds: self.rounds,
                 question: self.prompt.q.clone(),
-                host: self.host,
+                host: self.host(),
                 holder: self.holder,
                 out: self.out.iter().copied().collect(),
                 stage,

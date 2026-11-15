@@ -106,22 +106,6 @@ fn an_absent_player_plays_by_itself() {
 }
 
 #[test]
-fn a_dropout_after_a_long_think_gets_the_full_grace() {
-    let (mut g, mut p) = game(&[3]);
-    g.seats[0].pieces = [Some(5), Some(12), None, None];
-    g.start_turn(0.0, 0, false);
-    tap(&mut g, &mut p, ANA, 0, 0.0).unwrap();
-    // Ana thinks over her two pieces for five seconds, then her phone drops.
-    let now = run(&mut g, &mut p, 0.0, 6150.0);
-    p[0].conn = None;
-    p[0].left_at = Some(now);
-    let now = run(&mut g, &mut p, now, now + 1400.0);
-    assert!(matches!(g.stage, Stage::Rolled { .. }), "no move made for her straight after the drop");
-    run(&mut g, &mut p, now, now + 200.0);
-    assert!(matches!(g.stage, Stage::Moving { .. }), "played for her 1.5 s after she left");
-}
-
-#[test]
 fn the_last_piece_home_wins() {
     let (mut g, mut p) = game(&[2]);
     g.seats[0].pieces = [Some(41), Some(42), Some(43), Some(38)];
