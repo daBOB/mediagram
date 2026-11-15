@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.192.2 — The cast at the table is the app's icon
+
+**Changed**
+
+- Spieltisch's icon and TV launcher tile are three of the cast, the cat, the panda and the piglet, at the green felt table with their phones, in the shelf posters' 3D look (BudgetPixel gpt-image-2.6; the user's pick from three options, the others the die and phones round a table). The tile carries the name on the table felt in the TV page's Bricolage Grotesque; before, it was the die alone, and on the launcher the two apps told apart only by colour.
+- The phone controller apps (Android and iOS) carry the same picture, as they carried the same die. Android's adaptive icon has no monochrome layer any more: a themed icon would flatten the picture into one blot.
+- Both are PNG now (`drawable-xxxhdpi`, the banner `drawable-xhdpi`, iOS `Resources/AppIcon.png`); the die's vectors are gone.
+
+## 0.180.4 — The film leader is the app's icon
+
+**Changed**
+
+- The media app's icon and TV launcher tile are the film leader the web player shows while a film loads, rings, crosshair, coral sweep and the 3, on the player's dark paper; the tile adds the player's wordmark, *mediagram* in Fraunces 600 (as outlines). Before, a white ring with no name. The user's pick from three options, the others a film strip cut into the parts a film is stored in, and the letter m.
+
 ## Spieltisch 0.192.1 — Spruchreif's shelf art shows a round of the game
 
 **Changed**
