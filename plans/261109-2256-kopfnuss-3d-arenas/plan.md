@@ -17,7 +17,12 @@ nutcracker in lacquered wood with a microphone, its hinged jaw the talking mouth
 **B** a floating walnut head whose lower shell is the jaw. Both are turned primitives, no skinning. **Chosen: B, the
 walnut** (user, 2026-11-15: "lets use walnut"). In every stage: `reports/showmaster-walnut-all-stages.jpg` — it floats
 beside the signs while players pick, top left while tricks fly and during the Gipfelsturm, on a lit spot behind the
-players for the question and reveal, beside the winner on the fact card. No phase covers the showmaster yet.
+players for the question and reveal, beside the winner on the fact card. Shader effects in motion, walnut floating and talking:
+`reports/walnut-shader-effects-all-stages.mp4`. **Voice: Puck** (user, 2026-11-15), Gemini TTS `gemini-3.8-flash-tts`,
+"cheerful and quick" (`reports/walnut-voice-Puck.mp3`; the other candidates beside it). Lines are voiced ahead of
+time and shipped, never generated on the TV PC (no internet or key needed at game night); every question in the
+packs can be voiced the same way, player names cannot (the walnut talks around them). Generator:
+`reports/mockup-source/make-walnut-voice.py`. No phase covers the showmaster yet.
 
 Branch: `feat/dreifelder-on-games` (has Kopfnuss, Dreifelder and the games line's catalogue).
 
