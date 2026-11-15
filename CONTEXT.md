@@ -37,6 +37,11 @@ Replacing the channel index with a snapshot of the local index, after pulling so
 nothing another machine published is dropped.
 _Avoid_: push (except as the `push-index` command's name), upload (reserved for sets)
 
+**Library update**:
+A player reading the newest channel index and fetching the artwork it lacks;
+started when the player opens, by a publish, or by the viewer's Update.
+_Avoid_: sync, refresh (for the whole act)
+
 **Category**:
 A hand-set label on a course, a documentary collection or a standalone
 documentary, one each, that files it into a row on its department page.
@@ -87,12 +92,15 @@ _Avoid_: AI, auto-player, computer
 **Grace**:
 How long the house waits before deciding for an absent player, counted from
 the later of the player leaving and the ask opening. The same at every
-table.
+table, and only for asks.
 _Avoid_: timeout, delay
 
 **Ask**:
 One thing the host wants one player to decide on their phone. It opens at a
 moment the host names, may run on a clock, and takes one answer.
+A question put to every player at once is not an ask: it closes once every
+present player has answered or its clock runs out, and the house never
+answers it, so an absent player holds no one up.
 _Avoid_: question (a quiz's content), prompt (only the ask's words), decision
 (the answer given, as in Grand Allee's decision log)
 
