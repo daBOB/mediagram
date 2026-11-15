@@ -2,7 +2,7 @@
 name = "spieltisch-core"
 description = "Spieltisch's native core: hosts the game night on the TV box, for the Android app"
 # Spieltisch's own version line, in step with crates/mediagram-game; android/controller reads it from here.
-version = "0.192.5"
+version = "0.192.6"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true

@@ -4,6 +4,7 @@ use crate::catalogue::{GameEntry, entry};
 use crate::protocol::{GameKind, GameLength, GameSpeed, LobbySettings, QuizMode};
 use crate::game::GameCtx;
 use crate::protocol::{ErrorCode, ServerMsg, ServerTime};
+use crate::quiz_config::QuizConfig;
 use crate::room::{Room, error};
 
 /// Which poster-based games have enough material. Filled by the caller from
@@ -15,11 +16,13 @@ pub struct Readiness {
     pub poster_kids: bool,
     /// Enough of Preisfrage's articles for a game.
     pub preisfrage: bool,
+    /// Film questions a kids quiz can ask, counted up to the longest quiz's.
+    pub kids_quiz: usize,
 }
 
 impl Default for Readiness {
     fn default() -> Self {
-        Self { poster: true, poster_kids: true, preisfrage: true }
+        Self { poster: true, poster_kids: true, preisfrage: true, kids_quiz: usize::MAX }
     }
 }
 
@@ -28,6 +31,12 @@ pub(crate) const NOT_ENOUGH_POSTERS: &str = "Nicht genug Poster für dieses Spie
 pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kindermodus.";
 /// Dreifelder asks the general pack too, which is not checked for children.
 pub(crate) const DREIFELDER_NOT_FOR_KIDS: &str = "Dreifelder gibt es nicht im Kindermodus.";
+/// Zündstoff's bomb asks the general pack, which is not checked for children.
+pub(crate) const ZUENDSTOFF_NOT_FOR_KIDS: &str = "Zündstoff gibt es nicht im Kindermodus.";
+/// The quiz's general questions are the general pack, which is not checked for children.
+pub(crate) const GENERAL_QUIZ_NOT_FOR_KIDS: &str = "Allgemeine Fragen gibt es nicht im Kindermodus.";
+/// A kids quiz asks only films, so the library must supply every question.
+pub(crate) const NOT_ENOUGH_KIDS_FILMS: &str = "Nicht genug Kinderfilme für ein Quiz dieser Dauer.";
 /// Preisfrage's gag-gift searches bring articles nobody checked for children.
 pub(crate) const PREISFRAGE_NOT_FOR_KIDS: &str = "Preisfrage gibt es nicht im Kindermodus.";
 pub(crate) const KRITZELEI_NEEDS_BOARD: &str = "Kritzelei braucht das iPad als Zeichenbrett.";
@@ -100,6 +109,13 @@ impl Room {
         let s = &self.settings;
         let r = self.cfg.readiness;
         match s.game {
+            GameKind::Quiz if s.kids_only && s.quiz_mode == QuizMode::General => {
+                return Some(GENERAL_QUIZ_NOT_FOR_KIDS.into());
+            }
+            GameKind::Quiz if s.kids_only => {
+                let enough = r.kids_quiz >= QuizConfig::default().sized(s.length).rounds;
+                return (!enough).then(|| NOT_ENOUGH_KIDS_FILMS.into());
+            }
             // Any room plays these, so only the room's own minimum gates them: a seat
             // message would stand on the TV before anyone has joined.
             GameKind::Quiz => return None,
@@ -109,6 +125,7 @@ impl Room {
             }
             GameKind::Kopfnuss if s.kids_only => return Some(KOPFNUSS_NOT_FOR_KIDS.into()),
             GameKind::Dreifelder if s.kids_only => return Some(DREIFELDER_NOT_FOR_KIDS.into()),
+            GameKind::Zuendstoff if s.kids_only => return Some(ZUENDSTOFF_NOT_FOR_KIDS.into()),
             GameKind::Preisfrage if s.kids_only => return Some(PREISFRAGE_NOT_FOR_KIDS.into()),
             GameKind::Preisfrage if !r.preisfrage => return Some(PREISFRAGE_NEEDS_ARTICLES.into()),
             GameKind::Kritzelei if !self.board_connected() => return Some(KRITZELEI_NEEDS_BOARD.into()),
