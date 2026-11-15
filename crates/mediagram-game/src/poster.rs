@@ -10,7 +10,8 @@ use std::collections::{BTreeSet, HashSet};
 
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::poster_config::{Claims, PosterConfig, Round, Stage, pick_rounds, points_at_step, rng_for, step_at};
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
+use crate::room_seats::Player;
 use crate::titles::TitlePool;
 
 
@@ -127,16 +128,16 @@ impl Game for PosterGame {
         }
     }
 
-    fn phone_screen(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-        self.phone_view(view, player)
+    fn phone_screen(&self, _view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+        self.phone_view(player)
     }
 
     fn tv_scene(&self, _view: &ViewCtx) -> TvScene {
         self.tv_view()
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn ranking(&self, players: &[Player]) -> Option<Ranking> {
+        (self.stage == Stage::Final).then(|| Ranking::by_score(players))
     }
 }
 

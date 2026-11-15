@@ -1,11 +1,10 @@
 //! What Letztes Wort's phones and TV show. Only the host's phone ever lists the answers.
 
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::letztes_wort::{LetztesWortGame, Stage};
 use crate::protocol::{
     HostAnswer, LetztesWortPhone, LetztesWortScene, LetztesWortStage, PhoneScreen, PlayerId, Tone, TvScene,
 };
-use crate::quiz_views::rank_of;
 
 impl LetztesWortGame {
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
@@ -17,10 +16,7 @@ impl LetztesWortGame {
         };
         let question = self.prompt.q.clone();
         match self.stage {
-            Stage::Final => {
-                let (rank, score) = rank_of(view.players, player);
-                PhoneScreen::Final { rank, of: view.players.len() as u8, score, can_restart: view.leader == Some(player) }
-            }
+            Stage::Final => unasked(),
             Stage::RoundEnd { winner, .. } => {
                 let text = if self.next_host() == Some(player) { "Die nächste Frage moderierst du." } else { "Gleich kommt die nächste Frage." };
                 match winner {

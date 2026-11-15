@@ -13,10 +13,10 @@ use crate::ask::Ask;
 use crate::card_table::{CardTable, sort_hand};
 use crate::cards::{Card, Rank, deck_from, shuffled};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
 pub use crate::schwimmen_config::SchwimmenConfig;
-use crate::schwimmen_rules::{FEUER, HAND, KNOCK_AT, LIVES, Swap, best_swap, value};
+use crate::schwimmen_rules::{FEUER, HAND, LIVES, Swap, value};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {
@@ -164,14 +164,7 @@ impl Game for SchwimmenGame {
                 if !ask.house_decides(ctx) {
                     return;
                 }
-                let hand = &self.hands[self.turn];
-                if self.knocker.is_none() && value(hand) >= KNOCK_AT {
-                    self.knock(ctx.now);
-                } else if let Some(swap) = best_swap(hand, &self.middle) {
-                    self.swap(ctx.now, swap);
-                } else {
-                    self.pass(ctx.now);
-                }
+                self.house_move(ctx.now);
             }
             _ => {}
         }
@@ -186,8 +179,13 @@ impl Game for SchwimmenGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        matches!(self.stage, Stage::Final { .. })
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.table.players().to_vec())
+    }
+
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        let Stage::Final { ranking, .. } = &self.stage else { return None };
+        Some(self.table.ranking(ranking))
     }
 }
 

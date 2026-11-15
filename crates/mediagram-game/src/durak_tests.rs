@@ -311,7 +311,7 @@ fn a_player_out_of_cards_with_an_empty_deck_is_safe_and_the_last_holder_is_the_d
     assert_eq!(g.out, vec![0, 1]);
     let Stage::Final { ranking, durak } = g.stage.clone() else { panic!("expected the end, got {:?}", g.stage) };
     assert_eq!((ranking, durak), (vec![0, 1, 2], Some(2)));
-    assert!(g.is_finished());
+    assert_eq!(g.ranking(&p).map(|r| r.places.iter().map(|x| x.player).collect::<Vec<_>>()), Some(vec![0, 1, 2]));
     assert_eq!(p.iter().map(|x| x.score).collect::<Vec<_>>(), vec![2, 1, 0]);
     let s = scene(&g, &p, 10_000.0);
     assert_eq!(s.ranking, Some(vec![0, 1, 2]));

@@ -20,7 +20,7 @@ use super::live_turn::Step;
 use super::rules::{Permit, Table};
 use crate::ask::Ask;
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 /// Decides for an absent player and when a clock runs out.
@@ -151,8 +151,12 @@ impl Game for GrandAlleeGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.ids.clone())
+    }
+
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        (self.stage == Stage::Final).then(|| Ranking::in_order(self.standings().into_iter().map(|s| self.ids[s])))
     }
 
     fn take_log(&mut self) -> Vec<serde_json::Value> {

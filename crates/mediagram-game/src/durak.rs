@@ -19,7 +19,7 @@ use crate::cards::{Card, Rank, deck_from, shuffled};
 use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::durak_rules::{DEAL, beats, can_throw, first_attacker};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 #[derive(Debug, Clone)]
@@ -172,8 +172,13 @@ impl Game for DurakGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        matches!(self.stage, Stage::Final { .. })
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.table.players().to_vec())
+    }
+
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        let Stage::Final { ranking, .. } = &self.stage else { return None };
+        Some(self.table.ranking(ranking))
     }
 }
 

@@ -59,7 +59,7 @@ pub fn play(seed: u64, players: usize, rules: Rules) -> Record {
     // when each seat last finished deciding
     let mut last = vec![0.0; players];
     let mut now: ServerTime = 0.0;
-    while !g.is_finished() {
+    while g.ranking(&p).is_none() {
         match &g.stage {
             Stage::Ask { choices, ask, .. } => {
                 let (seat, since) = (g.turn, ask.opened_at());

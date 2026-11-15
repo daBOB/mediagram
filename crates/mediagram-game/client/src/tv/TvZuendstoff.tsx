@@ -4,7 +4,6 @@ import type { ZuendstoffScene } from "../protocol/ZuendstoffScene";
 import type { ZuendstoffStage } from "../protocol/ZuendstoffStage";
 import { ANSWER_COLORS, ANSWER_MARKS } from "../ui/answers";
 import { Token } from "../ui/Token";
-import { TvFinal, byFinish } from "./TvFinal";
 import "./zuendstoff/zuendstoff.css";
 
 type Props = { scene: ZuendstoffScene; players: PlayerInfo[]; conn: Connection };
@@ -57,7 +56,7 @@ function headline(stage: Exclude<ZuendstoffStage, { stage: "final" }>, nameOf: (
 export function TvZuendstoff({ scene, players, conn }: Props) {
   const now = useServerNow(conn);
   const { stage } = scene;
-  if (stage.stage === "final") return <TvFinal players={byFinish(players, stage.order)} conn={conn} ranked />;
+  if (stage.stage === "final") return null; // TvApp shows the awards ceremony
 
   const byId = new Map(players.map((p) => [p.id, p]));
   const nameOf = (id: number) => byId.get(id)?.name ?? "Jemand";

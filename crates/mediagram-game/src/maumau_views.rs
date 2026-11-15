@@ -2,7 +2,7 @@
 
 use crate::card_table::button;
 use crate::cards::Suit;
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::maumau::{MauMauGame, Stage};
 use crate::maumau_rules::playable;
 use crate::protocol::{
@@ -20,15 +20,10 @@ pub(crate) fn wish_id(suit: Suit) -> String {
 impl MauMauGame {
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
         let Some(me) = self.table.seat_of(player) else {
-            return PhoneScreen::Wait { title: "Mau-Mau läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
+            return unasked();
         };
-        if let Stage::Final { ranking } = &self.stage {
-            return PhoneScreen::Final {
-                rank: ranking.iter().position(|&s| s == me).map_or(1, |r| r as u8 + 1),
-                of: self.table.players().len() as u8,
-                score: view.players.iter().find(|p| p.id == player).map_or(0, |p| p.score),
-                can_restart: view.leader == Some(player),
-            };
+        if matches!(self.stage, Stage::Final { .. }) {
+            return unasked();
         }
         let mine = me == self.turn;
         let top = self.top();

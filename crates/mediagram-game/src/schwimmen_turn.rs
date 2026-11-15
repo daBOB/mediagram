@@ -4,9 +4,21 @@ use crate::card_table::sort_hand;
 use crate::game::ActionError;
 use crate::protocol::{CardsEventKind, ServerTime};
 use crate::schwimmen::{SchwimmenGame, Stage};
-use crate::schwimmen_rules::{FEUER, HAND, Swap, apply, value};
+use crate::schwimmen_rules::{FEUER, HAND, KNOCK_AT, Swap, apply, best_swap, value};
 
 impl SchwimmenGame {
+    /// What the house plays for a player who is gone: a knock on a strong hand, else the best swap, else a pass.
+    pub(crate) fn house_move(&mut self, now: ServerTime) {
+        let hand = &self.hands[self.turn];
+        if self.knocker.is_none() && value(hand) >= KNOCK_AT {
+            self.knock(now);
+        } else if let Some(swap) = best_swap(hand, &self.middle) {
+            self.swap(now, swap);
+        } else {
+            self.pass(now);
+        }
+    }
+
     pub(crate) fn swap(&mut self, now: ServerTime, swap: Swap) {
         let (seat, player) = (self.turn, self.table.player_at(self.turn));
         let before = self.hands[seat].clone();

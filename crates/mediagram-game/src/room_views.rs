@@ -1,7 +1,7 @@
 //! What each connection sees, and the change-only flush.
 
-use crate::catalogue::CATALOGUE;
-use crate::game::ViewCtx;
+use crate::catalogue::{CATALOGUE, entry};
+use crate::game::{Game, ViewCtx};
 use crate::protocol::{BoardScreen, PhoneScreen, PhoneView, PlayerInfo, Role, ServerMsg, ServerTime, TvScene, TvView};
 use crate::room::{ConnId, Outbox, Room, encode};
 use crate::room_seats::Player;
@@ -45,6 +45,7 @@ impl Room {
                             board: self.board_connected(),
                         },
                     },
+                    ranking: self.game.as_ref().and_then(|g| g.ranking(&self.players)).map(Box::new),
                 },
             }),
             Role::Board => Some(ServerMsg::Board {
@@ -60,7 +61,7 @@ impl Room {
             Role::Phone => {
                 let p = self.player(c.player?)?;
                 let screen = match &self.game {
-                    Some(g) => g.phone_screen(&vctx, p.id),
+                    Some(g) => self.game_screen(g.as_ref(), &vctx, p),
                     None => {
                         let players = self.connected_count();
                         let is_leader = self.leader() == Some(p.id);
@@ -80,6 +81,22 @@ impl Room {
                 };
                 Some(ServerMsg::Phone { view: PhoneView { me: self.info(p), screen, buzz: self.game.as_ref().and_then(|g| g.phone_buzz(&vctx, p.id)) } })
             }
+        }
+    }
+
+    /// A phone during a game: a wait for a player not seated, the game's own screen while it runs, then the player's place.
+    fn game_screen(&self, game: &dyn Game, view: &ViewCtx, p: &Player) -> PhoneScreen {
+        let seats = game.seats();
+        if seats.as_ref().is_some_and(|s| !s.contains(&p.id)) {
+            let title = format!("{} läuft", entry(self.settings.game).name);
+            return PhoneScreen::Wait { title, text: Some("Du spielst in der nächsten Runde mit.".into()) };
+        }
+        let Some(ranking) = game.ranking(view.players) else { return game.phone_screen(view, p.id) };
+        PhoneScreen::Final {
+            rank: ranking.place_of(p.id).unwrap_or(ranking.places.len() as u8 + 1),
+            of: seats.map_or(view.players.len(), |s| s.len()) as u8,
+            score: p.score,
+            can_restart: view.leader == Some(p.id),
         }
     }
 

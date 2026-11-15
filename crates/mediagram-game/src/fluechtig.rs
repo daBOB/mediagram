@@ -17,7 +17,7 @@ use crate::fluechtig_intro::Intro;
 use crate::fluechtig_map::Field;
 use crate::fluechtig_rules::{Chase, Rules, Turn};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx, name};
-use crate::protocol::{Action, FluechtigTicket as Ticket, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, FluechtigTicket as Ticket, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 /// Which question the mover's phone asks.
@@ -139,8 +139,15 @@ impl Game for FluechtigGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        self.chase.winner().is_some()
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        let mut seats: Vec<PlayerId> = std::iter::once(self.fugitive).chain(self.owners.iter().copied()).collect();
+        seats.sort_unstable();
+        seats.dedup();
+        Some(seats)
+    }
+
+    fn ranking(&self, players: &[Player]) -> Option<Ranking> {
+        self.chase.winner().map(|_| Ranking::by_score(players))
     }
 }
 

@@ -107,7 +107,7 @@ fn ghost_guesses_score_nothing_but_order_the_ones_out_together() {
     assert!(!g.tally.is_alive(3), "a right ghost guess does not bring Dana back");
     assert!(ps.iter().all(|p| p.score == 0), "no points during the game");
     next(&mut g, &mut ps, t);
-    assert!(g.is_finished());
+    assert!(g.ranking(&ps).is_some());
     assert_eq!(g.order, vec![0, 1, 3, 2]);
     let scores: Vec<i32> = ps.iter().map(|p| p.score).collect();
     assert_eq!(scores, vec![300, 200, 0, 100], "100 per player beaten");
@@ -122,7 +122,7 @@ fn the_cap_ends_a_game_with_several_alive_the_fastest_first() {
     let t = next(&mut g, &mut ps, t);
     let t = answer(&mut g, &mut ps, &[0, 1], &[], 500.0).max(t);
     next(&mut g, &mut ps, t);
-    assert!(g.is_finished());
+    assert!(g.ranking(&ps).is_some());
     assert_eq!(g.order, vec![1, 0]);
 }
 
@@ -159,7 +159,7 @@ fn the_game_ends_when_no_alive_player_is_connected() {
     let open = opens_at(&g).max(t);
     tick(&mut g, &mut ps, open);
     next(&mut g, &mut ps, open + 1.0);
-    assert!(g.is_finished());
+    assert!(g.ranking(&ps).is_some());
     assert_eq!(g.order, vec![1, 0, 2], "the alive ranked by speed");
 }
 
@@ -192,8 +192,7 @@ fn a_player_who_joins_mid_game_waits_and_holds_nothing_up() {
 fn without_questions_the_game_ends_at_once() {
     let ps = players(2);
     let g = DreifelderGame::new(DreifelderConfig::default(), vec![], &ps, 0.0);
-    assert!(g.is_finished());
+    assert_eq!(g.ranking(&ps).and_then(|r| r.place_of(0)), Some(1));
     let view = ViewCtx { now: 0.0, players: &ps, leader: Some(0) };
     assert!(matches!(g.tv_scene(&view), TvScene::Dreifelder { .. }));
-    assert!(matches!(g.phone_screen(&view, 0), PhoneScreen::Final { rank: 1, .. }));
 }

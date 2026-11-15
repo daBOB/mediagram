@@ -1,5 +1,5 @@
 use super::*;
-use crate::card_game_driver::{ANA, BEN, CEM, act, c, desk, leave, players, scene, screen, tick};
+use crate::card_game_driver::{ANA, BEN, CEM, act, c, desk, leave, players, scene, tick};
 use crate::protocol::{ButtonNeeds, CardsEventKind};
 use Rank::*;
 use Suit::*;
@@ -206,12 +206,11 @@ fn the_first_empty_hand_wins_and_the_rest_rank_by_cards_left() {
         vec![],
     );
     act(&mut g, &mut p, ANA, "play", &[0], None, 1.0).unwrap();
-    assert!(g.is_finished());
+    assert_eq!(g.ranking(&p).and_then(|r| r.place_of(CEM)), Some(2));
     let s = scene(&g, &p, 1.0);
     assert_eq!(s.ranking, Some(vec![ANA, CEM, BEN]));
     assert_eq!(s.turn, None);
     assert_eq!(p.iter().map(|x| x.score).collect::<Vec<_>>(), [2, 0, 1]);
-    assert!(matches!(screen(&g, &p, CEM, 1.0), PhoneScreen::Final { rank: 2, of: 3, score: 1, can_restart: false }));
     assert_eq!(act(&mut g, &mut p, BEN, "draw", &[], None, 2.0), Err(ActionError::Ignored));
 }
 

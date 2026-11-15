@@ -1,4 +1,4 @@
-use crate::protocol::{Action, BoardAct, BoardScreen, Buzz, DrawOp, LobbySettings, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, BoardAct, BoardScreen, Buzz, DrawOp, LobbySettings, PhoneScreen, Placed, PlayerId, Ranking, ServerTime, TvScene};
 
 use crate::room_seats::Player;
 
@@ -21,6 +21,12 @@ impl GameCtx<'_> {
 /// A seated player's name, or "Jemand" for one who is not seated.
 pub(crate) fn name(players: &[Player], id: PlayerId) -> &str {
     players.iter().find(|p| p.id == id).map_or("Jemand", |p| &p.name)
+}
+
+/// What a game's own view gives where the room speaks instead: to a player not
+/// seated, and once the game is over. Never shown.
+pub(crate) fn unasked() -> PhoneScreen {
+    PhoneScreen::Wait { title: String::new(), text: None }
 }
 
 /// Read-only context for building views.
@@ -51,12 +57,20 @@ pub trait Game: Send {
     /// wall clock, so games stay deterministic and testable.
     fn on_tick(&mut self, ctx: &mut GameCtx);
 
-    /// What `player`'s phone shows. Only include what this player may see.
+    /// What `player`'s phone shows while the game runs. Only include what this player may see.
+    /// Never asked of a player who is not seated, nor once the game has its ranking: the room shows those.
     fn phone_screen(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen;
 
     fn tv_scene(&self, view: &ViewCtx) -> TvScene;
 
-    fn is_finished(&self) -> bool;
+    /// Who plays, in seat order; anyone else in the room waits for the next game.
+    /// `None` when everyone in the room plays, late joiners too.
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        None
+    }
+
+    /// How the game placed its players once it is over; `None` while it runs.
+    fn ranking(&self, players: &[Player]) -> Option<Ranking>;
 
     /// An act from the drawing board.
     fn on_board(&mut self, _ctx: &mut GameCtx, _act: &BoardAct) -> Result<(), ActionError> {
@@ -88,6 +102,29 @@ pub trait Game: Send {
     }
 }
 
+impl Ranking {
+    /// Places by position in `order`, winner first: nobody shares a place.
+    pub(crate) fn in_order(order: impl IntoIterator<Item = PlayerId>) -> Self {
+        Self { places: order.into_iter().zip(1..).map(|(player, place)| Placed { player, place }).collect() }
+    }
+
+    /// Places by score, highest first: equal scores share a place, and keep `players`' order.
+    pub(crate) fn by_score<'a>(players: impl IntoIterator<Item = &'a Player>) -> Self {
+        let mut scored: Vec<(PlayerId, i32)> = players.into_iter().map(|p| (p.id, p.score)).collect();
+        scored.sort_by_key(|&(_, score)| std::cmp::Reverse(score));
+        let better = |score: i32| scored.iter().filter(|&&(_, s)| s > score).count() as u8;
+        Self { places: scored.iter().map(|&(player, score)| Placed { player, place: better(score) + 1 }).collect() }
+    }
+
+    pub(crate) fn place_of(&self, player: PlayerId) -> Option<u8> {
+        self.places.iter().find(|p| p.player == player).map(|p| p.place)
+    }
+}
+
 /// Builds a fresh game when the leader presses start, from the lobby
 /// settings in force. Scores are already reset when this runs.
 pub type GameFactory = Box<dyn FnMut(&mut GameCtx, &LobbySettings) -> Box<dyn Game> + Send>;
+
+#[cfg(test)]
+#[path = "game_tests.rs"]
+mod tests;

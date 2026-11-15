@@ -159,8 +159,7 @@ fn after_the_last_round_comes_the_climb_then_the_fact_then_the_finish() {
     assert_eq!(g.order[0], 2);
     assert!(!g.fact.is_empty());
     run_until(&mut g, &mut players, now, |g| g.stage == Stage::Final);
-    assert!(g.is_finished());
-    assert!(matches!(phone(&g, &players, 2), PhoneScreen::Final { rank: 1, .. }));
+    assert_eq!(g.ranking(&players).and_then(|r| r.place_of(2)), Some(1));
 }
 
 #[test]

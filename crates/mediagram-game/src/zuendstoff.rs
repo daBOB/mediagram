@@ -13,7 +13,7 @@ pub use crate::zuendstoff_config::{QuestionDeck, ZuendstoffConfig};
 use crate::ask::Ask;
 use crate::dreifelder_rules::placement_scores;
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, AnswerColor, Buzz, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, AnswerColor, Buzz, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::quiz_config::Round;
 use crate::room_seats::Player;
 use crate::zuendstoff_config::{Stage, Step};
@@ -181,8 +181,8 @@ impl Game for ZuendstoffGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        (self.stage == Stage::Final).then(|| Ranking::in_order(self.order.iter().copied()))
     }
 
     fn phone_buzz(&self, _view: &ViewCtx, player: PlayerId) -> Option<Buzz> {

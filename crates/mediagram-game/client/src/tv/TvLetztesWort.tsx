@@ -1,21 +1,19 @@
 import { useEffect } from "react";
-import type { Connection } from "../net";
 import type { LetztesWortScene } from "../protocol/LetztesWortScene";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { Baton } from "../ui/Baton";
 import { playBuzzer } from "../ui/buzzer-sound";
 import { Token } from "../ui/Token";
-import { TvFinal, byFinish } from "./TvFinal";
 import { effectsGain, getSettings } from "./settings/tv-settings";
 import "./letztes-wort/letztes-wort.css";
 
-type Props = { scene: LetztesWortScene; players: PlayerInfo[]; conn: Connection };
+type Props = { scene: LetztesWortScene; players: PlayerInfo[] };
 
 /**
  * Letztes Wort on the TV: the question, who has the floor, the stick and its holder, and the
  * table with the host and who is out. Never an answer, never a clock.
  */
-export function TvLetztesWort({ scene, players, conn }: Props) {
+export function TvLetztesWort({ scene, players }: Props) {
   const { stage } = scene;
   // Each buzz sounds once, also for a TV that joins mid-round (it hears the current one).
   const buzzKey = stage.stage === "floor" ? `${scene.round}:${scene.host}:${stage.buzz}` : null;
@@ -23,7 +21,7 @@ export function TvLetztesWort({ scene, players, conn }: Props) {
     if (buzzKey) playBuzzer(effectsGain(getSettings()));
   }, [buzzKey]);
 
-  if (stage.stage === "final") return <TvFinal players={byFinish(players, stage.order)} conn={conn} />;
+  if (stage.stage === "final") return null; // TvApp shows the awards ceremony
 
   const byId = new Map(players.map((p) => [p.id, p]));
   const nameOf = (id: number) => byId.get(id)?.name ?? "Jemand";

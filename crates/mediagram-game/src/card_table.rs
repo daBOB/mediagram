@@ -4,7 +4,7 @@
 
 use crate::ask::Ask;
 use crate::cards::Card;
-use crate::protocol::{ButtonNeeds, CardsBanner, CardsEvent, CardsEventKind, DeskButton, PlayerId, ServerTime};
+use crate::protocol::{ButtonNeeds, CardsBanner, CardsEvent, CardsEventKind, DeskButton, PlayerId, Ranking, ServerTime};
 use crate::room_seats::Player;
 
 /// The TV plays each event once, by id; six covers one Durak refill dealing to every seat.
@@ -38,6 +38,11 @@ impl CardTable {
 
     pub(crate) fn seat_of(&self, player: PlayerId) -> Option<usize> {
         self.ids.iter().position(|&p| p == player)
+    }
+
+    /// The final ranking of seats listed winner first.
+    pub(crate) fn ranking(&self, seats: &[usize]) -> Ranking {
+        Ranking::in_order(seats.iter().map(|&s| self.ids[s]))
     }
 
     /// Asks `seat` from `now`, with no clock: the table waits for a player who is there.
