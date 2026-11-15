@@ -162,7 +162,16 @@ export function addHost(scene, kind, stage, cam) {
     w.lookAt(cam.position.x, wy + 0.6, cam.position.z);
     scene.add(w);
     if (spot) hostSpot(scene, wx, wz, 0.55);
-    return { head: w.position.clone().setY(wy + 1.2), feet: new THREE.Vector3(wx, spot ? 0.55 : wy - 1.4, wz) };
+    const jaw = w.userData.jaw, open = jaw.rotation.x;
+    // float and talk: a slow bob, the jaw flapping in syllables with pauses between phrases
+    const animate = (t) => {
+      w.position.y = wy + Math.sin(t * 1.7) * 0.14;
+      w.rotation.z = Math.sin(t * 1.1) * 0.05;
+      const phrase = Math.max(0, Math.sin(t * 1.3));
+      const track = globalThis.jawTrack;
+      jaw.rotation.x = track ? 0.04 + 0.6 * (track[Math.floor(t * 20)] ?? 0) : 0.06 + (open + 0.1) * Math.abs(Math.sin(t * 8.5)) * phrase;
+    };
+    return { animate, head: w.position.clone().setY(wy + 1.2), feet: new THREE.Vector3(wx, spot ? 0.55 : wy - 1.4, wz) };
   }
   hostSpot(scene, x, z, raise);
   const n = nutcracker({ jaw: stage === "reveal" ? 0.5 : 0.3 });

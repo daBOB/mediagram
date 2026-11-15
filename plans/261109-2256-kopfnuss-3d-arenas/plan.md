@@ -22,7 +22,8 @@ players for the question and reveal, beside the winner on the fact card. Shader 
 "cheerful and quick" (`reports/walnut-voice-Puck.mp3`; the other candidates beside it). Lines are voiced ahead of
 time and shipped, never generated on the TV PC (no internet or key needed at game night); every question in the
 packs can be voiced the same way, player names cannot (the walnut talks around them). Generator:
-`reports/mockup-source/make-walnut-voice.py`. No phase covers the showmaster yet.
+`reports/mockup-source/make-walnut-voice.py`. Talking with sound, the jaw driven by the voice's loudness
+(`make-jaw-track.py`): `reports/walnut-talking-puck.mp4`. No phase covers the showmaster yet.
 
 Branch: `feat/dreifelder-on-games` (has Kopfnuss, Dreifelder and the games line's catalogue).
 

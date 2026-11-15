@@ -7,7 +7,7 @@ import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { THEMES } from "./arena-themes.js?v=fx7";
 import { clock, confetti, DITHER, ditherGlsl, energy, padGlow, rimLight } from "./arena-fx.js?v=fx7";
-import { addHost } from "./showmaster.js?v=6";
+import { addHost } from "./showmaster.js?v=8";
 
 const q = new URLSearchParams(location.search);
 const theme = THEMES[q.get("theme") ?? "table"], stage = q.get("stage") ?? "question", FX = q.get("fx") === "1";
@@ -237,6 +237,7 @@ const STAGES = {
 await Promise.all([document.fonts.load("800 80px 'Bricolage Grotesque'"), document.fonts.load("700 24px 'Atkinson Hyperlegible'")]);
 theme.build(scene, stage);
 await STAGES[stage]();
+if (q.get("voice")) globalThis.jawTrack = await (await fetch(`./jaw-${q.get("voice")}.json`)).json();
 const hostAt = q.get("host") ? addHost(scene, q.get("host"), stage, cam) : null;
 // ?hostcam=1: a close-up of the host's face, the HUD hidden
 if (hostAt && q.get("hostcam")) {
@@ -254,7 +255,8 @@ if (DITHER) scene.traverse((o) => [o.material].flat().forEach((m) => {
 for (let i = 0; i < 3; i++) renderer.render(scene, cam);
 // For the clips: set the effect clock and step the avatars to time t (seconds).
 let last = 0;
-window.setT = (t) => { for (const m of mixers) m.update(t - last); last = t; clock.value = t; renderer.render(scene, cam); return t; };
+window.setT = (t) => { for (const m of mixers) m.update(t - last); last = t; clock.value = t; hostAt?.animate?.(t); renderer.render(scene, cam); return t; };
+if (q.get("live")) { const t0 = performance.now(); const loop = () => { setT((performance.now() - t0) / 1000); requestAnimationFrame(loop); }; loop(); }
 const info = renderer.info.render;
 const wc = ktx2.workerConfig ?? {};
 if (zoom) hud.style.display = "none";
