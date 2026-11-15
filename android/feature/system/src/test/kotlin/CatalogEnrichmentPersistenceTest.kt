@@ -75,9 +75,10 @@ class CatalogEnrichmentPersistenceTest {
         runTest {
             val settings = FailingKeySettings().apply { write("key") }
             val core = FakeCore()
-            val vm = FetchViewModel(CatalogEnrichmentFetcher(FakeCoreProvider(core), settings))
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), settings)
+            val vm = FetchViewModel(enrichment)
             settings.readFailure = IllegalStateException("secret-key")
-            vm.fetch()
+            enrichment.fetch()
             assertEquals(0, core.fetchCalls)
             assertFalse(vm.state.value.running)
             assertEquals("Could not read the saved TMDB key. Save it again on the TMDB key screen.", vm.state.value.error)

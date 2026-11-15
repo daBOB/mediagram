@@ -23,6 +23,7 @@ import catalog.mastheadTabsOf
 import catalog.mediaSet
 import catalog.runFor
 import data.CatalogEnrichmentState
+import data.LibraryUpdateState
 import model.WatchSnapshot
 import system.FetchViewModel
 import ui.catalog.CastAskHost
@@ -58,6 +59,7 @@ internal fun LibraryBranches(
     at: LibraryPositions,
     catalogState: CatalogUiState,
     catalogViewModel: CatalogViewModel,
+    updateState: LibraryUpdateState,
     fetchState: CatalogEnrichmentState,
     fetchViewModel: FetchViewModel,
     menuActions: MenuActions,
@@ -243,8 +245,8 @@ internal fun LibraryBranches(
         ) {
             shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
                 state = catalogState,
-                fetching = fetchState.running,
-                fetchFraction = fetchState.progress?.let(::fetchFraction),
+                fetching = updateState.fetching,
+                fetchFraction = updateState.progress?.let(::fetchFraction),
                 chosenTab = chosenTab,
                 onTabChange = chooseTab,
                 onOpenTitle = at::openTitle,

@@ -25,6 +25,7 @@ import catalog.MenuScreen
 import catalog.factsLine
 import catalog.resumeLine
 import catalog.shelvesOf
+import data.LibraryUpdateState
 import designsystem.COUNTDOWN_LEADER_TEST_TAG
 import designsystem.TvStyle
 import kotlin.test.assertEquals
@@ -176,11 +177,11 @@ class TvCatalogScreenStateTest {
     /** The phone's progress bar, as the words its Update item waits with. */
     @Test
     fun anArtworkFetchOrAChannelReadSaysSoAboveTheShelves() {
-        show(ready(films(1)), fetching = true)
+        show(ready(films(1)), update = LibraryUpdateState(fetching = true))
         compose.onNodeWithText("Fetching details and artwork…").assertExists()
         close()
 
-        show(ready(films(1)).copy(refreshing = true))
+        show(ready(films(1)), update = LibraryUpdateState(reading = true))
         compose.onNodeWithText("Reading the channel…").assertExists()
         close()
 
@@ -192,7 +193,7 @@ class TvCatalogScreenStateTest {
     /** A run under way says which step it is on, how far, and how long is left — not only that it runs. */
     @Test
     fun aFetchUnderWayCountsItsStepAboveTheShelves() {
-        show(ready(films(1)), fetching = true, fetchProgress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL))
+        show(ready(films(1)), update = LibraryUpdateState(fetching = true, progress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL)))
         compose.onNodeWithText("Downloading artwork · 300 of 900 · about 2 min left").assertExists()
         compose.onNodeWithTag(TvPlateProgressFillTag, useUnmergedTree = true).assertExists()
     }
@@ -200,7 +201,7 @@ class TvCatalogScreenStateTest {
     /** The bar is opaque and drawn over the page's top, so a line placed there exists but nobody sees it. */
     @Test
     fun theFetchLineAndItsBarSitBelowTheTopBar() {
-        show(ready(films(1)), fetching = true, fetchProgress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL))
+        show(ready(films(1)), update = LibraryUpdateState(fetching = true, progress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL)))
         val barFoot = TvDepartmentsBarHeight
         val line = compose.onNodeWithText("Downloading artwork · 300 of 900 · about 2 min left").getBoundsInRoot()
         val rule = compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).getBoundsInRoot()
@@ -585,8 +586,7 @@ class TvCatalogScreenStateTest {
         onOpenMenu: () -> Unit = {},
         onOpenTitle: (String) -> Unit = {},
         onOpenCollection: (String) -> Unit = {},
-        fetching: Boolean = false,
-        fetchProgress: FetchProgress? = null,
+        update: LibraryUpdateState = LibraryUpdateState(),
         restoreKey: String? = null,
         style: TvStyle = TvStyle.Default,
         pendingRail: RailItem? = null,
@@ -606,8 +606,7 @@ class TvCatalogScreenStateTest {
                         onOpenCollection = onOpenCollection,
                         onOpenList = {},
                         onCreateList = {},
-                        fetching = fetching,
-                        fetchProgress = fetchProgress,
+                        update = update,
                         restoreKey = restoreKey,
                         pendingRail = pendingRail,
                         onPendingRailHandled = onPendingRailHandled,

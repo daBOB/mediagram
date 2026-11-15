@@ -22,20 +22,18 @@ class RefreshLogTest {
         log: RefreshLog,
     ) = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), log)
 
+    /** What a refresh says is what it records: its caller and the System screen are told the same thing. */
     @Test
-    fun unknownRefreshFailuresKeepTheirCauseButDoNotExposeItInTheDisplayedLog() =
+    fun unknownRefreshFailuresAreRefusedWithoutExposingTheirCause() =
         runTest {
-            val refusal = java.io.IOException("private-state-path")
             val core =
                 object : CoreInterface by FakeCore() {
-                    override suspend fun refreshLibrary(handle: String): ULong = throw refusal
+                    override suspend fun refreshLibrary(handle: String): ULong = throw java.io.IOException("private-state-path")
                 }
             val log = RefreshLog()
-            val repository = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), log)
-            val outcome = repository.refresh()
-            // Under test the coroutine debug mode rethrows a copy across withContext, caused by the original.
-            kotlin.test.assertTrue(generateSequence(outcome.exceptionOrNull()) { it.cause }.any { it === refusal })
-            assertEquals(RefreshOutcome.Refused("Could not refresh the library"), log.last())
+            val outcome = repositoryOver(core, log).refresh()
+            assertEquals(RefreshOutcome.Refused("Could not refresh the library"), outcome)
+            assertEquals(outcome, log.last())
         }
 
     /** A refresh that installs a newer snapshot is the case worth reporting. */
@@ -45,8 +43,7 @@ class RefreshLogTest {
             val core = FakeCore(publishedAt = listOf(1_758_300_000L, 1_758_900_000L))
             val log = RefreshLog()
 
-            repositoryOver(core, log).refresh()
-
+            assertEquals(RefreshOutcome.Updated, repositoryOver(core, log).refresh())
             assertEquals(RefreshOutcome.Updated, log.last())
         }
 
@@ -60,8 +57,7 @@ class RefreshLogTest {
             val core = FakeCore(publishedAt = listOf(1_758_300_000L))
             val log = RefreshLog()
 
-            repositoryOver(core, log).refresh()
-
+            assertEquals(RefreshOutcome.AlreadyCurrent, repositoryOver(core, log).refresh())
             assertEquals(RefreshOutcome.AlreadyCurrent, log.last())
         }
 

@@ -37,6 +37,7 @@ import catalog.libraryTallyLines
 import catalog.magazineHomeOf
 import catalog.mastheadTabsOf
 import catalog.updateDisabledReason
+import data.LibraryUpdateState
 import designsystem.Spacing
 import designsystem.TvType
 import ui.common.MenuActions
@@ -45,7 +46,6 @@ import ui.common.catalog.rememberDepartmentScrollStates
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvLibraryChrome
 import ui.tv.profile.TvChosenProfile
-import uniffi.mediagram_core.FetchProgress
 
 /**
  * The catalogue on a television: [TvLibraryChrome] — the rail and the
@@ -75,8 +75,8 @@ import uniffi.mediagram_core.FetchProgress
  * calls for its own three rows. [onFinish] is Continue's "Mark finished".
  * [onPlay] plays a set straight away — the cover story's own "Watch now" —
  * rather than opening its title page the way [onOpenTitle] does everywhere
- * else this screen leads. [fetching] is the artwork-and-descriptions run
- * the phone reports beside a channel refresh.
+ * else this screen leads. [update] is the library update's reading and
+ * fetching, which the phone reports beside its shelves too.
  */
 @Composable
 fun TvCatalogScreen(
@@ -87,8 +87,7 @@ fun TvCatalogScreen(
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
     menu: MenuActions = NoopMenuActions,
-    fetching: Boolean = false,
-    fetchProgress: FetchProgress? = null,
+    update: LibraryUpdateState = LibraryUpdateState(),
     restoreKey: String? = null,
     onTabChanged: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
@@ -263,7 +262,7 @@ fun TvCatalogScreen(
                     }
                 }
             }
-            if (ready != null) TvCatalogStatus(ready, fetching, fetchProgress)
+            if (ready != null) TvCatalogStatus(ready, update)
         }
     }
 }
@@ -278,11 +277,10 @@ fun TvCatalogScreen(
 @Composable
 private fun TvCatalogStatus(
     ready: CatalogUiState.Ready,
-    fetching: Boolean,
-    fetchProgress: FetchProgress?,
+    update: LibraryUpdateState,
 ) {
-    val words = updateDisabledReason(ready, fetching, fetchProgress)
-    val fraction = fetchProgress?.takeIf { fetching }?.let(::fetchFraction)
+    val words = updateDisabledReason(update)
+    val fraction = update.progress?.takeIf { update.fetching }?.let(::fetchFraction)
     if (words == null && fraction == null && ready.notice == null) return
     val gutter = LocalTvPagePadding.current
     // A pill, because the page under it can be Home's cover picture.

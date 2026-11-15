@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
 import data.CoreStorage
+import data.LibraryUpdate
 import data.WatchStateRepository
 import data.coreSentence
 import data.settings.TmdbSettings
@@ -53,6 +54,7 @@ class SetupViewModel
         private val coreStorage: CoreStorage,
         private val dispatcher: CoroutineDispatcher,
         private val watchState: WatchStateRepository,
+        private val libraryUpdate: LibraryUpdate,
     ) : ViewModel() {
         private val _state = MutableStateFlow<SetupUiState>(SetupUiState.Checking)
         val state: StateFlow<SetupUiState> = _state.asStateFlow()
@@ -147,6 +149,7 @@ class SetupViewModel
                 tmdbSettings.clear()
                 coreProvider.forget()
                 watchState.invalidate()
+                libraryUpdate.forget()
                 outstandingStep()
             }
         }

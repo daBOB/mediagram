@@ -2,7 +2,7 @@ package catalog
 
 import app.cash.turbine.test
 import data.CatalogEnrichmentFetcher
-import data.LibraryUpdateCoordinator
+import data.LibraryUpdate
 import data.LiveSession
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +44,7 @@ class CatalogCastHouseholdTest {
         val repository = FakeCatalogRepository(given = listOf(film))
         val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings())
         val watch = WatchStateFixture(listOf(Profile("a", "Ana"))).repository
-        return CatalogViewModel(repository, watch, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, shelving = Dispatchers.Main.immediate)
+        return CatalogViewModel(repository, watch, LibraryUpdate(repository, enrichment), togetherLive = together, shelving = Dispatchers.Main.immediate)
     }
 
     @After

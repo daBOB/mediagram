@@ -26,8 +26,8 @@ import uniffi.mediagram_core.TitleInfo
  * Cancellation propagates from every operation, including [refresh].
  */
 interface CatalogRepository {
-    /** Refreshes the installed index, returning its set count or an operational failure; cancellation is thrown. */
-    suspend fun refresh(): Result<Int>
+    /** Refreshes the installed index and says what that did; any failure is [RefreshOutcome.Refused], and cancellation is thrown. */
+    suspend fun refresh(): RefreshOutcome
 
     suspend fun sets(): List<MediaSet>
 
@@ -120,8 +120,11 @@ class DefaultCatalogRepository(
      * otherwise come back to a screen quoting the coroutine machinery's own
      * words at them. Rethrowing also leaves the cancelled caller cancelled,
      * which is what everything above here expects.
+     *
+     * A refusal is logged here with its cause, since the outcome carries
+     * only the sentence a viewer may read.
      */
-    override suspend fun refresh(): Result<Int> =
+    override suspend fun refresh(): RefreshOutcome =
         runCatching {
             val handle = settings.read() ?: error("No library has been chosen on this device")
             val core = coreProvider.awaitCore()
@@ -129,15 +132,15 @@ class DefaultCatalogRepository(
             // installs the index inside the call, which froze the screen.
             withContext(dispatcher) {
                 val before = core.catalogFacts().publishedAt
-                val sets = core.refreshLibrary(handle).toInt()
+                core.refreshLibrary(handle)
                 val after = core.catalogFacts().publishedAt
-                refreshes.record(if (after == before) RefreshOutcome.AlreadyCurrent else RefreshOutcome.Updated)
-                sets
+                if (after == before) RefreshOutcome.AlreadyCurrent else RefreshOutcome.Updated
             }
-        }.onFailure {
+        }.getOrElse {
             if (it is CancellationException) throw it
-            refreshes.record(RefreshOutcome.Refused(it.refreshSentence()))
-        }
+            Log.w(TAG, "could not refresh the library", it)
+            RefreshOutcome.Refused(it.refreshSentence())
+        }.also(refreshes::record)
 
     // The core's own listing already carries every set's resolved artwork —
     // `toMediaSet` reads it straight off `summary`, no per-set lookup of its

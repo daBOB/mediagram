@@ -36,7 +36,6 @@ class TvCatalogScreenPlayStateTest : TvScreenStateTest() {
             TvCatalogScreen(
                 state = CatalogUiState.Ready(shelvesOf(featured), watch = WatchSnapshot.Empty),
                 profile = TvChosenProfile(name = "Ada", onChoose = {}),
-                fetching = false,
                 restoreKey = null,
                 onOpenTitle = { opened = it },
                 onOpenCollection = {},

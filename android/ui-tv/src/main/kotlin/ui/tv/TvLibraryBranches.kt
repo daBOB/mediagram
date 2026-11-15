@@ -10,6 +10,7 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.mediaSet
 import catalog.runFor
+import data.LibraryUpdateState
 import player.PlayerViewModel
 import stats.AchievementDotViewModel
 import ui.common.LibraryPositions
@@ -25,7 +26,6 @@ import ui.tv.chrome.LocalNewAchievement
 import ui.tv.player.TvCastOver
 import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
-import uniffi.mediagram_core.FetchProgress
 
 /**
  * The player, over the run its title belongs to — the phone's own rule:
@@ -74,8 +74,7 @@ internal fun TvLibraryHomeFrame(
     saved: SaveableStateHolder,
     catalogState: CatalogUiState,
     profile: TvChosenProfile,
-    fetching: Boolean,
-    fetchProgress: FetchProgress?,
+    updateState: LibraryUpdateState,
     restore: TvRestoreKeys,
     here: Int,
     at: LibraryPositions,
@@ -96,8 +95,7 @@ internal fun TvLibraryHomeFrame(
             TvCatalogScreen(
                 state = catalogState,
                 profile = profile,
-                fetching = fetching,
-                fetchProgress = fetchProgress,
+                update = updateState,
                 restoreKey = restore.of(here),
                 menu = menu,
                 pendingRail = pendingRail,

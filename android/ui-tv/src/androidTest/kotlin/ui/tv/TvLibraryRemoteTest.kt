@@ -151,7 +151,6 @@ class TvLibraryRemoteTest {
                     TvCatalogScreen(
                         state = CatalogUiState.Ready(shelvesOf((0 until 10).map(::film))),
                         profile = TvChosenProfile(name = "Ada", onChoose = {}),
-                        fetching = false,
                         restoreKey = restoreKey,
                         onOpenTitle = {},
                         onOpenCollection = {},

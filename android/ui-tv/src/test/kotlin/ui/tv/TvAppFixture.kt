@@ -17,8 +17,9 @@ import data.CatalogRepository
 import data.DefaultHouseholdsRepository
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
-import data.LibraryUpdateCoordinator
+import data.LibraryUpdate
 import data.PortraitRequestLog
+import data.RefreshOutcome
 import data.StoredCoreProvider
 import data.WatchStateRepository
 import data.WatchSync
@@ -199,6 +200,9 @@ internal class TvAppFixture(
         val provider = StoredCoreProvider(telegram, dispatcher) { core }
         val libraries = Libraries(provider, library)
         val watchState = DefaultWatchStateRepository(provider, dispatcher)
+        // One update for the catalog and for setup, which lets go of its library on Start over.
+        val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
+        val libraryUpdate = LibraryUpdate(repository, enrichment)
         runBlocking {
             if (stage != TvSetupStage.APPLICATION) telegram.write(1234, "0123456789abcdef0123456789abcdef")
             if (stage == TvSetupStage.READY) library.write("films")
@@ -211,6 +215,7 @@ internal class TvAppFixture(
                 coreStorage = InMemoryCoreStorage(),
                 dispatcher = dispatcher,
                 watchState = watchState,
+                libraryUpdate = libraryUpdate,
             )
         // TvSignInScreen, TvProfileGate and the library each resolve their
         // own ViewModel through hiltViewModel(), the same way TvApp resolves
@@ -224,7 +229,7 @@ internal class TvAppFixture(
         // Over the same core, read for as long as the store holds the picker.
         val households = DefaultHouseholdsRepository(viewer.provider, viewer.repository, profile.viewModelScope, Dispatchers.Unconfined)
         manage = ManageProfilesViewModel(viewer.repository, households, NoopWatchSync)
-        coEvery { repository.refresh() } returns Result.success(sets.size)
+        coEvery { repository.refresh() } returns RefreshOutcome.AlreadyCurrent
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
         coEvery { repository.search(any()) } answers {
@@ -242,12 +247,11 @@ internal class TvAppFixture(
         coEvery { repository.fetchPortrait(any()) } returns null
         // The cast receiver looks the asked-for title up before it accepts.
         coEvery { repository.mediaSet(any()) } answers { sets.find { it.setId == firstArg() } }
-        val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
         catalog =
             CatalogViewModel(
                 repository,
                 viewer.repository,
-                LibraryUpdateCoordinator(repository, enrichment),
+                libraryUpdate,
                 heldSets = HeldIds(heldIds),
                 togetherLive = together,
                 shelving = Dispatchers.Main.immediate,

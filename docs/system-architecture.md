@@ -474,10 +474,11 @@ library, cancelling the previous wait when either changes. The subscription
 ends after the last consumer leaves, with a short grace period; failed settings
 reads and interrupted connections retry without crashing the app.
 
-`LibraryUpdateCoordinator` in `core:data` owns refresh, local catalog reading,
-optional artwork fetch and shelf regrouping as an awaited operation.
-`CatalogViewModel` presents its progress and keeps held shelves visible when a
-read fails. A manual update still fetches missing artwork when a channel refresh
+`LibraryUpdate` in `core:data` is the library update: refresh, artwork fetch and
+a re-read of the installed sets, one update at a time, exposed as the installed
+library and one update state; Start over and Sign out make it forget the read.
+`CatalogViewModel` shelves each read and keeps held shelves visible when a read
+fails. A manual update still fetches missing artwork when a channel refresh
 fails; a pushed update fetches quietly only after a successful refresh. Compose
 renders these states and submits requests; it does not infer completion from
 intermediate UI emissions. The web server listens continuously and always checks

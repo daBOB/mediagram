@@ -85,6 +85,7 @@ internal fun TvLibrary(
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val fetchViewModel: FetchViewModel = hiltViewModel()
     val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
+    val updateState by catalogViewModel.updateState.collectAsStateWithLifecycle()
     val browse: BrowseViewModel = hiltViewModel()
     val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
     val titlePreloadViewModel: TitlePreloadViewModel = hiltViewModel()
@@ -139,7 +140,7 @@ internal fun TvLibrary(
     // Never the raw engine count: a kids profile must not see a
     // grown-up's own preloads counted into its own menu badge.
     val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
-    val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, fetchState, { menuOpen = false }, onStartOver, queueCount)
+    val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, updateState, fetchState, { menuOpen = false }, onStartOver, queueCount)
     val casts = rememberCastOpens(at)
     // A cast over comes back to Home as a fresh arrival: the catalogue's kept
     // tab and scroll, and the plate Back would have landed on, are dropped.
@@ -229,7 +230,7 @@ internal fun TvLibrary(
                 // Nothing open: the shelves.
                 top == null ->
                     TvLibraryHomeFrame(
-                        saved, catalogState, profile, fetchState.running, fetchState.progress, restore, here, at, catalogViewModel, menu,
+                        saved, catalogState, profile, updateState, restore, here, at, catalogViewModel, menu,
                         pendingRail, { pendingRail = null }, pendingTab, { pendingTab = null }, games.open,
                     ) { menuOpen = true }
 
@@ -304,8 +305,8 @@ internal fun TvLibrary(
     // when there is somebody to read it.
     if (top != FrameKind.PLAYER) {
         TvFetchResultDialog(
-            message = fetchResultMessage(fetchState.report, fetchState.error),
-            onDismiss = fetchViewModel::dismissResult,
+            message = fetchResultMessage(updateState.report, updateState.error),
+            onDismiss = catalogViewModel::dismissUpdateResult,
         )
     }
 }
