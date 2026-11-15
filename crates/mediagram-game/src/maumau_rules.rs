@@ -59,11 +59,6 @@ pub fn points(card: Card) -> u32 {
     }
 }
 
-/// Hands are kept in suit and rank order, which is also the order the phone shows.
-pub fn sort_hand(hand: &mut [Card]) {
-    hand.sort();
-}
-
 /// The suit held most often (ties go to the first in suit order); hearts for an empty hand.
 pub fn most_held_suit(hand: &[Card]) -> Suit {
     if hand.is_empty() {

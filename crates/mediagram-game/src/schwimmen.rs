@@ -10,10 +10,10 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::ask::Ask;
+use crate::card_table::{CardTable, sort_hand};
 use crate::cards::{Card, Rank, deck_from, shuffled};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::maumau_rules::sort_hand;
-use crate::protocol::{Action, CardsBanner, CardsEvent, CardsEventKind, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
 pub use crate::schwimmen_config::SchwimmenConfig;
 use crate::schwimmen_rules::{FEUER, HAND, KNOCK_AT, LIVES, Swap, best_swap, value};
@@ -28,7 +28,6 @@ pub(crate) enum Stage {
 
 pub struct SchwimmenGame {
     pub(crate) cfg: SchwimmenConfig,
-    pub(crate) ids: Vec<PlayerId>,
     /// In suit and rank order, which is also the order the phone shows.
     pub(crate) hands: Vec<Vec<Card>>,
     pub(crate) middle: Vec<Card>,
@@ -47,20 +46,37 @@ pub struct SchwimmenGame {
     /// Passes in a row since the last swap or refresh.
     pub(crate) passes: usize,
     pub(crate) stage: Stage,
-    pub(crate) events: Vec<CardsEvent>,
-    pub(crate) banner: Option<(CardsBanner, ServerTime)>,
-    next_event: u32,
+    pub(crate) table: CardTable,
     pub(crate) scored: bool,
     pub(crate) rng: StdRng,
 }
 
 impl SchwimmenGame {
     pub fn new(cfg: SchwimmenConfig, players: &[Player], now: ServerTime) -> Self {
+        let mut game = Self::seated(cfg, players, now);
+        game.deal(now);
+        game
+    }
+
+    /// A round dealt by hand for tests, with seat 0 to move. A seat dealt no cards is
+    /// already out, those seats having gone out in seat order.
+    #[cfg(test)]
+    pub(crate) fn dealt(cfg: SchwimmenConfig, players: &[Player], mut hands: Vec<Vec<Card>>, middle: Vec<Card>, deck: Vec<Card>, lives: Vec<u8>) -> Self {
+        hands.iter_mut().for_each(|h| sort_hand(h));
+        let out: Vec<bool> = hands.iter().map(Vec::is_empty).collect();
+        let out_order = (0..out.len()).filter(|&s| out[s]).collect();
+        let mut game = Self { hands, middle, deck, lives, out, out_order, ..Self::seated(cfg, players, 0.0) };
+        game.open_round(0.0);
+        game
+    }
+
+    /// Everyone seated with all their lives and no cards yet.
+    fn seated(cfg: SchwimmenConfig, players: &[Player], now: ServerTime) -> Self {
         let n = players.len();
         let rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
-        let mut game = Self {
+        let table = CardTable::new(players, cfg.banner_ms);
+        Self {
             cfg,
-            ids: players.iter().map(|p| p.id).collect(),
             hands: vec![vec![]; n],
             middle: vec![],
             deck: vec![],
@@ -73,61 +89,42 @@ impl SchwimmenGame {
             turn: 0,
             knocker: None,
             passes: 0,
-            stage: Stage::Turn { ask: Ask::open(players[0].id, now, None) },
-            events: vec![],
-            banner: None,
-            next_event: 0,
+            stage: Stage::Turn { ask: table.ask(0, now) },
+            table,
             scored: false,
             rng,
-        };
-        game.deal(now);
-        game
-    }
-
-    pub(crate) fn player_at(&self, seat: usize) -> PlayerId {
-        self.ids[seat]
-    }
-
-    pub(crate) fn seat_of(&self, player: PlayerId) -> Option<usize> {
-        self.ids.iter().position(|&p| p == player)
+        }
     }
 
     pub(crate) fn alive(&self) -> Vec<usize> {
-        (0..self.ids.len()).filter(|&s| !self.out[s]).collect()
+        (0..self.table.players().len()).filter(|&s| !self.out[s]).collect()
     }
 
     /// The next player still in the game after `seat`.
     pub(crate) fn after(&self, seat: usize) -> usize {
-        let n = self.ids.len();
+        let n = self.table.players().len();
         (1..=n).map(|k| (seat + k) % n).find(|&s| !self.out[s]).unwrap_or(seat)
-    }
-
-    pub(crate) fn say(&mut self, now: ServerTime, player: PlayerId, text: impl Into<String>) {
-        self.banner = Some((CardsBanner { player, text: text.into() }, now));
-    }
-
-    pub(crate) fn event(&mut self, now: ServerTime, player: PlayerId, kind: CardsEventKind) {
-        self.events.push(CardsEvent { id: self.next_event, at: now, player, kind });
-        self.next_event += 1;
-        if self.events.len() > 6 {
-            self.events.remove(0);
-        }
     }
 
     /// A fresh deck: three cards to everyone still in, three face up in the middle.
     pub(crate) fn deal(&mut self, now: ServerTime) {
         self.deck = shuffled(deck_from(Rank::Seven), &mut self.rng);
-        for seat in 0..self.ids.len() {
+        for seat in 0..self.table.players().len() {
             self.hands[seat] = if self.out[seat] { vec![] } else { self.deck.split_off(self.deck.len() - HAND) };
             sort_hand(&mut self.hands[seat]);
         }
         self.middle = self.deck.split_off(self.deck.len() - HAND);
+        self.open_round(now);
+    }
+
+    /// The starter moves first on the cards just dealt; a hand dealt 31 is revealed at once.
+    fn open_round(&mut self, now: ServerTime) {
         self.lost.fill(false);
         self.revealed = false;
         self.knocker = None;
         self.passes = 0;
         self.turn = self.starter;
-        self.stage = Stage::Turn { ask: self.ask(self.turn, now) };
+        self.stage = Stage::Turn { ask: self.table.ask(self.turn, now) };
         if self.alive().into_iter().any(|s| value(&self.hands[s]) == FEUER) {
             self.reveal_round(now);
         }
@@ -139,7 +136,7 @@ impl Game for SchwimmenGame {
         let Action::Cards { button, hand, table } = action else {
             return Err(ActionError::Ignored);
         };
-        if !matches!(self.stage, Stage::Turn { .. }) || self.seat_of(player) != Some(self.turn) {
+        if !matches!(self.stage, Stage::Turn { .. }) || self.table.seat_of(player) != Some(self.turn) {
             return Err(ActionError::Ignored);
         }
         match button.as_str() {

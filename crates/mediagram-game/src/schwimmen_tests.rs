@@ -1,68 +1,27 @@
 use super::*;
-use crate::protocol::{ButtonNeeds, CardDesk, CardsScene};
+use crate::card_game_driver::{ANA, BEN, CEM, act, c, desk, leave, players, scene, screen, tick};
+use crate::cards::Suit::*;
+use crate::protocol::{ButtonNeeds, CardsEventKind};
 use Rank::*;
-use crate::cards::Suit::{self, *};
 
-const ANA: PlayerId = 0;
-const BEN: PlayerId = 1;
-const CEM: PlayerId = 2;
-
-fn c(suit: Suit, rank: Rank) -> Card {
-    Card::new(suit, rank)
+fn cfg() -> SchwimmenConfig {
+    SchwimmenConfig { seed: Some(1), ..SchwimmenConfig::default() }
 }
 
-fn players(n: usize) -> Vec<Player> {
-    ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay", "Gus", "Hal"][..n]
-        .iter()
-        .enumerate()
-        .map(|(i, name)| Player::for_test(i as PlayerId, name, true))
-        .collect()
+/// A round dealt with the given hands, middle, deck and lives, seat 0 to move.
+fn deal(hands: Vec<Vec<Card>>, middle: Vec<Card>, deck: Vec<Card>, lives: Vec<u8>) -> (SchwimmenGame, Vec<Player>) {
+    let p = players(hands.len());
+    (SchwimmenGame::dealt(cfg(), &p, hands, middle, deck, lives), p)
 }
 
 /// A game with the given hands and middle, all three lives, seat 0 to move.
 fn rig(hands: Vec<Vec<Card>>, middle: Vec<Card>) -> (SchwimmenGame, Vec<Player>) {
-    let p = players(hands.len());
-    let mut g = SchwimmenGame::new(SchwimmenConfig { seed: Some(1), ..SchwimmenConfig::default() }, &p, 0.0);
-    g.hands = hands;
-    g.hands.iter_mut().for_each(|h| h.sort());
-    g.middle = middle;
-    g.lives.fill(LIVES);
-    g.out.fill(false);
-    g.out_order.clear();
-    g.lost.fill(false);
-    g.revealed = false;
-    g.knocker = None;
-    g.passes = 0;
-    g.starter = 0;
-    g.turn = 0;
-    g.stage = Stage::Turn { ask: g.ask(0, 0.0) };
-    (g, p)
-}
-
-fn act(g: &mut SchwimmenGame, p: &mut [Player], who: PlayerId, button: &str, hand: &[u8], table: Option<u8>, now: f64) -> Result<(), ActionError> {
-    g.on_action(&mut GameCtx { now, players: p }, who, &Action::Cards { button: button.into(), hand: hand.to_vec(), table })
+    let lives = vec![LIVES; hands.len()];
+    deal(hands, middle, vec![], lives)
 }
 
 fn pass(g: &mut SchwimmenGame, p: &mut [Player], who: PlayerId, now: f64) {
     act(g, p, who, "pass", &[], None, now).unwrap();
-}
-
-fn tick(g: &mut SchwimmenGame, p: &mut [Player], now: f64) {
-    g.on_tick(&mut GameCtx { now, players: p });
-}
-
-fn desk(g: &SchwimmenGame, p: &[Player], who: PlayerId) -> CardDesk {
-    match g.phone_screen(&ViewCtx { now: 0.0, players: p, leader: Some(ANA) }, who) {
-        PhoneScreen::Cards { desk } => desk,
-        other => panic!("expected a desk, got {other:?}"),
-    }
-}
-
-fn scene(g: &SchwimmenGame, p: &[Player], now: f64) -> CardsScene {
-    match g.tv_scene(&ViewCtx { now, players: p, leader: Some(ANA) }) {
-        TvScene::Cards { scene } => scene,
-        other => panic!("expected a card scene, got {other:?}"),
-    }
 }
 
 /// Worth 9, 10 and 11: three different hands, none close to 31.
@@ -97,7 +56,7 @@ fn swapping_one_card_trades_a_hand_card_for_a_middle_card() {
     assert!(g.middle.contains(&before[2]) && g.middle[1] == before[2], "the hand card took the slot");
     assert!(g.hands[0].contains(&c(Diamonds, Eight)));
     assert_eq!((g.turn, g.passes), (1, 0));
-    assert_eq!(g.events.last().unwrap().kind, CardsEventKind::Play { card: before[2], pile: 1 });
+    assert_eq!(g.table.events().last().unwrap().kind, CardsEventKind::Play { card: before[2], pile: 1 });
 }
 
 #[test]
@@ -134,8 +93,8 @@ fn passing_keeps_the_cards_and_a_swap_in_between_restarts_the_count() {
 
 #[test]
 fn when_everyone_passes_in_a_row_the_middle_is_replaced_from_the_deck() {
-    let (mut g, mut p) = rig(three_dull(), middle_dull());
-    g.deck = vec![c(Clubs, Two), c(Clubs, Five), c(Clubs, Six), c(Hearts, Five), c(Hearts, Six)];
+    let deck = vec![c(Clubs, Two), c(Clubs, Five), c(Clubs, Six), c(Hearts, Five), c(Hearts, Six)];
+    let (mut g, mut p) = deal(three_dull(), middle_dull(), deck, vec![LIVES; 3]);
     for (i, who) in [ANA, BEN, CEM].into_iter().enumerate() {
         pass(&mut g, &mut p, who, i as f64);
     }
@@ -154,7 +113,7 @@ fn knocking_gives_everyone_else_one_more_turn_then_the_reveal() {
     assert_eq!(g.knocker, Some(1));
     assert_eq!(scene(&g, &p, 2.0).note.as_deref(), Some("Geklopft – letzte Runde"));
     assert_eq!(scene(&g, &p, 2.0).seats[1].marker.as_deref(), Some("●●● · klopft"));
-    let d = desk(&g, &p, CEM);
+    let d = desk(&g, &p, CEM, 0.0);
     assert!(d.buttons.iter().all(|b| b.id != "knock"), "no second knock");
     assert!(d.prompt.contains("Ben hat geklopft"));
     assert_eq!(act(&mut g, &mut p, CEM, "knock", &[], None, 3.0), Err(ActionError::NotAllowed("Es wurde schon geklopft.")));
@@ -247,8 +206,7 @@ fn a_round_where_everyone_ties_costs_nobody_a_life() {
     assert!(s.seats.iter().all(|x| x.marker.as_deref() == Some("●●●")), "no loss on any seat");
     assert!(matches!(g.stage, Stage::Reveal { .. }), "the game goes on");
     // the same with swimmers: everyone at no life left and tied is still not out
-    let (mut g, mut p) = rig(vec![vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Nine)]; 2], middle_dull());
-    g.lives = vec![0, 0];
+    let (mut g, mut p) = deal(vec![vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Nine)]; 2], middle_dull(), vec![], vec![0, 0]);
     act(&mut g, &mut p, ANA, "knock", &[], None, 1.0).unwrap();
     pass(&mut g, &mut p, BEN, 2.0);
     assert_eq!((g.lives.clone(), g.out.clone()), (vec![0, 0], vec![false, false]));
@@ -271,10 +229,12 @@ fn the_next_round_is_dealt_after_the_reveal_with_the_next_player_starting() {
 
 #[test]
 fn losing_the_last_life_means_swimming_and_the_next_loss_is_out() {
-    let (mut g, mut p) = rig(three_dull(), middle_dull());
-    g.lives = vec![1, 3, 3];
-    g.hands[0] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];
-    g.deck = vec![];
+    let ana_lowest = || {
+        let mut hands = three_dull();
+        hands[0] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];
+        hands
+    };
+    let (mut g, mut p) = deal(ana_lowest(), middle_dull(), vec![], vec![1, 3, 3]);
     act(&mut g, &mut p, ANA, "knock", &[], None, 1.0).unwrap();
     pass(&mut g, &mut p, BEN, 2.0);
     pass(&mut g, &mut p, CEM, 3.0);
@@ -282,43 +242,30 @@ fn losing_the_last_life_means_swimming_and_the_next_loss_is_out() {
     assert_eq!(scene(&g, &p, 3.0).banner.unwrap().text, " schwimmt jetzt");
     assert_eq!(scene(&g, &p, 3.0).seats[0].marker.as_deref(), Some("schwimmt · −1"));
     // one more round with Ana still lowest
-    g.hands = three_dull();
-    g.hands[0] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];
-    g.stage = Stage::Turn { ask: g.ask(0, 10.0) };
-    g.revealed = false;
-    g.knocker = None;
-    g.turn = 0;
-    g.lost.fill(false);
+    let (mut g, mut p) = deal(ana_lowest(), middle_dull(), vec![], vec![0, 3, 3]);
     act(&mut g, &mut p, ANA, "knock", &[], None, 11.0).unwrap();
     pass(&mut g, &mut p, BEN, 12.0);
     pass(&mut g, &mut p, CEM, 13.0);
     assert!(g.out[0]);
     assert_eq!(scene(&g, &p, 13.0).seats[0].marker.as_deref(), Some("raus"));
     assert!(matches!(g.stage, Stage::Reveal { .. }));
-    let view = ViewCtx { now: 13.0, players: &p, leader: Some(ANA) };
-    assert!(matches!(g.phone_screen(&view, ANA), PhoneScreen::Wait { .. }));
+    assert!(matches!(screen(&g, &p, ANA, 13.0), PhoneScreen::Wait { .. }));
 }
 
 #[test]
 fn the_last_player_left_wins_and_the_rest_rank_by_when_they_went_out() {
-    let (mut g, mut p) = rig(three_dull(), middle_dull());
-    g.lives = vec![3, 0, 0];
-    g.hands[1] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];
-    g.hands[2] = vec![c(Hearts, Five), c(Spades, Three), c(Clubs, Four)];
-    g.out_order = vec![];
+    let mut hands = three_dull();
+    hands[1] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];
+    hands[2] = vec![c(Hearts, Five), c(Spades, Three), c(Clubs, Four)];
+    let (mut g, mut p) = deal(hands, middle_dull(), vec![], vec![3, 0, 0]);
     act(&mut g, &mut p, ANA, "knock", &[], None, 1.0).unwrap();
     pass(&mut g, &mut p, BEN, 2.0);
     pass(&mut g, &mut p, CEM, 3.0);
     assert!(!g.is_finished(), "Ben out, Cem and Ana remain");
     assert_eq!(g.out_order, vec![1]);
-    g.hands[0] = vec![c(Hearts, Ace), c(Hearts, King), c(Hearts, Nine)];
-    g.hands[2] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];
-    g.lives[2] = 0;
-    g.stage = Stage::Turn { ask: g.ask(0, 10.0) };
-    g.revealed = false;
-    g.knocker = None;
-    g.turn = 0;
-    g.lost.fill(false);
+    // a later round: Ben was dealt nothing, being out, and Cem swims
+    let hands = vec![vec![c(Hearts, Ace), c(Hearts, King), c(Hearts, Nine)], vec![], vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)]];
+    let (mut g, mut p) = deal(hands, middle_dull(), vec![], vec![3, 0, 0]);
     act(&mut g, &mut p, ANA, "knock", &[], None, 11.0).unwrap();
     pass(&mut g, &mut p, CEM, 12.0);
     assert!(g.is_finished());
@@ -326,15 +273,14 @@ fn the_last_player_left_wins_and_the_rest_rank_by_when_they_went_out() {
     assert_eq!(s.ranking, Some(vec![ANA, CEM, BEN]));
     assert_eq!(p.iter().map(|x| x.score).collect::<Vec<_>>(), [2, 0, 1]);
     assert_eq!(s.banner.unwrap().text, " gewinnt!");
-    let view = ViewCtx { now: 12.0, players: &p, leader: Some(ANA) };
-    assert!(matches!(g.phone_screen(&view, CEM), PhoneScreen::Final { rank: 2, of: 3, score: 1, can_restart: false }));
+    assert!(matches!(screen(&g, &p, CEM, 12.0), PhoneScreen::Final { rank: 2, of: 3, score: 1, can_restart: false }));
     assert_eq!(act(&mut g, &mut p, ANA, "pass", &[], None, 13.0), Err(ActionError::Ignored));
 }
 
 #[test]
 fn the_desk_offers_the_four_moves_with_every_card_live_only_on_your_turn() {
     let (g, p) = rig(three_dull(), middle_dull());
-    let d = desk(&g, &p, ANA);
+    let d = desk(&g, &p, ANA, 0.0);
     let ids: Vec<_> = d.buttons.iter().map(|b| (b.id.as_str(), b.needs)).collect();
     assert_eq!(
         ids,
@@ -343,7 +289,7 @@ fn the_desk_offers_the_four_moves_with_every_card_live_only_on_your_turn() {
     assert!(d.hand.iter().chain(&d.table).all(|x| x.enabled));
     assert_eq!(d.table.len(), 3);
     assert_eq!(d.info.as_deref(), Some("Dein Blatt: 9 · ●●●"));
-    let other = desk(&g, &p, BEN);
+    let other = desk(&g, &p, BEN, 0.0);
     assert!(other.buttons.is_empty() && other.hand.iter().chain(&other.table).all(|x| !x.enabled));
     assert_eq!(other.prompt, "Ana ist dran");
 }
@@ -365,22 +311,19 @@ fn an_absent_player_knocks_at_27_swaps_for_the_best_hand_or_passes() {
     hands[0] = vec![c(Hearts, Ace), c(Hearts, Seven), c(Hearts, Nine)];
     hands[1] = vec![c(Spades, Two), c(Clubs, Three), c(Diamonds, Four)];
     let (mut g, mut p) = rig(hands, vec![c(Hearts, King), c(Spades, Ace), c(Spades, King)]);
-    p[0].conn = None;
-    p[0].left_at = Some(100.0);
+    leave(&mut p[0], 100.0);
     tick(&mut g, &mut p, 1000.0);
     assert_eq!(g.turn, 0, "waits the grace after leaving");
     tick(&mut g, &mut p, 1700.0);
     assert_eq!(g.knocker, Some(0), "27 is enough to knock");
-    p[1].conn = None;
-    p[1].left_at = Some(1700.0);
+    leave(&mut p[1], 1700.0);
     tick(&mut g, &mut p, 3300.0);
     assert!(g.hands[1].contains(&c(Spades, Ace)) || g.hands[1].contains(&c(Spades, King)), "the best swap takes a high card");
     let (mut g, mut p) = rig(
         vec![vec![c(Hearts, Ace), c(Hearts, King), c(Spades, Two)], three_dull().remove(1)],
         vec![c(Clubs, Two), c(Diamonds, Three), c(Clubs, Four)],
     );
-    p[0].conn = None;
-    p[0].left_at = Some(0.0);
+    leave(&mut p[0], 0.0);
     tick(&mut g, &mut p, 2000.0);
     assert_eq!((g.turn, g.passes, g.knocker), (1, 1, None), "21 is under 27 and nothing in the middle helps: pass");
 }
