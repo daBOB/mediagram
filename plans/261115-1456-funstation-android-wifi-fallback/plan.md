@@ -1,6 +1,6 @@
 # Funstation: Android falls back to Wi-Fi when the cable is out
 
-Status: host side live on funstation since 15:07 (boot in Wi-Fi mode verified); Spieltisch 0.192.3 being released. Media 0.180.6, Spieltisch 0.192.3.
+Status: live on funstation. Host side since 15:07; Spieltisch fix shipped in 0.192.4 (channel msg 51768, carried with the shelf-art merge). Media 0.180.6.
 
 ## Why
 User, 2026-11-15: "the spieltisch app provides a link to localhost instead of ip address". Funstation's
@@ -42,3 +42,8 @@ each cable change).
 - Open: on a cable-less boot the cache server and web player start 60 s late, because they wait for
   `network-online.target` and the bridge connection never comes up (the boot before had the same).
 - Open: the wired direction (plug the cable back in) is not yet tried on the machine.
+- Verified 15:25: Spieltisch 0.192.4 on funstation shows `192.168.0.42:8080`; from the LAN the join page
+  answers HTTP 200 and DNS-SD carries `url=http://192.168.0.42:8080/`. A second cable-less boot (another
+  session's restart) came up in Wi-Fi mode without a move.
+- Open: Spieltisch 0.192.4 went onto funstation by hand with the pre-API-31 profile, which Android rejected,
+  so it runs without its baseline profile until the next release.

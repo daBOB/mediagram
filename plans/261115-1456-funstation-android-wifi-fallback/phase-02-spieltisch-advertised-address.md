@@ -1,6 +1,6 @@
 # Phase 2: Spieltisch shows the address the host gives it
 
-Priority: high. Status: built and tested (cargo test lan::), releasing.
+Priority: high. Status: done; released in Spieltisch 0.192.4, QR on funstation shows 192.168.0.42:8080.
 
 ## What
 `lan_ip()` in `crates/mediagram-game/src/lan.rs` prefers the Android system property
