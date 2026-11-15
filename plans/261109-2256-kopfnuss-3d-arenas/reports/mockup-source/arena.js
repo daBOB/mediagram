@@ -7,10 +7,15 @@ import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { THEMES } from "./arena-themes.js?v=fx7";
 import { clock, confetti, DITHER, ditherGlsl, energy, padGlow, rimLight } from "./arena-fx.js?v=fx7";
-import { addHost } from "./showmaster.js?v=8";
+import { addHost } from "./showmaster.js?v=10";
 
 const q = new URLSearchParams(location.search);
 const theme = THEMES[q.get("theme") ?? "table"], stage = q.get("stage") ?? "question", FX = q.get("fx") === "1";
+// PROTOTYPE ?variant=A|B|C — A: today's ceremony copies in flat matcap light; B: the 2K game copies (colour, normal,
+// roughness) under real light with soft shadows; C: B seen close, players in a tighter arc.
+const VARIANT = q.get("variant") ?? "A", RICH = VARIANT !== "A", CLOSE = VARIANT === "C";
+const CLOSE_CAM = { question: { pos: [0, 2.1, 14.6], at: [0, 2.0, 0] }, reveal: { pos: [0, 2.1, 14.6], at: [0, 2.0, 0] },
+  pick: { pos: [0, 2.6, 13.5], at: [0, 2.0, 0] }, resolve: { pos: [0, 2.6, 13.5], at: [0, 2.0, 0] } };
 const mixers = [];
 const COLORS = { blue: "#2c6bed", orange: "#f2862e", yellow: "#f6c731", pink: "#e5487f" };
 const MARKS = { blue: "●", orange: "▲", yellow: "■", pink: "◆" };
@@ -29,19 +34,42 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(1);
 renderer.setSize(1920, 1080, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+if (RICH) {
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+}
 const scene = new THREE.Scene();
 const cam = new THREE.PerspectiveCamera(30, 16 / 9, 0.5, 200);
-const view = theme.camera[stage] ?? theme.camera.default;
+const view = (CLOSE && CLOSE_CAM[stage]) || theme.camera[stage] || theme.camera.default;
 cam.position.set(...view.pos);
 cam.lookAt(...view.at);
 // ?zoom=N&aim=y: the fact stage's winner seen N times closer, aimed at height y, for comparing avatar copies
 const zoom = Number(q.get("zoom") ?? 0);
 if (zoom) { cam.fov = 30 / zoom; cam.lookAt(0, Number(q.get("aim") ?? 2.75), 2); cam.updateProjectionMatrix(); }
 cam.updateMatrixWorld(); // the HTML tags project through it before the first render
-scene.add(new THREE.HemisphereLight(0xffffff, theme.ground, 1.6));
-const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+scene.add(new THREE.HemisphereLight(0xffffff, theme.ground, RICH ? 0.45 : 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, RICH ? 0 : 1.4);
 sun.position.set(4, 10, 6);
 scene.add(sun);
+if (RICH) {
+  // studio rig: soft environment fill, one warm key spot that casts soft shadows, pink and blue rims from behind
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.5;
+  const key = new THREE.SpotLight(0xfff0dc, 900, 0, 0.55, 0.7, 1.6);
+  key.position.set(5, 15, 17);
+  key.target.position.set(0, 1, 1);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.bias = -0.0004;
+  key.shadow.radius = 4;
+  scene.add(key, key.target);
+  for (const [color, x] of [[0xff5c97, -9], [0x6f8dff, 9]]) {
+    const rim = new THREE.DirectionalLight(color, 2.2);
+    rim.position.set(x, 7, -10);
+    scene.add(rim);
+  }
+}
 
 // The ceremony's matcap studio light, so the avatars look as they do there and cost what they cost there.
 function studioLook() {
@@ -74,14 +102,22 @@ const ktx2 = new KTX2Loader().setTranscoderPath("./basis/").detectSupport(render
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2);
 
 async function avatar(id, { height = 1.9, clip = "Idle_15", at = 0.8, dim = false, rim = theme.rim ?? ["#7f9bff", 0.55], url = null } = {}) {
-  const gltf = await loader.loadAsync(url ?? `./game-avatars/${q.get("lod") ? q.get("lod") + "/" : ""}${id}.glb`);
+  const gltf = await loader.loadAsync(url ?? (RICH ? `./avatar-games/${id}/${id}.glb` : `./game-avatars/${q.get("lod") ? q.get("lod") + "/" : ""}${id}.glb`));
   const root = gltf.scene;
-  root.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.material = dress(o.material, dim, rim); } });
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    o.frustumCulled = false;
+    if (!RICH) { o.material = dress(o.material, dim, rim); return; }
+    o.castShadow = true;
+    if (dim) o.material.color.multiplyScalar(0.45);
+  });
+  root.userData.avatar = true;
   const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
   const s = height / size.y;
   root.scale.setScalar(s);
   root.position.set(-mid.x * s, -box.min.y * s, -mid.z * s);
-  const mixer = new THREE.AnimationMixer(root), c = THREE.AnimationClip.findByName(gltf.animations, clip);
+  const mixer = new THREE.AnimationMixer(root);
+  const c = [clip, "Idle_15", "Idle"].map((n) => THREE.AnimationClip.findByName(gltf.animations, n)).find(Boolean);
   if (c) { mixer.clipAction(c).play(); mixer.update(at); }
   mixers.push(mixer);
   return new THREE.Group().add(root);
@@ -130,7 +166,7 @@ const answers = (top, opts, right) =>
     `<div class="a ${right ? (c === right ? "right" : "dim") : ""}" style="background:${COLORS[c]}">${MARKS[c]} ${l}</div>`).join("")}</div>`);
 
 const ring = (n, r, z0, spread = 1) =>
-  [...Array(n).keys()].map((i) => {
+  [...Array(n).keys()].map((i, _, __, rr = CLOSE ? r * 0.7 : r) => [i, rr]).map(([i, r]) => {
     const a = (i / (n - 1) - 0.5) * spread * Math.PI * 0.62;
     return new THREE.Vector3(Math.sin(a) * r, 0, z0 - (1 - Math.cos(a)) * r);
   });
@@ -238,7 +274,7 @@ await Promise.all([document.fonts.load("800 80px 'Bricolage Grotesque'"), docume
 theme.build(scene, stage);
 await STAGES[stage]();
 if (q.get("voice")) globalThis.jawTrack = await (await fetch(`./jaw-${q.get("voice")}.json`)).json();
-const hostAt = q.get("host") ? addHost(scene, q.get("host"), stage, cam) : null;
+const hostAt = q.get("host") ? addHost(scene, q.get("host"), stage, cam, { close: CLOSE }) : null;
 // ?hostcam=1: a close-up of the host's face, the HUD hidden
 if (hostAt && q.get("hostcam")) {
   cam.position.copy(hostAt.feet).add(new THREE.Vector3(1.3, 3.0, 6.2));
@@ -252,7 +288,20 @@ if (DITHER) scene.traverse((o) => [o.material].flat().forEach((m) => {
   if (m.isShaderMaterial) m.fragmentShader = m.fragmentShader.replace(/}\s*$/, ditherGlsl + "}");
   else m.dithering = true;
 }));
+if (RICH) scene.traverse((o) => { if (o.isMesh && !o.castShadow) o.receiveShadow = true; });
 for (let i = 0; i < 3; i++) renderer.render(scene, cam);
+if (!q.get("shot")) {
+  const go = (k, v) => { const u = new URL(location); u.searchParams.set(k, v); location = u; };
+  const LABEL = { A: "A Heute", B: "B Studiolicht", C: "C Nah dran" };
+  const bar = document.createElement("div");
+  bar.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:14px;background:rgb(10 12 28/.88);font:600 18px system-ui;color:#fff;z-index:9;box-shadow:0 6px 24px rgb(0 0 0/.5)";
+  bar.innerHTML = Object.entries(LABEL).map(([k, l]) => `<button data-v="${k}" style="font:inherit;padding:8px 14px;border-radius:10px;border:0;cursor:pointer;background:${k === VARIANT ? "#f6c731" : "#2a3566"};color:${k === VARIANT ? "#0c2a22" : "#fff"}">${l}</button>`).join("")
+    + `<select style="font:inherit;padding:8px;border-radius:10px">${["pick", "resolve", "question", "reveal", "climb", "fact"].map((s) => `<option ${s === stage ? "selected" : ""}>${s}</option>`).join("")}</select>`;
+  bar.querySelectorAll("button").forEach((b) => (b.onclick = () => go("variant", b.dataset.v)));
+  bar.querySelector("select").onchange = (e) => go("stage", e.target.value);
+  addEventListener("keydown", (e) => { const v = "ABC", i = v.indexOf(VARIANT); if (e.key === "ArrowRight") go("variant", v[(i + 1) % 3]); if (e.key === "ArrowLeft") go("variant", v[(i + 2) % 3]); });
+  document.body.append(bar);
+}
 // For the clips: set the effect clock and step the avatars to time t (seconds).
 let last = 0;
 window.setT = (t) => { for (const m of mixers) m.update(t - last); last = t; clock.value = t; hostAt?.animate?.(t); renderer.render(scene, cam); return t; };

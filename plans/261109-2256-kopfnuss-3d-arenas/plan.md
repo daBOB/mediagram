@@ -27,6 +27,17 @@ packs can be voiced the same way, player names cannot (the walnut talks around t
 
 Branch: `feat/dreifelder-on-games` (has Kopfnuss, Dreifelder and the games line's catalogue).
 
+## Avatar detail prototype (2026-11-16)
+
+User: "make the avatars more details like the original", with screenshots of Knowledge Is Power. The arena keeps its
+own look (genre-inspired, see the top); what was taken is only the question of detail. All avatar copies share one
+52k-triangle mesh; the detail lost today is in the light and the maps: the ceremony copies drop the roughness map and
+are drawn in flat matcap light. PROTOTYPE `reports/mockup-source/` (`bun …/serve-arena-prototype.mjs`, then
+`?variant=` or the floating bar): **A** today; **B** the 2K game copies (colour, normal, roughness) under real light —
+environment fill, a warm key spot with soft shadows, pink and blue rims; **C** B with the camera close and low and the
+players in a tighter arc. Sheets: `reports/avatar-detail-variants.jpg`, `reports/avatar-detail-closeup.jpg`. Not
+chosen yet; not measured on the funstation. More detail than the 52k mesh needs new models (Meshy, credits).
+
 ## Stages → arena
 
 | Stage | Arena | HTML on top |

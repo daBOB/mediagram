@@ -148,14 +148,16 @@ function hostSpot(scene, x, z, height) {
 // Where the host stands in each stage: back centre on a raised spot, between the two middle players.
 const SPOTS = { pick: [0, -5.2], resolve: [0, -5.2], question: [0, -1.4], reveal: [0, -1.4], climb: [-7.5, -2], fact: [5.2, -1] };
 
-export function addHost(scene, kind, stage, cam) {
+export function addHost(scene, kind, stage, cam, { close = false } = {}) {
   const [x, z] = SPOTS[stage] ?? [0, -1.4];
   const raise = stage === "pick" || stage === "resolve" ? 1.4 : 0.55;
   if (kind === "walnut") {
     // it floats, so it can hang beside the category signs where a standing host would hide behind them
     const W = { pick: { at: [8.6, 3.5, -3.5], s: 0.75 }, resolve: { at: [-8.4, 5.4, -3.5], s: 0.8 },
       climb: { at: [-5.6, 6.0, -1.5], s: 0.8 }, fact: { at: [5.2, 2.9, -1], s: 0.85, spot: true } };
-    const { at: [wx, wy, wz], s, spot } = W[stage] ?? { at: [0, 2.9, -1.4], s: 0.85, spot: true };
+    // seen close (prototype variant C) the camera is low, so the walnut drops between the two middle players' heads
+    const front = close && (stage === "question" || stage === "reveal") ? { at: [0, 2.05, -1.4], s: 0.62, spot: true } : null;
+    const { at: [wx, wy, wz], s, spot } = front ?? W[stage] ?? { at: [0, 2.9, -1.4], s: 0.85, spot: true };
     const w = walnutHead({ jaw: stage === "reveal" ? 0.55 : 0.32 });
     w.scale.setScalar(s);
     w.position.set(wx, wy, wz);

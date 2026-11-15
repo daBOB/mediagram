@@ -8,15 +8,15 @@ const run = (...a) => {
 };
 run("viewport", "1920x1080");
 for (const shot of shots) {
-  const [theme, stage, fx, host] = shot.split(":");
-  run("goto", `http://127.0.0.1:8741/index.html?theme=${theme}&stage=${stage}${fx ? "&fx=1" : ""}${host ? `&host=${host}` : ""}&n=${Date.now()}`);
+  const [theme, stage, fx, host, variant] = shot.split(":");
+  run("goto", `http://127.0.0.1:8741/index.html?theme=${theme}&stage=${stage}${fx ? "&fx=1" : ""}${host ? `&host=${host}` : ""}${variant ? `&variant=${variant}` : ""}&shot=1&n=${Date.now()}`);
   let title = "";
-  for (let i = 0; i < 120 && !title.startsWith("ready"); i++) {
+  for (let i = 0; i < 240 && !title.startsWith("ready"); i++) {
     await Bun.sleep(250);
     title = run("js", "document.title").split("\n").at(-1);
   }
   if (!title.startsWith("ready")) console.log(shot, "NOT READY", run("console", "--errors").slice(-600));
   if (fx) run("js", "setT(1.2)");
-  run("screenshot", "--viewport", `${out}/arena-${theme}-${stage}${fx ? "-fx" : ""}${host ? `-${host}` : ""}.png`);
+  run("screenshot", "--viewport", `${out}/arena-${theme}-${stage}${fx ? "-fx" : ""}${host ? `-${host}` : ""}${variant ? `-${variant}` : ""}.png`);
   console.log(shot, title);
 }
