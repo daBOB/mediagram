@@ -26,8 +26,9 @@ launcher the two apps told apart only by colour.
 - [x] Versions, changelog
 - [x] Spieltisch 0.192.2 installed on the funstation; launcher `visuals/funstation-launcher-spieltisch-installed.jpg`, with the Mediagram tile pasted in `visuals/funstation-launcher-with-new-tiles.jpg`
 - [x] Merged into `main` (793e2639)
+- [x] Media app 0.180.4 benchmark installed on the funstation (x86_64, data kept); Bigscreen's mediagram tile
+      now wears WayDroid's icon of the app instead of `video-television` (0.180.5)
 
 ## Not done
-- The media app is not installed on the funstation: it updates from the channel, and a 0.180.4 there would sit
-  above the other session's 0.180.3. Its launcher tile was checked as a render only.
+- The media app's new icon is not on the channel yet: the box, phones and tablets get it with the next release.
 - The web player's favicon and the phone controller's in-app screens keep their look.

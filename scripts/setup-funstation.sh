@@ -292,13 +292,15 @@ rm -f "$js"
 EOF
 chmod +x ~/.local/bin/funstation-android
 # WayDroid lists only phone-launcher apps; mediagram is TV-only, so it gets its own tile.
+# The icon is the one WayDroid extracts from the installed app, so the tile follows the
+# app's icon. Android writes it when its session starts, not when the app updates.
 cat >~/.local/share/applications/mediagram.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=mediagram
 Comment=Films, series and game night
 Exec=$HOME/.local/bin/funstation-android com.mediagram.android
-Icon=video-television
+Icon=$HOME/.local/share/waydroid/data/icons/com.mediagram.android.png
 Categories=AudioVideo;Video;Player;
 EOF
 # The Android TV tile wears the Fun-Station logo, which Bigscreen's loading screen shows
