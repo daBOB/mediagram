@@ -114,6 +114,7 @@ mod zuendstoff_config;
 mod zuendstoff_views;
 mod letztes_wort;
 mod letztes_wort_config;
+mod letztes_wort_rules;
 mod letztes_wort_views;
 mod protocol_letztes_wort;
 
