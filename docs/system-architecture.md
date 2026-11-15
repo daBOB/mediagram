@@ -1205,7 +1205,8 @@ master's colour and normal maps baked onto them (`tools/rebake-texture-atlas.mjs
 Meshy's thousands of edge-to-edge islands bled into each other at every
 smaller mip level). Each normal is turned into the new chart's frame, the frame
 three.js derives on screen for a mesh without tangents. The output is a 2048
-WebP colour map and a 1024 normal map, with meshopt: 40 MB in all, into
+KTX2 UASTC colour map and a 1024 UASTC normal map (the format every 3D avatar copy uses, user
+2026-11-15), with meshopt: 82 MB in all (WebP was 40 MB until 0.192.8), into
 `android/spieltisch/src/main/assets/game-avatars/` — generated,
 not committed, like the native libraries — and Spieltisch's WebView answers
 `/game-avatars/<id>.glb` from its APK assets (`GamePageClient.kt`), so they are
