@@ -71,6 +71,8 @@ From `plans/reports/benchmark-261105-1611-tv-box-3d-framework-spike-report.md`:
 
 Items 1–5 come from the spec's own list of later games (line 32-34), each under an
 own name. Items 6–14 are this session's additions. Item 14 is a duplicate of item 3.
+Item 17, Denkzettel, was removed on 2026-11-15: Kopfnuss shipped the same original
+(Knowledge Is Power).
 
 ### 1. Wissensreise — category trivia board · 2–6 players · origin: Trivial Pursuit (Hasbro, 1979)
 
@@ -374,62 +376,6 @@ TV box is filling a hole, not following a fashion.
 Own name, own host, own questions: not "You Don't Know Jack", not Jackbox, not
 Cookie Masterson, and none of the original's joke text.
 
-### 17. Denkzettel — fastest finger, with traps · 2–6 players · origin: Knowledge is Power (Wish Studios for Sony Interactive Entertainment, PS4 PlayLink, 24 Oct 2017)
-
-A trivia game where answering well moves you up a track, and where you can make the
-other players answer *worse*. Traps and power-ups are the whole difference from a
-plain quiz: freeze someone, slow them, muddy their screen, or shield yourself.
-Eight puppet characters to play as, a stop-motion game-show set, and a Decades
-sequel in 2018 that sorted the same questions by the 80s, 90s, 00s and 10s.
-
-**PlayLink is exactly this project's architecture, and it is now dead.** Phones were
-the controllers, joined over the same Wi-Fi or the console's own hotspot — no
-controller, no internet. As of 14 December 2023 Sony **delisted the companion
-apps**: Knowledge is Power, Decades, That's You, Hidden Agenda, Frantics and
-Chimparty can no longer be installed on a new Android phone at all.
-
-That is the strongest argument on this list for the shape mediagram already has:
-the phone UI is a web page the box serves, not an app anyone must publish, update
-or keep listed. A PlayLink game dies when its store listing does; a box-hosted web
-client does not. Whoever builds here should know that the platform with the most
-money behind this exact idea lost it to a delisting.
-
-**Why it is less a new game than a layer on one that exists.** The question
-machinery is Buzzer-Quiz's, built and tested: packs, `quiz_mix.rs`, the answer
-screen, scoring, the *Nur für Kinder* filter. What is new is only:
-
-- **traps** — a small set of per-player status effects with a timer, plus a way to
-  target another player. The first time anything here writes to someone else's
-  phone rather than its own;
-- **advance by answering** instead of by rolling, which the graph board handles as
-  a path whose tokens move on a correct answer;
-- **the climb track** — the cheapest board on the list, one line of tiles.
-
-So this is **the first game that composes the board engine with the quiz engine**,
-and that composition is worth more than the game: if the board really is "a graph of
-tiles with pieces on it" and the quiz really is "a pack plus a Choice screen", then
-a board driven by quiz answers costs almost nothing. Proving that early is the
-reason to build it early.
-
-**But it is the third trivia game, and the picker cannot hold three.** Buzzer-Quiz
-is speed, Neunmalklug is hosted comedy, this is sabotage — all three in German, all
-three on one lobby screen, all three answering questions on a phone. Two are
-defensible; three needs a category rather than a flat list. The honest alternative
-is traps plus the climb track as **a mode of Buzzer-Quiz**: one `GameKind`, a lobby
-toggle, less code, one fewer thing to explain at the table.
-
-No AI, no props, 2–6 players, no age gate (our own questions, so the kids set
-works). **Deliberately omitted: the selfie characters.** PlayLink had players
-photograph themselves to personalise a puppet; this project takes no images from
-phones and that is not a rule worth bending for a character select. **Character
-select is already solved, though**: the shipped avatar catalogue (22 avatars,
-`Action::PickAvatar`, taken-by-someone-else handled in `avatars::assign`) is
-exactly the choice PlayLink's selfie made, minus the camera. Denkzettel needs no
-new character system — its puppets are the avatars already picked in the lobby.
-
-Own name, own track, own traps: not "Knowledge is Power", not PlayLink, not Sony's
-puppets or stop-motion set.
-
 ## One engine, seven variation points
 
 There are not four families of board game. There is one engine — a board as a graph
@@ -438,8 +384,8 @@ system — and seven places where a game differs:
 
 | Variation point | Range across these games | Engine consequence |
 |---|---|---|
-| Turn shape | dice-walk (Heimlauf, Wissensreise, Lebensweg, Bauherr, Grundstück, Pleitier, Radau, Spielwiese) · chosen move on a static map (Flüchtig, Neuland, Feldzug) · place a piece on a grid (Wortwerk) · advance by answering (Denkzettel) | four action models, not one; the die is optional |
-| Interference | none — players race their own game (most) · one player hidden from all the others (Flüchtig) · traps placed on another player's screen (Denkzettel) | a per-player status-effect set and a way to target someone; the first thing here that writes to another player's phone |
+| Turn shape | dice-walk (Heimlauf, Wissensreise, Lebensweg, Bauherr, Grundstück, Pleitier, Radau, Spielwiese) · chosen move on a static map (Flüchtig, Neuland, Feldzug) · place a piece on a grid (Wortwerk) | three action models, not one; the die is optional |
+| Interference | none — players race their own game (most) · one player hidden from all the others (Flüchtig) | no targeting; the hidden player rides `phone_screen(PlayerId)` |
 | Board mutability | fixed at start (all but one) · rebuilt every turn (Gassenwechsel) | the graph must be replaceable data, and tiles must animate, not only tokens |
 | Tile effect | question · money · build · task · nothing · shift | a per-game effect handler, where most games actually differ |
 | Hidden information | all public · one player's board secret (Flüchtig) · each player's own goal list (Gassenwechsel) · each player's own hand (the cards) | already solved: `phone_screen(PlayerId)` |
@@ -488,10 +434,8 @@ to show on screen:
   realm names, not the Spear/Schmidt board.
 - Neunmalklug: not "You Don't Know Jack", not Jackbox, not Cookie Masterson, and
   none of the original's question or joke text.
-- Denkzettel: not "Knowledge is Power", not PlayLink, not Sony's puppets or its
-  stop-motion set.
 
-All sixteen are trademarked games still on sale or still recognisable, so each
+All fifteen are trademarked games still on sale or still recognisable, so each
 ships under its own name with its own board art.
 
 ## Every asset is recreated
@@ -585,7 +529,7 @@ already exists; the host is not a new subsystem, it is library video plus a plan
   3D ceremony stage in `client/src/tv/ceremony/` (`ceremony-avatar.ts`,
   `ceremony-set.ts`, `ceremony-stage.ts`, `ceremony-studio-look.ts`,
   `ceremony-sound.ts`). **This is the single largest cost removed from this list**:
-  every board game now inherits a character the player chose, and Denkzettel,
+  every board game now inherits a character the player chose, and
   Sprechstunde and Neunmalklug inherit the reaction screens that need one.
   What remains per game is only the 2D sprite for pieces on the board — Heimlauf's
   turned wooden pawns are its own, and each board wants its own.
@@ -616,7 +560,6 @@ chosen. Silence reads as a bug at the table.
 | Sprechstunde | Nothing physical, but it asks for **honest answers about the people present** — the real requirement is a room that wants that | Do not offer it in a lobby with a *Nur für Kinder* toggle; see open question 9 |
 | Nachtwache | **A dark room and the volume up** — the original's own instructions. Paper and pen for the fear cards, or a phone field for them | Played in a lit room it loses most of its effect; the game should say so rather than pretend otherwise |
 | Neunmalklug | Nothing — phones in hand | Needs no prop, no dark room and no grown-up gate, which makes it the easiest to suggest to any group |
-| Denkzettel | Nothing — phones in hand | Same, and it is the one that works in the brightest living room |
 | Everything else | A phone per player, on the same Wi-Fi, and the TV in sight | The game cannot start |
 
 Two things are worth checking when this lands: that the prop list is **per game,
@@ -661,11 +604,6 @@ Gassenwechsel does not; and that the note appears in the picker, not only in
     machinery that already exists, and it proves the host-video subsystem on a game
     that is still playable if the host turns out too expensive. Nachtwache cannot
     be played at all without its host.
-16. **Denkzettel** — **promote this to slot 3, right after Flüchtig**, unless open
-    question 17 makes it a mode of Buzzer-Quiz instead. It is the only game that
-    composes the board engine with the quiz engine, it needs the cheapest board on
-    the list, and it reuses question machinery that is built and tested. Proving
-    the two engines compose early is worth more than the game itself.
 
 Avatars and per-game sound ride along with whichever game needs them first.
 
@@ -715,17 +653,8 @@ Avatars and per-game sound ride along with whichever game needs them first.
     facts in a neutral voice and will not carry it. That is the game's real cost,
     and it is a writing job, not a build job.
 15. **Three trivia games.** Buzzer-Quiz (speed), Neunmalklug (hosted comedy),
-    Denkzettel (sabotage) — in German, on one lobby screen. Which two survive, or
+    Kopfnuss (sabotage, shipped) — in German, on one lobby screen. Which two survive, or
     does the picker grow a category?
-16. **Is Denkzettel a game or a mode?** Its only new mechanics are traps and
-    advance-by-answering; everything else is Buzzer-Quiz's, already built. A lobby
-    toggle is less code and one fewer thing to explain at the table. Recommended:
-    build it as a mode first, and give it its own `GameKind` only if the climb track
-    turns out to want a real board.
-17. **No phone images, ever.** PlayLink personalised its puppets with a selfie.
-    This project takes nothing from a phone's camera or library. Denkzettel needs
-    no exception: the shipped avatar catalogue is the character select, so the
-    rule holds and costs nothing. Confirmed.
 
 ## Results
 
