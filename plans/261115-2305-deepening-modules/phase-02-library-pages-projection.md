@@ -31,15 +31,15 @@ held to the web's fixtures.
 
 ## Steps
 
-- [ ] Page model types + projection function in `feature/catalog`.
-- [ ] Ready state carries the pages; computed off the main thread.
-- [ ] TV and phone screens read page models; no screen calls `magazineHomeOf`,
+- [x] Page model types + projection function in `feature/catalog`.
+- [x] Ready state carries the pages; computed off the main thread.
+- [x] TV and phone screens read page models; no screen calls `magazineHomeOf`,
       `*DepartmentOf`, `resumeCardsOf`, `latestOf`, `continueWall`,
       `watchlistWall` directly. One Latest limit.
-- [ ] Shared fixture(s) + web test + Kotlin fixture test.
-- [ ] Tests at the projection replace screen-level tests that only checked
+- [x] Shared fixture(s) + web test + Kotlin fixture test.
+- [x] Tests at the projection replace screen-level tests that only checked
       grouping; rule tests of the page functions stay.
-- [ ] Gradle `:feature:catalog`, `:ui-tv`, `:ui-mobile` unit tests;
+- [x] Gradle `:feature:catalog`, `:ui-tv`, `:ui-mobile` unit tests;
       `cd web && bun test`.
 - [ ] Media patch bump; commit.
 

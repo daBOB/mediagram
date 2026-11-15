@@ -23,6 +23,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
 import catalog.MenuScreen
 import catalog.factsLine
+import catalog.paged
 import catalog.resumeLine
 import catalog.shelvesOf
 import data.LibraryUpdateState
@@ -243,15 +244,6 @@ class TvCatalogScreenStateTest {
         compose.onNodeWithText("Series").assertIsNotFocused()
     }
 
-    /** Home's Latest courses holds six, as the web's Home does: a course row is a list and keeps the shorter row limit, not the poster rows' eight. */
-    @Test
-    fun homesLatestCoursesHoldsTheNewestSix() {
-        show(ready(courses(8)))
-
-        (2..7).forEach { compose.onNodeWithText("Course $it").assertExists() }
-        (0..1).forEach { compose.onNodeWithText("Course $it").assertDoesNotExist() }
-    }
-
     /**
      * The chosen tab is kept by its department, not by its position: a
      * refresh that brings Movies in ahead of Tutorials must leave Tutorials
@@ -354,7 +346,7 @@ class TvCatalogScreenStateTest {
                 progress = listOf(stopped),
                 watched = listOf(Watched(setId = "ep-1", finishedAt = 1)),
             )
-        show(CatalogUiState.Ready(shelvesOf(film + episodes), watch = watch))
+        show(CatalogUiState.Ready(shelvesOf(film + episodes), watch = watch).paged())
 
         // The magazine band's own resume cards hold this line back from
         // view the same way the phone's own `ResumeCard` does (the progress
@@ -619,7 +611,7 @@ class TvCatalogScreenStateTest {
     }
 }
 
-internal fun ready(sets: List<MediaSet>) = CatalogUiState.Ready(shelvesOf(sets))
+internal fun ready(sets: List<MediaSet>) = CatalogUiState.Ready(shelvesOf(sets)).paged()
 
 /** [count] films, each newer than the last, so "latest" has an order to keep. */
 internal fun films(count: Int) = (0 until count).map { set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()) }

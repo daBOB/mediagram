@@ -15,6 +15,7 @@ import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.KeptKind
+import catalog.LibraryPages
 import catalog.catalogTabOf
 import catalog.chromeCountsOf
 import catalog.fetchFraction
@@ -121,12 +122,9 @@ internal fun LibraryBranches(
     // reason: switching tabs and back must not lose where a viewer scrolled
     // to, and the bar needs the active one's own position, not Home's.
     val deptScroll = rememberDepartmentScrollStates()
-    // Shared with the same call CatalogScreen makes so the two can never
-    // pick different editorial sets from two different moments — see
-    // CatalogScreen's own note on `now`.
-    val now = remember { System.currentTimeMillis() }
-    val heldIds = catalogState.heldIdsOrEmpty()
-    val heroState = rememberActiveHeroState(shelves, watch, heldIds, now, chosenTab, homeListState, deptScroll)
+    // The same pages Home and the departments draw, so the bar and the page never disagree about a cover.
+    val pages = (catalogState as? CatalogUiState.Ready)?.pages ?: LibraryPages.Empty
+    val heroState = rememberActiveHeroState(pages, chosenTab, homeListState, deptScroll)
 
     // Tabs are not a back stack: on the shelves, Back on any tab but Home
     // goes Home, and only Home's own Back leaves the app. The web's Back
@@ -263,7 +261,6 @@ internal fun LibraryBranches(
                 onToggleWatchlist = catalogViewModel::setWatchlisted,
                 homeListState = homeListState,
                 deptScroll = deptScroll,
-                now = now,
                 titleInfo = catalogViewModel::titleInfo,
             ) }
         }

@@ -1,0 +1,79 @@
+[
+  {
+    "name": "something underway in every department, a pinned film and nine films on the shelf",
+    "now": 1763164800000,
+    "editorsChoice": "m2",
+    "sets": [
+      { "setId": "m1", "kind": "movie", "title": "Film 1", "addedAt": 1762387200000, "poster": "p-m1" },
+      { "setId": "m2", "kind": "movie", "title": "Film 2", "addedAt": 1762473600000, "poster": "p-m2", "backdrop": "b-m2" },
+      { "setId": "m3", "kind": "movie", "title": "Film 3", "addedAt": 1762560000000, "poster": "p-m3", "popularity": 90 },
+      { "setId": "m4", "kind": "movie", "title": "Film 4", "addedAt": 1762646400000, "poster": "p-m4", "backdrop": "b-m4", "popularity": 50 },
+      { "setId": "m5", "kind": "movie", "title": "Film 5", "addedAt": 1762732800000, "poster": "p-m5" },
+      { "setId": "m6", "kind": "movie", "title": "Film 6", "addedAt": 1762819200000, "poster": "p-m6", "backdrop": "b-m6", "rating": 8, "tagline": "Tagline six." },
+      { "setId": "m7", "kind": "movie", "title": "Film 7", "addedAt": 1762905600000, "poster": "p-m7" },
+      { "setId": "m8", "kind": "movie", "title": "Film 8", "addedAt": 1762992000000, "poster": "p-m8", "backdrop": "b-m8" },
+      { "setId": "m9", "kind": "movie", "title": "Film 9", "addedAt": 1763078400000, "poster": "p-m9", "tagline": "Tagline nine." },
+      { "setId": "alpha-1", "kind": "ep", "title": "Alpha 1", "show": "Alpha", "season": 1, "episode": 1, "addedAt": 1761436800000 },
+      { "setId": "alpha-2", "kind": "ep", "title": "Alpha 2", "show": "Alpha", "season": 1, "episode": 2, "addedAt": 1761436800000 },
+      { "setId": "alpha-3", "kind": "ep", "title": "Alpha 3", "show": "Alpha", "season": 1, "episode": 3, "addedAt": 1761436800000 },
+      { "setId": "beta-1", "kind": "ep", "title": "Beta 1", "show": "Beta", "season": 1, "episode": 1, "addedAt": 1762300800000 },
+      { "setId": "beta-2", "kind": "ep", "title": "Beta 2", "show": "Beta", "season": 1, "episode": 2, "addedAt": 1762300800000 },
+      { "setId": "gamma-1", "kind": "ep", "title": "Gamma 1", "show": "Gamma", "season": 1, "episode": 1, "addedAt": 1761868800000, "anime": true },
+      { "setId": "gamma-2", "kind": "ep", "title": "Gamma 2", "show": "Gamma", "season": 1, "episode": 2, "addedAt": 1761868800000, "anime": true },
+      { "setId": "gamma-film", "kind": "movie", "title": "Gamma Film", "addedAt": 1761868800000, "anime": true },
+      { "setId": "delta-1", "kind": "docu", "title": "Delta 1", "show": "Delta", "episode": 1, "addedAt": 1762128000000 },
+      { "setId": "delta-2", "kind": "docu", "title": "Delta 2", "show": "Delta", "episode": 2, "addedAt": 1762128000000 },
+      { "setId": "doc-single", "kind": "docu", "title": "Lone Documentary", "addedAt": 1762128000000 },
+      { "setId": "epsilon-1", "kind": "tut", "title": "Epsilon 1", "show": "Epsilon", "season": 1, "episode": 1, "addedAt": 1762214400000 },
+      { "setId": "epsilon-2", "kind": "tut", "title": "Epsilon 2", "show": "Epsilon", "season": 1, "episode": 2, "addedAt": 1762214400000 }
+    ],
+    "progress": [
+      { "setId": "delta-1", "at": 600, "duration": 3000, "updatedAt": 600 },
+      { "setId": "gamma-film", "at": 600, "duration": 5400, "updatedAt": 500 },
+      { "setId": "gamma-1", "at": 300, "duration": 1440, "updatedAt": 400 },
+      { "setId": "beta-1", "at": 300, "duration": 1800, "updatedAt": 300 },
+      { "setId": "beta-2", "at": 300, "duration": 1800, "updatedAt": 250 },
+      { "setId": "m5", "at": 600, "duration": 6000, "updatedAt": 100 },
+      { "setId": "m7", "at": 10, "duration": 6000, "updatedAt": 50 }
+    ],
+    "watched": { "alpha-1": 200, "epsilon-1": 700, "m3": 50 },
+    "expect": {
+      "departments": {
+        "movies": ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9"],
+        "series": ["Alpha", "Beta"],
+        "anime": { "shows": ["Gamma"], "films": ["gamma-film"] },
+        "documentaries": { "collections": ["Delta"], "singles": ["doc-single"] },
+        "tutorials": ["Epsilon"]
+      },
+      "home": {
+        "continues": ["delta-1", "gamma-film", "beta-2", "m5"],
+        "nextUp": [
+          { "setId": "epsilon-2", "resume": false },
+          { "setId": "gamma-1", "resume": true },
+          { "setId": "beta-1", "resume": true },
+          { "setId": "alpha-2", "resume": false }
+        ],
+        "latestMovies": ["m9", "m8", "m7", "m6", "m5", "m4", "m3", "m2"],
+        "latestSeries": ["Beta", "Alpha"],
+        "latestCourses": ["Epsilon"],
+        "totals": { "continues": 6, "nextUp": 4, "latestMovies": 9, "latestSeries": 2, "latestCourses": 1 }
+      },
+      "editorial": {
+        "cover": ["m8"],
+        "features": [
+          { "kind": "editor", "setId": "m2" },
+          { "kind": "trending", "setId": "m4" },
+          { "kind": "staff", "setId": "m6" }
+        ],
+        "quote": "m9",
+        "thisMonth": ["m1"]
+      },
+      "underway": {
+        "series": { "continues": ["beta-2"], "nextUp": [{ "setId": "beta-1", "resume": true }, { "setId": "alpha-2", "resume": false }] },
+        "anime": { "continues": ["gamma-film"], "nextUp": [{ "setId": "gamma-1", "resume": true }] },
+        "documentaries": { "continues": ["delta-1"], "nextUp": [] },
+        "tutorials": { "continues": [], "nextUp": [{ "setId": "epsilon-2", "resume": false }] }
+      }
+    }
+  }
+]

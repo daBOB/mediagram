@@ -18,14 +18,8 @@ import androidx.compose.ui.unit.dp
 import catalog.CatalogUiState
 import catalog.Department
 import catalog.DocumentariesDepartment
-import catalog.DocumentaryLibrary
-import catalog.Entry
-import catalog.Shelf
-import catalog.allSetsById
-import catalog.documentariesDepartmentOf
 import catalog.documentariesLineOf
 import catalog.factsLine
-import catalog.resumeCardsOf
 import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
@@ -45,25 +39,15 @@ internal const val DOCUMENTARIES_DEPT_TEST_TAG = "documentaries-department"
  */
 @Composable
 internal fun DocumentariesDepartmentTab(
-    shelf: Shelf,
     state: CatalogUiState.Ready,
     onOpenCollection: (String) -> Unit,
     listState: LazyListState = rememberLazyListState(),
     onPlay: (String) -> Unit,
 ) {
-    val byId = remember(state.shelves) { allSetsById(state.shelves) }
-    val library = remember(shelf) {
-        DocumentaryLibrary(
-            collections = shelf.entries.filterIsInstance<Entry.Collection>(),
-            singles = shelf.entries.filterIsInstance<Entry.Film>().map { it.set },
-        )
-    }
-    val department = remember(library, byId, state.watch) { documentariesDepartmentOf(library, byId, state.watch) }
-    department?.let {
+    state.pages.documentaries?.let {
         DocumentariesDepartmentScreen(
             department = it,
             watch = state.watch,
-            heldIds = state.heldIds,
             onOpenCollection = onOpenCollection,
             onPlay = onPlay,
             state = listState,
@@ -87,16 +71,13 @@ internal fun DocumentariesDepartmentTab(
 internal fun DocumentariesDepartmentScreen(
     department: DocumentariesDepartment,
     watch: WatchSnapshot,
-    heldIds: Set<String>,
     onOpenCollection: (String) -> Unit,
     onPlay: (String) -> Unit,
     state: LazyListState = rememberLazyListState(),
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-    val resumeCards = remember(department.continuing, watch, heldIds) {
-        resumeCardsOf(department.continuing, emptyList(), watch, heldIds)
-    }
+    val resumeCards = department.resumeCards
     val reveals = rememberReveals()
 
     LazyColumn(

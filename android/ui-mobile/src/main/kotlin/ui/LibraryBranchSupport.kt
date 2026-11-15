@@ -10,13 +10,10 @@ import androidx.compose.runtime.saveable.SaveableStateHolder
 import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.Department
+import catalog.LibraryPages
 import catalog.Shelf
-import catalog.allSetsById
-import catalog.heroArtOf
-import catalog.magazineHomeOf
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
-import model.WatchSnapshot
 import ui.chrome.BrowseActions
 import ui.chrome.LibraryScaffold
 import ui.chrome.ProfileBarState
@@ -78,23 +75,14 @@ internal fun CatalogUiState.shelvesOrEmpty(): List<Shelf> = (this as? CatalogUiS
  */
 @Composable
 internal fun rememberActiveHeroState(
-    shelves: List<Shelf>,
-    watch: WatchSnapshot,
-    heldIds: Set<String>,
-    now: Long,
+    pages: LibraryPages,
     chosenTab: CatalogTab,
     homeListState: LazyListState,
     deptScroll: DepartmentScrollStates,
 ): HeroListState? {
-    val hasCover =
-        remember(shelves, watch, heldIds, now) {
-            magazineHomeOf(shelves, watch, editorsChoice = watch.editorsChoice, now = now, heldIds = heldIds).editorial.cover.isNotEmpty()
-        }
-    val byId = remember(shelves) { allSetsById(shelves) }
+    val hasCover = pages.home.magazine.editorial.cover.isNotEmpty()
     val department = (chosenTab as? CatalogTab.Dept)?.department
-    val hasHeroArt =
-        remember(shelves, byId, watch, department) { heroArtOf(department, shelves, byId, watch) } != null &&
-            LocalBackdrop.current != Backdrop.SOLID
+    val hasHeroArt = pages.heroArtOf(department) != null && LocalBackdrop.current != Backdrop.SOLID
     return remember(chosenTab, hasCover, hasHeroArt, homeListState, deptScroll) {
         when {
             chosenTab == CatalogTab.Home -> if (hasCover) homeListState.asHeroListState() else null

@@ -100,12 +100,12 @@ internal fun LatestFrame(
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val shelves = (catalogState as? CatalogUiState.Ready)?.shelves
+    val ready = catalogState as? CatalogUiState.Ready
     LibraryBranch(Destination.Latest, menuActions, profileBar, browse, at, at::pop) {
-        if (shelves == null) {
+        if (ready == null) {
             CenteredLoading("Loading your library…")
         } else {
-            LatestScreen(shelves, watch, catalogState.heldIdsOrEmpty(), columns, at::openTitle, at::openCollection)
+            LatestScreen(ready.pages.latest, watch, ready.heldIds, columns, at::openTitle, at::openCollection)
         }
     }
 }

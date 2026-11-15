@@ -193,7 +193,7 @@ class CatalogViewModel
                     get() = listOf(value)
 
                 override suspend fun collect(collector: FlowCollector<CatalogUiState>): Nothing {
-                    // A kids or hidden-section profile's projection builds shelves too.
+                    // A kids or hidden-section profile's projection builds shelves too, and every state its pages.
                     combine(unfiltered, kidsFilter) { shown, view -> project(shown, view) }
                         .distinctUntilChanged()
                         .flowOn(shelving)
@@ -205,7 +205,25 @@ class CatalogViewModel
         private fun project(
             shown: CatalogUiState,
             view: ProfileView,
-        ): CatalogUiState = projected(shown, view, lastSets)
+        ): CatalogUiState =
+            when (val visible = projected(shown, view, lastSets)) {
+                is CatalogUiState.Ready -> paged(visible)
+                else -> visible
+            }
+
+        /** The last state given its pages; see [paged]. */
+        @Volatile private var lastPaged: CatalogUiState.Ready? = null
+
+        /**
+         * [ready] with its pages — the last ones while its shelves, watch and
+         * held ids are those they were built from, so a refresh's progress
+         * line or a notice coming and going rebuilds nothing. The time is read
+         * only when they are built: no surface recomputes a page at midnight.
+         */
+        private fun paged(ready: CatalogUiState.Ready): CatalogUiState.Ready {
+            val same = lastPaged?.takeIf { it.shelves == ready.shelves && it.watch == ready.watch && it.heldIds == ready.heldIds }
+            return (same?.let { ready.copy(pages = it.pages) } ?: ready.paged()).also { lastPaged = it }
+        }
 
         /**
          * Watch together's Join for Home and the title pages, and the cast bar ([togetherOffers]); collected only while

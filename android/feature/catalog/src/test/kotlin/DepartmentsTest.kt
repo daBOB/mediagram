@@ -166,7 +166,7 @@ class DepartmentsTest {
 
         val dept = showsDepartmentOf(Kind.EPISODE, listOf(show("Plain Show")), byId, watch)!!
 
-        assertEquals(listOf(plainEpisode.setId), dept.underway.continues.map { it.setId })
+        assertEquals(listOf(plainEpisode.setId), dept.resumeCards.map { it.set.setId })
     }
 
     /** The row is narrowed to the department before it is cut to size, not after — the web's `departmentUnderway`. */
@@ -186,7 +186,7 @@ class DepartmentsTest {
 
         val dept = showsDepartmentOf(Kind.EPISODE, listOf(show("Plain Show")), byId, watch)!!
 
-        assertEquals(listOf(episode.setId), dept.underway.continues.map { it.setId })
+        assertEquals(listOf(episode.setId), dept.resumeCards.map { it.set.setId })
     }
 
     @Test

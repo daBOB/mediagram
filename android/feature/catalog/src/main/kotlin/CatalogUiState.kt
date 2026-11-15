@@ -29,6 +29,8 @@ sealed interface CatalogUiState {
         val refreshing: Boolean = false,
         /** Sets on this device's disk in full — the "offline" badge's own source. */
         val heldIds: Set<String> = emptySet(),
+        /** What each page holds, built from the fields above by [paged] — empty until it has been. */
+        val pages: LibraryPages = LibraryPages.Empty,
     ) : CatalogUiState
 
     data object Empty : CatalogUiState

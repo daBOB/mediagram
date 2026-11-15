@@ -91,7 +91,7 @@ class AnimeTest {
 
         val dept = animeDepartmentOf(AnimeLibrary(emptyList(), listOf(animeFilm)), byId, watch)!!
 
-        assertEquals(listOf(animeFilm.setId), dept.continuing.map { it.setId })
+        assertEquals(listOf(animeFilm.setId), dept.resumeCards.map { it.set.setId })
     }
 
     @Test
@@ -113,7 +113,7 @@ class AnimeTest {
 
         assertEquals(1, dept.showCount)
         assertEquals(2, dept.filmCount)
-        assertTrue(dept.nextUp.isEmpty(), "nothing watched yet, so nothing is next")
+        assertTrue(dept.resumeCards.isEmpty(), "nothing watched yet, so nothing is next")
     }
 
     @Test
@@ -128,7 +128,7 @@ class AnimeTest {
 
         val dept = animeDepartmentOf(AnimeLibrary(emptyList(), listOf(animeFilm)), byId, watch)!!
 
-        assertEquals(listOf(animeFilm.setId), dept.continuing.map { it.setId })
+        assertEquals(listOf(animeFilm.setId), dept.resumeCards.map { it.set.setId })
     }
 
     private fun film(

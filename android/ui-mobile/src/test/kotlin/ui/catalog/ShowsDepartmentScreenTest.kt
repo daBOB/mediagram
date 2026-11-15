@@ -19,6 +19,7 @@ import catalog.Division
 import catalog.Entry
 import catalog.ShowsDepartment
 import catalog.Underway
+import catalog.resumeCardsOf
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -70,7 +71,8 @@ class ShowsDepartmentScreenTest {
 
     private fun department(underway: Underway, categories: List<CategoryRow<Entry.Collection>> = emptyList()) =
         ShowsDepartment(
-            showCount = 1, itemCount = 1, lead = null, underway = underway, categories = categories,
+            showCount = 1, itemCount = 1, lead = null,
+            resumeCards = resumeCardsOf(underway.continues, underway.nextUp, WatchSnapshot.Empty), categories = categories,
             popular = emptyList(), newEpisodes = emptyList(), all = emptyList(),
         )
 

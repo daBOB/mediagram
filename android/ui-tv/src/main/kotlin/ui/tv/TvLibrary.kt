@@ -26,6 +26,7 @@ import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.Department
 import catalog.Entry
+import catalog.LibraryPages
 import catalog.everyFilm
 import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
@@ -282,7 +283,7 @@ internal fun TvLibrary(
 
                             FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
 
-                            FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
+                            FrameKind.LATEST -> TvLatestFrame(at, (ready?.pages ?: LibraryPages.Empty).latest, watch, heldIds, restore, here, leave)
 
                             FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
 

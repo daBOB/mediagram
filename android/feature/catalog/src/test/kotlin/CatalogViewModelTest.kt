@@ -712,6 +712,40 @@ class CatalogViewModelTest {
             }
         }
 
+    /** The pages come with the state they belong to: a position saved elsewhere reaches Continue's wall without a reread. */
+    @Test
+    fun theReadyStateCarriesItsPagesAndRebuildsThemWhenTheWatchStateMoves() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val watchState = WatchStateFixture()
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watchState.repository)
+            vm.state.test {
+                awaitItem()
+                val before = awaitItem() as CatalogUiState.Ready
+                assertEquals(1, before.pages.movies?.filmCount)
+                assertTrue(before.pages.continueWall.isEmpty())
+
+                watchState.repository.setProgress("movie-0", 600.0, 3_600.0)
+
+                assertEquals(listOf("movie-0"), (awaitItem() as CatalogUiState.Ready).pages.continueWall.map(MediaSet::setId))
+            }
+        }
+
+    /** A refresh that brings nothing new rebuilds no page: its progress line coming and going is not a library change. */
+    @Test
+    fun aRefreshThatBringsNothingNewKeepsThePagesAlreadyBuilt() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val gate = CompletableDeferred<Unit>()
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1).apply { refreshGate = gate }, WatchStateFixture().repository)
+            vm.state.test {
+                awaitItem()
+                val during = awaitItem() as CatalogUiState.Ready
+                gate.complete(Unit)
+                assertSame(during.pages, (awaitItem() as CatalogUiState.Ready).pages)
+            }
+        }
+
     /** The Collections tab's "New list", and its rename, delete and membership writes — each a fire-and-forget wrapper over the repository. */
     @Test
     fun createListReachesTheRepositoryAndTheNextSnapshot() =

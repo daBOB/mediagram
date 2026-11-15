@@ -37,18 +37,18 @@ fun groupAnime(sets: List<MediaSet>): AnimeLibrary {
  * the web's `anime-department.js`. `null` for an empty library, the same
  * empty state a department page falls back to.
  *
- * [continuing] is every started title narrowed to `anime: true` sets — not to
- * [library]'s own shows, the same reason [documentariesDepartmentOf] narrows
- * by kind instead of by its own folders: an anime film is a [Kind.MOVIE] the
- * plain Continue computation cannot otherwise single out. [nextUp] walks only
- * [library]'s own, already-anime-only shows ([departmentUnderwayOf]).
+ * [resumeCards] holds every started title narrowed to `anime: true` sets —
+ * not to [library]'s own shows, the same reason [documentariesDepartmentOf]
+ * narrows by kind instead of by its own folders: an anime film is a
+ * [Kind.MOVIE] the plain Continue computation cannot otherwise single out —
+ * then Next up, walked over [library]'s own, already-anime-only shows
+ * ([departmentUnderwayOf]).
  */
 data class AnimeDepartment(
     val showCount: Int,
     val filmCount: Int,
     val lead: MediaSet?,
-    val continuing: List<MediaSet>,
-    val nextUp: List<NextUpEntry>,
+    val resumeCards: List<SetCard>,
     val shows: List<Entry.Collection>,
     val films: List<MediaSet>,
 )
@@ -57,6 +57,7 @@ fun animeDepartmentOf(
     library: AnimeLibrary,
     byId: Map<String, MediaSet>,
     watch: WatchSnapshot,
+    heldIds: Set<String> = emptySet(),
 ): AnimeDepartment? {
     if (library.shows.isEmpty() && library.films.isEmpty()) return null
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
@@ -69,8 +70,7 @@ fun animeDepartmentOf(
         showCount = library.shows.size,
         filmCount = library.films.size,
         lead = lead,
-        continuing = underway.continues,
-        nextUp = underway.nextUp,
+        resumeCards = resumeCardsOf(underway.continues, underway.nextUp, watch, heldIds),
         shows = library.shows,
         films = library.films.sortedByDescending(MediaSet::addedAt),
     )

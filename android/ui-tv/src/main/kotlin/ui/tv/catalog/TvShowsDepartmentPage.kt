@@ -17,7 +17,6 @@ import catalog.Department
 import catalog.Entry
 import catalog.ShowsDepartment
 import catalog.firstItemOf
-import catalog.resumeCardsOf
 import catalog.showsLineOf
 import model.WatchSnapshot
 
@@ -47,7 +46,7 @@ internal fun TvShowsDepartmentPage(
     gridState: LazyGridState = rememberLazyGridState(),
 ) {
     val (positions, watchedIds) = rememberWatchMarks(watch)
-    val resumeCards = remember(dept, watch, heldIds) { resumeCardsOf(dept.underway.continues, dept.underway.nextUp, watch, heldIds) }
+    val resumeCards = dept.resumeCards
     val lead = dept.lead
     val cover = lead?.let(::leadCover)
     val rowFocus = remember { FocusRequester() }
