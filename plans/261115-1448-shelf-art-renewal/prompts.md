@@ -205,3 +205,161 @@ Wide picture for a TV's start-up screen. Backstage of a small theatre just befor
 ```text
 Cut out only the painted lettering "Fun-Station" from the attached picture, with its red outline and the red swash underneath, as a clean logo on a fully transparent background. Same letter shapes, colours and style, filling most of the canvas, centred. Nothing else: no wall, no bricks, no characters, no "by" line.
 ```
+
+# The 13 "Coming soon" games (2026-11-15, second batch)
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A small late-night radio studio. Behind a big microphone, wearing headphones, the vampire from the attached cast is the quiz host: he leans back, one eyebrow raised, smirking, about to make a cheeky remark about the answer he just heard, one finger hovering over a big red "wrong" button on the mixing desk. Through the studio window behind him, the hedgehog in the black cap as producer giggles behind his paw. On the desk a stack of trick-question cards with a mousetrap on top. Above the studio window hangs a backlit sign box, glowing warm red, with the title "Neunmalklug" in big letters, clearly legible. That is the only text in the image, no other words, no ON AIR text. Night: dark blue room, warm red sign glow, green and amber desk lights, foam panels on the walls. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A hot-air balloon at sunrise drifting over a patchwork of six different landscapes far below, one after another: a desert with pyramids, a snowy mountain range, a jungle river, a city of towers, a sports stadium and a field of flowers. In the wicker basket, characters from the attached cast lean out: the princess in her pale green dress looking through a spyglass, the android pointing ahead, the frog with red-blue 3D glasses holding up a cloth bag; on the basket's rim sit six smooth stones, each a different colour (blue, pink, yellow, purple, green, orange), five already collected, one place still empty. Painted large around the balloon's envelope, on its striped fabric, is the title "Wissensreise", clearly legible. That is the only text in the image. Golden sunrise light, long soft shadows on the land, pastel morning sky. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A windy spring day over a little invented town of new plots, each plot fenced and marked with survey stakes and string, some with fresh small houses on them. The piglet in the yellow raincoat, from the attached cast, floats down on a parachute and is just landing on the roof of a neat little house — someone else's plot. On the lawn of that house the bear in the yellow hoodie and red fez, its owner, stands with one paw held out and a grin, waiting for the rent, a little jar of coins under his arm. The granny in her lilac cardigan watches from the next plot with a cup of tea. In the front of the poster a wooden real-estate sign is staked into the grass with the title "Grundstück" painted on it in big letters, clearly legible. That is the only text in the image. Bright spring light, quick clouds, fresh green lawns, red roofs. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A big summer meadow seen straight down from high above, like a drone photograph in late golden afternoon light with long shadows. A winding track of round fields is mown into the tall grass, and on several fields a different quick minigame is happening with characters from the attached cast: the bunny in the pink hoodie in a sack race, the panda with the teal neckerchief balancing an egg on a spoon, the mummy and the samurai in red armour in a tug of war, the fashion doll in pink hopping over a skipping rope. Across the top of the meadow, the title "Spielwiese" is mown into the grass in huge letters, the cut grass lighter than the tall grass around it, clearly legible. That is the only text in the image. Golden late-afternoon light, deep green tall grass, pale mown paths, wildflowers. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. An old letterpress print shop in morning light from tall dusty windows: wooden type cases full of letter blocks, ink rollers, an iron hand press. The granny in her lilac cardigan with a printer's apron and ink on her cheek, from the attached cast, pulls the press lever; the tabby cat in the purple hoodie with pink star glasses picks wooden letter tiles from the type case, each tile with a small number in its corner like a score; the raccoon in the teal hoodie hangs freshly printed sheets on a line to dry. On the biggest sheet hanging in the front, the title "Wortwerk" is printed large in bold black ink, slightly uneven like real letterpress, clearly legible. That is the only text in the image, the other sheets show only blurred lines. Warm morning sun through the windows, dust in the light, wood brown, ink black, paper cream. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters, words or signs anywhere. A small late-night radio studio seen wide. On the right third of the picture, in its upper half: the vampire from the attached cast in headphones behind a big microphone, leaning back and smirking, one finger over a big red button on the mixing desk; behind him, through the studio window, the hedgehog in the black cap giggles behind his paw. Only these two characters. The left 40 % of the picture is calm and dark: a wall of dark blue acoustic foam panels in shadow, nothing on it. The bottom third is the quiet dark front of the desk in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Night: dark blue room, green and amber desk lights, a warm lamp. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters anywhere, plain striped balloon. A sunrise sky over a patchwork of six different landscapes far below: desert with pyramids, snowy mountains, a jungle river, a city of towers, a stadium, a flower field. On the right third of the picture, in its upper half, a red-and-cream striped hot-air balloon drifts; in its wicker basket the princess in her pale green dress looks through a spyglass, the android points ahead and the frog with red-blue 3D glasses holds a cloth bag; on the basket rim sit five coloured stones and one empty place. Only these three characters from the attached cast. The left 40 % of the picture is calm: soft pastel morning sky with a few thin clouds, nothing in it, a little darker toward the left edge. The bottom third is the quiet, hazy land far below. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Golden sunrise light. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters or signs anywhere. A windy spring day over a little invented town of new plots, fenced and staked with string, seen wide. On the right third of the picture, in its upper half: the piglet in the yellow raincoat, from the attached cast, floats down on a yellow parachute and lands on the red roof of a small white house; on its lawn the bear in the yellow hoodie and red fez holds out a paw for the rent, a jar of coins under his arm. Only these two characters. The left 40 % of the picture is calm: an open sky with quick white clouds over far green fields, a blossoming tree in soft focus at the edge, nothing happening there. The bottom third is quiet lawn and survey string in soft shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Bright spring light. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters anywhere, no mown words. A big summer meadow in late golden afternoon light, seen from above at an angle. On the right third of the picture, in its upper half, a winding track of round mown fields in the tall grass, and on three of them a quick minigame: the bunny in the pink hoodie in a sack race, the panda with the teal neckerchief balancing an egg on a spoon, the fashion doll in pink hopping over a skipping rope. Only these three characters from the attached cast. The left 40 % of the picture is calm: tall uncut grass and wildflowers in soft shade, darker toward the left edge, nothing happening there. The bottom third is quiet tall grass in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Golden late-afternoon light, long shadows. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters or printing anywhere, blank sheets. An old letterpress print shop in morning light, seen wide. On the right third of the picture, in its upper half: an iron hand press where the granny in her lilac cardigan with a printer's apron, from the attached cast, pulls the lever; beside her the tabby cat in the purple hoodie with pink star glasses picks wooden letter tiles from a type case; above them blank cream sheets hang drying on a line. Only these two characters. The left 40 % of the picture is calm and darker: tall dusty windows in soft backlight and a bare brick wall, nothing happening there. The bottom third is the quiet wooden workbench in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Warm morning sun, dust in the light. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. Early morning mist on the beach of an unknown green island: two wooden rowing boats have just landed on the sand, full of supplies — timber, a sack of grain, bricks, a basket of wool and a small woolly sheep. Characters from the attached cast are the first settlers stepping ashore: the armour hero in blue and silver carries a stack of planks, the yeti in the light blue hoodie lifts the surprised sheep out of the boat, the witch in purple hammers the first wooden stake into the sand, unrolling a hand-drawn empty map. Behind them a forested hill, a stream and a stony slope wait, untouched. In the wet sand in the front of the poster the title "Neuland" is written large with a stick, the first small wave just reaching the edge of it, clearly legible. That is the only text in the image. Cool pale morning light, sea mist, sand beige, fresh greens. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A garden patio on a golden autumn afternoon, fallen leaves everywhere. On the stone patio a map of invented lands is drawn in coloured chalk, its borders thick chalk lines, and on it two small armies of chestnut figures (chestnuts with matchstick legs and acorn-cap helmets) face each other across a border. The two commanders, from the attached cast: the samurai in red armour on one side and the armour hero in blue and silver on the other, each kneeling by his army, and between them two big wooden dice tumbling over the chalk border mid-attack. The hedgehog in the black cap beats a little toy drum. In big chunky chalk letters across the top of the patio, as part of the drawing, is the title "Feldzug", clearly legible. That is the only text in the image. Warm low autumn sun, orange and brown leaves, grey stone, bright chalk colours. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A narrow old-town alley on a bright morning, half-timbered houses leaning in, laundry lines strung across overhead. The whole row of houses on the left is sliding sideways along rails set in the cobbles, like a sliding puzzle, opening a new way: the fox in the red hoodie with the popcorn-bucket hat, from the attached cast, pushes with all his weight against the corner of a house; the mummy follows him through the newly opened gap; at the far end of the alley, in a patch of sun, a small treasure chest glows, and the ghost in red sneakers peeks around a corner toward it. On the house corner hangs a blue enamel street-name sign with a white border and white letters reading "Gassenwechsel", large and clearly legible. That is the only text in the image. Bright morning sun in stripes, warm plaster colours, timber brown, blue sign. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A sunny Italian-style piazza at noon with an old stone wishing fountain. Everybody is trying to get rid of their money as fast as they can, and loving it: the bodybuilder in the lime sling swimsuit, from the attached cast, flings handfuls of banknotes into the air; the fashion doll in pink tips a whole handbag of coins into the fountain; the panda with the teal neckerchief hands banknotes to astonished pigeons. In the middle, the piglet in the yellow raincoat has already won: completely broke, he stands with both trouser pockets turned out and empty, beaming, doing a happy little dance. On the floor of the fountain, under clear water, golden coins lie arranged into the big letters of the title "Pleitier", clearly legible through the ripples. That is the only text in the image. Bright noon sun, ochre walls, blue sky, sparkling water, gold coins and green banknotes. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. The outside of a tall plain apartment block on a quiet sunny Sunday noon, all windows shut and peaceful except one on the third floor, which is flung open and bursting with noise. In it, characters from the attached cast play a guessing game against a big hourglass on the windowsill: the yeti in the light blue hoodie trumpets like an elephant with his arm as a trunk, cheeks puffed; the bunny in the pink hoodie and the frog in the mint hoodie shout guesses. Out of the window bursts the title "Radau" in huge, wobbly, comic sound-effect letters with shock lines, clearly legible, as if the noise itself had become letters. Below, a startled granny in her lilac cardigan at her own window bangs on her ceiling with a broom handle; a cat on the next balcony covers its ears. That is the only text in the image. Bright midday sun, pastel house front, blue sky, flower boxes. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters anywhere, nothing written in the sand. Early morning mist on the beach of an unknown green island, seen wide. On the right third of the picture, in its upper half: two wooden rowing boats just landed on the sand with timber, a grain sack, bricks and wool; the yeti in the light blue hoodie, from the attached cast, lifts a surprised woolly sheep out of a boat, the armour hero in blue and silver carries planks ashore, and the witch in purple hammers the first wooden stake into the sand. Only these three characters. Behind them a forested hill and a little waterfall. The left 40 % of the picture is calm: misty open sea and pale sky, a little darker toward the left edge, nothing in it. The bottom third is quiet wet sand and a thin wave in soft light. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Cool pale morning light, sea mist. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters or chalk words anywhere. A garden patio on a golden autumn afternoon, fallen leaves, seen wide. On the right third of the picture, in its upper half: a map of invented lands drawn in coloured chalk on the stone patio, and on it two small armies of chestnut figures with acorn-cap helmets facing each other across a chalk border; the samurai in red armour and the armour hero in blue and silver, from the attached cast, kneel by their armies while two big wooden dice tumble over the border. Only these two characters. The left 40 % of the picture is calm and darker: the shaded corner of the garden with a pile of leaves and a fence, nothing happening there. The bottom third is quiet bare patio stone with a few leaves, in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Warm low autumn sun. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters or signs anywhere. An old-town alley of half-timbered houses on a bright morning, laundry lines overhead, seen wide. On the right third of the picture, in its upper half: a row of houses slides sideways on rails set in the cobbles like a sliding puzzle; the fox in the red hoodie with the popcorn-bucket hat, from the attached cast, pushes against a house corner with all his weight, the mummy slips through the new gap, and at the far end of the alley a small treasure chest glows in a patch of sun. Only these two characters. The left 40 % of the picture is calm and darker: the shaded wall of an old house with a closed green door and a flower box, nothing happening there. The bottom third is quiet cobblestones in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Bright morning sun in stripes. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters or coin words anywhere. A sunny Italian-style piazza at noon, seen wide. On the right third of the picture, in its upper half: an old stone wishing fountain where characters from the attached cast happily get rid of their money: the bodybuilder in the lime sling swimsuit flings banknotes into the air, the fashion doll in pink tips a handbag of coins into the water, and the piglet in the yellow raincoat, already broke, dances with both pockets turned out and empty, beaming. Only these three characters. Banknotes flutter in the air above them. The left 40 % of the picture is calm and darker: the shaded side of an ochre house with green shutters and an empty bench, nothing happening there. The bottom third is quiet cobblestones in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Bright noon sun, blue sky. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters or sound words anywhere. The pastel front of a tall apartment block on a quiet sunny Sunday noon, seen wide. On the right third of the picture, in its upper half: one third-floor window flung open, and in it characters from the attached cast play a noisy guessing game beside a big hourglass on the sill: the yeti in the light blue hoodie trumpets like an elephant with his arm as a trunk, the bunny in the pink hoodie and the frog in the mint hoodie shout guesses; little comic shock lines burst out of the window. One window lower, the granny in her lilac cardigan bangs on her ceiling with a broom handle. Only these four characters. The left 40 % of the picture is calm: plain closed windows with shutters and flower boxes in soft shade, nothing happening there. The bottom third is the quiet lower house front in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Bright midday sun, blue sky. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. An old school corridor on a quiet afternoon, sun falling through tall windows onto green linoleum. Characters from the attached cast sit in a row on tiny children's chairs outside a closed classroom door, waiting their turn, each holding up a photo of themselves from another stage of life and looking a little embarrassed: the tabby cat in the purple hoodie with pink star glasses holds a baby photo, the bear in the yellow hoodie and red fez a first-day-of-school photo with a big school cone, the ghost in red sneakers a wedding photo, the princess in her pale green dress a photo of herself as a grey-haired old lady. The door is ajar and warm light comes out, someone inside about to ask an honest question. On the door hangs an engraved brass plate with the title "Sprechstunde" in large engraved letters, clearly legible. That is the only text in the image, the photos have no writing. Warm afternoon sun, green linoleum, cream walls, brass. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A dark old living room at night, a little spooky but funny, family-friendly. An old box television glows eerie green, and inside its screen a stern, long-faced guardian made of green static watches the room with narrowed eyes, his bony finger raised. Characters from the attached cast tiptoe through the room with candles to collect their keys, which hang on hooks, lie under a rug and dangle from a lampshade: the witch in purple reaches for a key on a hook, the mummy sneaks with a candle, the fox in the red hoodie with the popcorn-bucket hat freezes mid-step on a creaking floorboard, a key ring in his paw. In the corner stands a tall grandfather clock, its hands at three minutes to midnight, and on the arch of its dial the title "Nachtwache" is painted in old gold letters, large and clearly legible. That is the only text in the image, no numbers besides the clock's. Darkness, green TV glow, warm candle flames, long shadows. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 2:3 · gpt-image-2.6-sunburst medium
+
+```text
+Game poster, 2:3 portrait. A rooftop terrace at night under a huge full moon, strings of paper lanterns overhead, a card game of four at a small round table. Everyone is trying hard not to take any hearts: the vampire pushes a heart card away with two fingers like something hot, the granny in her lilac cardigan grimaces at the queen of spades in her hand, the android shields its cards. But the raccoon in the teal hoodie, from the attached cast, grins slyly and holds up a whole fan of every single heart card toward the big moon, about to turn the tables. The largest paper lantern hanging over the table has the title "Herz" painted on it in big red brush letters, glowing from inside, clearly legible. That is the only text in the image, the cards show only their suit symbols. Deep blue moonlit night, warm lantern light, red hearts, black spades. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, gentle depth of field, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters, plates or signs with writing anywhere. An old school corridor on a quiet afternoon, sun through tall windows onto green linoleum, seen wide. On the right third of the picture, in its upper half: a row of tiny children's chairs outside a classroom door standing ajar with warm light coming out; on them sit characters from the attached cast, each holding up an old photo of themselves and looking a little embarrassed: the tabby cat in the purple hoodie with pink star glasses with a baby photo, the bear in the yellow hoodie and red fez with a first-day-of-school photo, the ghost in red sneakers with a wedding photo. Only these three characters. The left 40 % of the picture is calm: the long empty corridor with tall windows in soft backlight, nothing happening there. The bottom third is quiet linoleum floor with sun stripes, in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Warm afternoon sun, cream walls. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters or words anywhere, plain clock dial with only its numerals. A dark old living room at night, a little spooky but funny, family-friendly, seen wide. On the right third of the picture, in its upper half: an old box television glowing eerie green with a stern long-faced guardian of green static on its screen raising a bony finger; next to it a tall grandfather clock at three minutes to midnight with keys hanging on hooks; the witch in purple, from the attached cast, reaches for a key with a candle, and the fox in the red hoodie with the popcorn-bucket hat freezes mid-step holding a key ring. Only these two characters. The left 40 % of the picture is calm and near-black: heavy curtains and a moonlit window in deep shadow, nothing happening there. The bottom third is quiet dark floorboards. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Green TV glow, warm candle light. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```
+
+## 3:2 · gpt-image-2.6-sunburst medium
+
+```text
+Wide landscape backdrop, no text at all, no letters or words anywhere, plain lanterns with only heart and spade symbols. A rooftop terrace at night under a huge full moon, strings of paper lanterns, seen wide. On the right third of the picture, in its upper half: a small round table where four characters from the attached cast play cards: the raccoon in the teal hoodie grins slyly and holds up a whole fan of heart cards toward the moon, the vampire pushes a heart card away with two fingers, the granny in her lilac cardigan grimaces at the queen of spades, and the android shields its cards. Only these four characters. The left 40 % of the picture is calm and dark: the deep blue night sky over far city roofs, nothing happening there, a few lanterns at the very edge. The bottom third is quiet terrace tiles in shadow. Keep the top sixth and the bottom sixth free of anything important, the picture will be cropped wider. Moonlit blue night, warm lantern glow. Stylized 3D animated-film look, chunky toy-like characters with big heads and short bodies, soft matte materials, no glossy or plastic shine, family-friendly.
+```

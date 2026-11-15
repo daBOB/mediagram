@@ -57,3 +57,9 @@ picture's dark sky could not work on a lit wall. The script now rebuilds the ini
 - [x] Merged; boot picture on the funstation, seen on boot
 
 Credits: 30 × 120 + 120 (redo) + 56 (edit) + 120 (boot) + 30 (upscale) + 70 (logo) = 3,996.
+
+## Second batch: 13 "Coming soon" games (2026-11-15, Spieltisch 0.192.5)
+User: "we have still enough budgetpixel credits" — 3,267 were left, ~4,320 needed for all 18; the user chose
+13 games now, 5 in December (the card games Tiến Lên, Euchre, Pikett, Schafkopf, Klabberjass). 26 images, all
+kept on the first try (3,120 credits; 147 left). Sheets: `visuals/coming-soon-{posters,backdrops}-sheet.jpg`.
+Weak spot: Sprechstunde's title is a small brass plate, faint at tile size.
