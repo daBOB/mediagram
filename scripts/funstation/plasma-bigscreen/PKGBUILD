@@ -1,0 +1,41 @@
+# Arch's plasma-bigscreen PKGBUILD with funstation's fixes on top (see the patch).
+# setup-funstation.sh builds it on the machine; the "funstation" in pkgdesc is how
+# it tells this build from the stock one.
+
+pkgname=plasma-bigscreen
+pkgver=6.8.2
+# Sorts above every rebuild of the same upstream release (1.1, 1.2, ...), so -Syu keeps
+# it; the setup script passes the stock package's release so a real rebuild (2) is followed.
+pkgrel=${FUNSTATION_PKGREL:-1.90}
+pkgdesc='Plasma shell for TVs (funstation build: Wi-Fi details, Back in dialogs)'
+arch=(x86_64)
+url='https://plasma-bigscreen.org/'
+license=(GPL-2.0-or-later)
+depends=(bluez-qt glibc kcmutils kcolorscheme kconfig kcoreaddons kdbusaddons kdeclarative
+         kdeconnect kglobalaccel ki18n kiconthemes kio kirigami kirigami-addons kitemmodels
+         kjobwidgets knotifications kservice ksvg kwindowsystem layer-shell-qt libcec
+         libgcc libkscreen libplasma libstdc++ milou plasma-activities plasma-nano plasma-nm
+         plasma-pa plasma-workspace plasma5support powerdevil qcoro qt6-5compat qt6-base
+         qt6-declarative qt6-multimedia qt6-webengine sdl3 sh solid)
+makedepends=(extra-cmake-modules plasma-wayland-protocols)
+groups=(plasma)
+# The tarball checksum is Arch's, which Arch checked against KDE's signature.
+source=(https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz
+        wifi-details-and-back.patch)
+sha256sums=('f770c879c1d884e0f35963f933210ee70f150122d8b4d1bf29ed1224b429a88a'
+            SKIP)
+
+prepare() {
+  patch -d $pkgname-$pkgver -p1 <wifi-details-and-back.patch
+}
+
+build() {
+  cmake -B build -S $pkgname-$pkgver \
+    -DKDE_INSTALL_LIBEXECDIR=lib \
+    -DBUILD_TESTING=OFF
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}
