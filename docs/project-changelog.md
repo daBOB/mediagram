@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.192.1 — Spruchreif's shelf art shows a round of the game
+
+**Changed**
+
+- New poster and backdrop for *Spruchreif* (BudgetPixel gpt-image-2.6). The first pair could have belonged to any proverb game; this one stages a question from the game's own file. "Wer im Glashaus sitzt" / "People who live in glass houses" is in both languages with the same wrong ending, so an allotment greenhouse at dusk shows both answers at once: inside, the bodybuilder pulls a much too small curtain (the wrong ending, "Vorhänge" / "close the curtains"), outside the raccoon holds a pebble (the real one). The title is wiped into the fogged glass. The backdrop is the same garden wide, the greenhouse top right above the poster row.
+
 ## Spieltisch 0.192.0 — Spruchreif, finish the proverb
 
 **Added**

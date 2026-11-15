@@ -26,6 +26,11 @@ with a shelf poster and backdrop.
 - [x] Shelf blurb
 - [x] Browser walk: Kurz game, two phones, both languages, reveal and podium (`reports/`)
 - [x] Shelf poster and backdrop (BudgetPixel gpt-image-2.6-sunburst, medium; originals in `game_poster/spruchreif_*.jpg`)
+- [x] Art redone 2026-11-15 (user: "recreate poster and backdrops with antialgorithm skill"): the first pair was the default
+  granny-by-the-fire with an empty speech bubble. Now one real round from the data: "Wer im Glashaus sitzt" / "People who live
+  in glass houses", in both sets with the same decoy (Vorhänge / close the curtains). Allotment greenhouse at blue hour, the
+  bodybuilder pulls a curtain (decoy), the raccoon holds a pebble (real ending), title wiped into the fogged glass. Old
+  originals kept as `game_poster/spruchreif_*-v1.jpg`; shelf mock `reports/shelf-mock-greenhouse-art.jpg`; 0.192.1 installed on the funstation, shelf `reports/funstation-shelf-greenhouse-art.jpg`.
 - [x] Version 0.192.0, changelog
 - [x] Installed on funstation (WayDroid, `pm install -r` over 0.191.0, release key); the shelf shows the poster (`reports/funstation-shelf-with-spruchreif-poster.jpg`)
 - [x] Merge into `main` (user's go, 2026-11-14)
