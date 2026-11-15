@@ -1,6 +1,6 @@
 # App icons for Mediagram and Spieltisch
 
-Status: built, Spieltisch installed on the funstation; branch `feat/app-icons` (on top of `feat/spruchreif`), not merged.
+Status: done. Merged into `main` (793e2639); Spieltisch installed on the funstation.
 Versions: media 0.180.4 (0.180.3 left to the session that holds it uncommitted on `main`), Spieltisch 0.192.2.
 
 ## Why
@@ -25,7 +25,7 @@ launcher the two apps told apart only by colour.
       layer dropped; Android 7 legacy and iOS `AppIcon.png` full-bleed
 - [x] Versions, changelog
 - [x] Spieltisch 0.192.2 installed on the funstation; launcher `visuals/funstation-launcher-spieltisch-installed.jpg`, with the Mediagram tile pasted in `visuals/funstation-launcher-with-new-tiles.jpg`
-- [ ] Merge into `main` once its checkout is clean
+- [x] Merged into `main` (793e2639)
 
 ## Not done
 - The media app is not installed on the funstation: it updates from the channel, and a 0.180.4 there would sit
