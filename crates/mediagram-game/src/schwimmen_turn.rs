@@ -1,20 +1,14 @@
 //! One turn of Schwimmen: the four moves and what follows each of them.
 
-use crate::ask::Ask;
+use crate::card_table::sort_hand;
 use crate::game::ActionError;
 use crate::protocol::{CardsEventKind, ServerTime};
-use crate::maumau_rules::sort_hand;
 use crate::schwimmen::{SchwimmenGame, Stage};
 use crate::schwimmen_rules::{FEUER, HAND, Swap, apply, value};
 
 impl SchwimmenGame {
-    /// Asks `seat` from `now`, with no clock: the table waits for a player who is there.
-    pub(crate) fn ask(&self, seat: usize, now: ServerTime) -> Ask {
-        Ask::open(self.ids[seat], now, None)
-    }
-
     pub(crate) fn swap(&mut self, now: ServerTime, swap: Swap) {
-        let (seat, player) = (self.turn, self.player_at(self.turn));
+        let (seat, player) = (self.turn, self.table.player_at(self.turn));
         let before = self.hands[seat].clone();
         apply(&mut self.hands[seat], &mut self.middle, swap);
         sort_hand(&mut self.hands[seat]);
@@ -28,31 +22,31 @@ impl SchwimmenGame {
                 Swap::One { hand, .. } => before[hand],
                 Swap::All => before[k],
             };
-            self.event(now, player, CardsEventKind::Play { card, pile: slot as u8 });
+            self.table.event(now, player, CardsEventKind::Play { card, pile: slot as u8 });
         }
         self.passes = 0;
-        self.say(now, player, if slots.len() == 1 { " tauscht eine Karte" } else { " tauscht alle drei Karten" });
+        self.table.say(now, player, if slots.len() == 1 { " tauscht eine Karte" } else { " tauscht alle drei Karten" });
         self.end_turn(now);
     }
 
     pub(crate) fn pass(&mut self, now: ServerTime) {
-        let player = self.player_at(self.turn);
+        let player = self.table.player_at(self.turn);
         self.passes += 1;
-        self.say(now, player, " schiebt");
+        self.table.say(now, player, " schiebt");
         if self.knocker.is_none() && self.passes >= self.alive().len() {
             // everyone passed: the old middle goes under the deck, three new cards are turned up
             let fresh = self.deck.split_off(self.deck.len() - HAND);
             let old = std::mem::replace(&mut self.middle, fresh);
             self.deck.splice(0..0, old);
             self.passes = 0;
-            self.say(now, player, " schiebt – neue Karten in der Mitte");
+            self.table.say(now, player, " schiebt – neue Karten in der Mitte");
         }
         self.end_turn(now);
     }
 
     pub(crate) fn knock(&mut self, now: ServerTime) {
         self.knocker = Some(self.turn);
-        self.say(now, self.player_at(self.turn), " klopft!");
+        self.table.say(now, self.table.player_at(self.turn), " klopft!");
         self.end_turn(now);
     }
 
@@ -67,7 +61,7 @@ impl SchwimmenGame {
             return self.reveal_round(now);
         }
         self.turn = next;
-        self.stage = Stage::Turn { ask: self.ask(next, now) };
+        self.stage = Stage::Turn { ask: self.table.ask(next, now) };
     }
 
     pub(crate) fn pick_swap(&self, hand: &[u8], table: Option<u8>) -> Result<Swap, ActionError> {

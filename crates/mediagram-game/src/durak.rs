@@ -14,11 +14,12 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::ask::Ask;
+use crate::card_table::{CardTable, sort_hand};
 use crate::cards::{Card, Rank, deck_from, shuffled};
 use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
-use crate::durak_rules::{DEAL, auto_attack, auto_defence, beats, can_throw, first_attacker};
+use crate::durak_rules::{DEAL, beats, can_throw, first_attacker};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, CardsBanner, CardsEvent, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 #[derive(Debug, Clone)]
@@ -59,7 +60,6 @@ pub(crate) enum Stage {
 
 pub struct DurakGame {
     pub(crate) cfg: DurakConfig,
-    pub(crate) ids: Vec<PlayerId>,
     pub(crate) hands: Vec<Vec<Card>>,
     /// Draw pile, drawn from the end; the trump card is its first card, so it comes last.
     pub(crate) deck: Vec<Card>,
@@ -74,9 +74,7 @@ pub struct DurakGame {
     /// Seats in the order they ran out of cards.
     pub(crate) out: Vec<usize>,
     pub(crate) stage: Stage,
-    pub(crate) events: Vec<CardsEvent>,
-    pub(crate) banner: Option<(CardsBanner, ServerTime)>,
-    pub(crate) next_event: u32,
+    pub(crate) table: CardTable,
 }
 
 impl DurakGame {
@@ -84,13 +82,23 @@ impl DurakGame {
         let mut rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
         let mut deck = shuffled(deck_from(Rank::Six), &mut rng);
         let trump = deck[0];
-        let mut hands: Vec<Vec<Card>> = players.iter().map(|_| deck.split_off(deck.len() - DEAL)).collect();
-        hands.iter_mut().for_each(|h| h.sort());
+        let hands: Vec<Vec<Card>> = players.iter().map(|_| deck.split_off(deck.len() - DEAL)).collect();
         let attacker = first_attacker(trump.suit, &hands);
+        Self::seated(cfg, players, hands, deck, trump, attacker, now)
+    }
+
+    /// A game dealt by hand for tests, with seat 0 to lead.
+    #[cfg(test)]
+    pub(crate) fn dealt(cfg: DurakConfig, players: &[Player], hands: Vec<Vec<Card>>, deck: Vec<Card>, trump: Card) -> Self {
+        Self::seated(cfg, players, hands, deck, trump, 0, 0.0)
+    }
+
+    fn seated(cfg: DurakConfig, players: &[Player], mut hands: Vec<Vec<Card>>, deck: Vec<Card>, trump: Card, attacker: usize, now: ServerTime) -> Self {
+        hands.iter_mut().for_each(|h| sort_hand(h));
+        let table = CardTable::new(players, cfg.banner_ms);
         Self {
             attacker,
             cfg,
-            ids: players.iter().map(|p| p.id).collect(),
             hands,
             deck,
             trump,
@@ -98,30 +106,8 @@ impl DurakGame {
             limit: 0,
             thrower: 0,
             out: Vec::new(),
-            stage: Stage::Attack { ask: Ask::open(players[attacker].id, now, None) },
-            events: Vec::new(),
-            banner: None,
-            next_event: 0,
-        }
-    }
-
-    fn auto_play(&mut self, ctx: &mut GameCtx, seat: usize) {
-        let trump = self.trump_suit();
-        match self.stage {
-            Stage::Attack { .. } => {
-                if let Some(i) = auto_attack(trump, &self.hands[seat]) {
-                    self.lead(ctx.now, i);
-                }
-            }
-            Stage::Defend { .. } => {
-                let open = self.bout.iter().position(|&(_, d)| d.is_none());
-                match open.and_then(|a| auto_defence(trump, self.bout[a].0, &self.hands[seat]).map(|i| (a, i))) {
-                    Some((a, i)) => self.beat(ctx.now, a, i),
-                    None => self.take(ctx.now),
-                }
-            }
-            Stage::Throw { .. } => self.pass(ctx.now),
-            Stage::Settle { .. } | Stage::Final { .. } => {}
+            stage: Stage::Attack { ask: table.ask(attacker, now) },
+            table,
         }
     }
 }
@@ -131,7 +117,7 @@ impl Game for DurakGame {
         let Action::Cards { button, hand, table } = action else {
             return Err(ActionError::Ignored);
         };
-        let seat = self.seat_of(player).ok_or(ActionError::Ignored)?;
+        let seat = self.table.seat_of(player).ok_or(ActionError::Ignored)?;
         if self.actor() != Some(seat) {
             return Err(ActionError::Ignored);
         }

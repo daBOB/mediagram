@@ -10,13 +10,12 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use crate::ask::Ask;
+use crate::card_table::{CardTable, sort_hand};
 use crate::cards::{Card, Rank, Suit, deck_from, shuffled};
 use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::maumau_rules::{DEAL, SEVEN_DRAWS, Top, auto_pick, lowest_rank, most_held_suit, playable, sort_hand};
-use crate::protocol::{
-    Action, CardsBanner, CardsEvent, PhoneScreen, PlayerId, ServerTime, TvScene,
-};
+use crate::maumau_rules::{DEAL, SEVEN_DRAWS, Top, auto_pick, lowest_rank, most_held_suit, playable};
+use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::maumau_views::wish_id;
 use crate::room_seats::Player;
 
@@ -51,8 +50,6 @@ pub(crate) enum Stage {
 }
 
 pub struct MauMauGame {
-    pub(crate) cfg: MauMauConfig,
-    pub(crate) ids: Vec<PlayerId>,
     pub(crate) hands: Vec<Vec<Card>>,
     /// Draw pile, drawn from the end.
     pub(crate) deck: Vec<Card>,
@@ -65,11 +62,7 @@ pub struct MauMauGame {
     /// Cards the next player must draw, built up by sevens.
     pub(crate) owed: u8,
     pub(crate) stage: Stage,
-    pub(crate) events: Vec<CardsEvent>,
-    pub(crate) banner: Option<(CardsBanner, ServerTime)>,
-    /// A banner waiting for the one on show to be read, and when it may appear.
-    pub(crate) queued: Option<(CardsBanner, ServerTime)>,
-    pub(crate) next_event: u32,
+    pub(crate) table: CardTable,
     pub(crate) rng: StdRng,
 }
 
@@ -80,44 +73,41 @@ impl MauMauGame {
         let mut hands: Vec<Vec<Card>> = players.iter().map(|_| deck.split_off(deck.len() - DEAL)).collect();
         hands.iter_mut().for_each(|h| sort_hand(h));
         let start = deck.pop().expect("a deck holds more than the deal");
-        let mut game = Self {
-            cfg,
-            ids: players.iter().map(|p| p.id).collect(),
-            hands,
-            deck,
-            discard: vec![start],
-            turn: 0,
-            suit: (start.rank != Rank::Jack).then_some(start.suit),
-            wish: None,
-            owed: if start.rank == Rank::Seven { SEVEN_DRAWS } else { 0 },
-            stage: Stage::Turn { ask: Ask::open(players[0].id, now, None) },
-            events: Vec::new(),
-            banner: None,
-            queued: None,
-            next_event: 0,
-            rng,
-        };
+        let mut game = Self::seated(cfg, players, hands, vec![start], deck, rng, now);
         if start.rank == Rank::Eight {
             game.advance(now, 1);
         }
         game
     }
 
+    /// A game dealt by hand for tests: hands as given, `discard` with its top card last,
+    /// `deck` drawn from its end, `owed` cards waiting for seat 0, who plays first.
+    #[cfg(test)]
+    pub(crate) fn dealt(cfg: MauMauConfig, players: &[Player], hands: Vec<Vec<Card>>, discard: Vec<Card>, deck: Vec<Card>, owed: u8) -> Self {
+        let rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
+        Self { owed, ..Self::seated(cfg, players, hands, discard, deck, rng, 0.0) }
+    }
+
+    /// Seat 0 to play on `discard`'s top card, which counts as if turned up to start.
+    fn seated(cfg: MauMauConfig, players: &[Player], hands: Vec<Vec<Card>>, discard: Vec<Card>, deck: Vec<Card>, rng: StdRng, now: ServerTime) -> Self {
+        let start = *discard.last().expect("the discard pile is never empty");
+        let table = CardTable::new(players, cfg.banner_ms);
+        Self {
+            hands,
+            deck,
+            discard,
+            turn: 0,
+            suit: (start.rank != Rank::Jack).then_some(start.suit),
+            wish: None,
+            owed: if start.rank == Rank::Seven { SEVEN_DRAWS } else { 0 },
+            stage: Stage::Turn { ask: table.ask(0, now) },
+            table,
+            rng,
+        }
+    }
+
     pub(crate) fn top(&self) -> Top {
         Top { card: *self.discard.last().expect("the discard pile is never empty"), suit: self.suit }
-    }
-
-    pub(crate) fn player_at(&self, seat: usize) -> PlayerId {
-        self.ids[seat]
-    }
-
-    pub(crate) fn seat_of(&self, player: PlayerId) -> Option<usize> {
-        self.ids.iter().position(|&p| p == player)
-    }
-
-    /// Asks `seat` from `now`, with no clock: the table waits for a player who is there.
-    pub(crate) fn ask(&self, seat: usize, now: ServerTime) -> Ask {
-        Ask::open(self.ids[seat], now, None)
     }
 }
 
@@ -126,7 +116,7 @@ impl Game for MauMauGame {
         let Action::Cards { button, hand, .. } = action else {
             return Err(ActionError::Ignored);
         };
-        if self.seat_of(player) != Some(self.turn) {
+        if self.table.seat_of(player) != Some(self.turn) {
             return Err(ActionError::Ignored);
         }
         let pick = || -> Result<usize, ActionError> {

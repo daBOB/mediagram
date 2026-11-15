@@ -7,6 +7,9 @@ mod article_photos;
 mod articles;
 mod ask;
 pub mod avatars;
+#[cfg(test)]
+mod card_game_driver;
+mod card_table;
 mod cards;
 mod catalogue;
 mod dreifelder;
