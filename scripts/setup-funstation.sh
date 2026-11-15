@@ -496,8 +496,8 @@ step "Android TV on the home network, so phones can join its game night"
 # its game night (port 8080) or find it over mDNS. On a bridge over the wired port
 # Android gets an address from the home router like any other device, and WayDroid's
 # network script steps aside for any bridge that isn't its own waydroid0.
-# shortcut: wired only, since a Wi-Fi client can't carry another device's MAC; a
-# Wi-Fi-only funstation keeps the NAT bridge, and phones can't join its game night.
+# Wired only, since a Wi-Fi client can't carry another device's MAC: without a cable the
+# next step moves Android back behind WayDroid's NAT and forwards the game night to it.
 LXC=/var/lib/waydroid/lxc/waydroid/config
 WIRED=$(nmcli -t -f DEVICE,TYPE,STATE device | awk -F: '$2 == "ethernet" && $3 == "connected" {print $1; exit}')
 if [ -n "$WIRED" ] && ! nmcli -t -f NAME con show | grep -qx br0; then
@@ -516,5 +516,45 @@ if nmcli -t -f NAME con show | grep -qx br0 && ! sudo grep -qx 'lxc.net.0.link =
   # The session ends with the container; without a TV session yet it starts at the next login.
   systemctl --user restart android-tv-session 2>/dev/null || true
 fi
+
+step "without the cable, Android goes online over Wi-Fi and phones still join its game night"
+# On the bridge alone, a missing cable left Android with no network at all: Spieltisch
+# showed 127.0.0.1 and the media app reached nothing (2026-11-15). The helper follows the
+# cable at boot and on every NetworkManager event; moving Android restarts it.
+sed "s/@TV_USER@/$ME/" "$REPO/scripts/funstation/funstation-android-net" |
+  sudo tee /usr/local/bin/funstation-android-net >/dev/null
+sudo chmod 755 /usr/local/bin/funstation-android-net
+sudo tee /etc/systemd/system/funstation-android-net.service >/dev/null <<'EOF'
+[Unit]
+Description=Funstation: Android on the bridge or behind WayDroid's NAT, as the cable allows
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/funstation-android-net
+EOF
+sudo tee /etc/systemd/system/funstation-android-net-boot.service >/dev/null <<'EOF'
+[Unit]
+Description=Funstation: pick Android's network before its container starts
+After=NetworkManager.service
+Before=waydroid-container.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/funstation-android-net --boot
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo tee /etc/NetworkManager/dispatcher.d/90-funstation-android-net >/dev/null <<'EOF'
+#!/bin/sh
+# Android's own links come and go with every move; the helper decides the rest.
+case "$1" in veth* | waydroid0) exit 0 ;; esac
+case "$2" in up | down | dhcp4-change) systemctl start --no-block funstation-android-net.service ;; esac
+EOF
+sudo chmod 755 /etc/NetworkManager/dispatcher.d/90-funstation-android-net
+sudo ufw route allow out on waydroid0 to 192.168.240.112 port 8080 proto tcp comment "Spieltisch over Wi-Fi"
+sudo systemctl daemon-reload
+sudo systemctl enable funstation-android-net-boot.service
+sudo systemctl start funstation-android-net.service
 
 printf '\nfunstation ready: reboot to start the TV interface\n'
