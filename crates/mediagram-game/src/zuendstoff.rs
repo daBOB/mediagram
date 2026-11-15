@@ -1,7 +1,7 @@
-//! Zündstoff: a bomb with a hidden fuse goes from phone to phone. Whoever
-//! holds it answers a quick question; only a right answer lets them throw it
-//! on, to a player of their choice, and a wrong one costs a pause. When the
-//! fuse runs out the holder loses a life; the last one with lives left wins.
+//! Zündstoff: a bomb with a hidden fuse goes round a circle of players. The
+//! holder taps a name to throw it; the target taps Fangen! as it lands, or it
+//! drops at their feet and has to be picked up first. When the fuse runs out
+//! the one it is on loses a life; the last one with lives left wins.
 
 use std::collections::BTreeMap;
 
@@ -9,14 +9,13 @@ use rand::rngs::StdRng;
 use rand::seq::IndexedRandom;
 use rand::{Rng, SeedableRng};
 
-pub use crate::zuendstoff_config::{QuestionDeck, ZuendstoffConfig};
+pub use crate::zuendstoff_config::ZuendstoffConfig;
 use crate::ask::Ask;
 use crate::dreifelder_rules::placement_scores;
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, AnswerColor, Buzz, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
-use crate::quiz_config::Round;
+use crate::protocol::{Action, Buzz, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
-use crate::zuendstoff_config::{Stage, Step};
+use crate::zuendstoff_config::{Catch, Stage};
 
 pub struct ZuendstoffGame {
     pub(crate) cfg: ZuendstoffConfig,
@@ -28,35 +27,17 @@ pub struct ZuendstoffGame {
     pub(crate) lives: BTreeMap<PlayerId, u8>,
     /// In the order they ran out of lives.
     pub(crate) out: Vec<PlayerId>,
-    pub(crate) question: Round,
-    /// The throw that brought the bomb to its holder: thrower and catcher.
-    pub(crate) thrown: Option<(PlayerId, PlayerId)>,
     /// Finishing order, winner first; set at the end.
     pub(crate) order: Vec<PlayerId>,
-    deck: QuestionDeck,
     rng: StdRng,
 }
 
 impl ZuendstoffGame {
-    pub fn new(cfg: ZuendstoffConfig, deck: QuestionDeck, players: &[Player], now: ServerTime) -> Self {
+    pub fn new(cfg: ZuendstoffConfig, players: &[Player], now: ServerTime) -> Self {
         let mut rng = cfg.seed.map_or_else(StdRng::from_os_rng, StdRng::seed_from_u64);
-        // Replaced by the first round's question below; drawing one here would mark it asked tonight.
-        let question = Round { category: String::new(), text: String::new(), options: Vec::new(), correct: 0, image: None };
         let lives = players.iter().map(|p| (p.id, cfg.lives)).collect();
         let first = players.choose(&mut rng).map_or(0, |p| p.id);
-        let mut game = Self {
-            cfg,
-            stage: Stage::Final,
-            fuse_at: now,
-            round: 0,
-            lives,
-            out: Vec::new(),
-            question,
-            thrown: None,
-            order: Vec::new(),
-            deck,
-            rng,
-        };
+        let mut game = Self { cfg, stage: Stage::Final, fuse_at: now, round: 0, lives, out: Vec::new(), order: Vec::new(), rng };
         game.start_round(first, now);
         game
     }
@@ -74,23 +55,41 @@ impl ZuendstoffGame {
         players.iter().map(|p| p.id).filter(|&id| id != holder && self.alive(id)).collect()
     }
 
-    fn start_round(&mut self, holder: PlayerId, now: ServerTime) {
-        self.round += 1;
-        self.thrown = None;
-        self.fuse_at = now + self.rng.random_range(self.cfg.fuse_min_ms..=self.cfg.fuse_max_ms);
-        self.ask(Ask::open(holder, now, None), now + self.cfg.intro_ms, false);
+    /// Who the bomb is on: its holder, or mid-flight the one it was thrown to.
+    pub(crate) fn bearer(&self) -> Option<PlayerId> {
+        match self.stage {
+            Stage::Hold { ask, .. } => Some(ask.who()),
+            Stage::Flight { to, .. } => Some(to),
+            Stage::Boom { .. } | Stage::Final => None,
+        }
     }
 
-    /// Hands the holder `ask` asks a fresh question whose keys go live at `opens_at`.
-    fn ask(&mut self, ask: Ask, opens_at: ServerTime, wrong: bool) {
-        let q = (self.deck)(&mut self.rng);
-        self.question = Round::shuffled(q, &mut self.rng, AnswerColor::ALL.len());
-        self.stage = Stage::Lit { ask, step: Step::Answer { opens_at, wrong } };
+    fn start_round(&mut self, holder: PlayerId, now: ServerTime) {
+        self.round += 1;
+        self.fuse_at = now + self.rng.random_range(self.cfg.fuse_min_ms..=self.cfg.fuse_max_ms);
+        self.stage = Stage::Hold { ask: Ask::open(holder, now, None), ready_at: now + self.cfg.intro_ms, dropped: false };
     }
 
     fn throw(&mut self, from: PlayerId, to: PlayerId, now: ServerTime) {
-        self.thrown = Some((from, to));
-        self.ask(Ask::open(to, now, None), now + self.cfg.catch_ms, false);
+        let lands_at = now + self.cfg.throw_lead_ms + self.cfg.flight_ms;
+        self.stage = Stage::Flight { from, to, thrown_at: now, lands_at, catch: Catch::Pending };
+    }
+
+    /// The target's tap at `now`: in the window a catch, before it a fumble, after it nothing.
+    fn tap_counts_as(&self, lands_at: ServerTime, now: ServerTime) -> Option<Catch> {
+        if now < lands_at - self.cfg.catch_before_ms - self.cfg.early_tolerance_ms {
+            Some(Catch::Fumbled)
+        } else if now <= lands_at + self.cfg.catch_after_ms {
+            Some(Catch::Caught)
+        } else {
+            None
+        }
+    }
+
+    /// The bomb lands by `to`: in their hands if `caught`, else at their feet.
+    fn land(&mut self, to: PlayerId, lands_at: ServerTime, caught: bool) {
+        let ready_at = if caught { lands_at } else { lands_at + self.cfg.pickup_ms };
+        self.stage = Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: !caught };
     }
 
     fn explode(&mut self, victim: PlayerId, now: ServerTime) {
@@ -117,47 +116,49 @@ impl ZuendstoffGame {
 impl Game for ZuendstoffGame {
     fn on_action(&mut self, ctx: &mut GameCtx, player: PlayerId, action: &Action) -> Result<(), ActionError> {
         let Action::Choose { index, .. } = *action else { return Err(ActionError::Ignored) };
-        let Stage::Lit { ask, step } = self.stage else { return Err(ActionError::Ignored) };
-        if player != ask.who() {
-            return Err(ActionError::Ignored);
-        }
         let now = ctx.now;
-        match step {
-            Step::Answer { opens_at, .. } => {
-                if now < opens_at - self.cfg.early_tolerance_ms {
-                    return Err(ActionError::Ignored);
-                }
-                if usize::from(index) >= self.question.options.len() {
-                    return Err(ActionError::NotAllowed("Diese Antwort gibt es nicht."));
-                }
-                if index == self.question.correct {
-                    self.stage = Stage::Lit { ask, step: Step::Throw };
-                } else {
-                    self.ask(ask, now + self.cfg.wrong_wait_ms, true);
-                }
-            }
-            Step::Throw => {
-                let Some(&to) = self.targets(ctx.players, ask.who()).get(usize::from(index)) else {
+        match self.stage {
+            Stage::Hold { ask, ready_at, dropped: false }
+                if player == ask.who() && now >= ready_at - self.cfg.early_tolerance_ms =>
+            {
+                let Some(&to) = self.targets(ctx.players, player).get(usize::from(index)) else {
                     return Err(ActionError::NotAllowed("Diesen Mitspieler gibt es nicht."));
                 };
-                self.throw(ask.who(), to, now);
+                self.throw(player, to, now);
             }
+            // Only the first tap counts, so mashing fumbles.
+            Stage::Flight { from, to, thrown_at, lands_at, catch: Catch::Pending } if player == to => {
+                let catch = self.tap_counts_as(lands_at, now).ok_or(ActionError::Ignored)?;
+                self.stage = Stage::Flight { from, to, thrown_at, lands_at, catch };
+            }
+            _ => return Err(ActionError::Ignored),
         }
         Ok(())
     }
 
     fn on_tick(&mut self, ctx: &mut GameCtx) {
         let now = ctx.now;
+        // The fuse comes first: it goes off on whoever the bomb is on, caught or not.
+        if now >= self.fuse_at
+            && let Some(victim) = self.bearer()
+        {
+            return self.explode(victim, now);
+        }
         match self.stage {
-            Stage::Lit { ask, .. } if now >= self.fuse_at => self.explode(ask.who(), now),
-            Stage::Lit { ask, .. } => {
-                // A holder who is away has the house throw for them, without a question.
-                if ask.house_decides(ctx) {
-                    let targets = self.targets(ctx.players, ask.who());
-                    if let Some(&to) = targets.choose(&mut self.rng) {
-                        self.throw(ask.who(), to, now);
-                    }
+            Stage::Hold { ask, ready_at, .. } if now >= ready_at => {
+                self.stage = Stage::Hold { ask, ready_at, dropped: false };
+                // A holder who is away has the house throw for them.
+                if ask.house_decides(ctx)
+                    && let Some(&to) = self.targets(ctx.players, ask.who()).choose(&mut self.rng)
+                {
+                    self.throw(ask.who(), to, now);
                 }
+            }
+            // A pending catch waits for the window to close; an away target never taps.
+            Stage::Flight { to, lands_at, catch, .. }
+                if now >= lands_at && (catch != Catch::Pending || now >= lands_at + self.cfg.catch_after_ms) =>
+            {
+                self.land(to, lands_at, catch == Catch::Caught);
             }
             Stage::Boom { victim, ends_at } if now >= ends_at => {
                 let alive: Vec<PlayerId> = ctx.players.iter().map(|p| p.id).filter(|&id| self.alive(id)).collect();

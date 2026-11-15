@@ -44,14 +44,14 @@
 - Phone: holder ready → `Choice` of target names (`Action::Choose { index }` = target index); holder dropped → `Wait("Heb die Bombe auf …")`; target in flight → `Choice` with one option "Fangen!", `opens_at: thrown_at`, `closes_at: None`; others → `Wait("{from} wirft zu {to}")`; boom → `Outcome`; final → `final_by_order`.
 - `ENTRY`: `kids: Kids::Plays`, `start` builds without a question supply.
 
-- [ ] Rewrite tests first (Table fixture as today): throw lists everyone else in; catch in window → holds; early tap → fumble → dropped → can throw only after pickup; no tap → dropped; fuse during hold hits holder; fuse in flight hits target; boom → life lost → out at zero → last one wins; away holder → house throws after the grace; away target never catches; Tempo/Dauer still scale; the five Review Focus tests.
-- [ ] `cargo test -p mediagram-game zuendstoff` fail → implement → pass; `cargo test -p mediagram-game` all; clippy `-D warnings`. Commit `feat(spieltisch): Zündstoff throws and catches instead of asking questions`.
+- [x] Rewrite tests first (Table fixture as today): throw lists everyone else in; catch in window → holds; early tap → fumble → dropped → can throw only after pickup; no tap → dropped; fuse during hold hits holder; fuse in flight hits target; boom → life lost → out at zero → last one wins; away holder → house throws after the grace; away target never catches; Tempo/Dauer still scale; the five Review Focus tests.
+- [x] `cargo test -p mediagram-game zuendstoff` fail → implement → pass; `cargo test -p mediagram-game` all; clippy `-D warnings`. Commit `feat(spieltisch): Zündstoff throws and catches instead of asking questions`.
 
 ### Task 2: Avatar copies carry the new clips
 
 **Files:** `crates/mediagram-game/tools/make-ceremony-avatars.mjs` (`KEEP` default list).
 
-- [ ] Add `Over_Shoulder_Throw, Leap_Right_And_Catch, Jump_To_Catch_And_Fall, Male_Bend_Over_Pick_Up, Falling_Down` to `KEEP`; regenerate into `android/spieltisch/src/main/assets/game-avatars` (gitignored) and check each copy lists all 10 clips; note the size growth. Commit.
+- [x] Add `Over_Shoulder_Throw, Leap_Right_And_Catch, Jump_To_Catch_And_Fall, Male_Bend_Over_Pick_Up, Falling_Down` to `KEEP`; regenerate into `android/spieltisch/src/main/assets/game-avatars` (gitignored) and check each copy lists all 10 clips; note the size growth. Commit.
 
 ### Task 3: The TV stage (three.js), on the shared TV table shell
 
