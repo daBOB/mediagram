@@ -6,6 +6,9 @@ Studio clips): a dark stage, light rings and light columns in the four answer
 colours, the players' avatars standing on pads. The text stays HTML on top (question card, answers, clock), as in the
 mockups; the 3D is behind it.
 
+**Deprecated (user, 2026-11-15): 3D on the TV box.** "mark the 3d on tv box as deprecated. maybe we drop it. if we want to play we have to use the funstation." 3D games are played on the funstation (the TV PC, Spieltisch in WayDroid); the Skyworth box may be dropped altogether, not decided. Phase 1's spike and every measure below that names the box now runs on the funstation; the box
+numbers stay as history.
+
 User, 2026-11-15: "Kopfnuss is … a main game. This is our quiz game like a TV show with 3D stages and a NPC
 Showmaster." So Kopfnuss is a full game on the shelf (0.192.7), and the arena gets a computer-run showmaster on
 the stage. The showmaster is not designed yet: no phase below covers it.

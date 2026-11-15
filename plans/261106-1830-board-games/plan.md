@@ -47,6 +47,8 @@ action screen for that game.
 
 ## Box constraints that bound every board game
 
+**Deprecated (user, 2026-11-15): 3D on the TV box.** "mark the 3d on tv box as deprecated. maybe we drop it. if we want to play we have to use the funstation." 3D games are played on the funstation (the TV PC, Spieltisch in WayDroid); the Skyworth box may be dropped altogether, not decided. The constraints below were measured on the box and bind its 2D games only.
+
 From `plans/reports/benchmark-261105-1611-tv-box-3d-framework-spike-report.md`:
 
 - three.js in the WebView is the decided route; no native engine.
