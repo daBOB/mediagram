@@ -4,6 +4,8 @@ import data.BackdropWidth
 import data.CatalogEnrichmentFetcher
 import data.LibraryUpdateCoordinator
 import data.LibraryUpdateKind
+import data.RefreshLog
+import data.RefreshOutcome
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
@@ -96,6 +98,27 @@ class LibraryUpdateCoordinatorTest {
     fun aReadWithoutAnUpdateDoesNotSpendArtwork() =
         runTest {
             val fixture = UpdateFixture()
+            fixture.refreshes.record(RefreshOutcome.AlreadyCurrent)
+            fixture.run(LibraryUpdateKind.Read)
+            assertEquals(listOf("read"), fixture.steps)
+        }
+
+    @Test
+    fun aReadThatInstalledANewerIndexFetchesItsArtworkQuietly() =
+        runTest {
+            val fixture = UpdateFixture()
+            fixture.refreshes.record(RefreshOutcome.Updated)
+            fixture.run(LibraryUpdateKind.Read)
+            assertEquals(listOf("read", "fetch", "artwork"), fixture.steps)
+            assertTrue(fixture.artworkVisible)
+            assertNull(fixture.enrichment.state.value.report)
+        }
+
+    @Test
+    fun aFailedReadDoesNotFetchOnAnEarlierRefreshesUpdate() =
+        runTest {
+            val fixture = UpdateFixture(FakeCatalogRepository(movies = 1, refreshFails = true))
+            fixture.refreshes.record(RefreshOutcome.Updated)
             fixture.run(LibraryUpdateKind.Read)
             assertEquals(listOf("read"), fixture.steps)
         }
@@ -170,7 +193,9 @@ private class UpdateFixture(
             }
         }
     val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings(), BackdropWidth { 780 })
-    val coordinator = LibraryUpdateCoordinator(repository, enrichment)
+    /** What the real repository's refresh would have recorded; a test sets it before [run]. */
+    val refreshes = RefreshLog()
+    val coordinator = LibraryUpdateCoordinator(repository, enrichment, refreshes)
 
     suspend fun run(kind: LibraryUpdateKind = LibraryUpdateKind.Manual) {
         enrichment.saveKey("test-key")

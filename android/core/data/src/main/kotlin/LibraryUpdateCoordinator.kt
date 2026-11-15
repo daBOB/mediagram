@@ -7,7 +7,7 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Initial/settings reads do not fetch; manual updates fetch even when the channel is offline. */
+/** Initial/settings reads fetch only when they installed a newer index; manual updates fetch even when the channel is offline. */
 enum class LibraryUpdateKind { Read, Manual, Published }
 
 /** Serializes refresh and local reads; enrichment that fetched posters or backdrops triggers an artwork reread without UI collectors. */
@@ -17,6 +17,7 @@ class LibraryUpdateCoordinator
     constructor(
         private val repository: CatalogRepository,
         private val enrichment: CatalogEnrichmentFetcher,
+        private val refreshes: RefreshLog = RefreshLog(),
     ) {
         private val updating = Mutex()
         private val reading = MutableStateFlow(false)
@@ -41,8 +42,11 @@ class LibraryUpdateCoordinator
                 } finally {
                     reading.value = false
                 }
-            if (kind == LibraryUpdateKind.Read || (kind == LibraryUpdateKind.Published && refreshed.isFailure)) return@withLock
-            val report = enrichment.fetch(quiet = kind == LibraryUpdateKind.Published)
+            // Only this coordinator refreshes, so the log's last entry is the refresh above.
+            val newIndex = refreshed.isSuccess && refreshes.last() == RefreshOutcome.Updated
+            if (kind == LibraryUpdateKind.Read && !newIndex) return@withLock
+            if (kind == LibraryUpdateKind.Published && refreshed.isFailure) return@withLock
+            val report = enrichment.fetch(quiet = kind != LibraryUpdateKind.Manual)
             if (report != null && (report.postersFetched > 0u || report.backdropsFetched > 0u)) showArtwork()
         }
     }

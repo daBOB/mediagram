@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.mediagram.android"
-        versionName = "0.180.8"
+        versionName = "0.180.9"
         versionCode = versionCodeOf(versionName!!)
         // Only a release build updates itself; debug and benchmark builds are installed by adb.
         resValue("bool", "self_update", "false")
