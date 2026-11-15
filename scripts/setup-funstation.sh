@@ -304,18 +304,12 @@ Icon=$HOME/.local/share/waydroid/data/icons/com.mediagram.android.png
 Categories=AudioVideo;Video;Player;
 EOF
 # The Android TV tile wears the Fun-Station logo, which Bigscreen's loading screen shows
-# too: the logo cut from the picture, its dark sky made transparent for the tile's card.
-# Two magick runs: chained into one, the grey mask took the logo's colour with it.
-# shortcut: crop and star box measured on this picture; a new picture needs new numbers.
+# too: the picture's lettering, kept as its own cut-out since the picture's backstage wall
+# leaves no plain sky to key out.
 ICON=~/.local/share/icons/fun-station.png
-LOGO=$(mktemp -d)
 mkdir -p "$(dirname "$ICON")"
-magick "$ART" -crop 1240x470+410+195 +repage "$LOGO/logo.png"
-magick "$LOGO/logo.png" -colorspace gray -level 6%,40% -fill black -draw "rectangle 1150,0 1240,200" "$LOGO/mask.png"
-magick "$LOGO/logo.png" "$LOGO/mask.png" -alpha off -compose CopyOpacity -composite -colorspace sRGB "$LOGO/cut.png"
-magick "$LOGO/cut.png" -channel A -morphology Open Disk:3 +channel -trim +repage -resize 496x496 \
+magick "$REPO/scripts/funstation/fun-station-logo.png" -trim +repage -resize 496x496 \
   -background none -gravity center -extent 512x512 "$ICON"
-rm -rf "$LOGO"
 cat >~/.local/share/applications/android-tv.desktop <<EOF
 [Desktop Entry]
 Type=Application
@@ -440,6 +434,8 @@ printf '[Autologin]\nUser=%s\nSession=plasma-bigscreen-wayland\n' "$ME" |
 step "the Fun-Station picture from power-on to Bigscreen, and while Android starts"
 # Plymouth, from power-on until the login, scaled to whatever the screen is.
 THEME=/usr/share/plymouth/themes/funstation
+# A new picture is a new theme to the initramfs too, though the theme keeps its name.
+cmp -s "$ART" "$THEME/fun-station.png" && NEW_PICTURE= || NEW_PICTURE=1
 sudo install -Dm644 "$ART" "$THEME/fun-station.png"
 sudo tee "$THEME/funstation.plymouth" >/dev/null <<EOF
 [Plymouth Theme]
@@ -457,8 +453,10 @@ Window.SetBackgroundBottomColor(0, 0, 0);
 picture = Sprite(Image("fun-station.png").Scale(Window.GetWidth(), Window.GetHeight()));
 picture.SetPosition(Window.GetX(), Window.GetY(), 0);
 EOF
-# -R rebuilds the initramfs, which carries the theme; only when the theme changes.
-[ "$(plymouth-set-default-theme)" = funstation ] || sudo plymouth-set-default-theme -R funstation
+# -R rebuilds the initramfs, which carries the theme; only when the theme or its picture changes.
+if [ -n "$NEW_PICTURE" ] || [ "$(plymouth-set-default-theme)" != funstation ]; then
+  sudo plymouth-set-default-theme -R funstation
+fi
 # Plasma's own splash after the autologin, so the picture stays up until Bigscreen.
 SPLASH=~/.local/share/plasma/look-and-feel/org.funstation.splash
 install -Dm644 "$ART" "$SPLASH/contents/splash/images/fun-station.png"

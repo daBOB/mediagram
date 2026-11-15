@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.192.4 — Each game's shelf art starts from its own rules
+
+**Changed**
+
+- New posters and backdrops for the 14 playable games and Lebensweg (BudgetPixel gpt-image-2.6). The old set was one picture repeated, the cast crowded into a warm living room under the same cream banner title; each new one starts from something its game does, and its title sits in the scene: Buzzer-Quiz a home cinema where the fox's phone buzzes first (the film's title card), Poster-Raten the dark knight locked out on the kerb beside a blocky poster (an advertising column), Grenzfall country-shaped cookies with Chile too long for the tray (icing), Zündstoff a bomb nobody can escape at the top of a Ferris wheel (bulbs), Kopfnuss a dawn rope team with pranked phones (the summit banner), Dreifelder three ice floes and one tipping (ice letters), Preisfrage a doorstep buried in odd parcels (packing tape), Kritzelei a giraffe drawn in light (light), Heimlauf a frog flung back to his front door (road paint), Grand Allee a guest choosing an entrance on a rainy boulevard (a canopy), Flüchtig the fugitive seen in one ferry lamp (the hull), Mau-Mau a train compartment pointing at the ghost who forgot "Mau" (the reservation sign), Schwimmen the knock in a beer garden, coins as lives and a swim ring for the last (carved in the table), Durak a defender behind a wall of cards (the card box), Lebensweg a tilt-shift Lebensberg (a town sign). The 18 planned games keep their art for now. Plan: `plans/261115-1448-shelf-art-renewal/`.
+
+## 0.180.7 — A new Fun-Station picture from power-on
+
+**Changed**
+
+- The Fun-Station picture (boot screen, login splash, Android's boot animation) is the cast backstage getting a film night and a game night ready, the name painted on the brick wall with "by KipOlsenXyphon" under it; before, a glowing gamepad over a planet. 2880×1620, so the 4K boot animation no longer scales up a 2048 picture.
+- The TV tile's logo is its own file, `scripts/funstation/fun-station-logo.png`, the picture's lettering on transparency, instead of a crop of the picture keyed on its dark sky, which the new picture does not have.
+
+**Fixed**
+
+- `setup-funstation.sh` rebuilds the initramfs when the picture changes, not only when the theme's name does; a new picture would otherwise never reach the boot screen.
+
 ## Spieltisch 0.192.2 — The cast at the table is the app's icon
 
 **Changed**
