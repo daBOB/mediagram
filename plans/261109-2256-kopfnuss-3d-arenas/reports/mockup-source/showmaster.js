@@ -3,7 +3,7 @@
 // ?host=walnut   — a floating walnut head; the lower shell half is the jaw
 import * as THREE from "three";
 
-const lacquer = (color, shininess = 60) => new THREE.MeshPhongMaterial({ color, shininess, specular: 0x333333 });
+const lacquer = (color, shininess = 60) => new THREE.MeshPhongMaterial({ color, shininess, specular: 0x1a1a1a });
 const matte = (color) => new THREE.MeshLambertMaterial({ color });
 const GOLD = lacquer("#e2b33c", 90), BLACK = lacquer("#16161c", 80), RED = lacquer("#b81f34"), WHITE = matte("#f3efe6");
 const SKIN = lacquer("#f1c6a0", 40), GREEN = lacquer("#1d4a3a");
@@ -92,7 +92,7 @@ export function nutcracker({ jaw = 0.32, micArm = true } = {}) {
 // A walnut with a face: the upper shell carries the eyes, the lower half drops to talk. Floats over the stage.
 export function walnutHead({ jaw = 0.38 } = {}) {
   const g = new THREE.Group();
-  const shellMat = lacquer("#9a6a3a", 25), kernel = matte("#e9d2a8");
+  const shellMat = lacquer("#9a6a3a", 8), kernel = matte("#e9d2a8");
   const wrinkled = (geo) => {
     const p = geo.attributes.position, v = new THREE.Vector3();
     for (let i = 0; i < p.count; i++) {

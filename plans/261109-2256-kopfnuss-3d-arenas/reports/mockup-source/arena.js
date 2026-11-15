@@ -7,13 +7,13 @@ import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { THEMES } from "./arena-themes.js?v=fx7";
 import { clock, confetti, DITHER, ditherGlsl, energy, padGlow, rimLight } from "./arena-fx.js?v=fx7";
-import { addHost } from "./showmaster.js?v=10";
+import { addHost } from "./showmaster.js?v=11";
 
 const q = new URLSearchParams(location.search);
 const theme = THEMES[q.get("theme") ?? "table"], stage = q.get("stage") ?? "question", FX = q.get("fx") === "1";
 // PROTOTYPE ?variant=A|B|C — A: today's ceremony copies in flat matcap light; B: the 2K game copies (colour, normal,
 // roughness) under real light with soft shadows; C: B seen close, players in a tighter arc.
-const VARIANT = q.get("variant") ?? "A", RICH = VARIANT !== "A", CLOSE = VARIANT === "C";
+const VARIANT = q.get("variant") ?? "A", RICH = VARIANT !== "A", CLOSE = VARIANT === "C", GLOSS = Number(q.get("gloss") ?? 0.2);
 const CLOSE_CAM = { question: { pos: [0, 2.1, 14.6], at: [0, 2.0, 0] }, reveal: { pos: [0, 2.1, 14.6], at: [0, 2.0, 0] },
   pick: { pos: [0, 2.6, 13.5], at: [0, 2.0, 0] }, resolve: { pos: [0, 2.6, 13.5], at: [0, 2.0, 0] } };
 const mixers = [];
@@ -55,7 +55,7 @@ scene.add(sun);
 if (RICH) {
   // studio rig: soft environment fill, one warm key spot that casts soft shadows, pink and blue rims from behind
   scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.5;
+  scene.environmentIntensity = 0.38;
   const key = new THREE.SpotLight(0xfff0dc, 900, 0, 0.55, 0.7, 1.6);
   key.position.set(5, 15, 17);
   key.target.position.set(0, 1, 1);
@@ -110,6 +110,11 @@ async function avatar(id, { height = 1.9, clip = "Idle_15", at = 0.8, dim = fals
     if (!RICH) { o.material = dress(o.material, dim, rim); return; }
     o.castShadow = true;
     if (dim) o.material.color.multiplyScalar(0.45);
+    o.material.metalness = 0;
+    o.material.onBeforeCompile = (s) => {
+      s.fragmentShader = s.fragmentShader.replace("#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>\n  roughnessFactor = mix(${(1 - GLOSS).toFixed(2)}, 1.0, roughnessFactor);`);
+    };
   });
   root.userData.avatar = true;
   const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());

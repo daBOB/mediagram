@@ -37,6 +37,9 @@ are drawn in flat matcap light. PROTOTYPE `reports/mockup-source/` (`bun …/ser
 environment fill, a warm key spot with soft shadows, pink and blue rims; **C** B with the camera close and low and the
 players in a tighter arc. Sheets: `reports/avatar-detail-variants.jpg`, `reports/avatar-detail-closeup.jpg`. Not
 chosen yet; not measured on the funstation. More detail than the 52k mesh needs new models (Meshy, credits).
+"reduce the glossy effect" (user, 2026-11-16): in B and C the avatars carry no metal and their roughness is lifted to
+at least 0.8 (`?gloss=`, default 0.2), the environment fill is lower and the walnut's lacquer duller
+(`reports/avatar-gloss-before-after.jpg`).
 
 ## Stages → arena
 
