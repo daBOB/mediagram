@@ -209,8 +209,7 @@ fn a_whole_game_keeps_the_fugitive_hidden_until_the_end() {
             Side::Fugitive => assert_eq!(winners, vec![g.fugitive]),
             Side::Hunters => assert!(!winners.is_empty() && !winners.contains(&g.fugitive)),
         }
-        let final_of = |id| g.phone_screen(&ViewCtx { now, players: &p, leader: Some(0) }, id);
-        assert!(matches!(final_of(winners[0]), PhoneScreen::Final { rank: 1, score: 1, .. }));
+        assert_eq!(g.ranking(&p).and_then(|r| r.place_of(winners[0])), Some(1));
     }
 }
 

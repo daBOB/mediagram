@@ -113,10 +113,8 @@ fn the_last_piece_home_wins() {
     g.start_turn(0.0, 0, false);
     tap(&mut g, &mut p, ANA, 0, 0.0).unwrap();
     run(&mut g, &mut p, 0.0, 5000.0);
-    assert!(g.is_finished());
-    assert_eq!(p[0].score, 4);
-    assert!(matches!(phone(&g, &p, ANA, 5000.0), PhoneScreen::Final { rank: 1, of: 2, score: 4, can_restart: true }));
-    assert!(matches!(phone(&g, &p, BEN, 5000.0), PhoneScreen::Final { rank: 2, score: 1, can_restart: false, .. }));
+    assert_eq!(g.ranking(&p).map(|r| r.places.iter().map(|x| x.player).collect::<Vec<_>>()), Some(vec![ANA, BEN]));
+    assert_eq!((p[0].score, p[1].score), (4, 1));
     let TvScene::Race { scene } = g.tv_view() else { panic!() };
     assert_eq!(scene.stage, RaceStage::Final { winner: ANA, ranking: vec![ANA, BEN] });
 }

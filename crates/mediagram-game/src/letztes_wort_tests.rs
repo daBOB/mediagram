@@ -285,7 +285,7 @@ fn the_game_ends_after_laps_times_players_rounds() {
         t.at(now);
     }
     assert_eq!((t.game.stage, t.game.round), (Stage::Final, 8));
-    assert!(t.game.is_finished());
+    assert!(t.game.ranking(&t.players).is_some());
 }
 
 #[test]

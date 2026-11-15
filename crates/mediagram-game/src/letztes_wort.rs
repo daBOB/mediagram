@@ -13,7 +13,7 @@ use crate::ask::Ask;
 pub use crate::letztes_wort_config::{LetztesWortConfig, Prompt};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::letztes_wort_config::PROMPTS;
-use crate::protocol::{Action, Buzz, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, Buzz, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -156,8 +156,8 @@ impl Game for LetztesWortGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn ranking(&self, players: &[Player]) -> Option<Ranking> {
+        (self.stage == Stage::Final).then(|| Ranking::by_score(players))
     }
 
     fn phone_buzz(&self, _view: &ViewCtx, player: PlayerId) -> Option<Buzz> {

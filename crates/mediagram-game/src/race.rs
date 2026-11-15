@@ -12,9 +12,9 @@ use rand::{Rng, SeedableRng};
 
 use crate::ask::Ask;
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 pub use crate::race_config::RaceConfig;
-use crate::race_rules::{Move, Seat, TRACK, apply, corners, legal_moves};
+use crate::race_rules::{Move, Seat, TRACK, apply, corners, legal_moves, standings};
 use crate::room_seats::Player;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -166,8 +166,13 @@ impl Game for RaceGame {
         self.tv_view()
     }
 
-    fn is_finished(&self) -> bool {
-        matches!(self.stage, Stage::Final { .. })
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.seats.iter().map(|s| s.player).collect())
+    }
+
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        let Stage::Final { winner } = self.stage else { return None };
+        Some(Ranking::in_order(standings(&self.seats, winner).into_iter().map(|s| self.player_at(s))))
     }
 }
 

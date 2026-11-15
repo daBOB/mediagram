@@ -12,7 +12,7 @@ use crate::kopfnuss_climb::Climb;
 use crate::{kopfnuss_config::KopfnussConfig, kopfnuss_facts::pick_fact};
 use crate::kopfnuss_picks::{Sent, Sheet, Step, resolve_category, resolve_tricks};
 use crate::kopfnuss_supply::QuestionSupply;
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, Trick, TrickHit, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, Trick, TrickHit, TvScene};
 use crate::quiz::Quiz;
 use crate::quiz_config::QuizConfig;
 use crate::room_seats::Player;
@@ -163,7 +163,7 @@ impl Game for KopfnussGame {
             Stage::Question => {
                 let Some(quiz) = self.quiz.as_mut() else { return };
                 quiz.on_tick(ctx);
-                if quiz.is_finished() {
+                if quiz.ranking(ctx.players).is_some() {
                     self.end_round(ctx.players, now);
                 }
             }
@@ -190,8 +190,8 @@ impl Game for KopfnussGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        (self.stage == Stage::Final).then(|| Ranking::in_order(self.order.iter().copied()))
     }
 }
 

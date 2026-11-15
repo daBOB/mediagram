@@ -1,6 +1,6 @@
 //! What the phones and the TV show during Schwimmen.
 
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::card_table::button;
 use crate::protocol::{
     ButtonNeeds, CardDesk, CardsBanner, CardsPile, CardsScene, CardsSeat, DeskCard, PhoneScreen, PlayerId, TvScene,
@@ -14,15 +14,10 @@ pub(crate) const COINS: [&str; 4] = ["schwimmt", "●○○", "●●○", "●�
 impl SchwimmenGame {
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
         let Some(me) = self.table.seat_of(player) else {
-            return PhoneScreen::Wait { title: "Schwimmen läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
+            return unasked();
         };
-        if let Stage::Final { ranking } = &self.stage {
-            return PhoneScreen::Final {
-                rank: ranking.iter().position(|&s| s == me).map_or(1, |r| r as u8 + 1),
-                of: self.table.players().len() as u8,
-                score: view.players.iter().find(|p| p.id == player).map_or(0, |p| p.score),
-                can_restart: view.leader == Some(player),
-            };
+        if matches!(self.stage, Stage::Final { .. }) {
+            return unasked();
         }
         if self.out[me] {
             return PhoneScreen::Wait { title: "Du schwimmst nicht mehr mit".into(), text: Some("Schau zu, wer übrig bleibt.".into()) };

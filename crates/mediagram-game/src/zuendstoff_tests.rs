@@ -118,7 +118,7 @@ fn a_player_out_of_lives_is_no_target_and_the_last_one_left_wins() {
         now += t.game.cfg.boom_ms;
         t.at(now);
     }
-    assert!(t.game.is_finished());
+    assert!(t.game.ranking(&t.players).is_some());
     assert_eq!(t.game.order, vec![winner, loser]);
     let score = |id| t.players.iter().find(|p| p.id == id).unwrap().score;
     assert!(score(winner) > score(loser));

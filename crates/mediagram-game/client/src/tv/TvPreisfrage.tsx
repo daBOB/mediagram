@@ -6,7 +6,6 @@ import { Token } from "../ui/Token";
 import { euro, linePlace, stackPins } from "../ui/price";
 import { useKopfnussSound } from "./kopfnuss/kopfnuss-sound";
 import { preisfrageSoundsDue } from "./preisfrage/preisfrage-sound-cues";
-import { TvFinal } from "./TvFinal";
 import "./preisfrage/preisfrage.css";
 
 type Props = { scene: PreisfrageScene; players: PlayerInfo[]; conn: Connection };
@@ -23,8 +22,7 @@ export function TvPreisfrage({ scene, players, conn }: Props) {
   const now = useServerNow(conn);
   useKopfnussSound(scene, conn, preisfrageSoundsDue);
   const { stage, article } = scene;
-  // Running totals are the players' scores, so the ceremony ranks by them and equal totals share a place.
-  if (stage.stage === "final") return <TvFinal players={players.filter((p) => stage.standings.some((s) => s.player === p.id))} conn={conn} />;
+  if (stage.stage === "final") return null; // TvApp shows the awards ceremony
 
   const byId = new Map(players.map((p) => [p.id, p]));
   const intro = stage.stage === "guessing" && now < stage.opens_at;

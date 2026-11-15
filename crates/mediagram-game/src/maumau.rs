@@ -15,7 +15,7 @@ use crate::cards::{Card, Rank, Suit, deck_from, shuffled};
 use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::maumau_rules::{DEAL, SEVEN_DRAWS, Top, auto_pick, lowest_rank, most_held_suit, playable};
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::maumau_views::wish_id;
 use crate::room_seats::Player;
 
@@ -170,8 +170,13 @@ impl Game for MauMauGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        matches!(self.stage, Stage::Final { .. })
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.table.players().to_vec())
+    }
+
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        let Stage::Final { ranking, .. } = &self.stage else { return None };
+        Some(self.table.ranking(ranking))
     }
 }
 

@@ -261,19 +261,18 @@ fn the_last_player_left_wins_and_the_rest_rank_by_when_they_went_out() {
     act(&mut g, &mut p, ANA, "knock", &[], None, 1.0).unwrap();
     pass(&mut g, &mut p, BEN, 2.0);
     pass(&mut g, &mut p, CEM, 3.0);
-    assert!(!g.is_finished(), "Ben out, Cem and Ana remain");
+    assert!(g.ranking(&p).is_none(), "Ben out, Cem and Ana remain");
     assert_eq!(g.out_order, vec![1]);
     // a later round: Ben was dealt nothing, being out, and Cem swims
     let hands = vec![vec![c(Hearts, Ace), c(Hearts, King), c(Hearts, Nine)], vec![], vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)]];
     let (mut g, mut p) = deal(hands, middle_dull(), vec![], vec![3, 0, 0]);
     act(&mut g, &mut p, ANA, "knock", &[], None, 11.0).unwrap();
     pass(&mut g, &mut p, CEM, 12.0);
-    assert!(g.is_finished());
+    assert_eq!(g.ranking(&p).and_then(|r| r.place_of(CEM)), Some(2));
     let s = scene(&g, &p, 12.0);
     assert_eq!(s.ranking, Some(vec![ANA, CEM, BEN]));
     assert_eq!(p.iter().map(|x| x.score).collect::<Vec<_>>(), [2, 0, 1]);
     assert_eq!(s.banner.unwrap().text, " gewinnt!");
-    assert!(matches!(screen(&g, &p, CEM, 12.0), PhoneScreen::Final { rank: 2, of: 3, score: 1, can_restart: false }));
     assert_eq!(act(&mut g, &mut p, ANA, "pass", &[], None, 13.0), Err(ActionError::Ignored));
 }
 

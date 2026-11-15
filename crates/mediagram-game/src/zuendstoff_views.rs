@@ -1,12 +1,11 @@
 //! What the phones and the TV show in Zündstoff. Only the holder's phone
 //! asks anything; everyone else waits and watches the TV.
 
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::protocol::{
     AnswerColor, ChoiceOption, ChoiceStatus, PhoneScreen, PlayerId, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat,
     ZuendstoffStage,
 };
-use crate::quiz_views::final_by_order;
 use crate::zuendstoff::ZuendstoffGame;
 use crate::zuendstoff_config::{Stage, Step};
 
@@ -39,7 +38,7 @@ impl ZuendstoffGame {
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
         let mine = self.lives_of(player);
         match self.stage {
-            Stage::Final => final_by_order(&self.order, view, player),
+            Stage::Final => unasked(),
             Stage::Boom { victim, .. } => PhoneScreen::Outcome {
                 title: if victim == player { "BUMM!".into() } else { format!("BUMM bei {}!", name(view.players, victim)) },
                 text: Some(lives_text(mine)),

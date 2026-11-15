@@ -128,9 +128,9 @@ fn the_last_reveal_ends_the_game() {
     assert_eq!(scene(&g, &ps).turn, 4);
     act(&mut g, &mut ps, 10.0, BoardAct::Ready).unwrap();
     act(&mut g, &mut ps, 20.0, pick(None)).unwrap();
-    assert!(!g.is_finished());
+    assert!(g.ranking(&ps).is_none());
     tick(&mut g, &mut ps, 6_020.0);
-    assert!(g.is_finished());
+    assert!(g.ranking(&ps).is_some());
     assert_eq!(scene(&g, &ps).stage, KritzeleiStage::Final);
     assert_eq!(g.drawing(), None);
     assert_eq!(act(&mut g, &mut ps, 7_000.0, BoardAct::Ready), Err(ActionError::Ignored));

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Connection } from "../../net";
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
+import type { Ranking } from "../../protocol/Ranking";
 import { TvFinal } from "../TvFinal";
 import { TvSettingsPanel } from "../settings/TvSettingsPanel";
 import { TableShell, type Stage } from "./table-shell";
@@ -11,13 +12,13 @@ export type StageLoader<S> = (container: HTMLElement, live: () => { scene: S; pl
 /**
  * A 3D game board on the TV: a full-screen WebGL canvas with the tags and banner drawn inside it (no HTML over the canvas
  * while playing, it cost the box frames), the settings over it on OK, the final ranking once the winner has been cheered.
- * three.js loads with the stage only. `ranking` is set once the game is over; `className` also names the wait line's class.
+ * three.js loads with the stage only. `ranking` is the room's, set once the game is over; `className` also names the wait line's class.
  */
 export function TvTableShell<S>(props: {
   scene: S;
   players: PlayerInfo[];
   conn: Connection;
-  ranking: number[] | null;
+  ranking: Ranking | null;
   load: StageLoader<S>;
   name: string;
   className: string;
@@ -40,12 +41,7 @@ export function TvTableShell<S>(props: {
   const over = ranking !== null;
   useEffect(() => shell.watch(over), [shell, over]);
 
-  if (ranking && view.cheered) {
-    // the game's own ranking: unseated joiners are not in it
-    const order = new Map(ranking.map((id, i) => [id, i]));
-    const ranked = players.filter((p) => order.has(p.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
-    return <TvFinal players={ranked} conn={conn} ranked jingle={false} />;
-  }
+  if (ranking && view.cheered) return <TvFinal ranking={ranking} players={players} conn={conn} jingle={false} />;
   return (
     <section className={className} ref={stage}>
       {view.state !== "ready" && <p className={`${className}-wait`}>{view.state === "failed" ? props.failed : props.waiting}</p>}

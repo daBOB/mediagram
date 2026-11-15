@@ -1,6 +1,6 @@
 //! What the phones and the TV show during the race game.
 
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::protocol::{
     AnswerColor, ChoiceOption, PhoneScreen, PlayerId, RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage, TvScene,
 };
@@ -39,17 +39,9 @@ impl RaceGame {
 
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
         let wait = |title: String, text: Option<String>| PhoneScreen::Wait { title, text };
-        let Some(me) = self.seat_of(player) else {
-            return wait("Heimlauf läuft".into(), Some("Du spielst in der nächsten Runde mit.".into()));
-        };
-        if let Stage::Final { winner } = self.stage {
-            let order = standings(&self.seats, winner);
-            return PhoneScreen::Final {
-                rank: order.iter().position(|&s| s == me).map_or(1, |r| r as u8 + 1),
-                of: self.seats.len() as u8,
-                score: self.seats[me].in_goal() as i32,
-                can_restart: view.leader == Some(player),
-            };
+        let Some(me) = self.seat_of(player) else { return unasked() };
+        if matches!(self.stage, Stage::Final { .. }) {
+            return unasked();
         }
         let mover = name(view.players, self.player_at(self.turn));
         if me != self.turn {

@@ -160,11 +160,8 @@ fn the_game_ends_after_the_round_limit_with_the_richest_first() {
     g.t.seats[1].cash = 13_000;
     let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
     pick(&mut g, &mut p, BEN, "Würfeln", now);
-    assert!(g.is_finished());
-    assert_eq!(g.standings(), [1, 0]);
+    assert_eq!(g.ranking(&p).and_then(|r| r.place_of(ANA)), Some(2));
     assert_eq!(p[1].score, 13_000, "the score is the net worth");
-    let view = ViewCtx { now, players: &p, leader: Some(ANA) };
-    assert!(matches!(g.phone_screen(&view, ANA), PhoneScreen::Final { rank: 2, of: 2, can_restart: true, .. }));
 }
 
 #[test]
@@ -175,7 +172,7 @@ fn the_game_ends_when_one_player_is_left() {
     g.t.seats[0].cash = 100;
     place(&mut g, 0, 2);
     pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
-    assert!(g.is_finished());
+    assert!(g.ranking(&p).is_some());
     let TvScene::GrandAllee { scene } = g.tv_scene(&ViewCtx { now: 0.0, players: &p, leader: None }) else { panic!() };
     assert!(matches!(scene.turn, GrandAlleeTurn::Final { winner: BEN, ref ranking } if *ranking == [BEN, ANA]));
 }

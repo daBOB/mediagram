@@ -8,7 +8,7 @@ use crate::articles::{Article, MAX_CENTS};
 pub use crate::preisfrage_config::PreisfrageConfig;
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::preisfrage_rules::{round_rows, standings};
-use crate::protocol::{Action, PhoneScreen, PlayerId, PriceRow, PriceStanding, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, Placed, PlayerId, PriceRow, PriceStanding, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -125,16 +125,18 @@ impl Game for PreisfrageGame {
         }
     }
 
-    fn phone_screen(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-        self.phone_view(view, player)
+    fn phone_screen(&self, _view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+        self.phone_view(player)
     }
 
     fn tv_scene(&self, _view: &ViewCtx) -> TvScene {
         self.tv_view()
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        let Stage::Final = self.stage else { return None };
+        let places = self.standings().into_iter().map(|s| Placed { player: s.player, place: s.place }).collect();
+        Some(Ranking { places })
     }
 }
 

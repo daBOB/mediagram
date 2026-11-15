@@ -4,11 +4,11 @@
 use crate::fluechtig::{FluechtigGame, Pick, Step};
 use crate::fluechtig_map::{City, Field};
 use crate::fluechtig_rules::Turn;
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::room_seats::leader;
 use crate::protocol::{
     FluechtigAsk, FluechtigBoard, FluechtigHunter, FluechtigLink, FluechtigLogEntry, FluechtigMover, FluechtigOption, FluechtigPhone,
-    FluechtigPiece, FluechtigScene, FluechtigSeen, FluechtigSide as Side, FluechtigSpot, FluechtigTicket as Ticket, FluechtigTurn,
+    FluechtigPiece, FluechtigScene, FluechtigSeen, FluechtigSpot, FluechtigTicket as Ticket, FluechtigTurn,
     PhoneScreen, PlayerId, TvScene,
 };
 
@@ -23,21 +23,8 @@ impl FluechtigGame {
         let c = &self.chase;
         let runs = player == self.fugitive;
         let mine: Vec<usize> = (0..self.owners.len()).filter(|&i| self.owners[i] == player).collect();
-        if !runs && mine.is_empty() {
-            return PhoneScreen::Wait { title: "Flüchtig läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
-        }
-        if let Some(side) = c.winner() {
-            let mut hunters = self.owners.clone();
-            hunters.sort_unstable();
-            hunters.dedup();
-            let won = (side == Side::Fugitive) == runs;
-            let winners = if side == Side::Fugitive { 1 } else { hunters.len() as u8 };
-            return PhoneScreen::Final {
-                rank: if won { 1 } else { winners + 1 },
-                of: 1 + hunters.len() as u8,
-                score: i32::from(won),
-                can_restart: view.leader == Some(player),
-            };
+        if (!runs && mine.is_empty()) || c.winner().is_some() {
+            return unasked();
         }
         let phone = FluechtigPhone {
             round: c.round,
