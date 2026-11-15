@@ -1,6 +1,6 @@
 # Shelf art renewal: posters and backdrops from each game's own rules
 
-Status: built and installed (Spieltisch 0.192.4); branch `feat/shelf-art`, not merged; boot picture not yet on the funstation.
+Status: done. Merged into `main` (a61429f5); Spieltisch 0.192.4 released by the funstation session; the boot picture installed on the funstation by hand (`limine-mkinitcpio`) and seen on a real boot (user, 2026-11-15).
 
 ## Why
 User, 2026-11-15, after Spruchreif's art was redone: "what about the other poster ? renew them with skill
@@ -54,6 +54,6 @@ picture's dark sky could not work on a lit wall. The script now rebuilds the ini
 - [x] Boot picture, logo, script
 - [x] Versions (Spieltisch 0.192.4, media 0.180.7), changelog
 - [x] Spieltisch 0.192.4 installed on the funstation; shelf `visuals/funstation-shelf-new-art.jpg`
-- [ ] Commit; merge on the user's go; the boot picture reaches the funstation with its next setup run
+- [x] Merged; boot picture on the funstation, seen on boot
 
 Credits: 30 × 120 + 120 (redo) + 56 (edit) + 120 (boot) + 30 (upscale) + 70 (logo) = 3,996.
