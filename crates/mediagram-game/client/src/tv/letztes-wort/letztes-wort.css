@@ -1,0 +1,158 @@
+/* Letztes Wort on the TV: the question card on the left; on the right who has the floor
+   and the stick's holder; the table along the bottom. No answers, no clock. */
+.tv-quiz.lw {
+  grid-template-rows: auto 1fr auto;
+}
+
+.lw-stage {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 30%);
+  gap: 2.6rem;
+  align-items: center;
+  min-height: 0;
+}
+
+.lw-qcard .qtext {
+  font-size: 3rem;
+}
+
+.lw-mod {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.4rem 0 0;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: #5d7a70;
+}
+
+.lw-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  text-align: center;
+}
+
+.lw-floor-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.8rem 1.1rem;
+  border-radius: 20px;
+  background: #e2453c;
+  box-shadow: 0 8px 0 #9e2620;
+  text-align: left;
+  animation: lw-pop 180ms ease-out;
+}
+
+.lw-floor-banner b {
+  display: block;
+  font: 800 2.4rem/1 var(--display);
+}
+
+.lw-floor-banner span {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.lw-holder {
+  position: relative;
+  width: 11rem;
+  height: 11rem;
+}
+
+.lw-holder .token {
+  width: 100%;
+  height: 100%;
+  font-size: 4.5rem;
+  box-shadow: 0 0 0 0.45rem var(--yellow);
+}
+
+.lw-holder.lw-nobody {
+  border-radius: 50%;
+  border: 0.4rem dashed var(--felt-line);
+}
+
+.lw-baton {
+  position: absolute;
+  right: -3.6rem;
+  bottom: -0.4rem;
+  width: 9.5rem;
+}
+
+.lw-who {
+  margin: 0;
+  font: 800 2.1rem/1.15 var(--display);
+}
+
+.lw-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  text-align: center;
+}
+
+.lw-zeit {
+  margin: 0;
+  font: 800 7rem/1 var(--display);
+  color: var(--yellow);
+  animation: lw-pop 220ms ease-out;
+}
+
+.lw-sub {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--muted);
+}
+
+.lw-table .tv-seat {
+  padding: 0.2rem 0.9rem 0.2rem 0.2rem;
+  border-radius: 999px;
+}
+
+.lw-table .tv-seat.has-stick {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+.lw-table .tv-seat.is-host {
+  box-shadow: inset 0 0 0 2px var(--felt-line);
+}
+
+.lw-table .tv-seat.is-out {
+  opacity: 0.4;
+}
+
+.lw-pts {
+  font-weight: 800;
+  color: var(--yellow);
+}
+
+.has-stick .lw-pts {
+  color: var(--ink);
+}
+
+.is-host .lw-pts,
+.is-out .lw-pts {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+@keyframes lw-pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-floor-banner,
+  .lw-zeit {
+    animation: none;
+  }
+}

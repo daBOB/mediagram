@@ -35,6 +35,8 @@ pub enum GameKind {
     Zuendstoff,
     /// Spruchreif: finish the proverb on the TV, German and English by turns.
     Spruchreif,
+    /// Letztes Wort: buzz, answer out loud, the host judges; the stick's holder at the hidden end wins.
+    LetztesWort,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

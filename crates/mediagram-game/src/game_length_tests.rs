@@ -9,6 +9,7 @@ use crate::poster_config::PosterConfig;
 use crate::preisfrage_config::PreisfrageConfig;
 use crate::quiz_config::QuizConfig;
 use crate::zuendstoff_config::ZuendstoffConfig;
+use crate::letztes_wort_config::LetztesWortConfig;
 
 #[test]
 fn short_halves_and_long_adds_half_rounding_up() {
@@ -36,6 +37,7 @@ fn counts(length: GameLength) -> Vec<usize> {
         allee.min_rounds as usize,
         allee.max_rounds as usize,
         spruchreif_config().sized(length).rounds,
+        LetztesWortConfig::default().sized(length).laps,
     ]
 }
 
