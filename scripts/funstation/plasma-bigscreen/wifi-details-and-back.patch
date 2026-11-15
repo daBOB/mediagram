@@ -1,0 +1,214 @@
+diff --git a/components/bigscreenplugin/qml/controls/Dialog.qml b/components/bigscreenplugin/qml/controls/Dialog.qml
+index 7261d35..833fd82 100644
+--- a/components/bigscreenplugin/qml/controls/Dialog.qml
++++ b/components/bigscreenplugin/qml/controls/Dialog.qml
+@@ -30,7 +30,9 @@ QQC2.Dialog {
+ 
+     standardButtons: QQC2.Dialog.NoButton
+ 
+-    onOpened: openFocusItem.forceActiveFocus()
++    // A dialog without buttons hides its footer, which cannot take focus; focus the
++    // content then, or BackHandler (which wants focus inside it) never sees Back.
++    onOpened: (openFocusItem && openFocusItem.visible ? openFocusItem : contentItem).forceActiveFocus()
+     onRejected: root.close()
+     BackHandler.enabled: root.visible
+     BackHandler.onActivated: root.reject()
+diff --git a/kcms/wifi/ui/DetailsText.qml b/kcms/wifi/ui/DetailsText.qml
+index 25d76c0..cf104c2 100644
+--- a/kcms/wifi/ui/DetailsText.qml
++++ b/kcms/wifi/ui/DetailsText.qml
+@@ -10,127 +10,53 @@ import QtQuick.Layouts
+ import org.kde.plasma.components as PlasmaComponents
+ import org.kde.kirigami as Kirigami
+ 
++// Shows plasma-nm's ConnectionDetailsModel (section headings, then label/value rows),
++// which replaced the flat ConnectionDetails string list in plasma-nm 6.8.
+ ColumnLayout {
+-    property bool connected
+-    property var connectionType
+-    property var details: []
+-    property var ipDetails: []
+-    property var networkDetails: []
++    id: root
+ 
+-    onDetailsChanged: {
+-        if(connected){
+-            var detailLength = details.length
+-            ipDetails = details.slice(0, 8);
+-            networkDetails = details.slice(8, detailLength)
+-        } else {
+-            networkDetails = details
+-        }
+-    }
++    property var detailsModel: null
+ 
+-    Kirigami.Heading {
+-        id: ipAddressesLabel
+-        Layout.fillWidth: true
+-        text: i18n("IP Address Details")
+-        visible: ipDetails.length > 0 ? 1 : 0
+-        enabled: ipDetails.length > 0 ? 1 : 0
+-    }
++    spacing: Kirigami.Units.smallSpacing
+ 
+-    ColumnLayout {
+-        id: ipAddressBlockColumn
+-        Layout.fillWidth: true
+-        Layout.topMargin: Kirigami.Units.largeSpacing
+-        visible: ipDetails.length > 0 ? 1 : 0
+-        enabled: ipDetails.length > 0 ? 1 : 0
++    Repeater {
++        model: root.detailsModel
+ 
+-        Repeater {
+-            id: ipAddressBlockRepeater
++        delegate: RowLayout {
++            id: row
+ 
+-            property int contentHeight: 0
+-            property int longestString: 0
+-            visible: ipDetails.length > 0 ? 1 : 0
+-            enabled: ipDetails.length > 0 ? 1 : 0
++            required property bool isSection
++            required property string sectionTitle
++            required property string detailLabel
++            required property string detailValue
+ 
+-            model: ipDetails.length / 2
++            Layout.fillWidth: true
++            Layout.topMargin: row.isSection ? Kirigami.Units.largeSpacing : 0
++            visible: row.isSection || row.detailLabel.length > 0 || row.detailValue.length > 0
+ 
+-            delegate: RowLayout {
++            Kirigami.Heading {
++                visible: row.isSection
+                 Layout.fillWidth: true
+-
+-                PlasmaComponents.Label {
+-                    id: detailNameLabel
+-                    Layout.fillWidth: true
+-                    Layout.leftMargin: Kirigami.Units.largeSpacing
+-                    horizontalAlignment: Text.AlignLeft
+-                    text: ipDetails[index*2] + ": "
+-
+-                    Component.onCompleted: {
+-                        if (paintedWidth > ipAddressBlockRepeater.longestString) {
+-                            ipAddressBlockRepeater.longestString = paintedWidth
+-                        }
+-                    }
+-                }
+-
+-                PlasmaComponents.Label {
+-                    id: detailValueLabel
+-                    elide: Text.ElideRight
+-                    text: ipDetails[(index*2)+1]
+-                    textFormat: Text.PlainText
+-                    wrapMode: Text.WrapAnywhere
+-                }
++                Layout.leftMargin: Kirigami.Units.largeSpacing
++                level: 3
++                text: row.sectionTitle
+             }
+-        }
+-    }
+-
+-    Kirigami.Heading {
+-        id: networkInformationLabel
+-        Layout.fillWidth: true
+-        text: "Network Information"
+-        visible: networkDetails.length > 0 ? 1 : 0
+-        enabled: networkDetails.length > 0 ? 1 : 0
+-    }
+-
+-    ColumnLayout {
+-        id: networkInformationBlockColumn
+-        Layout.fillWidth: true
+-        Layout.topMargin: Kirigami.Units.largeSpacing
+-        visible: networkDetails.length > 0 ? 1 : 0
+-        enabled: networkDetails.length > 0 ? 1 : 0
+-
+-        Repeater {
+-            id: networkInformationRepeater
+-
+-            property int contentHeight: 0
+-            property int longestString: 0
+-            visible: networkDetails.length > 0 ? 1 : 0
+-            enabled: networkDetails.length > 0 ? 1 : 0
+-
+-            model: networkDetails.length / 2
+ 
+-            delegate: RowLayout {
++            PlasmaComponents.Label {
++                visible: !row.isSection
+                 Layout.fillWidth: true
++                Layout.leftMargin: Kirigami.Units.largeSpacing
++                text: row.detailLabel
++            }
+ 
+-                PlasmaComponents.Label {
+-                    id: detailNameLabel
+-                    Layout.fillWidth: true
+-                    Layout.leftMargin: Kirigami.Units.largeSpacing
+-                    horizontalAlignment: Text.AlignRight
+-                    text: networkDetails[index*2] + ": "
+-
+-                    Component.onCompleted: {
+-                        if (paintedWidth > networkInformationRepeater.longestString) {
+-                            networkInformationRepeater.longestString = paintedWidth
+-                        }
+-                    }
+-                }
+-
+-                PlasmaComponents.Label {
+-                    id: detailValueLabel
+-                    elide: Text.ElideRight
+-                    text: networkDetails[(index*2)+1]
+-                    textFormat: Text.PlainText
+-                    wrapMode: Text.Wrap
+-                }
++            PlasmaComponents.Label {
++                visible: !row.isSection
++                Layout.maximumWidth: root.width / 2
++                horizontalAlignment: Text.AlignRight
++                elide: Text.ElideRight
++                textFormat: Text.PlainText
++                text: row.detailValue
+             }
+         }
+     }
+ }
+-
+diff --git a/kcms/wifi/ui/DeviceConnectionSidebar.qml b/kcms/wifi/ui/DeviceConnectionSidebar.qml
+index 106e34d..204693a 100644
+--- a/kcms/wifi/ui/DeviceConnectionSidebar.qml
++++ b/kcms/wifi/ui/DeviceConnectionSidebar.qml
+@@ -219,9 +219,7 @@ Bigscreen.SidebarOverlay {
+ 
+                 DetailsText {
+                     id: detailsTxtArea
+-                    details: model ? model.ConnectionDetails : ''
+-                    connected: model && model.ConnectionState == PlasmaNM.Enums.Activated ? 1 : 0
+-                    connectionType: model ? model.Type : 0
++                    detailsModel: model ? model.ConnectionDetailsModel : null
+                     Layout.fillWidth: true
+                 }
+ 
+@@ -244,14 +242,14 @@ Bigscreen.SidebarOverlay {
+ 
+                     PlasmaComponents.Label {
+                         Layout.alignment: Qt.AlignRight
+-                        Layout.maximumWidth: Kirigami.Units.gridUnit * 4
+-                        text: "⬇ " + KCoreAddons.Format.formatByteSize(rxBytes)
++                        Layout.maximumWidth: Kirigami.Units.gridUnit * 6
++                        text: "⬇ " + i18nc("@label network speed", "%1/s", KCoreAddons.Format.formatByteSize(rxBytes))
+                     }
+ 
+                     PlasmaComponents.Label {
+                         Layout.alignment: Qt.AlignRight
+-                        Layout.maximumWidth: Kirigami.Units.gridUnit * 4
+-                        text: "⬆ " + KCoreAddons.Format.formatByteSize(txBytes)
++                        Layout.maximumWidth: Kirigami.Units.gridUnit * 6
++                        text: "⬆ " + i18nc("@label network speed", "%1/s", KCoreAddons.Format.formatByteSize(txBytes))
+                     }
+                 }
+             }

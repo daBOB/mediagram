@@ -18,8 +18,7 @@ REPO_URL=https://github.com/daBOB/mediagram.git
 REPO="$HOME/mediagram"
 # The Fun-Station picture: the boot and splash screens, and the Android TV tile's logo.
 ART="$REPO/scripts/funstation/fun-station.png"
-# shortcut: follows feat/funstation until it is merged; switch to main then.
-REPO_BRANCH=feat/funstation
+REPO_BRANCH=main
 # The TV apps ask TMDB in the library's language (else the device's); posters must ask in
 # the same one to share their cache server entries.
 TMDB_LANGUAGE="${TMDB_LANGUAGE:-de-DE}"
@@ -64,6 +63,26 @@ step "mediagram source (public repo, updated on every run)"
 [ -d "$REPO/.git" ] || git clone "$REPO_URL" "$REPO"
 git -C "$REPO" fetch -q origin "$REPO_BRANCH"
 git -C "$REPO" checkout -q -B "$REPO_BRANCH" FETCH_HEAD
+
+step "Plasma Bigscreen with funstation's fixes: Wi-Fi details, Back in dialogs"
+# Stock 6.8.2 (and upstream master on 2026-11-15) shows only Speed under Network
+# information and ignores Back there. Its QML is compiled in, so the fix is a rebuilt
+# package; an update to another upstream release needs the PKGBUILD moved to it.
+BIGSCREEN_PKG="$REPO/scripts/funstation/plasma-bigscreen"
+bigscreen_installed="$(pacman -Q plasma-bigscreen | cut -d' ' -f2)"
+bigscreen_pinned="$(sed -n 's/^pkgver=//p' "$BIGSCREEN_PKG/PKGBUILD")"
+if pacman -Qi plasma-bigscreen | grep -q '^Description.*funstation build'; then
+  echo "already the funstation build ($bigscreen_installed)"
+elif [ "${bigscreen_installed%-*}" != "$bigscreen_pinned" ]; then
+  echo "WARNING: plasma-bigscreen $bigscreen_installed is not $bigscreen_pinned: move the PKGBUILD" \
+    "to it (pkgver and Arch's sha256) and check the patch still applies; stock build kept" >&2
+else
+  bigscreen_build="$(mktemp -d)"
+  cp "$BIGSCREEN_PKG"/* "$bigscreen_build"/
+  bigscreen_rel="${bigscreen_installed#*-}"
+  (cd "$bigscreen_build" && FUNSTATION_PKGREL="${bigscreen_rel%%.*}.90" makepkg -sirc --noconfirm)
+  rm -rf "$bigscreen_build"
+fi
 
 step "cache server: the LAN chunk store every player in the house reads through"
 rustup default stable >/dev/null
