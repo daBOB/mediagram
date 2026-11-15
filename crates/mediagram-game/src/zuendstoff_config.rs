@@ -1,11 +1,22 @@
-//! Zündstoff's lives, fuse and timing, and the per-game state types.
+//! Zündstoff's lives, fuse and timing, the per-game state types and its
+//! catalogue entry.
 
 use rand::rngs::StdRng;
+use rand::seq::IndexedRandom;
 
-use crate::protocol::{GameLength, GameSpeed, PlayerId, ServerTime};
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::factory::Night;
+use crate::game::{Game, GameCtx};
+use crate::host::ROOM_CAP;
+use crate::kopfnuss_supply::QuestionSupply;
+use crate::protocol::{GameLength, GameSpeed, LobbySettings, PlayerId, ServerTime};
 use crate::quiz_config::Question;
+use crate::zuendstoff::ZuendstoffGame;
 
-/// Draws the next question; never runs dry (the factory falls back on the whole pack).
+/// Unasked general questions a Zündstoff game wants tonight before the pack starts over.
+const QUESTIONS: usize = 60;
+
+/// Draws the next question; never runs dry (`start` falls back on the whole pack).
 pub type QuestionDeck = Box<dyn FnMut(&mut StdRng) -> Question + Send>;
 
 #[derive(Debug, Clone)]
@@ -56,6 +67,23 @@ impl ZuendstoffConfig {
         self.fuse_max_ms = speed.stretch(self.fuse_max_ms);
         self
     }
+}
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // A bomb needs someone to throw it to.
+    name: "Zündstoff", seats: Seats::Range(2, ROOM_CAP), timed: true, sized: true,
+    // The bomb asks the general pack, which is not checked for children.
+    kids: Kids::Barred, board: false, needs: Need::Nothing, start,
+};
+
+fn start(night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box<dyn Game> {
+    let pack = night.general(settings).clone();
+    // Marked asked one by one as the bomb comes round; the whole pack is the fallback.
+    let mut supply = QuestionSupply::new(pack.clone(), Vec::new(), night.used.clone(), QUESTIONS);
+    let deck = Box::new(move |rng: &mut StdRng| {
+        supply.deck(1, rng).pop().unwrap_or_else(|| pack.choose(rng).cloned().expect("the bundled pack is never empty"))
+    });
+    Box::new(ZuendstoffGame::new(ZuendstoffConfig::default().at(settings.speed).sized(settings.length), deck, ctx.players, ctx.now))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

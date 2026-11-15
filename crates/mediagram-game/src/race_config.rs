@@ -1,4 +1,7 @@
-//! Timings of the race game and the test hooks.
+//! Timings of the race game, the test hooks and its catalogue entry.
+
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::race::RaceGame;
 
 #[derive(Debug, Clone)]
 pub struct RaceConfig {
@@ -38,3 +41,10 @@ impl Default for RaceConfig {
         }
     }
 }
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // The race board has four corners.
+    name: "Heimlauf", seats: Seats::Range(2, 4), timed: false, sized: false,
+    kids: Kids::Plays, board: false, needs: Need::Nothing,
+    start: |_, ctx, _| Box::new(RaceGame::new(RaceConfig::default(), ctx.players, ctx.now)),
+};

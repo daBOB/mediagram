@@ -1,6 +1,16 @@
-//! Kopfnuss tuning: every count and timing of a game, in one place.
+//! Kopfnuss tuning: every count and timing of a game, in one place, and its
+//! catalogue entry.
 
-use crate::protocol::{GameLength, GameSpeed, ServerTime};
+use rand::SeedableRng;
+use rand::rngs::StdRng;
+
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::factory::Night;
+use crate::game::{Game, GameCtx};
+use crate::host::ROOM_CAP;
+use crate::kopfnuss::KopfnussGame;
+use crate::kopfnuss_supply::QuestionSupply;
+use crate::protocol::{GameLength, GameSpeed, LobbySettings, ServerTime};
 use crate::quiz_config::QuizConfig;
 
 #[derive(Debug, Clone)]
@@ -81,4 +91,19 @@ impl KopfnussConfig {
     pub(crate) fn questions_needed(&self) -> usize {
         self.rounds * self.per_round + self.deck
     }
+}
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // Kopfnuss needs someone to send a trick to; any room size plays.
+    name: "Kopfnuss", seats: Seats::Range(2, ROOM_CAP), timed: true, sized: true,
+    // It asks the general pack, which is not checked for children.
+    kids: Kids::Barred, board: false, needs: Need::Nothing, start,
+};
+
+fn start(night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box<dyn Game> {
+    let cfg = KopfnussConfig::default().at(settings.speed).sized(settings.length);
+    // Up to three film rounds; drawn now, so they are marked as asked tonight.
+    let films = night.films(3 * cfg.per_round, &mut StdRng::from_os_rng());
+    let supply = QuestionSupply::new(night.general(settings).clone(), films, night.used.clone(), cfg.questions_needed());
+    Box::new(KopfnussGame::new(cfg, supply, ctx.players, ctx.now))
 }

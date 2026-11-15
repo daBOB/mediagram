@@ -1,14 +1,18 @@
 //! Lobby settings: what the leader picked, and whether it can be started.
 
-use crate::catalogue::{GameEntry, entry};
+use crate::articles::ArticleList;
+use crate::catalogue::{Kids, Need, Seats, entry};
+use crate::poster_config::poster_ready;
+use crate::preisfrage_draw::enough_articles;
 use crate::protocol::{GameKind, GameLength, GameSpeed, LobbySettings, QuizMode};
 use crate::game::GameCtx;
 use crate::protocol::{ErrorCode, ServerMsg, ServerTime};
 use crate::quiz_config::QuizConfig;
+use crate::quiz_mix::kids_quiz_capacity;
 use crate::room::{Room, error};
+use crate::titles::TitlePool;
 
-/// Which poster-based games have enough material. Filled by the caller from
-/// the title pool.
+/// Whether the night's material holds what the games need.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Readiness {
     pub poster: bool,
@@ -26,20 +30,33 @@ impl Default for Readiness {
     }
 }
 
+impl Readiness {
+    /// What `pool` and `articles` hold.
+    pub(crate) fn of(pool: &TitlePool, articles: &ArticleList) -> Self {
+        Self {
+            poster: poster_ready(pool, &pool.eligible(false)),
+            poster_kids: poster_ready(pool, &pool.eligible(true)),
+            preisfrage: enough_articles(articles),
+            kids_quiz: kids_quiz_capacity(pool),
+        }
+    }
+
+    /// Why the night's material falls short of `need`, if it does.
+    fn lacks(&self, need: Need, kids_only: bool) -> Option<&'static str> {
+        let posters = if kids_only { self.poster_kids } else { self.poster };
+        match need {
+            Need::Nothing => None,
+            Need::Posters => (!posters).then_some(NOT_ENOUGH_POSTERS),
+            Need::Articles => (!self.preisfrage).then_some(PREISFRAGE_NEEDS_ARTICLES),
+        }
+    }
+}
+
 pub(crate) const NOT_ENOUGH_POSTERS: &str = "Nicht genug Poster für dieses Spiel.";
-/// Kopfnuss asks the general pack, which is not checked for children.
-pub(crate) const KOPFNUSS_NOT_FOR_KIDS: &str = "Kopfnuss gibt es nicht im Kindermodus.";
-/// Dreifelder asks the general pack too, which is not checked for children.
-pub(crate) const DREIFELDER_NOT_FOR_KIDS: &str = "Dreifelder gibt es nicht im Kindermodus.";
-/// Zündstoff's bomb asks the general pack, which is not checked for children.
-pub(crate) const ZUENDSTOFF_NOT_FOR_KIDS: &str = "Zündstoff gibt es nicht im Kindermodus.";
 /// The quiz's general questions are the general pack, which is not checked for children.
 pub(crate) const GENERAL_QUIZ_NOT_FOR_KIDS: &str = "Allgemeine Fragen gibt es nicht im Kindermodus.";
 /// A kids quiz asks only films, so the library must supply every question.
 pub(crate) const NOT_ENOUGH_KIDS_FILMS: &str = "Nicht genug Kinderfilme für ein Quiz dieser Dauer.";
-/// Preisfrage's gag-gift searches bring articles nobody checked for children.
-pub(crate) const PREISFRAGE_NOT_FOR_KIDS: &str = "Preisfrage gibt es nicht im Kindermodus.";
-pub(crate) const KRITZELEI_NEEDS_BOARD: &str = "Kritzelei braucht das iPad als Zeichenbrett.";
 pub(crate) const PREISFRAGE_NEEDS_ARTICLES: &str = "Preisfrage braucht Artikel: am PC „bun run fetch“ starten.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
@@ -104,34 +121,31 @@ impl Room {
         Ok(())
     }
 
-    /// Why the chosen game cannot start, if it cannot.
+    /// Why the chosen game cannot start, if it cannot: kids mode first, then the
+    /// night's material, the drawing board and the seats.
     pub(crate) fn blocked(&self) -> Option<String> {
         let s = &self.settings;
         let r = self.cfg.readiness;
-        match s.game {
-            GameKind::Quiz if s.kids_only && s.quiz_mode == QuizMode::General => {
-                return Some(GENERAL_QUIZ_NOT_FOR_KIDS.into());
+        let game = entry(s.game);
+        let name = game.name;
+        if s.kids_only {
+            match game.kids {
+                Kids::Plays => {}
+                Kids::Barred => return Some(format!("{name} gibt es nicht im Kindermodus.")),
+                Kids::FilmsOnly if s.quiz_mode == QuizMode::General => return Some(GENERAL_QUIZ_NOT_FOR_KIDS.into()),
+                Kids::FilmsOnly if r.kids_quiz < QuizConfig::default().sized(s.length).rounds => {
+                    return Some(NOT_ENOUGH_KIDS_FILMS.into());
+                }
+                Kids::FilmsOnly => {}
             }
-            GameKind::Quiz if s.kids_only => {
-                let enough = r.kids_quiz >= QuizConfig::default().sized(s.length).rounds;
-                return (!enough).then(|| NOT_ENOUGH_KIDS_FILMS.into());
-            }
-            // Any room plays these, so only the room's own minimum gates them: a seat
-            // message would stand on the TV before anyone has joined.
-            GameKind::Quiz => return None,
-            GameKind::Poster => {
-                let ready = if s.kids_only { r.poster_kids } else { r.poster };
-                return (!ready).then(|| NOT_ENOUGH_POSTERS.into());
-            }
-            GameKind::Kopfnuss if s.kids_only => return Some(KOPFNUSS_NOT_FOR_KIDS.into()),
-            GameKind::Dreifelder if s.kids_only => return Some(DREIFELDER_NOT_FOR_KIDS.into()),
-            GameKind::Zuendstoff if s.kids_only => return Some(ZUENDSTOFF_NOT_FOR_KIDS.into()),
-            GameKind::Preisfrage if s.kids_only => return Some(PREISFRAGE_NOT_FOR_KIDS.into()),
-            GameKind::Preisfrage if !r.preisfrage => return Some(PREISFRAGE_NEEDS_ARTICLES.into()),
-            GameKind::Kritzelei if !self.board_connected() => return Some(KRITZELEI_NEEDS_BOARD.into()),
-            _ => {}
         }
-        let GameEntry { name, min, max, .. } = entry(s.game);
+        if let Some(why) = r.lacks(game.needs, s.kids_only) {
+            return Some(why.into());
+        }
+        if game.board && !self.board_connected() {
+            return Some(format!("{name} braucht das iPad als Zeichenbrett."));
+        }
+        let Seats::Range(min, max) = game.seats else { return None };
         let players = self.connected_count();
         if players < min {
             Some(format!("{name} braucht mindestens {min} Spieler."))
