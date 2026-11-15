@@ -39,7 +39,7 @@ players in a tighter arc. Sheets: `reports/avatar-detail-variants.jpg`, `reports
 chosen yet; not measured on the funstation. More detail than the 52k mesh needs new models (Meshy, credits).
 "reduce the glossy effect" (user, 2026-11-16): in B and C the avatars carry no metal and their roughness is lifted to
 at least 0.8 (`?gloss=`, default 0.2), the environment fill is lower and the walnut's lacquer duller
-(`reports/avatar-gloss-before-after.jpg`).
+(`reports/avatar-gloss-before-after.jpg`). Accepted: "thats better" (user, 2026-11-16) — matte, gloss 0.2.
 
 ## Stages → arena
 
