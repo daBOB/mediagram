@@ -11,7 +11,11 @@ numbers stay as history.
 
 User, 2026-11-15: "Kopfnuss is … a main game. This is our quiz game like a TV show with 3D stages and a NPC
 Showmaster." So Kopfnuss is a full game on the shelf (0.192.7), and the arena gets a computer-run showmaster on
-the stage. The showmaster is not designed yet: no phase below covers it.
+the stage. Mockup (2026-11-15, `reports/showmaster-mockup-nutcracker-and-walnut.jpg`, source
+`reports/mockup-source/showmaster.js`, `?host=nut|walnut`, `&hostcam=1` for the close-up): **A** an Erzgebirge
+nutcracker in lacquered wood with a microphone, its hinged jaw the talking mouth, a gold walnut on the shako;
+**B** a floating walnut head whose lower shell is the jaw. Both are turned primitives, no skinning. Not chosen yet;
+in the category vote the host still needs a spot (back centre hides him behind the signs). No phase covers him yet.
 
 Branch: `feat/dreifelder-on-games` (has Kopfnuss, Dreifelder and the games line's catalogue).
 

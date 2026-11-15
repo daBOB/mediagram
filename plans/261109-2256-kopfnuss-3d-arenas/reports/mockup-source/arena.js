@@ -7,6 +7,7 @@ import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { THEMES } from "./arena-themes.js?v=fx7";
 import { clock, confetti, DITHER, ditherGlsl, energy, padGlow, rimLight } from "./arena-fx.js?v=fx7";
+import { addHost } from "./showmaster.js?v=4";
 
 const q = new URLSearchParams(location.search);
 const theme = THEMES[q.get("theme") ?? "table"], stage = q.get("stage") ?? "question", FX = q.get("fx") === "1";
@@ -236,6 +237,14 @@ const STAGES = {
 await Promise.all([document.fonts.load("800 80px 'Bricolage Grotesque'"), document.fonts.load("700 24px 'Atkinson Hyperlegible'")]);
 theme.build(scene, stage);
 await STAGES[stage]();
+const hostAt = q.get("host") ? addHost(scene, q.get("host"), stage, cam) : null;
+// ?hostcam=1: a close-up of the host's face, the HUD hidden
+if (hostAt && q.get("hostcam")) {
+  cam.position.copy(hostAt.feet).add(new THREE.Vector3(1.3, 3.0, 6.2));
+  cam.lookAt(hostAt.feet.clone().add(new THREE.Vector3(0, q.get("host") === "walnut" ? 2.3 : 2.75, 0)));
+  cam.updateMatrixWorld();
+  hud.style.display = "none";
+}
 // dithering: three's own for its materials, the same noise appended to the shader effects
 if (DITHER) scene.traverse((o) => [o.material].flat().forEach((m) => {
   if (!m) return;
