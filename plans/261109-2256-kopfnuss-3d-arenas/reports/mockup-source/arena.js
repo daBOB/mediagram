@@ -7,7 +7,7 @@ import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { THEMES } from "./arena-themes.js?v=fx7";
 import { clock, confetti, DITHER, ditherGlsl, energy, padGlow, rimLight } from "./arena-fx.js?v=fx7";
-import { addHost } from "./showmaster.js?v=4";
+import { addHost } from "./showmaster.js?v=6";
 
 const q = new URLSearchParams(location.search);
 const theme = THEMES[q.get("theme") ?? "table"], stage = q.get("stage") ?? "question", FX = q.get("fx") === "1";

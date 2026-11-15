@@ -14,8 +14,10 @@ Showmaster." So Kopfnuss is a full game on the shelf (0.192.7), and the arena ge
 the stage. Mockup (2026-11-15, `reports/showmaster-mockup-nutcracker-and-walnut.jpg`, source
 `reports/mockup-source/showmaster.js`, `?host=nut|walnut`, `&hostcam=1` for the close-up): **A** an Erzgebirge
 nutcracker in lacquered wood with a microphone, its hinged jaw the talking mouth, a gold walnut on the shako;
-**B** a floating walnut head whose lower shell is the jaw. Both are turned primitives, no skinning. Not chosen yet;
-in the category vote the host still needs a spot (back centre hides him behind the signs). No phase covers him yet.
+**B** a floating walnut head whose lower shell is the jaw. Both are turned primitives, no skinning. **Chosen: B, the
+walnut** (user, 2026-11-15: "lets use walnut"). In every stage: `reports/showmaster-walnut-all-stages.jpg` — it floats
+beside the signs while players pick, top left while tricks fly and during the Gipfelsturm, on a lit spot behind the
+players for the question and reveal, beside the winner on the fact card. No phase covers the showmaster yet.
 
 Branch: `feat/dreifelder-on-games` (has Kopfnuss, Dreifelder and the games line's catalogue).
 

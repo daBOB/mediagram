@@ -152,13 +152,17 @@ export function addHost(scene, kind, stage, cam) {
   const [x, z] = SPOTS[stage] ?? [0, -1.4];
   const raise = stage === "pick" || stage === "resolve" ? 1.4 : 0.55;
   if (kind === "walnut") {
+    // it floats, so it can hang beside the category signs where a standing host would hide behind them
+    const W = { pick: { at: [8.6, 3.5, -3.5], s: 0.75 }, resolve: { at: [-8.4, 5.4, -3.5], s: 0.8 },
+      climb: { at: [-5.6, 6.0, -1.5], s: 0.8 }, fact: { at: [5.2, 2.9, -1], s: 0.85, spot: true } };
+    const { at: [wx, wy, wz], s, spot } = W[stage] ?? { at: [0, 2.9, -1.4], s: 0.85, spot: true };
     const w = walnutHead({ jaw: stage === "reveal" ? 0.55 : 0.32 });
-    w.scale.setScalar(0.85);
-    w.position.set(x, raise + 2.35, z);
-    w.lookAt(cam.position.x, raise + 3.0, cam.position.z);
+    w.scale.setScalar(s);
+    w.position.set(wx, wy, wz);
+    w.lookAt(cam.position.x, wy + 0.6, cam.position.z);
     scene.add(w);
-    hostSpot(scene, x, z, raise);
-    return { head: w.position.clone().setY(raise + 4.6), feet: new THREE.Vector3(x, raise, z) };
+    if (spot) hostSpot(scene, wx, wz, 0.55);
+    return { head: w.position.clone().setY(wy + 1.2), feet: new THREE.Vector3(wx, spot ? 0.55 : wy - 1.4, wz) };
   }
   hostSpot(scene, x, z, raise);
   const n = nutcracker({ jaw: stage === "reveal" ? 0.5 : 0.3 });
