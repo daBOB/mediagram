@@ -5,6 +5,7 @@ import type { TvScene } from "../protocol/TvScene";
 import type { TvView } from "../protocol/TvView";
 import { TvDreifelder } from "./TvDreifelder";
 import { TvZuendstoff } from "./TvZuendstoff";
+import { TvLetztesWort } from "./TvLetztesWort";
 import { TvKritzelei } from "./TvKritzelei";
 import { TvKopfnuss } from "./TvKopfnuss";
 import { TvFluechtig } from "./TvFluechtig";
@@ -30,6 +31,7 @@ const SCREENS: { [K in Kind]: Draw<K> } = {
   cards: ({ scene }, view, conn) => <TvCards key={scene.game + scene.seats.map((s) => s.player).join()} scene={scene} players={view.players} conn={conn} />,
   kopfnuss: ({ scene }, view, conn) => <TvKopfnuss scene={scene} players={view.players} conn={conn} />,
   zuendstoff: ({ scene }, view, conn) => <TvZuendstoff scene={scene} players={view.players} conn={conn} />,
+  letztes_wort: ({ scene }, view, conn) => <TvLetztesWort scene={scene} players={view.players} conn={conn} />,
   dreifelder: ({ scene }, view, conn) => <TvDreifelder scene={scene} players={view.players} conn={conn} />,
   fluechtig: ({ scene }, view, conn) => <TvFluechtig scene={scene} players={view.players} conn={conn} />,
   grand_allee: ({ scene }, view, conn) => <TvGrandAllee key={scene.seats.map((s) => s.player).join()} scene={scene} players={view.players} conn={conn} />,

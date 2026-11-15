@@ -5,6 +5,11 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.193.0 — Letztes Wort, the last right answer keeps the stick
+
+**Added**
+
+- Letztes Wort, a minigame for three to eight. Each round is one question with five to ten right answers ("Nenne einen Planeten unseres Sonnensystems") and a hidden clock of 15–35 s. Players buzz on the phone (a buzzer sound on the phone and the TV) and say their answer out loud; the round's host, a different player each round in seat order, judges it on a desk that lists the answers: a right one takes the winning stick, a wrong one (or one already given) is out for the round, "Auch richtig" accepts an answer the list lacks. Whoever holds the stick when the time runs out wins the round; it ends early when nobody else could take the stick. The TV never shows an answer or a clock. 68 bundled questions; Tempo stretches the hidden clock, Dauer gives one, two or three laps round the table; a host who leaves hands the round to the next player with a new question. Spec `docs/superpowers/specs/2026-11-15-letztes-wort-design.md`, plan `plans/261115-1559-letztes-wort/`.
 ## Spieltisch 0.192.6 — Kids mode asks no general questions
 
 **Fixed**
