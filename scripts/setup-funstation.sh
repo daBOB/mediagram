@@ -57,7 +57,14 @@ step "packages (and the rest of the system up to date)"
 sudo pacman -Syu --needed --noconfirm plasma-bigscreen plasma-keyboard waydroid chromium git rustup bun ffmpeg swayidle avahi
 
 step "announced on the network as $(hostname).local"
-sudo systemctl enable --now avahi-daemon
+# avahi alone answers for this host: systemd-resolved's own responder made avahi lose the name and rename itself funstation-2.local.
+sudo install -d /etc/systemd/resolved.conf.d
+printf '[Resolve]\nMulticastDNS=resolve\n' | sudo tee /etc/systemd/resolved.conf.d/mdns-resolve-only.conf >/dev/null
+sudo systemctl restart systemd-resolved
+# Everything here listens on IPv4 only. A resolver that keeps the first family to answer (systemd-resolved does) got only IPv6 addresses, all refused.
+sudo sed -i -e 's/^#\?use-ipv6=.*/use-ipv6=no/' -e 's/^#\?publish-aaaa-on-ipv4=.*/publish-aaaa-on-ipv4=no/' /etc/avahi/avahi-daemon.conf
+sudo systemctl enable avahi-daemon
+sudo systemctl restart avahi-daemon
 
 step "mediagram source (public repo, updated on every run)"
 [ -d "$REPO/.git" ] || git clone "$REPO_URL" "$REPO"
