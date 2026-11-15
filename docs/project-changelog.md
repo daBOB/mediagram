@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.192.7 — Kopfnuss is a full game
+
+**Changed**
+
+- Kopfnuss sits in the shelf's **Spiele** half, not under **Minispiele**: it is the quiz played as a TV show, seven rounds and the Gipfelsturm, with 3D stages and a showmaster to come (`ui/shelf-games.ts`).
+
 ## Spieltisch 0.192.6 — Kids mode asks no general questions
 
 **Fixed**

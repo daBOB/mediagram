@@ -6,6 +6,10 @@ Studio clips): a dark stage, light rings and light columns in the four answer
 colours, the players' avatars standing on pads. The text stays HTML on top (question card, answers, clock), as in the
 mockups; the 3D is behind it.
 
+User, 2026-11-15: "Kopfnuss is … a main game. This is our quiz game like a TV show with 3D stages and a NPC
+Showmaster." So Kopfnuss is a full game on the shelf (0.192.7), and the arena gets a computer-run showmaster on
+the stage. The showmaster is not designed yet: no phase below covers it.
+
 Branch: `feat/dreifelder-on-games` (has Kopfnuss, Dreifelder and the games line's catalogue).
 
 ## Stages → arena

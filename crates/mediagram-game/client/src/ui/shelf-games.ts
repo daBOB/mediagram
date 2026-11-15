@@ -30,7 +30,7 @@ const PLAYABLE: Record<GameKind, { blurb: string; group: ShelfGroup }> = {
   grenzfall: { group: "mini", blurb: "Auf dem Fernseher erscheint nur der Umriss eines Landes. Welches ist es? Erst die bekannten, am Ende die kniffligen – je schneller richtig, desto mehr Punkte." },
   spruchreif: { group: "mini", blurb: "Der Fernseher zeigt den Anfang eines Sprichworts, abwechselnd deutsch und englisch. Wie geht es weiter? Vier Enden stehen zur Wahl – je schneller richtig, desto mehr Punkte." },
   zuendstoff: { group: "mini", blurb: "Eine Bombe mit verstecktem Zünder wandert von Handy zu Handy. Nur wer seine Frage richtig beantwortet, darf sie weiterwerfen – an wen er will. Wer sie beim Knall hält, verliert ein Leben." },
-  kopfnuss: { group: "mini", blurb: "Kategorie wählen, den anderen Streiche aufs Handy schicken, Fragen beantworten – und am Ende der Gipfelsturm um den Sieg." },
+  kopfnuss: { group: "full", blurb: "Kategorie wählen, den anderen Streiche aufs Handy schicken, Fragen beantworten – und am Ende der Gipfelsturm um den Sieg." },
   dreifelder: { group: "mini", blurb: "Eine Frage, drei Felder. Wer falsch steht, fliegt raus – wer als Letzter übrig bleibt, gewinnt." },
   preisfrage: { group: "mini", blurb: "Seltsame Produkte aus dem Netz: Wer schätzt den Preis am genauesten? Je näher dran, desto mehr Punkte." },
   kritzelei: { group: "mini", blurb: "Einer zeichnet mit dem Finger auf dem iPad, der Fernseher zeigt jeden Strich live. Alle raten laut – wer's zuerst hat, punktet." },
