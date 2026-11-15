@@ -3,11 +3,12 @@
 // when a property is sold and, with a scream, when a player goes broke, the winner's jingle at the end.
 
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
-import { clatterAt, type Cue } from "../race/race-sound-cues";
+import { clatterAt, type BoardSound } from "../table/board-sounds";
+import type { Cue, Plan } from "../table/tv-sound";
 import { bankAt, hops } from "./grand-allee-clock";
 
 /** The cues of the turn's stage, keyed so they are scheduled once however many frames show it; null: the stage is silent. */
-export function grandAlleeCues(scene: GrandAlleeScene, now: number): { key: string; cues: Cue[] } | null {
+export function grandAlleeCues(scene: GrandAlleeScene, now: number): Plan<BoardSound> | null {
   const t = scene.turn;
   switch (t.stage) {
     case "rolled":
@@ -17,7 +18,7 @@ export function grandAlleeCues(scene: GrandAlleeScene, now: number): { key: stri
       return { key: `guest ${t.rolled_at}`, cues: [{ sound: "die", at: clatterAt(t.rolled_at, t.lands_at) }, { sound: "goalJingle", at: t.paid_at }] };
     case "walking": {
       const n = hops(t.from, t.to, scene.board.fields.length), bank = bankAt(scene);
-      const cues: Cue[] = Array.from({ length: n }, (_, i) => ({ sound: "knock", at: t.started_at + (i + 1) * t.hop_ms }));
+      const cues: Cue<BoardSound>[] = Array.from({ length: n }, (_, i) => ({ sound: "knock", at: t.started_at + (i + 1) * t.hop_ms }));
       if (bank !== null) cues.push({ sound: "goalJingle", at: bank });
       return { key: `walking ${t.started_at}`, cues };
     }
