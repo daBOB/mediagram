@@ -30,7 +30,7 @@ impl MauMauGame {
     pub(crate) fn event(&mut self, now: ServerTime, player: PlayerId, kind: CardsEventKind) {
         self.events.push(CardsEvent { id: self.next_event, at: now, player, kind });
         self.next_event += 1;
-        if self.events.len() > 4 {
+        if self.events.len() > 6 {
             self.events.remove(0);
         }
     }
