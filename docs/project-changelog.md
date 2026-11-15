@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.192.5 — Shelf art for the games still to come
+
+**Changed**
+
+- New posters and backdrops for 13 of the 18 "Coming soon" games, made the same way as 0.192.4's: each starts from its blurb, the title in the scene. Neunmalklug a late-night radio host smirking at a caller's answer (the studio's lit sign), Wissensreise a balloon over six landscapes with five of six stones (the balloon), Grundstück the piglet parachuting onto the bear's roof while he holds out a paw for rent (a plot sign), Spielwiese a meadow of minigames from above (mown into the grass), Wortwerk a letterpress shop (printed), Neuland the first landing on an empty island (written in the sand), Feldzug chestnut armies on a chalk map (chalk), Gassenwechsel a row of houses slid aside on rails (a street-name sign), Pleitier the piglet dancing with empty pockets at a wishing fountain (coins under water), Radau a Sunday-noon racket out of one window and a neighbour's broom (comic sound letters), Sprechstunde a school corridor of embarrassed life-stage photos (a brass door plate), Nachtwache keys collected under the eye of a guardian in the TV (a grandfather clock), Herz the raccoon holding every heart up to the moon (a paper lantern). Tiến Lên, Euchre, Pikett, Schafkopf and Klabberjass keep their art until the next credits (user's choice).
+
 ## Spieltisch 0.192.4 — Each game's shelf art starts from its own rules
 
 **Changed**
