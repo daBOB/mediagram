@@ -194,11 +194,11 @@ fn the_leader_sets_the_length_the_tv_keeps_it_and_an_older_client_means_normal()
 fn settings_survive_a_game() {
     let mut r = room(8);
     hello(&mut r, 1, "Ana", None);
-    configure(&mut r, 1, GameKind::Quiz, QuizMode::General, true);
+    configure(&mut r, 1, GameKind::Quiz, QuizMode::Films, true);
     let chosen = r.settings().clone();
     action(&mut r, 1, Action::StartGame);
     assert!(r.in_game());
-    assert!(!configure(&mut r, 1, GameKind::Quiz, QuizMode::Films, false).is_empty(), "not mid-game");
+    assert!(!configure(&mut r, 1, GameKind::Quiz, QuizMode::Mixed, false).is_empty(), "not mid-game");
     r.back_to_lobby();
     assert_eq!(*r.settings(), chosen);
 }
@@ -295,4 +295,53 @@ fn kritzelei_needs_two_players() {
     r.handle(3, r#"{"t":"hello","role":"board"}"#, 0.0);
     configure(&mut r, 1, GameKind::Kritzelei, QuizMode::Mixed, false);
     assert_eq!(blocked_text(&mut r, 1).as_deref(), Some("Kritzelei braucht mindestens 2 Spieler."));
+}
+
+#[test]
+fn zuendstoff_is_not_for_kids_mode() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    hello(&mut r, 2, "Ben", None);
+    configure(&mut r, 1, GameKind::Zuendstoff, QuizMode::Mixed, true);
+    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some(crate::room_settings::ZUENDSTOFF_NOT_FOR_KIDS));
+    configure(&mut r, 1, GameKind::Zuendstoff, QuizMode::Mixed, false);
+    assert_eq!(blocked_text(&mut r, 1), None);
+}
+
+#[test]
+fn the_general_quiz_is_not_for_kids_mode() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::Quiz, QuizMode::General, true);
+    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some(crate::room_settings::GENERAL_QUIZ_NOT_FOR_KIDS));
+    let out = action(&mut r, 1, Action::StartGame);
+    let ServerMsg::Error { message, .. } = decode(&out[0].1) else { panic!("expected an error") };
+    assert_eq!(message, "Allgemeine Fragen gibt es nicht im Kindermodus.");
+    assert!(!r.in_game());
+    configure(&mut r, 1, GameKind::Quiz, QuizMode::General, false);
+    assert_eq!(blocked_text(&mut r, 1), None);
+}
+
+#[test]
+fn a_kids_quiz_needs_a_kids_film_question_for_every_round_of_its_length() {
+    // Eight kid-safe titles that make a question: Kurz (4) and Normal (8) play, Lang (12) does not.
+    let mut r = room_with(RoomConfig { readiness: Readiness { kids_quiz: 8, ..Readiness::default() }, ..cfg(8) });
+    hello(&mut r, 1, "Ana", None);
+    let set = |r: &mut Room, quiz_mode, length, kids_only| {
+        action(r, 1, Action::Configure { game: GameKind::Quiz, quiz_mode, speed: GameSpeed::Normal, length, kids_only });
+    };
+    for mode in [QuizMode::Films, QuizMode::Mixed] {
+        for (length, want) in [(GameLength::Short, None), (GameLength::Normal, None), (GameLength::Long, Some(crate::room_settings::NOT_ENOUGH_KIDS_FILMS))] {
+            set(&mut r, mode, length, true);
+            assert_eq!(blocked_text(&mut r, 1).as_deref(), want, "{mode:?} {length:?}");
+            // A grown-ups' quiz fills from the general pack, so the library never blocks it.
+            set(&mut r, mode, length, false);
+            assert_eq!(blocked_text(&mut r, 1), None, "{mode:?} {length:?} without kids mode");
+        }
+    }
+    set(&mut r, QuizMode::Mixed, GameLength::Long, true);
+    let out = action(&mut r, 1, Action::StartGame);
+    let ServerMsg::Error { message, .. } = decode(&out[0].1) else { panic!("expected an error") };
+    assert_eq!(message, "Nicht genug Kinderfilme für ein Quiz dieser Dauer.");
+    assert!(!r.in_game());
 }

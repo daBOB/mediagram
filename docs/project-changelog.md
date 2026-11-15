@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.192.6 — Kids mode asks no general questions
+
+**Fixed**
+
+- Kids mode no longer asks questions from the general pack, which nobody has checked for children. Zündstoff and the Buzzer-Quiz with general questions now say "… gibt es nicht im Kindermodus." in the lobby, as Kopfnuss and Dreifelder already did. A mixed or film quiz in kids mode asks only about kid-safe films and series, instead of filling half the night (or a small library's shortfall) with general questions; when the library has too few for the chosen length (Kurz 4, Normal 8, Lang 12), the lobby says "Nicht genug Kinderfilme für ein Quiz dieser Dauer." instead of starting. Grown-ups' evenings are unchanged.
+
 ## Spieltisch 0.192.5 — Shelf art for the games still to come
 
 **Changed**

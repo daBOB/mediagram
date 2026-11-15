@@ -137,7 +137,7 @@ pub fn game_factory(
                 let mut questions =
                     quiz_questions(settings.quiz_mode, &pool, settings.kids_only, general, &mut rng, cfg.rounds, &mut history);
                 if questions.is_empty() {
-                    // `Quiz::new` panics on an empty list; the pack is never empty.
+                    // `Quiz::new` panics on an empty list; the pack is never empty, and the lobby starts no kids quiz short of films.
                     questions = general.to_vec();
                 }
                 Box::new(Quiz::new(cfg, questions, ctx.now))

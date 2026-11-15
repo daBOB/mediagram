@@ -1,7 +1,8 @@
 use rand::SeedableRng;
 
 use super::*;
-use crate::film_questions::tests::films;
+use crate::film_questions::tests::{film, films};
+use crate::titles::{GameTitle, TitleKind};
 
 fn general(n: usize) -> Vec<Question> {
     (0..n)
@@ -88,4 +89,56 @@ fn a_general_reset_keeps_film_history() {
     assert_eq!(film_keys.len(), 4);
     quiz_questions(QuizMode::General, &pool, false, &general(5), &mut StdRng::seed_from_u64(4), 4, &mut used);
     assert!(film_keys.is_subset(&used));
+}
+
+fn kids_mix(mode: QuizMode, pool: &TitlePool, rounds: usize, used: &mut HashSet<String>) -> Vec<Question> {
+    quiz_questions(mode, pool, true, &general(30), &mut StdRng::seed_from_u64(3), rounds, used)
+}
+
+#[test]
+fn kids_mixed_and_films_ask_no_general_question() {
+    for mode in [QuizMode::Mixed, QuizMode::Films, QuizMode::General] {
+        let qs = kids_mix(mode, &films(12), 8, &mut HashSet::new());
+        assert_eq!(qs.len(), 8, "{mode:?}");
+        assert!(qs.iter().all(|q| q.category != "Allgemein"), "{mode:?}");
+    }
+}
+
+#[test]
+fn a_tiny_library_leaves_a_kids_quiz_short_instead_of_filling_it_with_general() {
+    for mode in [QuizMode::Mixed, QuizMode::Films] {
+        for n in [0, 2] {
+            let qs = kids_mix(mode, &films(n), 8, &mut HashSet::new());
+            assert_eq!(qs.len(), n, "{mode:?} with {n} titles");
+            assert!(qs.iter().all(|q| q.category != "Allgemein"), "{mode:?} with {n} titles");
+        }
+    }
+}
+
+/// Six titles with every question kind and two with only a year: a later night
+/// has unasked questions left about six titles only.
+fn uneven_kids_library() -> TitlePool {
+    let year_only = |i| GameTitle { still: None, directors: Vec::new(), cast: Vec::new(), ..film(i, true, TitleKind::Film) };
+    TitlePool::new((0..6).map(|i| film(i, true, TitleKind::Film)).chain((6..8).map(year_only)).collect(), false)
+}
+
+#[test]
+fn a_kids_quiz_keeps_its_length_night_after_night() {
+    let pool = uneven_kids_library();
+    let mut used = HashSet::new();
+    for night in 0..6 {
+        let qs = kids_mix(QuizMode::Mixed, &pool, 8, &mut used);
+        assert_eq!(qs.len(), 8, "night {night}");
+        assert!(qs.iter().all(|q| q.category != "Allgemein"), "night {night}");
+    }
+}
+
+#[test]
+fn kids_quiz_capacity_counts_titles_that_make_a_question_up_to_the_longest_quiz() {
+    assert_eq!(kids_quiz_capacity(&films(0)), 0);
+    assert_eq!(kids_quiz_capacity(&films(5)), 5);
+    assert_eq!(kids_quiz_capacity(&uneven_kids_library()), 8);
+    assert_eq!(kids_quiz_capacity(&films(40)), 12, "Lang asks twelve");
+    let unsafe_only = TitlePool::new((0..20).map(|i| film(i, false, TitleKind::Film)).collect(), false);
+    assert_eq!(kids_quiz_capacity(&unsafe_only), 0);
 }
