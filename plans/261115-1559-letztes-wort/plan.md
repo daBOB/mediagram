@@ -125,3 +125,9 @@
 - iPhone audio: the buzzer's context unlocks on the first `touchend`/`click` anywhere (Safari ignores finger-down). Not checked on a device.
 - Left as is (spec): no timeout while someone has the floor and the host is present.
 - After fixes: 632 tests, clippy, tsc, build clean; walk rerun, no page errors.
+
+## Shipped (2026-11-15 23:40)
+
+- Rebased twice onto main (0.192.6 kids fix, 0.192.7 one catalogue entry per game: Letztes Wort now declares `ENTRY` in `letztes_wort_config.rs`; 0.180.10 Android refactor). Merged into main as 09e4280e, not pushed.
+- Installed on the funstation (WayDroid `pm install -r`, release key) over 0.192.4 while the TV sat idle in the lobby; Spieltisch reopened afterwards. The shelf lists Letztes Wort without a poster yet: `reports/funstation-shelf-with-letztes-wort.jpg`.
+- Next: poster and backdrop for the shelf.
