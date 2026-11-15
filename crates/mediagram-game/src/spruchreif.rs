@@ -5,11 +5,18 @@
 use std::collections::HashSet;
 use std::sync::LazyLock;
 
-use rand::Rng;
+use rand::rngs::StdRng;
 use rand::seq::IndexedRandom;
+use rand::{Rng, SeedableRng};
 use serde::Deserialize;
 
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::factory::Night;
+use crate::game::{Game, GameCtx};
 use crate::grenzfall::tiers;
+use crate::host::ROOM_CAP;
+use crate::protocol::LobbySettings;
+use crate::quiz::Quiz;
 use crate::quiz_config::{Question, QuizConfig};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -40,6 +47,17 @@ pub(crate) const ROUNDS: usize = 10;
 
 pub fn spruchreif_config() -> QuizConfig {
     QuizConfig { rounds: ROUNDS, ..QuizConfig::default() }
+}
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    name: "Spruchreif", seats: Seats::Range(1, ROOM_CAP), timed: true, sized: true,
+    kids: Kids::Plays, board: false, needs: Need::Nothing, start,
+};
+
+fn start(night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box<dyn Game> {
+    let cfg = spruchreif_config().at(settings.speed).sized(settings.length);
+    let questions = spruchreif_questions(cfg.rounds, &mut StdRng::from_os_rng(), &mut night.history());
+    Box::new(Quiz::new(cfg, questions, ctx.now))
 }
 
 /// A game's `rounds` proverbs, easiest first, the language changing every round.

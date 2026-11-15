@@ -1,5 +1,5 @@
-//! Poster game inputs (timing, scoring), the per-game state types and which
-//! titles can make a round.
+//! Poster game inputs (timing, scoring), the per-game state types, which
+//! titles can make a round and the game's catalogue entry.
 
 use std::collections::{HashMap, HashSet};
 
@@ -7,7 +7,11 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rand::seq::{IndexedRandom, SliceRandom};
 
-use crate::protocol::{GameLength, GameSpeed, PlayerId, ServerTime};
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::factory::Night;
+use crate::game::{Game, GameCtx};
+use crate::poster::PosterGame;
+use crate::protocol::{GameLength, GameSpeed, LobbySettings, PlayerId, ServerTime};
 use crate::titles::{GameTitle, TitleKind, TitlePool};
 
 #[derive(Debug, Clone)]
@@ -57,6 +61,24 @@ impl PosterConfig {
         self.step_ms = speed.stretch(self.step_ms);
         self
     }
+}
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    name: "Poster-Raten", seats: Seats::AnyRoom, timed: true, sized: true,
+    kids: Kids::Plays, board: false, needs: Need::Posters, start,
+};
+
+fn start(night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box<dyn Game> {
+    let eligible = night.pool.eligible(settings.kids_only);
+    let cfg = PosterConfig::default().at(settings.speed).sized(settings.length);
+    let game = PosterGame::new(cfg, &night.pool, &eligible, &mut night.history(), ctx.now);
+    if let Some(lookup) = &night.textless {
+        // Fetched ahead, so a round's poster is cached before it is shown.
+        for round in &game.rounds {
+            tokio::spawn(lookup(night.pool.get(round.title).key.clone()));
+        }
+    }
+    Box::new(game)
 }
 
 pub fn points_at_step(cfg: &PosterConfig, step: u8) -> i32 {

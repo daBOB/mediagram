@@ -14,6 +14,7 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::cards::{Card, Rank, deck_from, shuffled};
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::durak_rules::{DEAL, auto_attack, auto_defence, beats, can_throw, first_attacker};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::protocol::{Action, CardsBanner, CardsEvent, PhoneScreen, PlayerId, ServerTime, TvScene};
@@ -33,6 +34,13 @@ impl Default for DurakConfig {
         Self { banner_ms: 2600.0, settle_ms: 2400.0, seed: None }
     }
 }
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // Durak deals 36 cards, six each.
+    name: "Durak", seats: Seats::Range(2, 6), timed: false, sized: false,
+    kids: Kids::Plays, board: false, needs: Need::Nothing,
+    start: |_, ctx, _| Box::new(DurakGame::new(DurakConfig::default(), ctx.players, ctx.now)),
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {

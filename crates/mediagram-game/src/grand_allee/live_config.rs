@@ -1,7 +1,9 @@
 //! Grand Allee's timings and table rules for one live game; tests and the
-//! simulator change them, the room plays the defaults.
+//! simulator change them, the room plays the defaults, through its catalogue entry.
 
+use super::live::GrandAlleeGame;
 use super::rules::Rules;
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::protocol::{GameLength, GameSpeed};
 
 /// What a live game is set up with: its rules, the TV's animation times and the clocks.
@@ -68,3 +70,13 @@ impl GrandAlleeConfig {
         self
     }
 }
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // Grand Allee's round limit scales with the table, from two to eight.
+    name: "Grand Allee", seats: Seats::Range(2, 8), timed: true, sized: true,
+    kids: Kids::Plays, board: false, needs: Need::Nothing,
+    start: |_, ctx, settings| {
+        let cfg = GrandAlleeConfig::default().at(settings.speed).sized(settings.length);
+        Box::new(GrandAlleeGame::new(cfg, ctx.players, ctx.now))
+    },
+};

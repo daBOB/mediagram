@@ -227,7 +227,7 @@ fn kopfnuss_is_not_for_kids_mode() {
     hello(&mut r, 1, "Ana", None);
     hello(&mut r, 2, "Ben", None);
     configure(&mut r, 1, GameKind::Kopfnuss, QuizMode::Mixed, true);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::KOPFNUSS_NOT_FOR_KIDS));
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == "Kopfnuss gibt es nicht im Kindermodus."));
 }
 
 #[test]
@@ -239,7 +239,7 @@ fn dreifelder_needs_two_players_and_no_kids_mode() {
     hello(&mut r, 2, "Ben", None);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
     configure(&mut r, 1, GameKind::Dreifelder, QuizMode::Mixed, true);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::DREIFELDER_NOT_FOR_KIDS));
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == "Dreifelder gibt es nicht im Kindermodus."));
 }
 
 #[test]
@@ -249,7 +249,7 @@ fn preisfrage_needs_articles_and_no_kids_mode() {
     configure(&mut r, 1, GameKind::Preisfrage, QuizMode::Mixed, false);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::PREISFRAGE_NEEDS_ARTICLES));
     configure(&mut r, 1, GameKind::Preisfrage, QuizMode::Mixed, true);
-    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::PREISFRAGE_NOT_FOR_KIDS), "kids mode says so first");
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == "Preisfrage gibt es nicht im Kindermodus."), "kids mode says so first");
 
     let mut r = room(8);
     hello(&mut r, 1, "Ana", None);
@@ -270,7 +270,7 @@ fn kritzelei_waits_for_the_board() {
     hello(&mut r, 1, "Ana", None);
     hello(&mut r, 2, "Ben", None);
     configure(&mut r, 1, GameKind::Kritzelei, QuizMode::Mixed, false);
-    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some(crate::room_settings::KRITZELEI_NEEDS_BOARD));
+    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some("Kritzelei braucht das iPad als Zeichenbrett."));
     r.connect(3, false);
     r.handle(3, r#"{"t":"hello","role":"board"}"#, 0.0);
     assert_eq!(blocked_text(&mut r, 1), None);
@@ -303,7 +303,7 @@ fn zuendstoff_is_not_for_kids_mode() {
     hello(&mut r, 1, "Ana", None);
     hello(&mut r, 2, "Ben", None);
     configure(&mut r, 1, GameKind::Zuendstoff, QuizMode::Mixed, true);
-    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some(crate::room_settings::ZUENDSTOFF_NOT_FOR_KIDS));
+    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some("Zündstoff gibt es nicht im Kindermodus."));
     configure(&mut r, 1, GameKind::Zuendstoff, QuizMode::Mixed, false);
     assert_eq!(blocked_text(&mut r, 1), None);
 }

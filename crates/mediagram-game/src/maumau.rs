@@ -10,6 +10,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use crate::cards::{Card, Rank, Suit, deck_from, shuffled};
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::maumau_rules::{DEAL, SEVEN_DRAWS, Top, auto_pick, lowest_rank, most_held_suit, playable, sort_hand};
 use crate::protocol::{
@@ -30,6 +31,13 @@ impl Default for MauMauConfig {
         Self { banner_ms: 2600.0, seed: None }
     }
 }
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // 32 cards deal five to five players, the 52-card deck to eight.
+    name: "Mau-Mau", seats: Seats::Range(2, 8), timed: false, sized: false,
+    kids: Kids::Plays, board: false, needs: Need::Nothing,
+    start: |_, ctx, _| Box::new(MauMauGame::new(MauMauConfig::default(), ctx.players, ctx.now)),
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {

@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { InkLog } from "../ink/ink-log";
-import { useConnection } from "../net";
+import { useConnection, type Connection } from "../net";
+import type { TvScene } from "../protocol/TvScene";
 import type { TvView } from "../protocol/TvView";
 import { TvDreifelder } from "./TvDreifelder";
 import { TvZuendstoff } from "./TvZuendstoff";
@@ -14,6 +15,27 @@ import { TvCards } from "./TvCards";
 import { TvPreisfrage } from "./TvPreisfrage";
 import { TvQuiz } from "./TvQuiz";
 import { TvRace } from "./TvRace";
+
+type Kind = TvScene["kind"];
+type SceneOf<K extends Kind> = Extract<TvScene, { kind: K }>;
+type Draw<K extends Kind> = (scene: SceneOf<K>, view: TvView, conn: Connection, ink: InkLog) => ReactNode;
+
+/** The screen for each scene kind. Keyed by every kind, so a game without its screen does not compile. */
+const SCREENS: { [K in Kind]: Draw<K> } = {
+  lobby: (scene, view, conn) => <TvLobby view={view} scene={scene} conn={conn} />,
+  quiz: ({ scene }, view, conn) => <TvQuiz scene={scene} players={view.players} conn={conn} />,
+  poster: ({ scene }, view, conn) => <TvPoster scene={scene} players={view.players} conn={conn} />,
+  // a new table of players is a new game: build the board afresh
+  race: ({ scene }, view, conn) => <TvRace key={scene.seats.map((s) => s.player).join()} scene={scene} players={view.players} conn={conn} />,
+  cards: ({ scene }, view, conn) => <TvCards key={scene.game + scene.seats.map((s) => s.player).join()} scene={scene} players={view.players} conn={conn} />,
+  kopfnuss: ({ scene }, view, conn) => <TvKopfnuss scene={scene} players={view.players} conn={conn} />,
+  zuendstoff: ({ scene }, view, conn) => <TvZuendstoff scene={scene} players={view.players} conn={conn} />,
+  dreifelder: ({ scene }, view, conn) => <TvDreifelder scene={scene} players={view.players} conn={conn} />,
+  fluechtig: ({ scene }, view, conn) => <TvFluechtig scene={scene} players={view.players} conn={conn} />,
+  grand_allee: ({ scene }, view, conn) => <TvGrandAllee key={scene.seats.map((s) => s.player).join()} scene={scene} players={view.players} conn={conn} />,
+  preisfrage: ({ scene }, view, conn) => <TvPreisfrage scene={scene} players={view.players} conn={conn} />,
+  kritzelei: ({ scene }, view, conn, ink) => <TvKritzelei scene={scene} players={view.players} conn={conn} ink={ink} />,
+};
 
 /**
  * The TV screen: the box shows it full-screen in a WebView of its loopback
@@ -34,31 +56,9 @@ export function TvApp() {
     <main className="tv">
       {!view ? (
         <p className="tv-wait">Verbinde mit dem Spieltisch …</p>
-      ) : view.scene.kind === "lobby" ? (
-        <TvLobby view={view} scene={view.scene} conn={conn} />
-      ) : view.scene.kind === "poster" ? (
-        <TvPoster scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "race" ? (
-        // a new table of players is a new game: build the board afresh
-        <TvRace key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "cards" ? (
-        <TvCards key={view.scene.scene.game + view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "kopfnuss" ? (
-        <TvKopfnuss scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "zuendstoff" ? (
-        <TvZuendstoff scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "dreifelder" ? (
-        <TvDreifelder scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "fluechtig" ? (
-        <TvFluechtig scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "grand_allee" ? (
-        <TvGrandAllee key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "preisfrage" ? (
-        <TvPreisfrage scene={view.scene.scene} players={view.players} conn={conn} />
-      ) : view.scene.kind === "kritzelei" ? (
-        <TvKritzelei scene={view.scene.scene} players={view.players} conn={conn} ink={ink} />
       ) : (
-        <TvQuiz scene={view.scene.scene} players={view.players} conn={conn} />
+        // TypeScript cannot tie the kind it looks up to the scene it passes, so the lookup is widened once.
+        (SCREENS[view.scene.kind] as Draw<Kind>)(view.scene, view, conn, ink)
       )}
       {status !== "open" && view && <p className="banner">Verbindung unterbrochen, verbinde neu …</p>}
     </main>
