@@ -104,7 +104,7 @@ export function householdsPart(promptHost, { profile, switchProfile }, onChange 
     const households = state.households();
     const live = households.map((one) => one.id);
     const may = (action, householdId, targetId = "") => householdAllowed(everyone, live, boss.id, action, householdId, targetId);
-    const ctx = { everyone, households, may, act, switchProfile };
+    const ctx = { everyone, households: state.households, may, act, switchProfile };
     for (const household of households) body.append(householdHeader(household, ctx));
     body.append(createHouseholdBlock(ctx));
   }

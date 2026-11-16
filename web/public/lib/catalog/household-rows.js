@@ -14,7 +14,7 @@ import { createForm, personForm, renameForm } from "./household-forms.js";
  * What the rows draw from and act through.
  * @typedef {object} HouseholdCtx
  * @property {Array<{id: string, name: string, hasPin?: boolean, kids?: boolean, household?: string}>} everyone every profile on the install
- * @property {Array<{id: string, name: string, adminId: string|null}>} households every live household
+ * @property {() => Array<{id: string, name: string, adminId: string|null}>} households every live household, read when needed
  * @property {(action: string, householdId: string, targetId?: string) => boolean} may what the household rule lets the owner do
  * @property {(said: HTMLElement, call: Function, opts?: object) => Promise<void>} act runs `call` as the owner, saying the outcome in `said`
  * @property {() => void} switchProfile asks who is watching again, once this device moves household
@@ -83,7 +83,6 @@ export function householdHeader(household, { everyone, may, act, switchProfile }
   return line;
 }
 
-
 /**
  * The create-a-household form, with where its refusal is said.
  * @param {HouseholdCtx} ctx
@@ -97,7 +96,7 @@ export function createHouseholdBlock({ everyone, households, may, act }) {
     return act(said, (actor, pin, newPin) => api.create(actor, pin, name, fresh ? { adminName: admin.name, newPin } : { adminId: admin.id, newPin }), {
       newPinFor: fresh || !admin.hasPin ? admin.name : null,
       // Both names can be taken: a household's is said first, as the server checks it first.
-      named: () => !fresh || households.some((one) => key(one.name) === key(name)),
+      named: () => !fresh || households().some((one) => key(one.name) === key(name)),
     });
   }), said);
   return create;
