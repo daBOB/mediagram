@@ -64,8 +64,8 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
     if (said.actorId === undefined) return answer(manage.createFirst(said.name, said.newPin));
     // Only a literal true: a restricting flag is not switched on by accident.
     return answer(said.kids === true
-      ? manage.createKid(actorId, said.pin, said.name, said.kidsAge, said.dailyLimit ?? null)
-      : manage.createGrownUp(actorId, said.pin, said.name, said.newPin));
+      ? manage.createKid(actorId, said.pin, said.name, said.kidsAge, said.dailyLimit ?? null, said.parentId ?? null)
+      : manage.createGrownUp(actorId, said.pin, said.name, said.newPin, said.household ?? null));
   }
   if (named !== null) {
     return method === "DELETE" ? answer(manage.remove(actorId, said.pin, named[1]!)) : bodiless(405);

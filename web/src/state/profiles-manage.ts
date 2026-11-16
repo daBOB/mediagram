@@ -40,8 +40,8 @@ export interface Refused {
 export type Outcome = Refused | null;
 
 const refuse = (reason: Refusal): Refused => ({ reason });
-const validAge = (age: unknown): age is 6 | 12 => age === 6 || age === 12;
-const validMinutes = (minutes: unknown): minutes is number | null =>
+export const validAge = (age: unknown): age is 6 | 12 => age === 6 || age === 12;
+export const validMinutes = (minutes: unknown): minutes is number | null =>
   minutes === null || (typeof minutes === "number" && Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440);
 const isKid = (row: ProfileRow): boolean => row.kids !== 0;
 
@@ -66,20 +66,6 @@ export class ProfileManager {
     if (profileRows(this.db).some((row) => !isKid(row))) return refuse("not-allowed");
     if (!this.household.heard()) return refuse("not-synced");
     return insertProfile(this.db, name, { pin: newPin(next), admin: true }) ?? refuse("invalid");
-  }
-
-  /** A grown-up, with its first PIN. The admin's to add. */
-  createGrownUp(actorId: string, pin: unknown, name: unknown, next: unknown): Refused | Profile {
-    if (!validPin(next)) return refuse("invalid");
-    const refused = this.unusable(name) ?? this.check(actorId, pin, "create-grown-up", null);
-    return refused ?? insertProfile(this.db, name, { pin: newPin(next), ...this.householdOf(actorId) }) ?? refuse("invalid");
-  }
-
-  /** A kid, belonging to whichever grown-up adds it, with its own limit. */
-  createKid(actorId: string, pin: unknown, name: unknown, kidsAge: unknown, dailyLimit: unknown = null): Refused | Profile {
-    if (!validAge(kidsAge) || !validMinutes(dailyLimit)) return refuse("invalid");
-    const refused = this.unusable(name) ?? this.check(actorId, pin, "create-kid", null);
-    return refused ?? insertProfile(this.db, name, { kids: true, kidsAge, parentId: actorId, ...this.householdOf(actorId), ...(dailyLimit === null ? {} : { dailyLimit }) }) ?? refuse("invalid");
   }
 
   /** Removing a grown-up takes its kids with it; removing a kid takes only it. */
@@ -140,13 +126,13 @@ export class ProfileManager {
    * A new profile's name: one that cannot be stored, or one another profile
    * here answers or once answered to — which sync would read as the same viewer.
    */
-  private unusable(name: unknown): Refused | null {
+  protected unusable(name: unknown): Refused | null {
     if (cleanName(name) === null) return refuse("invalid");
     return nameTaken(takenNames(this.db), name) ? refuse("name-taken") : null;
   }
 
   /** The household a new profile joins: its maker's, resolved. Home is left undated, as before households. */
-  private householdOf(actorId: string): { household?: string } {
+  protected householdOf(actorId: string): { household?: string } {
     const household = listProfiles(this.db).find((one) => one.id === actorId)?.household;
     return household === undefined || household === HOME ? {} : { household };
   }
@@ -162,9 +148,10 @@ export class ProfileManager {
   protected check(actorId: string, pin: unknown, action: Action, targetId: string | null, unproven = false): Outcome {
     const rows = profileRows(this.db);
     const actor = rows.find((row) => row.id === actorId);
-    if (actor === undefined || (targetId !== null && !rows.some((row) => row.id === targetId))) {
+    if (actor === undefined || (targetId !== null && action !== "create-grown-up" && !rows.some((row) => row.id === targetId))) {
       return refuse("not-found");
     }
+    // (create-grown-up names a household, which the caller has already found.)
     // A kid manages nothing, and has no PIN to prove otherwise with.
     if (isKid(actor)) return refuse("not-allowed");
     if (!unproven) {
