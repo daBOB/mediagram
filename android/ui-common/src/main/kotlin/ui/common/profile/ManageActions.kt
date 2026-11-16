@@ -1,6 +1,8 @@
 package ui.common.profile
 
 import catalog.profile.ManageProfilesViewModel
+import catalog.profile.addGrownUp
+import catalog.profile.addKid
 
 /**
  * What Manage profiles can ask for — the phone's screen and the television's
@@ -21,4 +23,4 @@ class ManageActions(
 
 /** [onClose] is Done and Back: Manage's own close, unless what opened it closes it — Settings' panel, which drops the PIN as it goes. */
 fun ManageProfilesViewModel.manageActions(onClose: () -> Unit = ::close): ManageActions =
-    ManageActions(::actAs, ::addKid, ::setKidsAge, ::setDailyLimit, ::setHiddenSections, ::remove, ::addGrownUp, ::changePin, onClose)
+    ManageActions(::actAs, this::addKid, ::setKidsAge, ::setDailyLimit, ::setHiddenSections, ::remove, this::addGrownUp, ::changePin, onClose)

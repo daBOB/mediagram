@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import model.CreateHousehold
 import model.DeleteHousehold
-import model.HouseholdWords
 import model.JoinHousehold
 import model.MoveToHousehold
 import model.ProfileOutcome
@@ -161,15 +160,7 @@ class HouseholdsOwnerViewModel
             return try { block() } finally { flag(false) }
         }
 
-        private fun ownersPin(then: () -> Unit) {
-            if (ownerPin.held != null) return then()
-            val owner = households.view.value.owner ?: return
-            ask.ask(
-                PinPrompt(HouseholdWords.OWNERS_PIN, newPin = false),
-                send = { pin -> repository.manage(ProfileRequest.Unlock(owner.id, pin)) },
-                done = { pin -> ownerPin.held = pin; then() },
-            )
-        }
+        private fun ownersPin(then: () -> Unit) = ask.ownersPin(ownerPin, repository, households.view.value.owner) { then() }
 
         /**
          * [request] sent, and the households read again once it took. A join is

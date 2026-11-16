@@ -82,16 +82,6 @@ class ManageProfilesViewModel
             )
         }
 
-        /** [name] trimmed; a blank one is not sent, as the web's form sends none. */
-        fun addKid(
-            name: String,
-            age: Int = NEW_KID_LIMIT,
-            dailyLimit: Int? = null,
-        ) {
-            val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
-            change { actor, pin -> ProfileRequest.CreateKid(actor, pin, clean, age, dailyLimit) }
-        }
-
         /** [minutes] null clears the kid's daily limit; refused for whoever may not set its age limit. */
         fun setDailyLimit(
             kidId: String,
@@ -108,12 +98,6 @@ class ManageProfilesViewModel
 
         /** Asked first on screen with [removeQuestion]; a grown-up's kids go with it. */
         fun remove(id: String) = change { actor, pin -> ProfileRequest.Remove(actor, pin, id) }
-
-        /** Admin only; the new grown-up's first PIN is typed twice before anything is sent. */
-        fun addGrownUp(name: String) {
-            val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
-            newPin(newPinTitleFor(clean), own = false) { actor, pin, newPin -> ProfileRequest.CreateGrownUp(actor, pin, clean, newPin) }
-        }
 
         /** The actor's own PIN, or — for the admin — another grown-up's; for the owner, in any household. */
         fun changePin(id: String) {
@@ -141,7 +125,7 @@ class ManageProfilesViewModel
             heldPin = null
         }
 
-        private fun change(request: (actorId: String, pin: String) -> ProfileRequest) {
+        internal fun change(request: (actorId: String, pin: String) -> ProfileRequest) {
             val managing = step.value as? ManageStep.Managing ?: return
             val pin = heldPin ?: return
             step.value = managing.copy(notice = null)
@@ -150,7 +134,7 @@ class ManageProfilesViewModel
             }
         }
 
-        private fun newPin(
+        internal fun newPin(
             title: String,
             own: Boolean,
             request: (actorId: String, pin: String, newPin: String) -> ProfileRequest,
