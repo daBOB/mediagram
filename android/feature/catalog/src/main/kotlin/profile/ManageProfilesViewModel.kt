@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import model.Households
 import model.Profile
 import model.ProfileOutcome
 import model.ProfileRequest
@@ -37,15 +36,7 @@ class ManageProfilesViewModel
         private val households: HouseholdsRepository,
         private val sync: WatchSync,
     ) : ViewModel() {
-        private sealed interface Step {
-            data object Closed : Step
-
-            data class ChoosingActor(val notice: String? = null) : Step
-
-            data class Managing(val actorId: String, val notice: String? = null, val answers: Int = 0) : Step
-        }
-
-        private val step = MutableStateFlow<Step>(Step.Closed)
+        private val step = MutableStateFlow<ManageStep>(ManageStep.Closed)
         private var heldPin: String? = null
         private val ask = PinAsk(viewModelScope)
 
@@ -61,7 +52,7 @@ class ManageProfilesViewModel
 
         fun open() {
             close()
-            step.value = Step.ChoosingActor()
+            step.value = ManageStep.ChoosingActor()
         }
 
         /** The actor's PIN, or — from before PINs existed — a first one typed twice, which becomes theirs. */
@@ -72,10 +63,10 @@ class ManageProfilesViewModel
                 send = { pin -> shared(proving(actor, pin)) },
                 done = { pin ->
                     heldPin = pin
-                    step.value = Step.Managing(id)
+                    step.value = ManageStep.Managing(id)
                 },
                 refused = { outcome ->
-                    step.value = Step.ChoosingActor(outcome.reason())
+                    step.value = ManageStep.ChoosingActor(outcome.reason())
                     // A first PIN refused is news from another device: read who is here again.
                     viewModelScope.launch { repository.rereadQuietly() }
                 },
@@ -117,7 +108,7 @@ class ManageProfilesViewModel
 
         /** The actor's own PIN, or — for the admin — another grown-up's; for the owner, in any household. */
         fun changePin(id: String) {
-            val actorId = (step.value as? Step.Managing)?.actorId ?: return
+            val actorId = (step.value as? ManageStep.Managing)?.actorId ?: return
             val target = (repository.profiles.value + households.view.value.everyone).find { it.id == id } ?: return
             val own = id == actorId
             newPin(if (own) YOUR_NEW_PIN else resetPinTitleFor(target.name), own) { actor, pin, newPin ->
@@ -133,7 +124,7 @@ class ManageProfilesViewModel
         fun close() {
             ask.cancel()
             heldPin = null
-            step.value = Step.Closed
+            step.value = ManageStep.Closed
         }
 
         override fun onCleared() {
@@ -141,7 +132,7 @@ class ManageProfilesViewModel
         }
 
         private fun change(request: (actorId: String, pin: String) -> ProfileRequest) {
-            val managing = step.value as? Step.Managing ?: return
+            val managing = step.value as? ManageStep.Managing ?: return
             val pin = heldPin ?: return
             step.value = managing.copy(notice = null)
             viewModelScope.launch {
@@ -154,7 +145,7 @@ class ManageProfilesViewModel
             own: Boolean,
             request: (actorId: String, pin: String, newPin: String) -> ProfileRequest,
         ) {
-            val actorId = (step.value as? Step.Managing)?.actorId ?: return
+            val actorId = (step.value as? ManageStep.Managing)?.actorId ?: return
             val pin = heldPin ?: return
             ask.ask(
                 PinPrompt(title, newPin = true),
@@ -179,22 +170,15 @@ class ManageProfilesViewModel
          * first ([change]) — is news to a control waiting on its answer.
          */
         private fun report(actorId: String, outcome: ProfileOutcome?) {
-            val answers = (step.value as? Step.Managing)?.takeIf { it.actorId == actorId }?.answers ?: return
+            val answers = (step.value as? ManageStep.Managing)?.takeIf { it.actorId == actorId }?.answers ?: return
             step.value =
                 when (outcome) {
-                    ProfileOutcome.Done -> Step.Managing(actorId, answers = answers + 1)
+                    ProfileOutcome.Done -> ManageStep.Managing(actorId, answers = answers + 1)
                     ProfileOutcome.WrongPin -> {
                         heldPin = null
-                        Step.ChoosingActor(PIN_NO_LONGER_VALID)
+                        ManageStep.ChoosingActor(PIN_NO_LONGER_VALID)
                     }
-                    else -> Step.Managing(actorId, outcome.reason(), answers + 1)
+                    else -> ManageStep.Managing(actorId, outcome.reason(), answers + 1)
                 }
         }
-
-        private fun Step.shown(profiles: List<Profile>, install: Households): ManageUiState =
-            when (this) {
-                Step.Closed -> ManageUiState.Closed
-                is Step.ChoosingActor -> ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
-                is Step.Managing -> manageable(profiles, actorId, notice, answers, install)
-            }
     }

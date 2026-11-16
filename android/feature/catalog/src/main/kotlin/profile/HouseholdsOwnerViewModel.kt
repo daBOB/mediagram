@@ -46,10 +46,7 @@ class HouseholdsOwnerViewModel
         private val households: HouseholdsRepository,
         private val sync: WatchSync,
     ) : ViewModel() {
-        /** [visit] counts [close]s, so an answer to a change sent before one stays with its own visit. */
-        private data class Step(val open: Boolean = false, val notice: String? = null, val answers: Int = 0, val sending: Boolean = false, val visit: Int = 0)
-
-        private val step = MutableStateFlow(Step())
+        private val step = MutableStateFlow(OwnerStep())
         private val watcher = MutableStateFlow<String?>(null)
         private var heldPin: String? = null
         private val ask = PinAsk(viewModelScope)
@@ -124,7 +121,7 @@ class HouseholdsOwnerViewModel
         fun close() {
             ask.cancel()
             heldPin = null
-            step.value = Step(visit = step.value.visit + 1)
+            step.value = OwnerStep(visit = step.value.visit + 1)
         }
 
         override fun onCleared() { heldPin = null }
@@ -189,12 +186,7 @@ class HouseholdsOwnerViewModel
         private fun report(visit: Int, outcome: ProfileOutcome?, named: Boolean) {
             val current = step.value.takeIf { it.visit == visit && isOpen() } ?: return
             if (outcome == ProfileOutcome.WrongPin) heldPin = null
-            val notice =
-                when {
-                    outcome == ProfileOutcome.Done -> null
-                    outcome == ProfileOutcome.NameTaken && named -> HouseholdWords.HOUSEHOLD_NAME_TAKEN
-                    else -> outcome.reason()
-                }
+            val notice = noticeFor(outcome, named)
             step.value = current.copy(notice = notice, answers = current.answers + 1)
         }
     }
