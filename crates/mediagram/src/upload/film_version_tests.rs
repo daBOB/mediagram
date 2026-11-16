@@ -64,15 +64,28 @@ fn the_notice_lists_every_held_version() {
 #[test]
 fn only_the_same_quality_hdr_and_cut_is_the_same_version() {
     let held = film("A", Kind::Movie, 78, "2160p", "HDR10", None);
-    assert!(same_version(&held, Some("2160p"), "HDR10", None));
-    assert!(!same_version(&held, Some("1080p"), "HDR10", None));
-    assert!(!same_version(&held, Some("2160p"), "SDR", None));
+    assert!(same_version(&held, Some("2160p"), "HDR10", None, &[]));
+    assert!(!same_version(&held, Some("1080p"), "HDR10", None, &[]));
+    assert!(!same_version(&held, Some("2160p"), "SDR", None, &[]));
     assert!(!same_version(
         &held,
         Some("2160p"),
         "HDR10",
-        Some("Final Cut")
+        Some("Final Cut"),
+        &[]
     ));
+}
+
+#[test]
+fn a_copy_that_adds_a_language_is_not_the_same_version() {
+    let mut held = film("A", Kind::Movie, 78, "1080p", "SDR", None);
+    held.alang = vec!["de".into()];
+    let german = ["de".to_string()];
+    let both = ["en".to_string(), "de".to_string()];
+    assert!(same_version(&held, Some("1080p"), "SDR", None, &german));
+    assert!(!same_version(&held, Some("1080p"), "SDR", None, &both));
+    held.alang = vec!["de".into(), "en".into()];
+    assert!(same_version(&held, Some("1080p"), "SDR", None, &both));
 }
 
 #[test]

@@ -101,7 +101,7 @@ fn has_extension(name: &str, extensions: &[&str]) -> bool {
 /// standard cut, which is no cut at all.
 pub fn cut_from_file_name(name: &str) -> Option<&'static str> {
     let tokens: Vec<String> = name
-        .split(['.', '_', '-', ' ', '(', ')', '[', ']'])
+        .split(['.', '_', '-', ' ', '(', ')', '[', ']', '{', '}'])
         .filter(|t| !t.is_empty())
         .map(|t| t.replace(['\'', '\u{2019}'], "").to_lowercase())
         .collect();

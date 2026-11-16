@@ -13,6 +13,9 @@ import { languageLabel } from "../language-label.js";
 import { versionLabel, versionsOf } from "../film-versions.js";
 import { offlineBadge, transcodeBadge } from "./set-badge.js";
 
+/** How soon after opening a backdrop click still belongs to the click that opened it. */
+const DOUBLE_CLICK_MS = 500;
+
 /** `mkv · av1 · aac · German, English`: what a row needs to tell two copies apart. */
 function technicalLine(set) {
   let languages = [];
@@ -83,9 +86,11 @@ export function chooseVersion(film, { resumeOf, played }) {
     cancel.addEventListener("click", () => done(null));
     dialog.append(cancel);
     // A backdrop click lands on the dialog itself, as does one on its padding:
-    // only the first is outside the box.
+    // only the first is outside the box. The second click of a double-click
+    // on the card would land there too, a moment after opening; it is not a "no".
+    const openedAt = performance.now();
     dialog.addEventListener("click", (event) => {
-      if (event.target !== dialog) return;
+      if (event.target !== dialog || performance.now() - openedAt < DOUBLE_CLICK_MS) return;
       const box = dialog.getBoundingClientRect();
       const inside = event.clientX >= box.left && event.clientX <= box.right
         && event.clientY >= box.top && event.clientY <= box.bottom;

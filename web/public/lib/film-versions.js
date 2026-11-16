@@ -26,10 +26,8 @@ const resolutionRank = (quality) => {
   return at === -1 ? RESOLUTIONS.length : at;
 };
 const isHdr = (set) => Boolean(set.hdr) && set.hdr !== "SDR";
-/** A version's cut; `null` is the standard one. */
-export const cutOf = (set) => set.variant ?? null;
-
-const COLLATE = new Intl.Collator(undefined, { numeric: true }).compare;
+/** A version's cut; `null` (or an empty label) is the standard one. */
+export const cutOf = (set) => set.variant || null;
 
 /**
  * Version order: the standard cut first, other cuts by name; within a cut the
@@ -42,16 +40,21 @@ export function compareVersions(a, b) {
   if (ca !== cb) {
     if (ca === null) return -1;
     if (cb === null) return 1;
-    return COLLATE(ca, cb);
+    // Plain code-unit order, not the locale's: Android sorts the same way.
+    return ca < cb ? -1 : 1;
   }
   return resolutionRank(a.quality) - resolutionRank(b.quality)
     || Number(isHdr(b)) - Number(isHdr(a))
     || (a.setId < b.setId ? -1 : a.setId > b.setId ? 1 : 0);
 }
 
-/** A film's identity: its poster key, or the set itself when it has none. */
+/**
+ * A film's identity: its provider poster key, or the set itself. Only a TMDB
+ * key names one film; the fallback key is built from the title alone, and two
+ * untagged films called "Dune" are not copies of each other.
+ */
 function filmKey(set) {
-  return set.kind === "movie" && set.showKey ? set.showKey : `set:${set.setId}`;
+  return set.kind === "movie" && set.showKey?.startsWith("tmdb-movie-") ? set.showKey : `set:${set.setId}`;
 }
 
 /**
@@ -136,20 +139,22 @@ export function filmPosition(film, progressOf, watchedAt) {
 }
 
 /**
- * Progress rows (newest first) as Continue should see them: a film held more
- * than once keeps only its newest resumable row, and a row a finished copy of
- * its cut has closed is dropped. Rows for anything held once pass untouched,
- * so episodes and single films keep the rules they always had.
+ * Progress rows (newest first) as Continue should see them. A film held more
+ * than once appears once, by its newest row that is still its cut's position
+ * (`versionPosition`) and worth resuming, so Continue, the card and the
+ * chooser never disagree. Rows for anything held once pass untouched, so
+ * episodes and single films keep the rules they always had.
  */
 export function continueRows(rows, filmOf, watchedAt) {
+  const byId = new Map(rows.map((row) => [row.setId, row]));
+  const progressOf = (setId) => byId.get(setId) ?? null;
   const shown = new Set();
   return rows.filter((row) => {
     const film = filmOf(row.setId);
     if (!film?.versions) return true;
     if (resumeAt(row) === null) return true; // every caller drops it anyway
     const version = film.versions.find((candidate) => candidate.setId === row.setId);
-    const sameCut = film.versions.filter((other) => cutOf(other) === cutOf(version));
-    if (sameCut.some((other) => (watchedAt(other.setId) ?? -Infinity) > row.updatedAt)) return false;
+    if (versionPosition(version, film, progressOf, watchedAt) !== row) return false;
     if (shown.has(film.setId)) return false;
     shown.add(film.setId);
     return true;

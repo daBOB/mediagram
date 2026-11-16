@@ -45,6 +45,7 @@ fn release_tags_after_the_year_name_one_canonical_cut() {
         ("Robocop 1987 Ungeschnitten.mkv", "Uncut"),
         ("Hostel.2005.Unrated.720p.mkv", "Uncut"),
         ("Jaws [1975] [Remastered].mkv", "Remastered"),
+        ("Blade Runner (1982) {edition-Final Cut}.mkv", "Final Cut"),
     ];
     for (name, cut) in cases {
         assert_eq!(cut_from_file_name(name), Some(cut), "{name}");

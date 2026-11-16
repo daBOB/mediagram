@@ -291,7 +291,7 @@ let pendingOpen = 0;
  * playback has not really moved on; see `player.js`'s `RESUME_DRIFT_SECONDS`.
  */
 function play(set, queue = null, options = {}) {
-  if (films.asks(set, options)) return films.choose(set).then((copy) => (copy ? play(copy, queue, { ...options, chosen: true }) : false));
+  if (films.asks(set, options)) return films.pick(set, queue, options, play);
   const request = ++pendingOpen;
   // This tab may have been open while the same viewer watched further on
   // another device. Started here, not awaited: a superseded request resolves
@@ -299,7 +299,7 @@ function play(set, queue = null, options = {}) {
   const freshResume = state.refreshState().then(() =>
     request === pendingOpen ? resumeAt(films.positionFor(set)) : null,
   );
-  return openTitle(set, queue, { ...options, freshResume }, request);
+  return openTitle(set, queue, { ...options, freshResume, saved: resumeAt(films.positionFor(set)) }, request);
 }
 
 async function openTitle(set, queue, options, request) {
@@ -323,7 +323,7 @@ async function openTitle(set, queue, options, request) {
   // says which kind of start that is. Opening a title from a shelf carries
   // none, and the player warms it up and starts it once it holds enough.
   const autoplay = options.autoplay ?? null;
-  const { freshResume, at, clip } = options;
+  const { freshResume, at, clip, saved } = options;
 
   const { next, previous, inRun, preload } = playsNext(library, set, queue);
   requestPreload(preload);
@@ -331,7 +331,7 @@ async function openTitle(set, queue, options, request) {
     next, previous, inRun, collection: queue ? null : collectionOf(library, set),
     onOpenNext: (following, how) => play(following, queue, how),
     autoplay,
-    freshResume, at, clip,
+    freshResume, at, clip, saved,
   });
   dailyLimit.opened(freshResume);
   return true;

@@ -48,14 +48,16 @@ export function filmPage(set, {
   const several = Boolean(set.versions);
   const facts = [set.year, several ? null : humanDuration(set.duration), ageLabel(set), genresOf(set).slice(0, 3).join(", ")]
     .filter(Boolean).join(" · ");
-  const play = several ? null : joinOr([set.setId], playPill(resume ? `Resume from ${clockTime(resume)}` : "Play", () => onPlay(set)));
+  // Join stays offered while a session plays any copy; the Versions list stands in for Play.
+  const ids = versionsOf(set).map((copy) => copy.setId);
+  const play = joinOr(ids, several ? null : playPill(resume ? `Resume from ${clockTime(resume)}` : "Play", () => onPlay(set)));
   const backSection = set.anime ? "anime" : "movies";
   page.append(titleSpread({
     back: { href: href({ page: "department", section: backSection }), label: `Back to ${set.anime ? "Anime" : "Movies"}` },
     title,
     facts,
     art: set.backdrop ?? set.poster,
-    actions: [play, castPill(set.setId, resume ?? 0), listToggle(set.setId), moreMenu([pinControl(set.setId)])],
+    actions: [play, castPill(set.setId, resume ?? 0), listToggle(ids), moreMenu([pinControl(set.setId)])],
   }));
   if (several) {
     const versions = el("section", "versions-panel");

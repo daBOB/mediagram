@@ -411,5 +411,88 @@
         ]
       }
     ]
+  },
+  {
+    "name": "only a TMDB key names a film: two untagged films with one title stay apart",
+    "sets": [
+      {
+        "setId": "D1",
+        "kind": "movie",
+        "showKey": "title-dune",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "D2",
+        "kind": "movie",
+        "showKey": "title-dune",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "D1",
+        "versions": [
+          "D1"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      },
+      {
+        "setId": "D2",
+        "versions": [
+          "D2"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an empty cut label is the standard cut",
+    "sets": [
+      {
+        "setId": "E1",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": "",
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "E2",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "2160p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "E2",
+        "versions": [
+          "E2",
+          "E1"
+        ],
+        "labels": [
+          "Standard · 4K · 3h 1m · 4.0 GB",
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
   }
 ]

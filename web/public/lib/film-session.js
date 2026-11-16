@@ -67,7 +67,17 @@ export function filmSession(state, current) {
      * @param {any} set @param {{ chosen?: boolean, autoplay?: unknown }} options
      */
     asks: (set, options) => !options.chosen && !options.autoplay && Boolean(filmOf(set.setId)?.versions),
-    /** The copy the viewer picks for `set`'s film, or `null` when they back out. */
-    choose: (set) => chooseVersion(filmOf(set.setId), versionState),
+    /**
+     * Asks which copy of `set`'s film to play and plays it through `play`;
+     * resolves `false` when the viewer backs out. In a list being played
+     * through, the copy takes the film's place, so what follows it still does.
+     */
+    pick(set, queue, options, play) {
+      return chooseVersion(filmOf(set.setId), versionState).then((copy) => {
+        if (!copy) return false;
+        const run = queue?.map((item) => (item.setId === set.setId ? copy : item)) ?? null;
+        return play(copy, run, { ...options, chosen: true });
+      });
+    },
   };
 }

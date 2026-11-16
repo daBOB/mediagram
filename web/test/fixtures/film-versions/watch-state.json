@@ -287,6 +287,33 @@
           "B"
         ]
       }
+    },
+    {
+      "name": "a newer glance at another copy of the cut replaces its place, on Continue too",
+      "progress": [
+        {
+          "setId": "B",
+          "at": 10,
+          "duration": 10000,
+          "updatedAt": 2000
+        },
+        {
+          "setId": "A",
+          "at": 3900,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {},
+      "expect": {
+        "played": false,
+        "resume": {
+          "A": null,
+          "B": null,
+          "C": null
+        },
+        "continue": []
+      }
     }
   ]
 }

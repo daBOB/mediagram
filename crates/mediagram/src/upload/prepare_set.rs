@@ -73,6 +73,7 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
         &resolve_input.file_name,
         info.quality.as_deref(),
         &hdr,
+        new.alang.as_deref().unwrap_or(&info.alang),
     )?;
 
     // Kept before the caption takes ownership of the resolved ids.

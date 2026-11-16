@@ -28,12 +28,15 @@ pub fn settle(
     file_name: &str,
     quality: Option<&str>,
     hdr: &str,
+    alang: &[String],
 ) -> Result<Option<String>> {
     if resolved.kind != Kind::Movie {
         return Ok(new.variant.clone());
     }
-    let cut = match &new.variant {
-        Some(variant) => Some(variant.clone()),
+    // `--variant ""` asks for the standard cut, which is stored as none.
+    let cut = match new.variant.as_deref().map(str::trim) {
+        Some("") => None,
+        Some(variant) => Some(variant.to_string()),
         None => confirm_cut(cut_from_file_name(file_name))?,
     };
     if let Some(tmdb) = resolved.ids.tmdb {
@@ -43,7 +46,7 @@ pub fn settle(
             None => title.to_string(),
         };
         let held = set_lookup::film_versions(conn, tmdb)?;
-        refuse_a_held_version(&name, &held, quality, hdr, cut.as_deref())?;
+        refuse_a_held_version(&name, &held, quality, hdr, cut.as_deref(), alang)?;
     }
     Ok(cut)
 }
@@ -70,21 +73,26 @@ fn confirm_cut(guess: Option<&str>) -> Result<Option<String>> {
 }
 
 /// Says which versions are held, and asks before uploading one of them
-/// again: the same quality, HDR and cut is almost certainly the same film
-/// twice, at the cost of gigabytes of upload. The answer defaults to no, and
-/// where nobody can answer it is no.
+/// again: the same quality, HDR, cut and audio languages is almost certainly
+/// the same film twice, at the cost of gigabytes of upload. A copy that adds a
+/// language is a re-upload worth having, not a duplicate. The answer defaults
+/// to no, and where nobody can answer it is no.
 fn refuse_a_held_version(
     name: &str,
     held: &[SetRow],
     quality: Option<&str>,
     hdr: &str,
     cut: Option<&str>,
+    alang: &[String],
 ) -> Result<()> {
     if held.is_empty() {
         return Ok(());
     }
     println!("{}", notice(name, held));
-    let Some(same) = held.iter().find(|row| same_version(row, quality, hdr, cut)) else {
+    let Some(same) = held
+        .iter()
+        .find(|row| same_version(row, quality, hdr, cut, alang))
+    else {
         return Ok(());
     };
     let again = someone_can_answer()
@@ -136,10 +144,17 @@ pub(crate) fn same_version(
     quality: Option<&str>,
     hdr: &str,
     cut: Option<&str>,
+    alang: &[String],
 ) -> bool {
+    let languages = |list: &[String]| {
+        let mut sorted = list.to_vec();
+        sorted.sort();
+        sorted
+    };
     row.quality.as_deref() == quality
         && row.hdr.as_deref() == Some(hdr)
         && row.variant.as_deref() == cut
+        && languages(&row.alang) == languages(alang)
 }
 
 #[cfg(test)]
