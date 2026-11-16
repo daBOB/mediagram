@@ -48,7 +48,9 @@ const SCREENS: { [K in Kind]: Draw<K> } = {
     <TvCards key={scene.game + scene.seats.map((s) => s.player).join()} scene={scene} players={view.players} ranking={view.ranking} conn={conn} />
   ),
   kopfnuss: ending(({ scene }, view, conn) => <TvKopfnuss scene={scene} players={view.players} conn={conn} />),
-  zuendstoff: ending(({ scene }, view, conn) => <TvZuendstoff scene={scene} players={view.players} conn={conn} />),
+  zuendstoff: ({ scene }, view, conn) => (
+    <TvZuendstoff key={scene.seats.map((s) => s.player).join()} scene={scene} players={view.players} ranking={view.ranking} conn={conn} />
+  ),
   letztes_wort: ending(({ scene }, view) => <TvLetztesWort scene={scene} players={view.players} />),
   dreifelder: ending(({ scene }, view, conn) => <TvDreifelder scene={scene} players={view.players} conn={conn} />),
   fluechtig: ({ scene }, view, conn) => <TvFluechtig scene={scene} players={view.players} ranking={view.ranking} conn={conn} />,
