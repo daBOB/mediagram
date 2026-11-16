@@ -10,6 +10,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import model.HOME_HOUSEHOLD
 import model.Households
 import model.Profile
+import model.RoleAction
+import model.allowed
 import testing.webFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -57,8 +59,9 @@ private fun offered(
     val panel = manageable(profiles.filter { it.household == mine }, actorId, null, install = install) as? ManageUiState.Managing ?: return false
     fun List<Profile>.has() = any { it.id == targetId }
     return when (action) {
-        "create-grown-up" -> panel.canAddGrownUp
-        "create-kid" -> true
+        // Adding names a household or a parent the panel does not list, so the shared rule answers.
+        "create-grown-up", "create-kid" ->
+            profiles.allowed(actorId, if (action == "create-kid") RoleAction.CREATE_KID else RoleAction.CREATE_GROWN_UP, targetId)
         "remove" -> panel.grownUps.has() || panel.kids.has()
         "set-pin" -> targetId == actorId || panel.grownUps.has()
         "set-kids-age" -> panel.kids.has()
