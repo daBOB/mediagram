@@ -181,16 +181,16 @@ impl Game for ZuendstoffGame {
         self.tv_view(view)
     }
 
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.lives.keys().copied().collect())
+    }
+
     fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
         (self.stage == Stage::Final).then(|| Ranking::in_order(self.order.iter().copied()))
     }
 
     fn phone_buzz(&self, _view: &ViewCtx, player: PlayerId) -> Option<Buzz> {
-        match self.stage {
-            Stage::Lit { ask, .. } if ask.who() == player => Some(Buzz::Turn),
-            Stage::Boom { victim, .. } if victim == player => Some(Buzz::Wrong),
-            _ => None,
-        }
+        self.buzz(player)
     }
 }
 

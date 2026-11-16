@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.193.7 — The final screen counts the players who played
+
+**Changed**
+
+- "Platz 2 von 4" on the phone's final screen counts the players who were in the game when it ended, a player whose phone had gone away included. Someone who joined only to wait for the next game is no longer counted: in Dreifelder and Zündstoff a player who joined during the game no longer raises the number, and in every game someone who joins after the end no longer raises it for everyone else.
+- Whoever joins after a game has ended sees "… läuft – Du spielst in der nächsten Runde mit." instead of a last place of their own, and the award ceremony on the TV no longer lists them. Flüchtig's ceremony lists the fugitive and the hunters only, not players who joined during the chase.
+- Joining a running Dreifelder or Zündstoff now says what every other game says, "Du spielst in der nächsten Runde mit.": Dreifelder said "Beim nächsten Spiel bist du dabei.", and Zündstoff showed the newcomer as already out of the game.
+
 ## Spieltisch 0.193.0 — Letztes Wort, the last right answer keeps the stick
 
 **Added**

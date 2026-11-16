@@ -8,9 +8,6 @@ use crate::protocol::{
 
 impl DreifelderGame {
     pub(crate) fn phone_view(&self, player: PlayerId) -> PhoneScreen {
-        if !self.tally.plays(player) {
-            return PhoneScreen::Wait { title: "Dreifelder läuft".into(), text: Some("Beim nächsten Spiel bist du dabei.".into()) };
-        }
         let Stage::Question { opens_at, closes_at } = self.stage else { return self.outcome(player) };
         let round = self.round();
         let (alive, all) = self.head_count();

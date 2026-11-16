@@ -185,7 +185,7 @@ fn a_tv_hello_on_a_seated_socket_frees_the_seat() {
     assert_eq!(r.leader(), None);
 }
 
-/// Seats Ana and Ben, or the whole room when `seats` is `None`; a tap ends it, Ben first with 7 points, Ana second.
+/// Seats Ana and Ben, or the whole room when `seats` is `None`; a tap ends it, Ben first with 7 points, the rest by score.
 struct Duel {
     seats: Option<Vec<PlayerId>>,
     over: bool,
@@ -206,8 +206,9 @@ impl Game for Duel {
     fn seats(&self) -> Option<Vec<PlayerId>> {
         self.seats.clone()
     }
-    fn ranking(&self, _: &[crate::room_seats::Player]) -> Option<crate::protocol::Ranking> {
-        self.over.then(|| crate::protocol::Ranking::in_order([1, 0]))
+    fn ranking(&self, players: &[crate::room_seats::Player]) -> Option<crate::protocol::Ranking> {
+        let seated = players.iter().filter(|p| self.seats.as_ref().is_none_or(|s| s.contains(&p.id)));
+        self.over.then(|| crate::protocol::Ranking::by_score(seated))
     }
 }
 
@@ -258,10 +259,15 @@ fn the_room_ends_a_game_with_its_ranking_and_keeps_late_joiners_waiting() {
 }
 
 #[test]
-fn a_game_the_whole_room_plays_counts_everyone_and_places_the_unranked_last() {
+fn a_game_the_whole_room_plays_counts_who_was_there_at_the_end() {
     let (mut r, _) = duel(None);
     hello(&mut r, 3, "Cem", None);
     assert_eq!(phone(&r, 3), PhoneScreen::Wait { title: "idle".into(), text: None }, "a late joiner plays along");
     action(&mut r, 1, Action::Choose { index: 0, at: 0.0 });
-    assert_eq!(phone(&r, 3), PhoneScreen::Final { rank: 3, of: 3, score: 0, can_restart: false });
+    assert_eq!(phone(&r, 3), PhoneScreen::Final { rank: 2, of: 3, score: 0, can_restart: false }, "Ana and Cem tie");
+    hello(&mut r, 4, "Dan", None);
+    let wait = PhoneScreen::Wait { title: "Heimlauf läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
+    assert_eq!(phone(&r, 4), wait, "joined after the end");
+    assert_eq!(phone(&r, 1), PhoneScreen::Final { rank: 2, of: 3, score: 0, can_restart: true }, "the newcomer is not counted");
+    assert_eq!(tv_ranking(&r), Some(vec![(1, 1), (0, 2), (2, 2)]));
 }

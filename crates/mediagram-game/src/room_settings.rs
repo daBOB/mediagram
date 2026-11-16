@@ -117,6 +117,7 @@ impl Room {
         }
         let mut ctx = GameCtx { now, players: &mut self.players };
         self.game = Some((self.factory)(&mut ctx, &self.settings));
+        self.ended = None;
         self.announce_board(now);
         Ok(())
     }

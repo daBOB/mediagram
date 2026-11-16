@@ -1832,7 +1832,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-game"
-version = "0.193.6"
+version = "0.193.7"
 dependencies = [
  "axum",
  "futures",
@@ -2927,7 +2927,7 @@ dependencies = [
 
 [[package]]
 name = "spieltisch-core"
-version = "0.193.6"
+version = "0.193.7"
 dependencies = [
  "mediagram-game",
  "serde_json",

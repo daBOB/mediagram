@@ -184,8 +184,7 @@ fn a_player_who_joins_mid_game_waits_and_holds_nothing_up() {
     let t = answer(&mut g, &mut ps, &[0, 1], &[], 500.0);
     tick(&mut g, &mut ps, t);
     assert!(matches!(g.stage, Stage::Reveal { .. }), "Cem does not hold the round up");
-    let view = ViewCtx { now: t, players: &ps, leader: Some(0) };
-    assert!(matches!(g.phone_screen(&view, 2), PhoneScreen::Wait { .. }));
+    assert_eq!(g.seats(), Some(vec![0, 1]), "Cem waits for the next game");
 }
 
 #[test]

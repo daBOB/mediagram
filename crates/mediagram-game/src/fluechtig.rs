@@ -147,7 +147,9 @@ impl Game for FluechtigGame {
     }
 
     fn ranking(&self, players: &[Player]) -> Option<Ranking> {
-        self.chase.winner().map(|_| Ranking::by_score(players))
+        self.chase.winner()?;
+        let seats = self.seats()?;
+        Some(Ranking::by_score(players.iter().filter(|p| seats.contains(&p.id))))
     }
 }
 
