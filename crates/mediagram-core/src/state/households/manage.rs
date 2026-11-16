@@ -26,7 +26,7 @@ mod create;
 mod join;
 mod move_to;
 mod set_admin;
-mod writes;
+pub(crate) mod writes;
 
 pub use create::NewHouseholdAdmin;
 

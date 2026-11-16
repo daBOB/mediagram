@@ -32,23 +32,27 @@ impl Core {
             .await
     }
 
-    /// The admin adds a grown-up, with its first PIN.
+    /// The admin adds a grown-up, with its first PIN, to their own household.
+    /// The owner may name any other household; `None` or "" is the maker's own.
     pub async fn create_grown_up(
         self: Arc<Self>,
         actor_id: String,
         pin: String,
         name: String,
         new_pin: String,
+        household: Option<String>,
     ) -> ProfileOutcome {
         self.blocking(move |core| {
-            core.state_db
-                .manage(|m| m.create_grown_up(&actor_id, &pin, &name, &new_pin))
+            core.state_db.manage(|m| {
+                m.create_grown_up(&actor_id, &pin, &name, &new_pin, household.as_deref())
+            })
         })
         .await
     }
 
     /// A grown-up adds a kid of its own, from 6 or from 12, with a daily
-    /// limit in minutes (1..=1440) or none.
+    /// limit in minutes (1..=1440) or none. The owner may name any grown-up
+    /// in `parent_id`; `None` or "" is the maker.
     pub async fn create_kid(
         self: Arc<Self>,
         actor_id: String,
@@ -56,10 +60,12 @@ impl Core {
         name: String,
         kids_age: u8,
         daily_limit: Option<u16>,
+        parent_id: Option<String>,
     ) -> ProfileOutcome {
         self.blocking(move |core| {
-            core.state_db
-                .manage(|m| m.create_kid(&actor_id, &pin, &name, kids_age, daily_limit))
+            core.state_db.manage(|m| {
+                m.create_kid(&actor_id, &pin, &name, kids_age, daily_limit, parent_id.as_deref())
+            })
         })
         .await
     }
