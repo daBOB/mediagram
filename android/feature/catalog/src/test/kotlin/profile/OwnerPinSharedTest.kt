@@ -58,4 +58,18 @@ class OwnerPinSharedTest : HouseholdsOwnerHarness() {
             val vm = owning().apply { open() }
             assertEquals(PinPrompt(model.HouseholdWords.OWNERS_PIN, newPin = false), vm.pin.value)
         }
+
+    @Test
+    fun theOwnersNewPinReplacesTheSharedOne() =
+        runTest(UnconfinedTestDispatcher()) {
+            val manage = manage().apply { open(); actAs("a"); enterPin("1234") }
+            manage.changePin("a")
+            manage.enterPin("2468")
+            manage.enterPin("2468")
+            assertEquals("2468", ownerPin.held)
+            val vm = owning().apply { open() }
+            vm.rename("barn", "Shed")
+            assertNull(vm.pin.value)
+            assertEquals("Shed", household("barn")?.name)
+        }
 }

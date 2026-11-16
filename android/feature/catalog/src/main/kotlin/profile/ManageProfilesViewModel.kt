@@ -162,7 +162,10 @@ class ManageProfilesViewModel
                 send = { newPin -> shared(request(actorId, pin, newPin)) },
                 done = { newPin ->
                     // A changed own PIN is the one this panel sends from now on, or the next change is refused.
-                    if (own) heldPin = newPin
+                    if (own) {
+                        heldPin = newPin
+                        if (repository.profiles.value.find { it.id == actorId }?.owner == true) ownerPin.held = newPin
+                    }
                     report(actorId, ProfileOutcome.Done)
                 },
                 refused = { outcome -> report(actorId, outcome) },
