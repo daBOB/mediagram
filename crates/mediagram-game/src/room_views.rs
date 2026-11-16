@@ -2,7 +2,7 @@
 
 use crate::catalogue::{CATALOGUE, entry};
 use crate::game::{Game, ViewCtx};
-use crate::protocol::{BoardScreen, PhoneScreen, PhoneView, PlayerInfo, Role, ServerMsg, ServerTime, TvScene, TvView};
+use crate::protocol::{BoardScreen, PhoneScreen, PhoneView, PlayerInfo, Ranking, Role, ServerMsg, ServerTime, TvScene, TvView};
 use crate::room::{ConnId, Outbox, Room, encode};
 use crate::room_seats::Player;
 
@@ -45,7 +45,7 @@ impl Room {
                             board: self.board_connected(),
                         },
                     },
-                    ranking: self.game.as_ref().and_then(|g| g.ranking(&self.players)).map(Box::new),
+                    ranking: self.ranking().map(Box::new),
                 },
             }),
             Role::Board => Some(ServerMsg::Board {
@@ -84,19 +84,26 @@ impl Room {
         }
     }
 
-    /// A phone during a game: a wait for a player not seated, the game's own screen while it runs, then the player's place.
+    /// How the running game placed its players once it is over.
+    pub(crate) fn ranking(&self) -> Option<Ranking> {
+        let game = self.game.as_ref()?;
+        self.ended.clone().or_else(|| game.ranking(&self.players))
+    }
+
+    /// A phone during a game: the game's own screen while it runs, then the player's place among
+    /// everyone ranked; a player the game does not seat, or did not rank, waits for the next one.
     fn game_screen(&self, game: &dyn Game, view: &ViewCtx, p: &Player) -> PhoneScreen {
-        let seats = game.seats();
-        if seats.as_ref().is_some_and(|s| !s.contains(&p.id)) {
-            let title = format!("{} läuft", entry(self.settings.game).name);
-            return PhoneScreen::Wait { title, text: Some("Du spielst in der nächsten Runde mit.".into()) };
-        }
-        let Some(ranking) = game.ranking(view.players) else { return game.phone_screen(view, p.id) };
-        PhoneScreen::Final {
-            rank: ranking.place_of(p.id).unwrap_or(ranking.places.len() as u8 + 1),
-            of: seats.map_or(view.players.len(), |s| s.len()) as u8,
-            score: p.score,
-            can_restart: view.leader == Some(p.id),
+        let place = match self.ranking() {
+            Some(ranking) => ranking.place_of(p.id).map(|rank| (rank, ranking.places.len() as u8)),
+            None if game.seats().is_none_or(|s| s.contains(&p.id)) => return game.phone_screen(view, p.id),
+            None => None,
+        };
+        match place {
+            Some((rank, of)) => PhoneScreen::Final { rank, of, score: p.score, can_restart: view.leader == Some(p.id) },
+            None => {
+                let title = format!("{} läuft", entry(self.settings.game).name);
+                PhoneScreen::Wait { title, text: Some("Du spielst in der nächsten Runde mit.".into()) }
+            }
         }
     }
 

@@ -143,6 +143,10 @@ impl Game for DreifelderGame {
         self.tv_view()
     }
 
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.tally.players())
+    }
+
     fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
         (self.stage == Stage::Final).then(|| Ranking::in_order(self.order.iter().copied()))
     }

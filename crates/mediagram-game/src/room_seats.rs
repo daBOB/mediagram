@@ -101,6 +101,8 @@ impl Room {
                 .find(|c| !self.players.iter().any(|p| p.color == *c))
                 .unwrap_or(PLAYER_COLORS[0]);
             let avatar = crate::avatars::assign(&self.players, avatar.as_deref());
+            // someone joining after the end is no part of it, so the ranking keeps to who was there
+            self.ended = self.ranking();
             let id = self.next_player_id;
             self.next_player_id = self.next_player_id.wrapping_add(1);
             self.players.push(Player {

@@ -69,7 +69,8 @@ pub trait Game: Send {
         None
     }
 
-    /// How the game placed its players once it is over; `None` while it runs.
+    /// How the game placed its players once it is over; `None` while it runs. It ranks everyone
+    /// seated when it ended, absent players too: the final screen's "of" counts them.
     fn ranking(&self, players: &[Player]) -> Option<Ranking>;
 
     /// An act from the drawing board.

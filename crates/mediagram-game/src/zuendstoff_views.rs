@@ -3,7 +3,7 @@
 
 use crate::game::{ViewCtx, name, unasked};
 use crate::protocol::{
-    AnswerColor, ChoiceOption, ChoiceStatus, PhoneScreen, PlayerId, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat,
+    AnswerColor, Buzz, ChoiceOption, ChoiceStatus, PhoneScreen, PlayerId, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat,
     ZuendstoffStage,
 };
 use crate::zuendstoff::ZuendstoffGame;
@@ -89,5 +89,13 @@ impl ZuendstoffGame {
             },
         };
         TvScene::Zuendstoff { scene: ZuendstoffScene { round: self.round, seats, stage } }
+    }
+
+    pub(crate) fn buzz(&self, player: PlayerId) -> Option<Buzz> {
+        match self.stage {
+            Stage::Lit { ask, .. } if ask.who() == player => Some(Buzz::Turn),
+            Stage::Boom { victim, .. } if victim == player => Some(Buzz::Wrong),
+            _ => None,
+        }
     }
 }
