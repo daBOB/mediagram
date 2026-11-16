@@ -11,6 +11,7 @@ use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
 use crate::metadata::title_details;
+use crate::upload::film_version;
 use crate::upload::new_set::{NewSet, Planned};
 use crate::upload::plan::{Source, record_planned};
 
@@ -61,6 +62,19 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
             .context("resolving metadata")?,
     };
 
+    // Before the remux, so a film refused as a version already held costs
+    // nothing but the probe.
+    let hdr = new.hdr.clone().unwrap_or(info.hdr);
+    let mut conn = db::open(&data_dir)?;
+    let variant = film_version::settle(
+        &conn,
+        new,
+        &resolved,
+        &resolve_input.file_name,
+        info.quality.as_deref(),
+        &hdr,
+    )?;
+
     // Kept before the caption takes ownership of the resolved ids.
     let title_id = lesson.is_none().then_some(resolved.ids.tmdb).flatten();
     let title_kind = resolved.kind;
@@ -88,14 +102,14 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
         e: resolved.episode,
         abs: resolved.abs,
         q: info.quality,
-        hdr: Some(new.hdr.clone().unwrap_or(info.hdr)),
+        hdr: Some(hdr),
         container: classify::container_from_ext(&source_path),
         vcodec: info.vcodec,
         acodec: info.acodec,
         alang: new.alang.clone().unwrap_or(info.alang),
         slang: new.slang.clone().unwrap_or(info.slang),
         dur: info.duration_s,
-        variant: new.variant.clone(),
+        variant,
         set: set_id.clone(),
         part: Part {
             i: 0,
@@ -107,7 +121,6 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
         total,
     };
 
-    let mut conn = db::open(&data_dir)?;
     // What the provider says about the show this belongs to. The payload is
     // already cached from resolving the title, so this is a read of disk.
     // A failure costs the show its description and nothing else — the upload

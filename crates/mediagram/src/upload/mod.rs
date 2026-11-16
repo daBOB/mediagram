@@ -4,6 +4,7 @@
 //! uploading command walks its items through (`session`).
 
 pub mod adopt;
+mod film_version;
 pub mod finish;
 pub mod finished_caption;
 pub mod lock;

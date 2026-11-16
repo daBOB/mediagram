@@ -7,6 +7,8 @@ use anyhow::{Context, Result};
 use mlib_spec::Kind;
 use rusqlite::{Connection, OptionalExtension, params};
 
+use crate::index::set_row::SetRow;
+use crate::index::sets::COLUMNS;
 use crate::index::status::SetStatus;
 
 /// Whether a lesson with this identity is already uploaded and complete.
@@ -114,4 +116,15 @@ pub fn lesson_status(
         )
         .optional()?;
     Ok(status)
+}
+
+/// Every film recorded under this TMDB id, pending or complete: the versions
+/// a new upload of the same film would sit beside.
+pub fn film_versions(conn: &Connection, tmdb: u64) -> Result<Vec<SetRow>> {
+    let tmdb = i64::try_from(tmdb).context("looking up a film by TMDB id")?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {COLUMNS} FROM sets WHERE tmdb = ?1 AND kind = ?2 ORDER BY created_at, set_id"
+    ))?;
+    let rows = stmt.query_map(params![tmdb, Kind::Movie.as_str()], SetRow::from_row)?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
