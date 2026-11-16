@@ -82,8 +82,8 @@
 /* The owner's Manage draws each household under its name; its Grown-ups and Kids head quieter beneath it. */
 .manage-section h3 { margin: 0 0 4px; font: 500 0.875rem/1.3 var(--text); color: var(--ink-3); }
 .manage-household { margin-bottom: 48px; }
-/* In the owner's view a household's name heads its people, so it reads as a heading does. */
-.manage-household > .household-row > span:first-child { font-weight: 600; }
+/* In the owner's view a household's name is the heading of its people: the row's first column, at the row's size, bold. */
+.manage-household > .household-row > h2 { flex: 1; min-width: 0; margin: 0; font: inherit; font-weight: 600; letter-spacing: inherit; color: var(--ink); text-align: left; }
 .manage-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
 .manage-row > span { flex: 1; min-width: 0; color: var(--ink); }
 .manage-row select, .who-new select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-size: 0.875rem; }

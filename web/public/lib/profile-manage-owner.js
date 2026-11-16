@@ -80,7 +80,11 @@ export function ownerView(owner, { draws, act, switchProfile }) {
     const household = households.find((one) => one.id === id);
     const part = el("section", "manage-section manage-household");
     // A household the list doesn't name yet (a sync mid-way) keeps its people, unheaded, rather than breaking the page.
-    if (household !== undefined) part.append(householdHeader(household, ctx));
+    if (household !== undefined) {
+      const header = householdHeader(household, ctx);
+      part.setAttribute("aria-labelledby", header.children[0].id);
+      part.append(header);
+    }
     part.append(...[...grown, ...people.filter((one) => one.kids)].map((one) => personRow(one, people)),
       // A kid always belongs to a grown-up, so a household with none offers no kid.
       ...addGrownUp(id, act), ...(grown.length > 0 ? addKid(grown, act) : []));

@@ -112,8 +112,15 @@ const timTo = (age: number, pin = "1357") => ["PUT", "/api/profiles/tim/kids-age
 test("watching as the owner, the page shows every household with its actions and no Who are you", () => {
   const { main } = settingsAs(OWNER);
   expect(textOf(main)).not.toContain("Who are you?");
-  // This device's household first, then the others in the live order.
+  // This device's household first, then the others in the live order: each a heading its part is named by.
   expect(namesOf(main)).toEqual(["Home", "Loft", "Flat"]);
+  expect(headings(main)).toEqual(["Manage profiles", "Home", "Loft", "Flat"]);
+  for (const household of ["Home", "Loft", "Flat"]) {
+    const heading = householdRow(main, household).children[0]!;
+    expect(heading.tagName).toBe("H2");
+    expect(householdOf(main, household).getAttribute("aria-labelledby")).toBe(heading.id);
+  }
+  expect(new Set(["Home", "Loft", "Flat"].map((name) => householdRow(main, name).children[0]!.id)).size).toBe(3);
   expect(actionsOf(householdRow(main, "Home"))).toEqual([W.rename, W.moveHere]);
   expect(actionsOf(householdRow(main, "Flat"))).toEqual([W.rename, W.moveHere, W.useHere]);
   // Each household's people, each with the line Everyone here says and what the owner may change.
@@ -231,6 +238,7 @@ test("on a device in another household, the Owner button opens the whole owner v
   expect(promptTitle(main)).toBe(W.ownersPin);
   await answerPin(main, "1357");
   expect(namesOf(main)).toEqual(["Flat", "Loft", "Home"]);
+  expect(headings(main)).toEqual(["Manage profiles", "Flat", "Loft", "Home"]);
   expect(textOf(main)).not.toContain("Who are you?");
   expect(everyoneHere(main).hidden).toBe(true);
   expect(gate(main).hidden).toBe(true);
@@ -383,6 +391,7 @@ test("a household the list does not name keeps its rows, unheaded, instead of br
   await state.loadProfiles();
   const root = await manageAs("andre", "1357");
   expect(namesOf(root)).toEqual(["Loft", "Flat"]);
+  expect(headings(root)).toEqual(["Manage profiles", "Loft", "Flat"]);
   expect(rowOf(root, "andre")).toBeDefined();
   expect(rowOf(root, "Lea")).toBeDefined();
   expect(textOf(manage(root))).not.toContain("home");

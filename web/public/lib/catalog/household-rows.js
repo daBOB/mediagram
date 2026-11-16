@@ -20,6 +20,9 @@ import { createForm, personForm, renameForm } from "./household-forms.js";
  * @property {() => void} switchProfile asks who is watching again, once this device moves household
  */
 
+/** Tells apart the headings of the households drawn, which their parts are named by. */
+let headings = 0;
+
 /** A name as the server compares household names: case, spacing and Unicode form aside. */
 const key = (name) => name.normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -31,7 +34,8 @@ export function message() {
 }
 
 /**
- * One household: its name and line, what the owner may do to it, and where a form opens.
+ * One household: its name as a heading (its `id` names the part it heads), its line, what the
+ * owner may do to it, and where a form opens.
  * @param {{id: string, name: string, adminId: string|null}} household
  * @param {HouseholdCtx} ctx
  */
@@ -79,7 +83,10 @@ export function householdHeader(household, { everyone, may, act, switchProfile }
   if (may("delete-household", id)) {
     actions.append(pill(HOUSEHOLD_WORDS.delete, () => void act(said, (actor, pin) => api.remove(actor, pin, id))));
   }
-  line.append(el("span", null, household.name), el("span", "setting-value", householdLine(admin?.name ?? null, count)), actions, slot, said);
+  // A heading, under Manage profiles, so a screen reader can move from household to household.
+  const name = el("h2", null, household.name);
+  name.id = `household-${++headings}`;
+  line.append(name, el("span", "setting-value", householdLine(admin?.name ?? null, count)), actions, slot, said);
   return line;
 }
 
