@@ -15,6 +15,7 @@ object HouseholdWords {
     const val HOUSEHOLD_NAME = "Household name"
     const val ADMIN = "Admin"
     const val A_NEW_GROWN_UP = "A new grown-up"
+    const val BELONGS_TO = "Belongs to"
     const val NEW_GROWN_UP_NAME = "The new grown-up’s name"
     const val RENAME = "Rename"
     const val CHANGE_ADMIN = "Change admin"
@@ -42,6 +43,7 @@ val HOUSEHOLD_WORDS: Map<String, String> =
             "householdName" to HOUSEHOLD_NAME,
             "admin" to ADMIN,
             "aNewGrownUp" to A_NEW_GROWN_UP,
+            "belongsTo" to BELONGS_TO,
             "newGrownUpName" to NEW_GROWN_UP_NAME,
             "rename" to RENAME,
             "changeAdmin" to CHANGE_ADMIN,

@@ -1,13 +1,13 @@
 /**
  * One household's row and the create-a-household form, drawn from a context
- * the caller builds: the owner's households part and the owner's view share them.
+ * the caller builds: the owner's view of every household (`profile-manage-owner.js`).
  */
 
 import { el } from "../dom.js";
 import * as api from "../household-api.js";
 import { thisHousehold } from "../household.js";
 import { HOUSEHOLD_WORDS, householdLine } from "../household-words.js";
-import { pill } from "../profile-manage.js";
+import { pill } from "../profile-manage-households.js";
 import { createForm, personForm, renameForm } from "./household-forms.js";
 
 /**
@@ -23,8 +23,8 @@ import { createForm, personForm, renameForm } from "./household-forms.js";
 /** A name as the server compares household names: case, spacing and Unicode form aside. */
 const key = (name) => name.normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
 
-/** Where a refusal is said, read out as it changes. */
-function message() {
+/** Where a refusal is said, beside what was refused, read out as it changes. */
+export function message() {
   const said = el("p", "pin-message");
   said.setAttribute("role", "alert");
   return said;

@@ -6,7 +6,7 @@ import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
 import { ANDRE, AT_HOME, FLAT, LEA, MAJA, SPLIT, storage, TIM, writesOf } from "./support/household-fixture";
-import { create, fieldOf, fill, open, optionsOf, rowOf } from "./support/households-part";
+import { create, fieldOf, fill, open, optionsOf, prompting, rowOf } from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -87,12 +87,13 @@ test("everyoneIsListedWithTheirRole", () => {
   ]);
 });
 
-test("the owner's line reads Owner · Admin", async () => {
+test("the owner's line reads Owner · Admin, on the owner's own row in their view", async () => {
   household = [{ ...ANDRE, owner: true }, MAJA, TIM, LEA];
   await state.loadProfiles();
   const { main } = settings(find("andre"));
   openProfiles(main);
-  const lines = descendants(main).filter((node) => node.classes.has("everyone-row")).map(textOf);
+  const lines = descendants(byClass(main, "manage-inline")).filter((node) => node.className === "manage-row")
+    .map((row) => `${row.children[0]!.textContent}${textOf(row.children[1]!)}`);
   expect(lines.slice(0, 2)).toEqual([`andre${HOUSEHOLD_WORDS.owner} · Admin · PIN set`, "MajaGrown-up · PIN set"]);
 });
 
@@ -104,7 +105,8 @@ test("the Everyone line says which sections someone is not shown, in the nav's o
     { ...LEA, hiddenSections: ["podcasts"] },
   ];
   await state.loadProfiles();
-  const { main } = settings(find("andre"));
+  // Anyone but the owner, whose view takes Everyone here's place.
+  const { main } = settings(find("Maja"));
   openProfiles(main);
   const lines = descendants(main).filter((node) => node.classes.has("everyone-row")).map(textOf);
   expect(lines).toEqual([
@@ -206,7 +208,7 @@ test("a kid sees no household row", async () => {
   expect(textOf(main)).not.toContain(HOUSEHOLD_WORDS.switchHousehold);
 });
 
-test("a household change shows on the rest of the page: who is here, Manage, and this device's household", async () => {
+test("a household change shows on the rest of the page: this device's household, and the owner's view", async () => {
   household = [{ ...ANDRE, owner: true, household: "home" }, { ...MAJA, household: "home" }, { ...TIM, household: "home" }, { ...LEA, household: "home" }];
   households = [AT_HOME];
   Object.assign(env.window, { localStorage: storage({ "mediagram.household": "home" }) });
@@ -223,31 +225,32 @@ test("a household change shows on the rest of the page: who is here, Manage, and
   await create(main, "Flat", { id: "maja" });
   await answerPin(main, "1357");
   expect(sectionsOf(main)).toContain(HOUSEHOLD_WORDS.thisDevice);
-  expect(descendants(main).filter((node) => node.classes.has("everyone-row")).map((row) => row.children[0]!.textContent)).toEqual(["andre", "Lea"]);
-  // Manage starts again over who is here now.
-  expect(descendants(byClass(main, "manage-inline")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre"]);
+  // The owner's view draws the new household with those moved into it, and is still the owner's.
+  const people = (name: string) => rowOf(main, name).parent!.children.filter((node) => node.className === "manage-row").map((row) => row.children[0]!.textContent);
+  expect(people("Home")).toEqual(["andre", "Lea"]);
+  expect(people("Flat")).toEqual(["Maja", "Tim"]);
+  expect(textOf(main)).toContain("As andre");
 });
 
-test("a grown-up added in Manage is offered by Households at once, and a rename leaves Manage as it was", async () => {
+test("a grown-up added in the owner's view can be moved at once, and a rename keeps the owner's PIN", async () => {
   household = SPLIT;
   households = [FLAT, AT_HOME];
   Object.assign(env.window, { localStorage: storage({ "mediagram.household": "home" }) });
   await state.loadProfiles();
   const { main } = settings(find("andre"));
   openProfiles(main);
-  buttonNamed(byClass(main, "manage-inline"), "andre").fire("click");
-  await answerPin(main, "1357");
-  const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a grown-up"))!;
+  const form = descendants(rowOf(main, "Home").parent!).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a grown-up"))!;
   descendants(form).find((node) => node.tagName === "INPUT")!.value = "Opa";
   form.fire("submit");
   await settle();
+  await answerPin(main, "1357");
   await answerPin(main, "2468", "2468");
   expect(textOf(rowOf(main, "Home").children[1]!)).toBe("Admin andre · 3 profiles");
   expect(optionsOf(fieldOf(open(main, "Flat", HOUSEHOLD_WORDS.moveHere), HOUSEHOLD_WORDS.moveHere))).toContain("Opa");
 
-  // Renaming another household changes nobody here: Manage keeps who you are.
+  // Renaming another household changes nobody here: the view keeps the owner's PIN.
   await fill(main, "Flat", HOUSEHOLD_WORDS.rename, "The flat");
-  await answerPin(main, "1357");
+  expect(prompting(main)).toBe(false);
   expect(writesOf(env.requests).at(-1)?.[1]).toBe("/api/households/flat/name");
   expect(textOf(main)).toContain("As andre");
 });

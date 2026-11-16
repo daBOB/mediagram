@@ -1,8 +1,8 @@
 /**
- * The owner's inline forms on the Households part: a household's new name,
- * a choice of grown-up — a new admin, someone to move in — and a new
- * household with its admin. Each only gathers what was typed or chosen; the
- * part asks the PINs and sends it.
+ * The owner's inline forms on each household: a household's new name, a
+ * choice of grown-up — a new admin, someone to move in, a new kid's parent —
+ * and a new household with its admin. Each only gathers what was typed or
+ * chosen; the owner's view asks the PINs and sends it.
  */
 
 import { el } from "../dom.js";
@@ -30,7 +30,7 @@ function householdName(current = "") {
 }
 
 /** A native choice of `people`, by name, the first one chosen. */
-function personChoice(label, people) {
+export function personChoice(label, people) {
   const choice = el("select");
   choice.setAttribute("aria-label", label);
   for (const one of people) {

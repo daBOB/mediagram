@@ -143,7 +143,8 @@ function offered(profiles: object[], actorId: string, action: string, targetId: 
   const { actor, grownUps, kids } = api.manageable(profiles, actorId);
   const has = (list: Array<{ id: string }>) => list.some((entry) => entry.id === targetId);
   if (!actor) return false;
-  // Adding names a household or a parent the panel does not list, so the shared rule answers.
+  // The add forms are drawn per household by the page, not listed by `manageable`, so the shared rule
+  // answers here; the owner's view's adds, a household and a parent each, are checked in profile-manage-owner.test.ts.
   if (action === "create-grown-up" || action === "create-kid") return allowed(profiles as RoleView[], actorId, action, targetId ?? "");
   if (action === "remove") return has(grownUps) || has(kids);
   if (action === "set-pin") return targetId === actorId || has(grownUps);

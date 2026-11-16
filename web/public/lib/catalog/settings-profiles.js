@@ -2,10 +2,12 @@
  * The one Profiles page, Settings' Profiles tab: You — who is watching, the way
  * to switch, your subtitle language — then everyone in the household, then
  * managing them, then — while there is more than one — the household this
- * device shows, then the owner's Households. A kid sees only You; with nobody
- * chosen, which is how the picker's Manage profiles opens it, there is no You.
- * Seeing the list needs no PIN; changing anything asks who you are and that
- * grown-up's PIN, which the body holds only until the page is left.
+ * device shows, then the Owner button. While the owner manages, the owner's
+ * view of every household takes the place of everyone here and the button.
+ * A kid sees only You; with nobody chosen, which is how the picker's Manage
+ * profiles opens it, there is no You. Seeing the list needs no PIN; changing
+ * anything asks who you are and that grown-up's PIN — the owner's only at the
+ * first change — which the body holds only until the page is left.
  */
 
 import { el } from "../dom.js";
@@ -16,10 +18,8 @@ import { thisHousehold } from "../household.js";
 import { joinChoices } from "../household-join.js";
 import { HOUSEHOLD_WORDS } from "../household-words.js";
 import { householdsPart } from "./settings-households.js";
-import { ownerOf } from "../profile-api.js";
+import { roleLine } from "../profile-manage-households.js";
 import { kidsLimitOf } from "../age-rating.js";
-import { dailyLimitWords } from "../daily-limit.js";
-import { hidesWords } from "../section-access.js";
 
 /** The page's name: its Settings tab, and its heading over the picker. */
 export const PROFILES = "Profiles";
@@ -63,18 +63,6 @@ function subtitlePreference() {
   select.addEventListener("change", () => state.setPreference("profile", "subtitle", select.value));
   set.append(select, el("p", "setting-value", "Forced subtitles still appear when a film switches language."));
   return set;
-}
-
-/** One quiet line for a profile: its role, for a grown-up whether it has a PIN, and the sections it is not shown. */
-function roleLine(entry, profiles) {
-  if (entry.kids) {
-    const owner = profiles.find((other) => other.id === ownerOf(profiles, entry));
-    const parts = ["Kid", owner?.name, `FSK ${kidsLimitOf(entry)}`];
-    if (entry.dailyLimit != null) parts.push(dailyLimitWords(entry.dailyLimit));
-    return [...parts, hidesWords(entry)].filter(Boolean).join(" · ");
-  }
-  const role = `${entry.owner ? `${HOUSEHOLD_WORDS.owner} · ` : ""}${entry.admin ? "Admin" : "Grown-up"} · ${entry.hasPin ? "PIN set" : "No PIN"}`;
-  return [role, hidesWords(entry)].filter(Boolean).join(" · ");
 }
 
 /** Draws the household into `set`, read afresh from the watch state. */
@@ -125,27 +113,17 @@ export function profilesPanel(promptHost, { profile, switchProfile, systemVisibl
   const manage = el("div", "setting manage-inline");
   const device = el("div", "setting");
   drawThisDevice(device, promptHost, switchProfile);
-  /** Who Manage was drawn over, and who runs them: a household change that alters it starts Manage again. */
-  const shown = () => state.profiles().map((one) => `${one.id}:${one.admin}`).join();
-  let drawnOver = null;
-  let stopManage = () => {};
-  // A household change can move people out of this household, or add the second one: the page follows.
-  const households = householdsPart(promptHost, { profile, switchProfile }, () => {
+  // A change can move people out of this household, or add the second one: the page follows.
+  const managed = mountManage(manage, { promptHost, chosen: { profile, switchProfile }, onChange: () => {
     drawEveryone(list);
     drawThisDevice(device, promptHost, switchProfile);
-    // Manage starts again at who you are only when what it showed may no longer be yours.
-    if (shown() !== drawnOver) mount();
+  } });
+  const households = householdsPart(promptHost, { onOwner: managed.asOwner });
+  // The owner's view says all that Everyone here says, and is where the Owner button leads.
+  managed.onOwnerView((showing) => {
+    list.hidden = showing;
+    households.box.hidden = showing;
   });
-  function mount() {
-    stopManage();
-    drawnOver = shown();
-    stopManage = mountManage(manage, { promptHost, onChange: () => {
-      drawnOver = shown();
-      drawEveryone(list);
-      households.redraw();
-    } });
-  }
-  mount();
   box.append(list, manage, device, households.box);
-  return { box, stop: () => { stopManage(); households.stop(); } };
+  return { box, stop: () => { managed.stop(); households.stop(); } };
 }

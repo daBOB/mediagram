@@ -1,4 +1,4 @@
-/** The owner's Households part of the Profiles page: every household, and the owner's changes to them with one PIN per visit. */
+/** Households on the Profiles page: every household in the owner's view, the owner's changes to them with one PIN per visit, and the Owner button for anyone else. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { renderSettings } from "../public/lib/catalog/settings-page.js";
@@ -7,7 +7,7 @@ import { newPinTitle } from "../public/lib/pin-prompt.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
 import { AT_HOME, FLAT, storage, writesOf } from "./support/household-fixture";
-import { actionsOf, ATTIC, create, EVERYONE, fieldOf, fill, MAJA, open, optionsOf, OWNER, part, press, prompting, promptTitle, rowOf, rows } from "./support/households-part";
+import { actionsOf, ATTIC, create, EVERYONE, fieldOf, fill, gate, MAJA, open, optionsOf, OWNER, part, press, prompting, promptTitle, rowOf, rows } from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -31,30 +31,30 @@ afterEach(() => env.restore());
 const sent = () => writesOf(env.requests);
 const unlocks = () => sent().filter(([, url]) => String(url).endsWith("/unlock"));
 
-test("the owner sees every household with its admin and member count", () => {
+test("the owner sees every household with its admin and member count, this device's first", () => {
   const { root } = part(OWNER);
-  expect(textOf(root)).toStartWith(W.households);
   expect(rows(root).map((row) => [row.children[0]!.textContent, row.children[1]!.textContent])).toEqual([
+    ["Home", "Admin andre · 3 profiles"],
     ["Attic", "No admin · 0 profiles"],
     ["Flat", "Admin Maja · 3 profiles"],
-    ["Home", "Admin andre · 3 profiles"],
   ]);
-  expect(textOf(root)).not.toContain(W.ownerNote);
+  expect(gate(root).hidden).toBe(true);
   // Seeing them asks nothing: the PIN waits for the first change.
   expect(prompting(root)).toBe(false);
   expect(sent()).toEqual([]);
 });
 
 test("anyone else sees an Owner button that asks the owner's PIN once", async () => {
-  expect(textOf(part(null).root)).toContain(W.ownerNote);
+  expect(textOf(gate(part(null).root))).toContain(W.ownerNote);
   const { root } = part(MAJA);
-  expect(textOf(root)).toContain(W.ownerNote);
+  expect(textOf(gate(root))).toContain(W.ownerNote);
   expect(rows(root)).toEqual([]);
-  buttonNamed(root, W.owner).fire("click");
+  buttonNamed(gate(root), W.owner).fire("click");
   expect(promptTitle(root)).toBe(W.ownersPin);
   await answerPin(root, "1357");
   expect(sent()).toEqual([["POST", "/api/profiles/andre/unlock", { pin: "1357" }]]);
-  expect(textOf(root)).not.toContain(W.ownerNote);
+  // The button opens the owner's view, which takes its place.
+  expect(gate(root).hidden).toBe(true);
   expect(rows(root).length).toBe(3);
   await press(root, "Attic", W.delete);
   expect(prompting(root)).toBe(false);
@@ -66,8 +66,8 @@ test("no Owner button on an install with no owner", async () => {
   everyone = EVERYONE.map((one) => ({ ...one, owner: false }));
   await state.loadProfiles();
   const { root } = part(MAJA);
-  expect(textOf(root)).toContain(W.ownerNote);
-  expect(descendants(root).some((node) => node.tagName === "BUTTON")).toBe(false);
+  expect(textOf(gate(root))).toContain(W.ownerNote);
+  expect(descendants(gate(root)).some((node) => node.tagName === "BUTTON")).toBe(false);
 });
 
 test("create with a new grown-up sends the name, the admin's name and PIN", async () => {

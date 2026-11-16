@@ -79,7 +79,7 @@
 /* Households: a household's name and line, then what the owner may do to it, then the form it opened and what was refused. */
 .household-row > :is(.household-actions, .household-form, .pin-message) { flex-basis: 100%; }
 .household-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.households :is(.household-form, .pin-message):empty { display: none; }
-.households .who-new { justify-content: flex-start; margin: 0; }
+.household-row > :is(.household-form, .pin-message):empty { display: none; }
+.household-row .household-form .who-new, .household-create .who-new { justify-content: flex-start; margin: 0; }
 .household-create { margin-top: 16px; }
 .household-admin { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }

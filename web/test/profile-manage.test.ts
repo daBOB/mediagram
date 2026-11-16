@@ -318,7 +318,7 @@ test("closing drops the PIN: the next opening asks who you are", async () => {
 test("theBodyMountsOutsideTheOverlay", async () => {
   const page = new Node();
   const host = new Node();
-  const unmount = mountManage(page, { promptHost: host });
+  const { stop: unmount } = mountManage(page, { promptHost: host });
   expect(textOf(page)).toContain("Who are you?");
   expect(descendants(byClass(page, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre", "Maja"]);
   buttonNamed(page, "Maja").fire("click");
@@ -334,7 +334,7 @@ test("theBodyMountsOutsideTheOverlay", async () => {
 test("closingTheBodyMidPrompt leavesNothingBehind", async () => {
   const page = new Node();
   const host = new Node();
-  const unmount = mountManage(page, { promptHost: host });
+  const { stop: unmount } = mountManage(page, { promptHost: host });
   buttonNamed(page, "Maja").fire("click");
   await settle();
   const prompt = byClass(host, "pin-prompt");

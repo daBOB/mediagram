@@ -12,6 +12,7 @@ export const HOUSEHOLD_WORDS: {
   householdName: string;
   admin: string;
   aNewGrownUp: string;
+  belongsTo: string;
   newGrownUpName: string;
   rename: string;
   changeAdmin: string;
