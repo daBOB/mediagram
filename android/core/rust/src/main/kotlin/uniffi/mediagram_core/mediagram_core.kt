@@ -744,6 +744,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_report_send(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_mark_scene(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_remove_scene(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_search(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_revoke_session(
@@ -760,11 +764,7 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_editors_choice(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_mark_scene(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_profiles(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_remove_scene(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_retire_local_state(
     ): Int
@@ -942,6 +942,10 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_report_send(`ptr`: Long,`text`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_mark_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_remove_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_search(`ptr`: Long,`query`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_revoke_session(`ptr`: Long,`id`: RustBuffer.ByValue,
@@ -958,11 +962,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_editors_choice(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_mark_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,
-    ): Long
     external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
-    ): Long
-    external fun uniffi_mediagram_core_fn_method_core_remove_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_retire_local_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Unit
@@ -1006,9 +1006,9 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_first_admin(`ptr`: Long,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_grown_up(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_create_grown_up(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,`household`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_kid(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`kidsAge`: Byte,`dailyLimit`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_create_kid(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`kidsAge`: Byte,`dailyLimit`: RustBuffer.ByValue,`parentId`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
@@ -1265,6 +1265,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_report_send() and 0xFFFF) != 34453) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_mark_scene() and 0xFFFF) != 51073) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_remove_scene() and 0xFFFF) != 54899) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_search() and 0xFFFF) != 53359) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1289,13 +1295,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_editors_choice() and 0xFFFF) != 8907) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_mark_scene() and 0xFFFF) != 19538) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 65036) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_remove_scene() and 0xFFFF) != 53733) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
@@ -1361,10 +1361,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_first_admin() and 0xFFFF) != 20033) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_grown_up() and 0xFFFF) != 18879) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_grown_up() and 0xFFFF) != 50883) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_kid() and 0xFFFF) != 25490) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_kid() and 0xFFFF) != 58452) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_delete_profile() and 0xFFFF) != 32539) {
@@ -2213,6 +2213,18 @@ public interface CoreInterface {
     suspend fun `reportSend`(`text`: kotlin.String)
 
     /**
+     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
+     * mark's id, or `None` for an `at` that is no film second or a profile
+     * that is gone.
+     */
+    suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double): kotlin.String?
+
+    /**
+     * Takes a scene mark off. `false` when no live mark has that id.
+     */
+    suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
+
+    /**
      * The catalog's sets matching every word of `query`, best first.
      * Empty for an empty query or a catalog that has not loaded yet —
      * neither is an error, both are "nothing to show".
@@ -2258,21 +2270,9 @@ public interface CoreInterface {
     suspend fun `editorsChoice`(): kotlin.String?
 
     /**
-     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
-     * mark's id, or `None` for an `at` that is no film second or a profile
-     * that is gone.
-     */
-    suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double): kotlin.String?
-
-    /**
      * Who watches this library. Empty until someone says.
      */
     suspend fun `profiles`(): List<Profile>
-
-    /**
-     * Takes a scene mark off. `false` when no live mark has that id.
-     */
-    suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
 
     /**
      * Permanently stops this core's local watch-state access and closes its
@@ -2390,15 +2390,17 @@ public interface CoreInterface {
     suspend fun `createFirstAdmin`(`name`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
 
     /**
-     * The admin adds a grown-up, with its first PIN.
+     * The admin adds a grown-up, with its first PIN, to their own household.
+     * The owner may name any other household; `None` or "" is the maker's own.
      */
-    suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
+    suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String, `household`: kotlin.String?): ProfileOutcome
 
     /**
      * A grown-up adds a kid of its own, from 6 or from 12, with a daily
-     * limit in minutes (1..=1440) or none.
+     * limit in minutes (1..=1440) or none. The owner may name any grown-up
+     * in `parent_id`; `None` or "" is the maker.
      */
-    suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?): ProfileOutcome
+    suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?, `parentId`: kotlin.String?): ProfileOutcome
 
     /**
      * Removes a profile and everything that was theirs — a grown-up with
@@ -3473,6 +3475,59 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
+     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
+     * mark's id, or `None` for an `at` that is no film second or a profile
+     * that is gone.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_mark_scene(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterDouble.lower(`at`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Takes a scene mark off. `false` when no live mark has that id.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_remove_scene(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
      * The catalog's sets matching every word of `query`, best first.
      * Empty for an empty query or a catalog that has not loaded yet —
      * neither is an error, both are "nothing to show".
@@ -3674,34 +3729,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
-     * mark's id, or `None` for an `at` that is no film second or a profile
-     * that is gone.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double) : kotlin.String? {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_mark_scene(
-                uniffiHandle,
-
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`setId`),
-        FfiConverterDouble.lower(`at`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalString.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
-    /**
      * Who watches this library. Empty until someone says.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -3718,31 +3745,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterSequenceTypeProfile.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
-    /**
-     * Takes a scene mark off. `false` when no live mark has that id.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_remove_scene(
-                uniffiHandle,
-
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`id`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -4297,10 +4299,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * The admin adds a grown-up, with its first PIN.
+     * The admin adds a grown-up, with its first PIN, to their own household.
+     * The owner may name any other household; `None` or "" is the maker's own.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String) : ProfileOutcome {
+    override suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String, `household`: kotlin.String?) : ProfileOutcome {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_create_grown_up(
@@ -4310,6 +4313,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         FfiConverterString.lower(`pin`),
         FfiConverterString.lower(`name`),
         FfiConverterString.lower(`newPin`),
+        FfiConverterOptionalString.lower(`household`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -4325,10 +4329,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     /**
      * A grown-up adds a kid of its own, from 6 or from 12, with a daily
-     * limit in minutes (1..=1440) or none.
+     * limit in minutes (1..=1440) or none. The owner may name any grown-up
+     * in `parent_id`; `None` or "" is the maker.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?) : ProfileOutcome {
+    override suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?, `parentId`: kotlin.String?) : ProfileOutcome {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_create_kid(
@@ -4339,6 +4344,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         FfiConverterString.lower(`name`),
         FfiConverterUByte.lower(`kidsAge`),
         FfiConverterOptionalUShort.lower(`dailyLimit`),
+        FfiConverterOptionalString.lower(`parentId`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
