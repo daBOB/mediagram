@@ -18,7 +18,7 @@ class ManageProfilesAcrossHouseholdsTest : HouseholdsOwnerHarness() {
     ): ManageProfilesViewModel {
         repository.reload()
         households = DefaultHouseholdsRepository(provider, repository, backgroundScope, Dispatchers.Unconfined)
-        return ManageProfilesViewModel(repository, households, sync).apply {
+        return ManageProfilesViewModel(repository, households, sync, ownerPin).apply {
             open()
             actAs(id)
             enterPin(pin)

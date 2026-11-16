@@ -45,10 +45,10 @@ class HouseholdsOwnerViewModel
         private val repository: WatchStateRepository,
         private val households: HouseholdsRepository,
         private val sync: WatchSync,
+        private val ownerPin: OwnerPin,
     ) : ViewModel() {
         private val step = MutableStateFlow(OwnerStep())
         private val watcher = MutableStateFlow<String?>(null)
-        private var heldPin: String? = null
         private val ask = PinAsk(viewModelScope)
         private val stillHere = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
 
@@ -120,11 +120,11 @@ class HouseholdsOwnerViewModel
         /** Leaves the part and forgets the owner's PIN; the watching owner's part stays open and asks it again. */
         fun close() {
             ask.cancel()
-            heldPin = null
+            ownerPin.drop()
             step.value = OwnerStep(visit = step.value.visit + 1)
         }
 
-        override fun onCleared() { heldPin = null }
+        override fun onCleared() = ownerPin.drop()
 
         private fun grownUp(id: String) = households.view.value.everyone.find { it.id == id && !it.kids }
 
@@ -137,7 +137,7 @@ class HouseholdsOwnerViewModel
             request: (actorId: String, pin: String, newPin: String?) -> ProfileRequest,
         ) {
             if (!isOpen()) return
-            val pin = heldPin ?: return ownersPin { act(newPinFor, named, request) }
+            val pin = ownerPin.held ?: return ownersPin { act(newPinFor, named, request) }
             val actorId = households.view.value.owner?.id ?: return
             val visit = step.value.visit
             step.update { it.copy(notice = null) }
@@ -162,11 +162,12 @@ class HouseholdsOwnerViewModel
         }
 
         private fun ownersPin(then: () -> Unit) {
+            if (ownerPin.held != null) return then()
             val owner = households.view.value.owner ?: return
             ask.ask(
                 PinPrompt(HouseholdWords.OWNERS_PIN, newPin = false),
                 send = { pin -> repository.manage(ProfileRequest.Unlock(owner.id, pin)) },
-                done = { pin -> heldPin = pin; then() },
+                done = { pin -> ownerPin.held = pin; then() },
             )
         }
 
@@ -185,7 +186,7 @@ class HouseholdsOwnerViewModel
         /** How a change went. A wrong PIN means the one held is no longer the owner's, so the next change asks again. */
         private fun report(visit: Int, outcome: ProfileOutcome?, named: Boolean) {
             val current = step.value.takeIf { it.visit == visit && isOpen() } ?: return
-            if (outcome == ProfileOutcome.WrongPin) heldPin = null
+            if (outcome == ProfileOutcome.WrongPin) ownerPin.drop()
             val notice = noticeFor(outcome, named)
             step.value = current.copy(notice = notice, answers = current.answers + 1)
         }

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
+import catalog.profile.OwnerPin
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.CatalogEnrichmentFetcher
@@ -173,7 +174,7 @@ internal class LibraryFlowFixture(
                 CatalogViewModel::class.java to catalog,
                 ProfileViewModel::class.java to ProfileViewModel(stored, mockk<WatchSync>(relaxed = true)),
                 // The gate resolves Manage profiles beside the picker every time it draws, and Join a household (below).
-                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, ui.profile.homeAlone(), mockk<WatchSync>(relaxed = true)),
+                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, ui.profile.homeAlone(), mockk<WatchSync>(relaxed = true), OwnerPin()),
                 FetchViewModel::class.java to FetchViewModel(enrichment),
                 PlayerViewModel::class.java to player,
                 // Play on TV, which the title pages, the player and the library's answer to it all resolve.

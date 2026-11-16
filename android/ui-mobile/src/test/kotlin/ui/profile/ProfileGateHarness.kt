@@ -31,6 +31,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import catalog.profile.OwnerPin
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.DefaultHouseholdsRepository
@@ -111,7 +112,7 @@ abstract class ProfileGateHarness {
             household = WatchStateFixture(profiles.toList(), chosen, FakeCore().apply { roles.pins += pins }.apply(seed))
             val sync = mockk<WatchSync>(relaxed = true)
             val homes = DefaultHouseholdsRepository(household.provider, household.repository, scope, Dispatchers.Unconfined)
-            manage = ManageProfilesViewModel(household.repository, homes, sync)
+            manage = ManageProfilesViewModel(household.repository, homes, sync, OwnerPin())
             val models = listOf(ProfileViewModel(household.repository, sync), manage) + householdViewModels(household.repository, homes).values
             val provider =
                 ViewModelProvider(

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.SearchViewModel
+import catalog.profile.OwnerPin
 import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.ManageProfilesViewModel
@@ -228,7 +229,7 @@ internal class TvAppFixture(
         profile = ProfileViewModel(viewer.repository, NoopWatchSync)
         // Over the same core, read for as long as the store holds the picker.
         val households = DefaultHouseholdsRepository(viewer.provider, viewer.repository, profile.viewModelScope, Dispatchers.Unconfined)
-        manage = ManageProfilesViewModel(viewer.repository, households, NoopWatchSync)
+        manage = ManageProfilesViewModel(viewer.repository, households, NoopWatchSync, OwnerPin())
         coEvery { repository.refresh() } returns RefreshOutcome.AlreadyCurrent
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
@@ -324,7 +325,7 @@ internal class TvAppFixture(
                 // Beside the picker's in TvProfileGate: Manage profiles, Join a household, and the owner's Households.
                 ManageProfilesViewModel::class.java to manage,
                 JoinHouseholdViewModel::class.java to JoinHouseholdViewModel(viewer.repository, households),
-                HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(viewer.repository, households, NoopWatchSync),
+                HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(viewer.repository, households, NoopWatchSync, OwnerPin()),
                 CatalogViewModel::class.java to catalog,
                 FetchViewModel::class.java to fetch,
                 SearchViewModel::class.java to search,

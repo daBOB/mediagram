@@ -39,6 +39,7 @@ abstract class HouseholdsOwnerHarness {
             homes.names["flat"] = "Flat"
             homes.names["barn"] = "Barn"
         }
+    val ownerPin = OwnerPin()
     val provider = FakeCoreProvider(core)
     val repository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
     lateinit var households: DefaultHouseholdsRepository
@@ -49,7 +50,7 @@ abstract class HouseholdsOwnerHarness {
     suspend fun TestScope.owning(): HouseholdsOwnerViewModel {
         repository.reload()
         households = DefaultHouseholdsRepository(provider, repository, backgroundScope, Dispatchers.Unconfined)
-        return HouseholdsOwnerViewModel(repository, households, sync).also { vm -> backgroundScope.launch { vm.joined.collect { said += it } } }
+        return HouseholdsOwnerViewModel(repository, households, sync, ownerPin).also { vm -> backgroundScope.launch { vm.joined.collect { said += it } } }
     }
 
     /** The part opened by the owner's PIN. */

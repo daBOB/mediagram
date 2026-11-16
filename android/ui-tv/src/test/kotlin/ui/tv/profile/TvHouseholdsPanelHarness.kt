@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.platform.app.InstrumentationRegistry
+import catalog.profile.OwnerPin
 import catalog.profile.HouseholdsOwnerUiState
 import catalog.profile.HouseholdsOwnerViewModel
 import data.DefaultHouseholdsRepository
@@ -72,7 +73,7 @@ abstract class TvHouseholdsPanelHarness : TvScreenStateTest() {
         if (watching) core.chosen = "a"
         val repository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
         runBlocking { repository.reload() }
-        owner = HouseholdsOwnerViewModel(repository, DefaultHouseholdsRepository(provider, repository, scope, Dispatchers.Unconfined), mockk(relaxed = true))
+        owner = HouseholdsOwnerViewModel(repository, DefaultHouseholdsRepository(provider, repository, scope, Dispatchers.Unconfined), mockk(relaxed = true), OwnerPin())
         // As the gate says it, which this panel is drawn without.
         if (watching) owner.watching("a")
         show { TvHouseholdsPanel(owner, reread = {}, onDone = { left++ }) }

@@ -35,6 +35,7 @@ class ManageProfilesViewModel
         private val repository: WatchStateRepository,
         private val households: HouseholdsRepository,
         private val sync: WatchSync,
+        private val ownerPin: OwnerPin,
     ) : ViewModel() {
         private val step = MutableStateFlow<ManageStep>(ManageStep.Closed)
         private var heldPin: String? = null
@@ -51,18 +52,26 @@ class ManageProfilesViewModel
                 .stateIn(viewModelScope, SharingStarted.Eagerly, ManageUiState.Closed)
 
         fun open() {
-            close()
+            ask.cancel()
+            heldPin = null
             step.value = ManageStep.ChoosingActor()
         }
 
         /** The actor's PIN, or — from before PINs existed — a first one typed twice, which becomes theirs. */
         fun actAs(id: String) {
             val actor = repository.profiles.value.find { it.id == id && !it.kids } ?: return
+            // The owner's PIN given anywhere on the page is not asked again.
+            ownerPin.held?.takeIf { actor.owner }?.let { held ->
+                heldPin = held
+                step.value = ManageStep.Managing(id)
+                return
+            }
             ask.ask(
                 PinPrompt(pinTitleFor(actor), newPin = !actor.hasPin),
                 send = { pin -> shared(proving(actor, pin)) },
                 done = { pin ->
                     heldPin = pin
+                    if (actor.owner) ownerPin.held = pin
                     step.value = ManageStep.Managing(id)
                 },
                 refused = { outcome ->
@@ -124,6 +133,7 @@ class ManageProfilesViewModel
         fun close() {
             ask.cancel()
             heldPin = null
+            ownerPin.drop()
             step.value = ManageStep.Closed
         }
 
@@ -176,6 +186,7 @@ class ManageProfilesViewModel
                     ProfileOutcome.Done -> ManageStep.Managing(actorId, answers = answers + 1)
                     ProfileOutcome.WrongPin -> {
                         heldPin = null
+                        ownerPin.drop()
                         ManageStep.ChoosingActor(PIN_NO_LONGER_VALID)
                     }
                     else -> ManageStep.Managing(actorId, outcome.reason(), answers + 1)

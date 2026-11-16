@@ -81,7 +81,7 @@ class ChosenProfileLeftBehindTest : HouseholdsOwnerHarness() {
     @Test
     fun theOwnersUseHereSaysSoThoughTheHouseholdsCannotBeReadAfterIt() =
         runTest(UnconfinedTestDispatcher()) {
-            val owner = HouseholdsOwnerViewModel(repository, flaky(), sync)
+            val owner = HouseholdsOwnerViewModel(repository, flaky(), sync, OwnerPin())
             backgroundScope.launch { owner.joined.collect { said += it } }
             owner.open()
             owner.enterPin("1234")

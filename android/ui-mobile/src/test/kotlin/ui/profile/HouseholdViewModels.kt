@@ -1,6 +1,7 @@
 package ui.profile
 
 import androidx.lifecycle.ViewModel
+import catalog.profile.OwnerPin
 import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.JoinHouseholdViewModel
 import data.HouseholdsRepository
@@ -26,7 +27,7 @@ internal fun householdViewModels(
 ): Map<Class<out ViewModel>, ViewModel> =
     mapOf(
         JoinHouseholdViewModel::class.java to JoinHouseholdViewModel(repository, households),
-        HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(repository, households, mockk(relaxed = true)),
+        HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(repository, households, mockk(relaxed = true), OwnerPin()),
     )
 
 /** Home alone, read and joined, with nobody in it as the households see them — [householdViewModels]' default. */
