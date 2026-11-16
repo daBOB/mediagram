@@ -10,6 +10,7 @@
 
 import { byTitle, collections, groupLibrary } from "./library.js";
 import { groupDocumentaries } from "./documentaries.js";
+import { groupFilms } from "./film-versions.js";
 
 /**
  * @typedef {import("./library.js").CatalogSet} CatalogSet
@@ -25,7 +26,7 @@ import { groupDocumentaries } from "./documentaries.js";
  * @returns {AnimeLibrary}
  */
 export function groupAnime(sets) {
-  const films = sets.filter((set) => set.kind === "movie");
+  const films = groupFilms(sets.filter((set) => set.kind === "movie"));
   const episodes = sets.filter((set) => set.kind === "ep");
   return { collections: collections(episodes, "Unknown show"), singles: [...films].sort(byTitle) };
 }
@@ -80,5 +81,7 @@ export function groupDepartments(sets) {
   const anime = sets.filter((set) => set.anime);
   const rest = sets.filter((set) => !set.anime);
   const documentaries = groupDocumentaries(rest.filter((set) => set.kind === "docu"));
-  return { ...groupLibrary(rest), documentaries, anime: groupAnime(anime) };
+  const plain = groupLibrary(rest);
+  // One card per film: copies of a film share a poster key (see film-versions.js).
+  return { ...plain, movies: groupFilms(plain.movies), documentaries, anime: groupAnime(anime) };
 }

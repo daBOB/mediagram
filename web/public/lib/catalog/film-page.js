@@ -23,21 +23,32 @@ import { GRID } from "./shelf-mode.js";
 import { href } from "../address.js";
 import { joinOr } from "./together-join.js";
 import { castPill } from "../cast/play-on-tv.js";
+import { versionLabel, versionsOf } from "../film-versions.js";
+import { versionRows } from "./film-versions-view.js";
 
 /**
  * The page for `set`. `resume` is the second to carry on from, or `null`.
  *
+ * A film held more than once has no Play of its own: its Versions list, one
+ * row and one Play per copy, stands in for it, and runtime and quality move
+ * from the header into the rows, where they are what tells copies apart.
+ *
  * @param {import("../library.js").CatalogSet} set
  * @param {{ resume: number|null, onPlay: (set: any) => void,
  *   similar: () => import("../library.js").CatalogSet[], openFilm: (set: any) => void,
- *   hasFranchise: boolean }} on `hasFranchise`: its franchise has a page (two films held)
+ *   hasFranchise: boolean, resumeOf?: (version: any) => number|null,
+ *   played?: (version: any) => boolean }} on `hasFranchise`: its franchise has a page (two films held);
+ *   `resumeOf` and `played` answer for each version of a film held more than once
  */
-export function filmPage(set, { resume, onPlay, similar, openFilm, hasFranchise = false }) {
+export function filmPage(set, {
+  resume, onPlay, similar, openFilm, hasFranchise = false, resumeOf = () => null, played = () => false,
+}) {
   const page = el("article", "title-page film-page");
   const title = set.title ?? set.setId;
-  const facts = [set.year, humanDuration(set.duration), ageLabel(set), genresOf(set).slice(0, 3).join(", ")]
+  const several = Boolean(set.versions);
+  const facts = [set.year, several ? null : humanDuration(set.duration), ageLabel(set), genresOf(set).slice(0, 3).join(", ")]
     .filter(Boolean).join(" · ");
-  const play = joinOr([set.setId], playPill(resume ? `Resume from ${clockTime(resume)}` : "Play", () => onPlay(set)));
+  const play = several ? null : joinOr([set.setId], playPill(resume ? `Resume from ${clockTime(resume)}` : "Play", () => onPlay(set)));
   const backSection = set.anime ? "anime" : "movies";
   page.append(titleSpread({
     back: { href: href({ page: "department", section: backSection }), label: `Back to ${set.anime ? "Anime" : "Movies"}` },
@@ -46,6 +57,11 @@ export function filmPage(set, { resume, onPlay, similar, openFilm, hasFranchise 
     art: set.backdrop ?? set.poster,
     actions: [play, castPill(set.setId, resume ?? 0), listToggle(set.setId), moreMenu([pinControl(set.setId)])],
   }));
+  if (several) {
+    const versions = el("section", "versions-panel");
+    versions.append(el("h2", "shelf-sub", "Versions"), versionRows(set, { resumeOf, played, onPlay }));
+    page.append(versions);
+  }
 
   const tabs = tabbed([
     { label: "Overview", build: () => overview(set, hasFranchise) },
@@ -75,7 +91,7 @@ function overview(set, hasFranchise) {
   }
   box.append(factSheet([
     ["Released", set.year ? String(set.year) : null],
-    ["Runtime", humanDuration(set.duration)],
+    ["Runtime", set.versions ? null : humanDuration(set.duration)],
     ["Rated", ageLabel(set)],
     ["Score", scoreLabel(set.rating)],
     ["Genres", genreLinks(genresOf(set))],
@@ -107,8 +123,20 @@ function parsedLangs(value) {
   }
 }
 
-/** What the file is: the questions a viewer asks when a title will not play. */
+/**
+ * What the file is: the questions a viewer asks when a title will not play.
+ * A film held more than once answers them for each copy, under its label.
+ */
 export function details(set) {
+  if (set.versions) {
+    const all = el("div", "version-details");
+    for (const version of versionsOf(set)) all.append(el("h3", "shelf-sub", versionLabel(version)), fileFacts(version));
+    return all;
+  }
+  return fileFacts(set);
+}
+
+function fileFacts(set) {
   const languages = (codes) => (codes.length > 0
     ? codes.map((code) => languageLabel(code, code)).join(", ")
     : null);

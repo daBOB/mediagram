@@ -9,10 +9,10 @@
 import { el } from "../dom.js";
 import { initialsOf, plate } from "./plate.js";
 import { countOf, episodeLabel, hdrLabel, humanDuration, humanSize, resumeLine } from "../format.js";
-import { isWatched, progressOf } from "../watch-state.js";
+import { playedOf, positionOf } from "../film-watch.js";
 import { watchedFraction } from "../resume-point.js";
 import { firstItemOf } from "../library.js";
-import { offlineBadge, transcodeBadge } from "./set-badge.js";
+import { offlineBadge, transcodeBadge, versionsBadge } from "./set-badge.js";
 import { GRID, LIST } from "./shelf-mode.js";
 import { SECTIONS } from "./sections.js";
 import { href } from "../address.js";
@@ -125,9 +125,9 @@ export function movieGrid(movies, onPlay, options = {}) {
         meta: filmMeta(set, mode),
         initials: initialsOf(set.title),
         poster: set.poster ?? null,
-        badges: [offlineBadge(set), transcodeBadge(set)],
-        progress: watchedFraction(progressOf(set.setId)),
-        watched: isWatched(set.setId),
+        badges: [versionsBadge(set), offlineBadge(set), transcodeBadge(set)],
+        progress: watchedFraction(positionOf(set)),
+        watched: playedOf(set),
         onClick: () => onPlay(set),
       }),
     );
@@ -154,7 +154,7 @@ export function setGrid(sets, onPlay, options = {}) {
   // Where this viewer got to, unless the caller knows better. The start
   // page does: an episode offered because the one before it was finished
   // has no position to report, and "next up" is what that line should say.
-  const caption = options.caption ?? ((set) => resumeLine(progressOf(set.setId)));
+  const caption = options.caption ?? ((set) => resumeLine(positionOf(set)));
   // An index by default, because a watch-state shelf is a list of what is
   // outstanding. The start page asks for plates, so its rows are the same
   // shape as the ones below them.
@@ -173,12 +173,12 @@ export function setGrid(sets, onPlay, options = {}) {
         .join(" · "),
       initials: initialsOf(set.title ?? set.show),
       poster: set.poster ?? null,
-      badges: [offlineBadge(set), transcodeBadge(set)],
-      progress: watchedFraction(progressOf(set.setId)),
+      badges: [versionsBadge(set), offlineBadge(set), transcodeBadge(set)],
+      progress: watchedFraction(positionOf(set)),
       // Empty for a title never started, so a watchlist of things not yet
       // begun gains no line it cannot fill.
       resume: caption(set),
-      watched: isWatched(set.setId),
+      watched: playedOf(set),
       onClick: () => onPlay(set),
     });
     const finish = options.finish;

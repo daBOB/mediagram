@@ -1,0 +1,415 @@
+[
+  {
+    "name": "a film held once is its own set",
+    "sets": [
+      {
+        "setId": "A",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "A",
+        "versions": [
+          "A"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "copies sharing a poster key are one film, the best first",
+    "sets": [
+      {
+        "setId": "A",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "B",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "2160p",
+        "hdr": "HDR10",
+        "duration": 10871,
+        "total": 15032385536
+      }
+    ],
+    "expect": [
+      {
+        "setId": "B",
+        "versions": [
+          "B",
+          "A"
+        ],
+        "labels": [
+          "Standard · 4K HDR · 3h 1m · 14 GB",
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "the standard cut comes first, then the other cuts by name",
+    "sets": [
+      {
+        "setId": "DC",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": "Director's Cut",
+        "quality": "2160p",
+        "hdr": "SDR",
+        "duration": 11090,
+        "total": 4294967296
+      },
+      {
+        "setId": "STD",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "720p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "EXT",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": "Extended",
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 12600,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "STD",
+        "versions": [
+          "STD",
+          "DC",
+          "EXT"
+        ],
+        "labels": [
+          "Standard · 720p · 3h 1m · 4.0 GB",
+          "Director's Cut · 4K · 3h 5m · 4.0 GB",
+          "Extended · 1080p · 3h 30m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "at equal resolution HDR comes before SDR",
+    "sets": [
+      {
+        "setId": "SDR",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "2160p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "DV",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "2160p",
+        "hdr": "DV",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "DV",
+        "versions": [
+          "DV",
+          "SDR"
+        ],
+        "labels": [
+          "Standard · 4K HDR · 3h 1m · 4.0 GB",
+          "Standard · 4K · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "identical copies fall back to set id order",
+    "sets": [
+      {
+        "setId": "B2",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "A2",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "A2",
+        "versions": [
+          "A2",
+          "B2"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB",
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an unknown resolution sorts after every known one",
+    "sets": [
+      {
+        "setId": "U",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": null,
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "L",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "480p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "L",
+        "versions": [
+          "L",
+          "U"
+        ],
+        "labels": [
+          "Standard · 480p · 3h 1m · 4.0 GB",
+          "Standard · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "different poster keys stay apart, and so do films with none",
+    "sets": [
+      {
+        "setId": "X",
+        "kind": "movie",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "Y",
+        "kind": "movie",
+        "showKey": "tmdb-movie-2",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "N1",
+        "kind": "movie",
+        "showKey": null,
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "N2",
+        "kind": "movie",
+        "showKey": null,
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "X",
+        "versions": [
+          "X"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      },
+      {
+        "setId": "Y",
+        "versions": [
+          "Y"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      },
+      {
+        "setId": "N1",
+        "versions": [
+          "N1"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      },
+      {
+        "setId": "N2",
+        "versions": [
+          "N2"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "only films group: other kinds sharing a key stay apart",
+    "sets": [
+      {
+        "setId": "K1",
+        "kind": "clip",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "K2",
+        "kind": "clip",
+        "showKey": "tmdb-movie-1",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "K1",
+        "versions": [
+          "K1"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      },
+      {
+        "setId": "K2",
+        "versions": [
+          "K2"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "films keep the order they arrive in",
+    "sets": [
+      {
+        "setId": "Z1",
+        "kind": "movie",
+        "showKey": "tmdb-movie-9",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "M1",
+        "kind": "movie",
+        "showKey": "tmdb-movie-3",
+        "variant": null,
+        "quality": "1080p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      },
+      {
+        "setId": "Z2",
+        "kind": "movie",
+        "showKey": "tmdb-movie-9",
+        "variant": null,
+        "quality": "2160p",
+        "hdr": "SDR",
+        "duration": 10871,
+        "total": 4294967296
+      }
+    ],
+    "expect": [
+      {
+        "setId": "Z2",
+        "versions": [
+          "Z2",
+          "Z1"
+        ],
+        "labels": [
+          "Standard · 4K · 3h 1m · 4.0 GB",
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      },
+      {
+        "setId": "M1",
+        "versions": [
+          "M1"
+        ],
+        "labels": [
+          "Standard · 1080p · 3h 1m · 4.0 GB"
+        ]
+      }
+    ]
+  }
+]

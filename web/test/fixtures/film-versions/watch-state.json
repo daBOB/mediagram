@@ -1,0 +1,292 @@
+{
+  "film": [
+    {
+      "setId": "A",
+      "variant": null
+    },
+    {
+      "setId": "B",
+      "variant": null
+    },
+    {
+      "setId": "C",
+      "variant": "Director's Cut"
+    }
+  ],
+  "single": "S",
+  "cases": [
+    {
+      "name": "nothing watched",
+      "progress": [],
+      "watched": {},
+      "expect": {
+        "played": false,
+        "resume": {
+          "A": null,
+          "B": null,
+          "C": null
+        },
+        "continue": []
+      }
+    },
+    {
+      "name": "a position carries between copies of one cut",
+      "progress": [
+        {
+          "setId": "B",
+          "at": 1800,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {},
+      "expect": {
+        "played": false,
+        "resume": {
+          "A": 1800,
+          "B": 1800,
+          "C": null
+        },
+        "continue": [
+          "B"
+        ]
+      }
+    },
+    {
+      "name": "a position never crosses into another cut",
+      "progress": [
+        {
+          "setId": "C",
+          "at": 2400,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {},
+      "expect": {
+        "played": false,
+        "resume": {
+          "A": null,
+          "B": null,
+          "C": 2400
+        },
+        "continue": [
+          "C"
+        ]
+      }
+    },
+    {
+      "name": "the newest position in a cut wins, and Continue shows the film once",
+      "progress": [
+        {
+          "setId": "B",
+          "at": 2000,
+          "duration": 10000,
+          "updatedAt": 2000
+        },
+        {
+          "setId": "A",
+          "at": 1000,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {},
+      "expect": {
+        "played": false,
+        "resume": {
+          "A": 2000,
+          "B": 2000,
+          "C": null
+        },
+        "continue": [
+          "B"
+        ]
+      }
+    },
+    {
+      "name": "finishing a copy closes the position of its cut",
+      "progress": [
+        {
+          "setId": "B",
+          "at": 1800,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {
+        "A": 2000
+      },
+      "expect": {
+        "played": true,
+        "resume": {
+          "A": null,
+          "B": null,
+          "C": null
+        },
+        "continue": []
+      }
+    },
+    {
+      "name": "finishing another cut leaves the position alone",
+      "progress": [
+        {
+          "setId": "B",
+          "at": 1800,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {
+        "C": 2000
+      },
+      "expect": {
+        "played": true,
+        "resume": {
+          "A": 1800,
+          "B": 1800,
+          "C": null
+        },
+        "continue": [
+          "B"
+        ]
+      }
+    },
+    {
+      "name": "a position saved after finishing is a rewatch and resumes",
+      "progress": [
+        {
+          "setId": "A",
+          "at": 600,
+          "duration": 10000,
+          "updatedAt": 2000
+        }
+      ],
+      "watched": {
+        "A": 1000
+      },
+      "expect": {
+        "played": true,
+        "resume": {
+          "A": 600,
+          "B": 600,
+          "C": null
+        },
+        "continue": [
+          "A"
+        ]
+      }
+    },
+    {
+      "name": "across cuts Continue keeps only the newest",
+      "progress": [
+        {
+          "setId": "C",
+          "at": 2400,
+          "duration": 10000,
+          "updatedAt": 2000
+        },
+        {
+          "setId": "B",
+          "at": 1800,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {},
+      "expect": {
+        "played": false,
+        "resume": {
+          "A": 1800,
+          "B": 1800,
+          "C": 2400
+        },
+        "continue": [
+          "C"
+        ]
+      }
+    },
+    {
+      "name": "a closed newer row does not hide an open older one of another cut",
+      "progress": [
+        {
+          "setId": "B",
+          "at": 1800,
+          "duration": 10000,
+          "updatedAt": 3000
+        },
+        {
+          "setId": "C",
+          "at": 2400,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {
+        "A": 4000
+      },
+      "expect": {
+        "played": true,
+        "resume": {
+          "A": null,
+          "B": null,
+          "C": 2400
+        },
+        "continue": [
+          "C"
+        ]
+      }
+    },
+    {
+      "name": "a glance is no place to resume, in any copy",
+      "progress": [
+        {
+          "setId": "B",
+          "at": 10,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {},
+      "expect": {
+        "played": false,
+        "resume": {
+          "A": null,
+          "B": null,
+          "C": null
+        },
+        "continue": []
+      }
+    },
+    {
+      "name": "a film held once and other titles keep their own rows, newest first",
+      "progress": [
+        {
+          "setId": "S",
+          "at": 900,
+          "duration": 10000,
+          "updatedAt": 3000
+        },
+        {
+          "setId": "B",
+          "at": 1800,
+          "duration": 10000,
+          "updatedAt": 1000
+        }
+      ],
+      "watched": {},
+      "expect": {
+        "played": false,
+        "resume": {
+          "A": 1800,
+          "B": 1800,
+          "C": null
+        },
+        "continue": [
+          "S",
+          "B"
+        ]
+      }
+    }
+  ]
+}
