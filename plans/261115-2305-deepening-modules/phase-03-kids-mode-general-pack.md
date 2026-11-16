@@ -27,13 +27,13 @@ No plan, learning or commit says this was intended.
 
 ## Steps
 
-- [ ] `blocked()` arms for Zündstoff and Quiz-General in kids mode.
-- [ ] Quiz drawing in kids mode: no general fill; readiness/lobby message when
+- [x] `blocked()` arms for Zündstoff and Quiz-General in kids mode.
+- [x] Quiz drawing in kids mode: no general fill; readiness/lobby message when
       kids film questions are too few.
-- [ ] Tests: each blocked combination; kids Mixed/Films never contain a general
+- [x] Tests: each blocked combination; kids Mixed/Films never contain a general
       question; adult modes unchanged.
-- [ ] Changelog entry (Spieltisch).
-- [ ] Spieltisch patch bump; commit on the branch; merge to main; check.sh.
+- [x] Changelog entry (Spieltisch).
+- [x] Spieltisch patch bump; commit on the branch; merge to main; check.sh.
 
 ## Done when
 

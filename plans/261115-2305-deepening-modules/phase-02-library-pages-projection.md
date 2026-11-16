@@ -41,7 +41,7 @@ held to the web's fixtures.
       grouping; rule tests of the page functions stay.
 - [x] Gradle `:feature:catalog`, `:ui-tv`, `:ui-mobile` unit tests;
       `cd web && bun test`.
-- [ ] Media patch bump; commit.
+- [x] Media patch bump; commit.
 
 ## Done when
 

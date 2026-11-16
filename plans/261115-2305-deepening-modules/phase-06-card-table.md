@@ -48,7 +48,7 @@ order is not shareable: Durak's actor comes from its stage.
       returning, random taps, late joiner) recorded before and after: identical
       byte for byte (279 MB, same sha256); the probe was deleted.
 - [x] `cargo test -p mediagram-game`; client tests unaffected (no protocol change).
-- [ ] Spieltisch patch bump; commit; merge; check.sh.
+- [x] Spieltisch patch bump; commit; merge; check.sh.
 
 ## Done when
 

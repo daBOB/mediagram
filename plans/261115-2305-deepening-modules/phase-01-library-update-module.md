@@ -55,7 +55,7 @@ one refresh, a typed outcome, posters fetched after every new list.
       `:ui-mobile` unit tests, `:app:hiltJavaCompileDebug`, detekt/spotless as
       `scripts/check.sh` runs them.
 - [x] Replace learning l-bfdf000e (`trail note --replaces`) if its file paths move.
-- [ ] Media patch bump; commit.
+- [x] Media patch bump; commit.
 
 ## Done when
 

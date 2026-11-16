@@ -39,8 +39,8 @@ The phone's `opens_at`/`closes_at` are derived per game.
       about as long (~0.8 s for 4 000 games): 0.819 s at HEAD, 0.817 s after,
       same table and the same 2 800 seeded records.
 - [x] Delete per-game timing tests now covered by the Ask's; rule tests stay.
-- [ ] `cargo test -p mediagram-game`; check.sh.
-- [ ] Spieltisch patch bump; commit; merge; check.sh.
+- [x] `cargo test -p mediagram-game`; check.sh.
+- [x] Spieltisch patch bump; commit; merge; check.sh.
 
 ## Done when
 

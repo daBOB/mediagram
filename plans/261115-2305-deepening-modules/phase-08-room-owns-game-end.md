@@ -30,13 +30,13 @@ positional (`final_by_order`), winning side shares 1 (Flüchtig), tie-broken
 
 ## Steps
 
-- [ ] Commit 1 (refactor): `Game` reports seats and, at the end, its ranking
+- [x] Commit 1 (refactor): `Game` reports seats and, at the end, its ranking
       (replacing `is_finished`); the Room builds Final/Wait and `TvView`'s final
       fact, preserving each game's current "of" and order; TV reads the fact.
       Tests in `room_tests` for game over; per-game Final tests replaced.
-- [ ] Commit 2 (behaviour): "of" = players ranked everywhere; `TvFinal` shows
+- [x] Commit 2 (behaviour): "of" = players ranked everywhere; `TvFinal` shows
       the given order. Changelog entry.
-- [ ] Patch bumps; merge; check.sh.
+- [x] Patch bumps; merge; check.sh.
 
 ## Done when
 
