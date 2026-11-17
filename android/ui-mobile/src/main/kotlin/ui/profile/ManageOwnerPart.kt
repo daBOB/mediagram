@@ -8,6 +8,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -40,8 +41,9 @@ import ui.settings.SettingsChip
  * grown-ups first, each with the line Everyone here gives them and what the
  * owner may change — their own PIN on the owner's row, nothing on a row the
  * owner may not change — then adding a grown-up, and a kid where a grown-up
- * is. [notice], why the last add from here did not take, is said under the
- * forms, as the web says it; [onAdd] runs as either form sends.
+ * is. Each form keeps what was typed until its add went through, and why
+ * the last add from here did not take is said under them ([adds]), as the
+ * web keeps and says them.
  */
 @Composable
 internal fun OwnerPartRows(
@@ -49,10 +51,11 @@ internal fun OwnerPartRows(
     state: ManageUiState.Managing,
     actions: ManageActions,
     header: @Composable (HouseholdRow) -> Unit,
-    notice: String?,
-    onAdd: () -> Unit,
+    adds: OwnerAdds,
     onRemove: (Profile) -> Unit,
 ) {
+    val grownUpForm = AddForm(part.id.orEmpty(), kid = false)
+    val kidForm = grownUpForm.copy(kid = true)
     val row = part.household
     // A household the list does not name yet (a sync mid-way) keeps its people, under its id.
     if (row != null) header(row) else part.name?.let { Section(it, Modifier.semantics { heading() }) }
@@ -70,27 +73,31 @@ internal fun OwnerPartRows(
         NameForm(
             ADD_A_GROWN_UP,
             onSubmit = {
-                onAdd()
+                adds.sent(grownUpForm, state.answers)
                 actions.onAddGrownUp(it, part.id)
             },
             modifier = Modifier.padding(top = Spacing.small),
+            took = adds.took(grownUpForm),
         )
     }
-    if (part.addsKid) AddKidForm(actions, part.kidParents, part.kidParentDefault, onAdd)
-    notice?.let { Notice(it, Modifier.padding(top = Spacing.small)) }
+    if (part.addsKid) AddKidForm(actions, part.kidParents, part.kidParentDefault, adds.took(kidForm)) { adds.sent(kidForm, state.answers) }
+    state.notice.takeIf { adds.answered(state.answers)?.part == part.id }?.let { Notice(it, Modifier.padding(top = Spacing.small)) }
 }
 
 /**
  * A new kid's name, then its age limit — the stricter to start — and any
  * daily limit, and whose it is: [default], the household's admin or else its
  * first grown-up, or another of [parents] chosen under Belongs to, offered
- * only where there is more than one. With none, the kid is its maker's.
+ * only where there is more than one. With none, the kid is its maker's. It
+ * all starts over as it sends — or, given [took], only once an add from it
+ * went through ([NameForm]'s rule); [onAdd] runs as it sends.
  */
 @Composable
 internal fun AddKidForm(
     actions: ManageActions,
     parents: List<Profile>,
     default: Profile?,
+    took: Int? = null,
     onAdd: () -> Unit = {},
 ) {
     var newLimit by rememberSaveable { mutableIntStateOf(NEW_KID_LIMIT) }
@@ -99,16 +106,21 @@ internal fun AddKidForm(
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
     // One chosen who has left the household since is nobody's choice any more.
     val parent = parents.find { it.id == chosen } ?: default
+    val startOver = {
+        newLimit = NEW_KID_LIMIT
+        newDaily = 0
+        chosen = null
+    }
+    if (took != null) LaunchedEffect(took) { if (took > 0) startOver() }
     NameForm(
         ADD_A_KID,
         onSubmit = { name ->
             onAdd()
             actions.onAddKid(name, newLimit, newDaily.takeIf { it > 0 }, parent?.id)
-            newLimit = NEW_KID_LIMIT
-            newDaily = 0
-            chosen = null
+            if (took == null) startOver()
         },
         modifier = Modifier.padding(top = Spacing.small),
+        took = took,
         more = {
             DailyLimitChips(
                 newDaily.takeIf { it > 0 },

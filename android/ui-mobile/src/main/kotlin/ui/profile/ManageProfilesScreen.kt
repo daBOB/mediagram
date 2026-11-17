@@ -9,12 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -84,30 +83,22 @@ private fun Managing(
 ) {
     var removing by remember { mutableStateOf<Profile?>(null) }
     val parts = state.parts()
-    // The household an add was last sent from, and the answers before it: the next answer is that add's.
-    var sentFrom by rememberSaveable { mutableStateOf<String?>(null) }
-    var sentAt by rememberSaveable { mutableIntStateOf(0) }
-    val noticeAt = sentFrom?.takeIf { id -> state.answers == sentAt + 1 && parts.any { it.id == id } }
-    Page(managingAs(state.actor.name), state.notice.takeIf { noticeAt == null }) {
-        // The owner's view names every part; anyone else's is one, unnamed.
-        if (parts.first().id != null) {
-            parts.forEach { part ->
-                key(part.id) {
-                    val added = {
-                        sentFrom = part.id
-                        sentAt = state.answers
-                    }
-                    OwnerPartRows(part, state, actions, header, state.notice.takeIf { noticeAt == part.id }, added) { removing = it }
-                }
-            }
+    val adds = remember(state.actor.id) { OwnerAdds() }
+    LaunchedEffect(state.answers) { adds.heard(state.answers, state.notice) }
+    val sends = actions.notingOthers(adds)
+    // An add's refusal is said under its household's forms; any other at the end.
+    val atAnAdd = adds.answered(state.answers)?.part.takeIf { id -> state.ownersView && parts.any { it.id == id } }
+    Page(managingAs(state.actor.name), state.notice.takeIf { atAnAdd == null }) {
+        if (state.ownersView) {
+            parts.forEach { part -> key(part.id) { OwnerPartRows(part, state, sends, header, adds) { removing = it } } }
             create()
         } else {
-            parts.forEach { part -> key(part.id) { ManagePartRows(part, state, actions) { removing = it } } }
+            parts.forEach { part -> key(part.id) { ManagePartRows(part, state, sends) { removing = it } } }
             Section(YOUR_PIN)
-            QuietPill(CHANGE_YOUR_PIN, onClick = { actions.onChangePin(state.actor.id) })
+            QuietPill(CHANGE_YOUR_PIN, onClick = { sends.onChangePin(state.actor.id) })
         }
     }
-    removing?.let { target -> RemoveProfileDialog(target, onRemove = { actions.onRemove(target.id) }, onDismiss = { removing = null }) }
+    removing?.let { target -> RemoveProfileDialog(target, onRemove = { sends.onRemove(target.id) }, onDismiss = { removing = null }) }
 }
 
 @Composable

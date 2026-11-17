@@ -10,7 +10,12 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
+import catalog.profile.ADD_A_GROWN_UP
+import catalog.profile.ADD_A_KID
 import model.Profile
 import testing.FakeCore
 import ui.common.settings.SettingsSection
@@ -48,6 +53,19 @@ abstract class HouseholdsOwnerHarness : ProfilesSettingsHarness() {
     }
 
     fun core(): FakeCore = household.core
+
+    /** A household's two add forms' name fields, in the owner's view. */
+    val addGrownUp = hasSetTextAction() and hasContentDescription("$ADD_A_GROWN_UP: name")
+    val addKid = hasSetTextAction() and hasContentDescription("$ADD_A_KID: name")
+
+    /** [name] typed into [household]'s [field], and its [label] pressed. */
+    fun add(household: String, field: SemanticsMatcher, label: String, name: String) {
+        inPart(household, field).performScrollTo().performTextReplacement(name)
+        inPart(household, hasText(label) and hasClickAction()).performScrollTo().performClick()
+        compose.waitForIdle()
+    }
+
+    fun made(name: String) = core().profiles.single { it.name == name }
 
     /** Each match's middle, top to bottom of the page: a header's line sits level with its heading, and below the fold too. */
     fun ys(matcher: SemanticsMatcher) = compose.onAllNodes(matcher).fetchSemanticsNodes().map { it.positionInRoot.y + it.size.height / 2f }

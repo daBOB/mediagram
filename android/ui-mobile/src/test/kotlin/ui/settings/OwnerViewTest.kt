@@ -2,13 +2,11 @@ package ui.settings
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isHeading
@@ -16,7 +14,6 @@ import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTextInput
 import catalog.profile.ADD_A_GROWN_UP
 import catalog.profile.ADD_A_KID
 import catalog.profile.CHANGE_YOUR_PIN
@@ -47,8 +44,6 @@ import uniffi.mediagram_core.Profile as CoreProfile
 @Config(sdk = [35])
 class OwnerViewTest : HouseholdsOwnerHarness() {
     private val celine = Profile("c", "Celine", admin = true, household = "madani")
-    private val addGrownUp = hasSetTextAction() and hasContentDescription("$ADD_A_GROWN_UP: name")
-    private val addKid = hasSetTextAction() and hasContentDescription("$ADD_A_KID: name")
 
     private fun show(chosen: Profile, joined: String = HOME_HOUSEHOLD) =
         open(chosen, pins = mapOf("a" to "1234", "b" to "2468", "c" to "5678"), initial = SettingsSection.PROFILES, people = listOf(tom, owner, bea)) {
@@ -62,14 +57,6 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
         compose.onAllNodes(isHeading()).fetchSemanticsNodes().sortedBy { it.positionInRoot.y }
             .mapNotNull { node -> node.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text } }
             .filter { it in setOf("Home", "Barn", "Madani") }
-
-    private fun add(household: String, field: SemanticsMatcher, label: String, name: String) {
-        inPart(household, field).performScrollTo().performTextInput(name)
-        inPart(household, hasText(label) and hasClickAction()).performScrollTo().performClick()
-        compose.waitForIdle()
-    }
-
-    private fun made(name: String) = core().profiles.single { it.name == name }
 
     @Test
     fun ownerSeesEveryHouseholdWithItsActions() {

@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -44,22 +45,26 @@ internal const val MAX_NAME = 120
  * A name, whatever [extra] asks beside it, and the pill that adds — the web's
  * `addForm`, which the picker's first profile and Manage's two add forms all
  * are. The field empties once its name is handed over, as the web's redrawn
- * form does; a blank name hands over nothing.
+ * form does — or, given [took], only once an add from it went through and
+ * [took] rose, as the owner's view keeps a refused one; a blank name hands
+ * over nothing.
  */
 @Composable
 internal fun NameForm(
     label: String,
     onSubmit: (String) -> Unit,
     modifier: Modifier = Modifier,
+    took: Int? = null,
     /** Choices that need a line of their own, between the field and the pill. */
     more: @Composable ColumnScope.() -> Unit = {},
     extra: @Composable RowScope.() -> Unit = {},
 ) {
     var name by rememberSaveable { mutableStateOf("") }
+    if (took != null) LaunchedEffect(took) { if (took > 0) name = "" }
     val submit = {
         if (name.isNotBlank()) {
             onSubmit(name.trim())
-            name = ""
+            if (took == null) name = ""
         }
     }
     Column(modifier = modifier.fillMaxWidth()) {

@@ -42,7 +42,7 @@ data class ManagePart(
  * others in the live order.
  */
 fun ManageUiState.Managing.parts(): List<ManagePart> {
-    if (!actor.owner || households.isEmpty()) return listOf(ManagePart(null, null, grownUps, kids, canAddGrownUp, addsKid = true))
+    if (!ownersView) return listOf(ManagePart(null, null, grownUps, kids, canAddGrownUp, addsKid = true))
     // A household a row is in that the list does not name stays visible, after the named ones.
     val ids = (listOf(here) + households.map { it.id } + everyone.map { it.household }).distinct()
     val changed = (listOf(actor) + grownUps + kids).map { it.id }.toSet()

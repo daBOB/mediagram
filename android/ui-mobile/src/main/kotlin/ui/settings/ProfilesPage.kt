@@ -119,7 +119,7 @@ private fun Household() {
     // takes the owner's place: opening a closed one would put this page over the picker.
     LaunchedEffect(owners, manage) { owners.ownerView.collect { if (manage.state.value != ManageUiState.Closed) manage.asOwner() } }
     // The owner's view says all that Everyone here says, and is where the Owner button leads.
-    val ownersView = (state as? ManageUiState.Managing)?.actor?.owner == true
+    val ownersView = (state as? ManageUiState.Managing)?.ownersView == true
     if (!ownersView) EveryoneHere(profiles)
     OwnerHouseholds(owners) { header, create -> ManageProfilesScreen(state, actions, header, create) }
     pin?.let { PinDialog(it, onPin = manage::enterPin, onDismiss = manage::cancelPin) }

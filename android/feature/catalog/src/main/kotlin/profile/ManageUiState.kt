@@ -42,6 +42,14 @@ sealed interface ManageUiState {
     ) : ManageUiState {
         val canAddGrownUp: Boolean get() = actor.admin
 
+        /**
+         * Whether this is the owner's view of every household ([parts]) — the
+         * one answer every screen draws it by. Before the households are read
+         * there is nothing to head the parts with, so Manage is drawn as it
+         * always was, Everyone here beside it.
+         */
+        val ownersView: Boolean get() = actor.owner && households.isNotEmpty()
+
         /** The rows that carry the Sections control: every kid listed, every other grown-up — never the actor's own row. */
         val sectionRows: List<Profile> get() = grownUps + kids
     }
