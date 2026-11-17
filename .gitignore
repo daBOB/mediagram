@@ -44,3 +44,6 @@ crates/mediagram-game/client/dist/
 
 # Tool cache with a telemetry id.
 web/graft/
+
+# Claude Code hooks write their session audit log here
+/production/

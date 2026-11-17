@@ -102,16 +102,22 @@ class CatalogViewModel
             setId: String,
             listed: Boolean,
         ) {
+            // A film held more than once is on the list while any copy is, so taking it off takes off every copy listed.
+            val ids = if (listed) listOf(setId) else copiesOf(setId).filter { it in watchState.snapshot.value.watchlist }.ifEmpty { listOf(setId) }
             writeState("Could not confirm the Watchlist update. Check it and try again.") {
-                watchState.setWatchlisted(setId, listed)
+                ids.forEach { watchState.setWatchlisted(it, listed) }
                 true
             }
         }
 
         /** A title page's "My List" button: which way it goes is read from the snapshot at the tap. */
         fun toggleWatchlist(setId: String) {
-            setWatchlisted(setId, setId !in watchState.snapshot.value.watchlist)
+            val listed = watchState.snapshot.value.watchlist
+            setWatchlisted(setId, copiesOf(setId).none { it in listed })
         }
+
+        /** [setId] and every other copy of the film it belongs to. */
+        private fun copiesOf(setId: String): List<String> = state.value.filmOf(setId)?.let(::versionsOf)?.map(MediaSet::setId) ?: listOf(setId)
 
         /**
          * A title page's editor's-choice button, pinning [setId] or taking
@@ -343,7 +349,10 @@ class CatalogViewModel
             setId: String,
             included: Boolean,
         ) {
-            writeCollection("update") { watchState.setInList(id, setId, included) }
+            // A list may hold any copy of a film; taking the film out takes out whichever it holds.
+            val held = watchState.snapshot.value.collections.find { it.id == id }?.items.orEmpty()
+            val ids = if (included) listOf(setId) else copiesOf(setId).filter { it in held }.ifEmpty { listOf(setId) }
+            writeCollection("update") { ids.all { watchState.setInList(id, it, included) } }
         }
 
         /** Continue's "Mark finished": the wall redraws from the snapshot, so the title simply leaves it. */

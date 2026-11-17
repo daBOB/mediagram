@@ -29,7 +29,7 @@ fun groupAnime(sets: List<MediaSet>): AnimeLibrary {
     val films = sets.filter { it.kind == Kind.MOVIE }
     val shows = collections(episodes, CollectionKind.SHOW, "Unknown show")
         .map { it.copy(key = "ANIME/${it.name}") }
-    return AnimeLibrary(shows = shows, films = films.sortedWith(compareBy(NATURAL) { it.title }))
+    return AnimeLibrary(shows = shows, films = groupFilms(films).sortedWith(compareBy(NATURAL) { it.title }))
 }
 
 /**
@@ -62,7 +62,7 @@ fun animeDepartmentOf(
     if (library.shows.isEmpty() && library.films.isEmpty()) return null
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
     val showLeads = library.shows.mapNotNull { firstItemOf(it.divisions) }
-    val unwatched = (library.films + showLeads).filterNot { it.setId in watchedIds }
+    val unwatched = (library.films + showLeads).filterNot { playedOf(it, watchedIds) }
     val byPopularity = unwatched.sortedByDescending { it.popularity ?: 0.0 }
     val lead = byPopularity.firstOrNull { it.backdropPath != null }
     val underway = departmentUnderwayOf(library.shows, byId, watch, keep = MediaSet::anime)

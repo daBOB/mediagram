@@ -1,0 +1,39 @@
+/* A film held more than once: its Versions list on the film page, and the
+   same rows in the dialog a card opens when it would play one straight away. */
+.versions-panel { margin: 8px 0 32px; }
+.versions { display: grid; gap: 0; margin: 12px 0 0; padding: 0; list-style: none; max-width: 48rem; }
+.version {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.version-words { display: grid; gap: 2px; min-width: 0; }
+.version-label { color: var(--ink); font-size: 0.9375rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.version-tech, .version-state { color: var(--ink-3); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.version-state { color: var(--ink-2); }
+.version .badge { justify-self: start; }
+
+.version-chooser {
+  inset: 0;
+  margin: auto;
+  width: min(34rem, calc(100% - 32px));
+  height: fit-content;
+  padding: 1.15rem 1.25rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6);
+}
+.version-chooser::backdrop { background: rgba(0, 0, 0, 0.5); }
+.version-chooser-title { margin: 0; font: 500 1.05rem var(--display); }
+.version-chooser .versions { margin-top: 4px; }
+.version-chooser-cancel { display: block; margin: 12px 0 0 auto; }
+
+@media (max-width: 480px) {
+  .version { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .version-play { justify-self: start; }
+}

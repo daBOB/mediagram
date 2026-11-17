@@ -1,5 +1,5 @@
-// Makes the awards-ceremony copy of each game-night avatar from its 2K game copy: only the five clips the podium
-// plays, all ~51k triangles (the TV box draws three at ~44 fps at full resolution; the user's floor is 30, and 30k
+// Makes the TV copy of each game-night avatar from its 2K game copy (the awards podium and Zündstoff): only the clips they
+// play, all ~51k triangles (the TV box draws three at ~44 fps at full resolution; the user's floor is 30, and 30k
 // looked low-poly), colour and normal maps re-unwrapped into padded charts and baked from the 4K master's maps
 // (rebake-texture-atlas.mjs) into WebP (EXT_texture_webp, which GLTFLoader reads natively): colour 2048, normal 1024
 // (fabric folds and fur relief; an avatar is ~600 px tall on the TV). Compressed with EXT_meshopt_compression (the
@@ -26,7 +26,8 @@ import { simplifyFavouringFaceAndHands } from './simplify-favouring-face-and-han
 const here = (p) => new URL(p, import.meta.url).pathname;
 const opt = (name, dflt) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? dflt;
 const IN_DIR = opt('in', here('../../../assets/game-night/avatars/')).replace(/\/?$/, '/');
-const KEEP = opt('clips', 'Idle_15,victory,Happy_Jump,Cheer_With_One_Hand_Up,Shrug').split(',');
+// The podium's five, then Zündstoff's throw, catch, miss, pick-up and blast.
+const KEEP = opt('clips', 'Idle_15,victory,Happy_Jump,Cheer_With_One_Hand_Up,Shrug,Over_Shoulder_Throw,Leap_Right_And_Catch,Jump_To_Catch_And_Fall,Male_Bend_Over_Pick_Up,Falling_Down').split(',');
 const TRIS = Number(opt('tris', Infinity));
 // texels between charts; 4 at 2048 lets the charts cover 64% of the map instead of 43% at 6 (block-aligned for KTX2)
 const PADDING = Number(opt('padding', 6));

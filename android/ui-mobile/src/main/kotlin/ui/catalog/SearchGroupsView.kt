@@ -21,7 +21,9 @@ import catalog.SearchGroups
 import catalog.SearchRow
 import catalog.extentOf
 import catalog.factsLine
+import catalog.playedOf
 import catalog.spelledCountOf
+import catalog.versionsBadgeOf
 import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
@@ -124,8 +126,9 @@ private fun posterCards(rows: List<SearchRow>, watchedIds: Set<String>, onOpenTi
                 posterPath = row.set.posterPath,
                 title = row.set.title,
                 caption = factsLine(row.set.year, row.set.durationSecs),
-                watched = row.set.setId in watchedIds,
+                watched = playedOf(row.set, watchedIds),
                 held = row.held,
+                versions = versionsBadgeOf(row.set),
                 modifier = Modifier.width(SEARCH_CARD_WIDTH),
                 onClick = { onOpenTitle(row.set.setId) },
             )

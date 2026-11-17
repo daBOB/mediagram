@@ -7,7 +7,9 @@ import androidx.compose.ui.focus.focusRequester
 import catalog.SearchDestination
 import catalog.factsLine
 import catalog.spelledCountOf
-import catalog.watchedFractionOf
+import catalog.playedOf
+import catalog.versionsBadgeOf
+import ui.common.catalog.cardProgressOf
 import data.PortraitRequestLog
 import ui.common.catalog.DESTINATION_ASPECT
 import java.io.File
@@ -44,8 +46,8 @@ internal fun TvSearchCell(
     when (entry) {
         is SearchEntry.Title -> {
             val set = entry.row.set
-            val progress = watchedFractionOf(marks.positions[set.setId])
-            val watched = set.setId in marks.watchedIds
+            val progress = cardProgressOf(set, marks.positions)
+            val watched = playedOf(set, marks.watchedIds)
             if (layout == SearchLayout.POSTERS) {
                 TvPlate(
                     title = set.title,
@@ -54,6 +56,7 @@ internal fun TvSearchCell(
                     modifier = modifier.focusRequester(requester),
                     // The line a shelf's plate carries, telling two versions of a title apart.
                     caption = factsLine(set.year, set.durationSecs),
+                    meta = versionsBadgeOf(set),
                     progress = progress,
                     watched = watched,
                     held = entry.row.held,

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@700&family=Bricolage+Grotesque:wght@800&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #07150f; overflow: hidden; }
+  canvas { display: block; }
+  .label { position: absolute; transform: translate(-50%, 0); text-align: center; font: 800 22px "Bricolage Grotesque", sans-serif; color: #fbf8f1; text-shadow: 0 2px 6px rgba(0,0,0,.8); white-space: nowrap; }
+  .label .hearts { display: block; font: 700 18px "Atkinson Hyperlegible", sans-serif; color: #e5487f; letter-spacing: .1em; }
+  .label.out { opacity: .4; }
+  .hud { position: absolute; left: 40px; top: 28px; font: 800 26px "Bricolage Grotesque", sans-serif; color: #fbf8f1; }
+  .hud small { display: block; font: 700 18px "Atkinson Hyperlegible", sans-serif; color: #a9cdbf; margin-top: 4px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.170.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div class="hud">Zündstoff<small>Runde 2 · Fox wirft zu Panda</small></div>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+
+const cam = new URLSearchParams(location.search).get("cam") ?? "a";
+const W = innerWidth, H = innerHeight;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#07150f");
+scene.fog = new THREE.Fog("#07150f", 18, 34);
+
+// The table: a round felt top with a wooden rim, the room dark around it.
+const R = 7.2;
+const felt = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.3, 96), new THREE.MeshStandardMaterial({ color: "#0f5a43", roughness: 0.95 }));
+felt.position.y = -0.15; felt.receiveShadow = true; scene.add(felt);
+const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 0.28, 16, 128), new THREE.MeshStandardMaterial({ color: "#5a3a22", roughness: 0.6 }));
+rim.rotation.x = Math.PI / 2; rim.position.y = 0.02; scene.add(rim);
+const ring = new THREE.Mesh(new THREE.RingGeometry(4.5, 4.58, 128), new THREE.MeshBasicMaterial({ color: "#1c7258" }));
+ring.rotation.x = -Math.PI / 2; ring.position.y = 0.005; scene.add(ring);
+
+scene.add(new THREE.HemisphereLight("#fff6e0", "#0a2a1f", 1.1));
+const key = new THREE.SpotLight("#fff1d6", 260, 40, Math.PI / 4.2, 0.5, 1.6);
+key.position.set(2, 16, 6); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004;
+scene.add(key, key.target);
+
+const camera = new THREE.PerspectiveCamera(cam === "c" ? 38 : 34, W / H, 0.1, 100);
+const views = { a: [0, 13.5, 14.5, 0, 0.9, 0.4], b: [0, 4.2, 15.2, 0, 1.6, 0], c: [0, 21, 4.2, 0, 0, 0.3] };
+const [cx, cy, cz, tx, ty, tz] = views[cam];
+camera.position.set(cx, cy, cz); camera.lookAt(tx, ty, tz);
+
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const players = [
+  ["fox", "Fox", 3], ["ghost", "Ghost", 2], ["granny", "Oma", 3], ["panda", "Panda", 1],
+  ["frog", "Frosch", 3], ["bear", "Bär", 0], ["yeti", "Yeti", 2], ["bunny", "Hase", 3],
+];
+const HEIGHT = 2.5, CIRCLE = 4.5;
+const mixers = [], spots = new Array(players.length);
+await Promise.all(players.map(async ([id, name, lives], i) => {
+  const gltf = await loader.loadAsync(`game-avatars/${id}.glb`);
+  const root = gltf.scene;
+  root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
+  const s = HEIGHT / size.y;
+  root.scale.setScalar(s); root.position.set(-mid.x * s, -box.min.y * s, -mid.z * s);
+  const holder = new THREE.Group().add(root);
+  // Seat 0 at the front (towards the camera), the rest round the circle; all face the middle.
+  const a = Math.PI / 2 + (i / players.length) * Math.PI * 2;
+  holder.position.set(Math.cos(a) * CIRCLE, 0, Math.sin(a) * CIRCLE);
+  holder.lookAt(0, 0, 0);
+  scene.add(holder);
+  const mixer = new THREE.AnimationMixer(root);
+  const out = lives === 0;
+  const clip = THREE.AnimationClip.findByName(gltf.animations, id === "panda" ? "Cheer_With_One_Hand_Up" : out ? "Shrug" : "Idle_15");
+  if (clip) { const act = mixer.clipAction(clip); act.play(); mixer.setTime(id === "panda" ? 0.55 : 0.6 + i * 0.37); }
+  if (out) root.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.35; } });
+  mixers.push(mixer);
+  spots[i] = { holder, root, id, name, lives };
+}));
+scene.updateMatrixWorld(true);
+
+// The bomb: black ball, cap, a curled fuse and its spark.
+function bomb() {
+  const g = new THREE.Group();
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.34, 32, 20), new THREE.MeshStandardMaterial({ color: "#1d1d1f", roughness: 0.35, metalness: 0.2 }));
+  ball.castShadow = true;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.14, 20), new THREE.MeshStandardMaterial({ color: "#3a3a3c", roughness: 0.5 }));
+  cap.position.set(0.16, 0.3, 0); cap.rotation.z = -0.5;
+  const fuse = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(0.2, 0.36, 0), new THREE.Vector3(0.32, 0.55, 0.05), new THREE.Vector3(0.45, 0.6, 0)]), 16, 0.025, 8), new THREE.MeshStandardMaterial({ color: "#c8a96b" }));
+  const spark = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), new THREE.MeshBasicMaterial({ color: "#ffd84a" }));
+  spark.position.set(0.45, 0.6, 0);
+  const glow = new THREE.PointLight("#ffb030", 6, 3); glow.position.copy(spark.position);
+  return g.add(ball, cap, fuse, spark, glow);
+}
+
+// Mid-throw: from the fox (seat 0) to the panda (seat 3), on a parabola, a dotted trail behind it.
+const from = spots[0].holder.position.clone().setY(2.1), to = spots[3].holder.position.clone().setY(2.1);
+const arc = (t) => from.clone().lerp(to, t).setY(2.1 + Math.sin(Math.PI * t) * 2.6);
+const b = bomb(); b.position.copy(arc(0.55)); b.rotation.z = 0.6; scene.add(b);
+for (let t = 0.06; t < 0.5; t += 0.06) {
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshBasicMaterial({ color: "#f6c731", transparent: true, opacity: 0.25 + t }));
+  dot.position.copy(arc(t)); scene.add(dot);
+}
+
+renderer.render(scene, camera);
+
+// Names and lives under each avatar, placed where its feet are on screen.
+for (const p of spots) {
+  const v = p.holder.position.clone().setY(-0.1).project(camera);
+  const el = document.createElement("div");
+  el.className = "label" + (p.lives === 0 ? " out" : "");
+  el.style.left = `${(v.x * 0.5 + 0.5) * W}px`; el.style.top = `${(-v.y * 0.5 + 0.5) * H + 4}px`;
+  el.innerHTML = `${p.name}<span class="hearts">${p.lives === 0 ? "raus" : "♥".repeat(p.lives)}</span>`;
+  document.body.appendChild(el);
+}
+
+// Geometry check: feet on the felt, no two avatars overlapping, the bomb clear of every body.
+const boxes = spots.map((p) => new THREE.Box3().setFromObject(p.root));
+const report = { feet: boxes.map((bx, i) => [spots[i].id, +bx.min.y.toFixed(3)]), overlaps: [], bombInside: [] };
+for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) if (boxes[i].intersectsBox(boxes[j])) report.overlaps.push([spots[i].id, spots[j].id]);
+const bombBox = new THREE.Box3().setFromObject(b);
+boxes.forEach((bx, i) => bx.intersectsBox(bombBox) && report.bombInside.push(spots[i].id));
+console.log("QA " + JSON.stringify(report));
+window.READY = true;
+</script>
+</body>
+</html>

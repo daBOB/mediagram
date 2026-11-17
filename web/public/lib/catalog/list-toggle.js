@@ -9,13 +9,24 @@
 import { el } from "../dom.js";
 import { isWatchlisted, setWatchlisted } from "../watch-state.js";
 
-/** @param {string} setId a film, or a show's first episode */
-export function listToggle(setId, className = "pill pill-line") {
-  const listed = isWatchlisted(setId);
+/**
+ * A film held more than once is on the list when any copy is: the player's
+ * own toggle stores the copy playing, and the first copy changes when a better
+ * one arrives. Adding stores the first; taking it off removes every copy listed.
+ * @param {string|string[]} ids a film's copies, first first, or a show's first episode
+ */
+export function listToggle(ids, className = "pill pill-line") {
+  const copies = [ids].flat();
+  const onList = () => copies.filter(isWatchlisted);
+  const listed = onList().length > 0;
   const button = el("button", `${className} list-toggle`);
   button.type = "button";
   button.setAttribute("aria-pressed", String(listed));
   button.append(el("span", "pill-icon", listed ? "✓" : "+"), el("span", null, "My List"));
-  button.addEventListener("click", () => setWatchlisted(setId, !isWatchlisted(setId)));
+  button.addEventListener("click", () => {
+    const held = onList();
+    if (held.length === 0) setWatchlisted(copies[0], true);
+    else for (const id of held) setWatchlisted(id, false);
+  });
   return button;
 }

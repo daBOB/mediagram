@@ -19,9 +19,16 @@ import designsystem.Spacing
  * search row and a list row alike.
  */
 @Composable
-internal fun OfflineBadge(modifier: Modifier = Modifier) {
+internal fun OfflineBadge(modifier: Modifier = Modifier) = CardBadge("offline", modifier)
+
+/** A small tag on a card or a row — "offline", or "2 versions" on a film held more than once. */
+@Composable
+internal fun CardBadge(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
-        text = "offline",
+        text = text,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSecondaryContainer,
         textAlign = TextAlign.Center,

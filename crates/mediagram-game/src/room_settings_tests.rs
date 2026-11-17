@@ -298,13 +298,11 @@ fn kritzelei_needs_two_players() {
 }
 
 #[test]
-fn zuendstoff_is_not_for_kids_mode() {
+fn zuendstoff_plays_in_kids_mode() {
     let mut r = room(8);
     hello(&mut r, 1, "Ana", None);
     hello(&mut r, 2, "Ben", None);
     configure(&mut r, 1, GameKind::Zuendstoff, QuizMode::Mixed, true);
-    assert_eq!(blocked_text(&mut r, 1).as_deref(), Some("Zündstoff gibt es nicht im Kindermodus."));
-    configure(&mut r, 1, GameKind::Zuendstoff, QuizMode::Mixed, false);
     assert_eq!(blocked_text(&mut r, 1), None);
 }
 

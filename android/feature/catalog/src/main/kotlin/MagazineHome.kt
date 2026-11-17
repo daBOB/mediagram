@@ -34,7 +34,6 @@ fun magazineHomeOf(
     recentLimit: Int = limit,
 ): MagazineHome {
     val byId = allSetsById(shelves)
-    val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
 
     // Films only, the way the web's `library.movies` is: the household
     // decided parity over a series-eligible cover when the plan asked.
@@ -42,6 +41,7 @@ fun magazineHomeOf(
     val movies = movieEntries.map { it.set }
     val recentlyAdded = movies.sortedByDescending(MediaSet::addedAt).take(recentLimit)
     val onRow = recentlyAdded.mapTo(HashSet(), MediaSet::setId)
+    val watchedIds = filmsWatched(watch.watched.mapTo(HashSet()) { it.setId }, movies)
 
     val editorial =
         homeEditorial(

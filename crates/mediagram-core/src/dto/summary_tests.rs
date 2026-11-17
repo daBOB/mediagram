@@ -22,6 +22,7 @@ fn set() -> PlayableSet {
         quality: Some("720p".into()),
         hdr: None,
         duration: Some(600),
+        variant: Some("Director's Cut".into()),
         total: 123_456,
         part_count: 2,
         created_at: 1_781_568_000,
@@ -50,6 +51,7 @@ fn a_summary_carries_the_rows_own_facts() {
         (Some(1), Some(3), Some(4))
     );
     assert_eq!((summary.year, summary.duration), (Some(2024), Some(600)));
+    assert_eq!(summary.variant.as_deref(), Some("Director's Cut"));
     assert_eq!((summary.total, summary.part_count), (123_456, 2));
     assert_eq!(summary.added_at, 1_781_568_000);
     assert_eq!(summary.alang, ["de"]);

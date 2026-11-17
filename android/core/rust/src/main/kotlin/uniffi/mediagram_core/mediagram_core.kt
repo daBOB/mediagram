@@ -6449,6 +6449,12 @@ data class SetSummary (
     ,
     var `duration`: kotlin.UInt?
     ,
+    /**
+     * A film's cut (`Director's Cut`, …); `None` is the standard cut. Named
+     * as the web player names it.
+     */
+    var `variant`: kotlin.String?
+    ,
     var `posterKey`: kotlin.String?
     ,
     /**
@@ -6613,6 +6619,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterLong.read(buf),
@@ -6653,6 +6660,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.allocationSize(value.`quality`) +
             FfiConverterOptionalString.allocationSize(value.`hdr`) +
             FfiConverterOptionalUInt.allocationSize(value.`duration`) +
+            FfiConverterOptionalString.allocationSize(value.`variant`) +
             FfiConverterOptionalString.allocationSize(value.`posterKey`) +
             FfiConverterOptionalString.allocationSize(value.`posterPath`) +
             FfiConverterULong.allocationSize(value.`total`) +
@@ -6694,6 +6702,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.write(value.`quality`, buf)
             FfiConverterOptionalString.write(value.`hdr`, buf)
             FfiConverterOptionalUInt.write(value.`duration`, buf)
+            FfiConverterOptionalString.write(value.`variant`, buf)
             FfiConverterOptionalString.write(value.`posterKey`, buf)
             FfiConverterOptionalString.write(value.`posterPath`, buf)
             FfiConverterULong.write(value.`total`, buf)

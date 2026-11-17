@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,12 +22,16 @@ import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.KeptKind
 import catalog.SetCard
+import catalog.cardPosition
+import catalog.heldOf
 import catalog.keyOf
+import catalog.playedOf
 import catalog.resumeLine
 import catalog.watchedFractionOf
 import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
+import ui.chrome.CatalogueTextButton
 
 /**
  * One of the two kept walls that hold titles directly — Continue and
@@ -57,6 +60,7 @@ internal fun KeptWall(
         }
         val positions = watch.progress.associateBy { it.setId }
         val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
+        val watchedAt = watch.watched.associate { it.setId to it.finishedAt }
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize(),
@@ -65,14 +69,16 @@ internal fun KeptWall(
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             items(items = sets, key = MediaSet::setId) { set ->
+                // A film held more than once reads as the film: played by any copy, at its newest place.
+                val position = cardPosition(set, positions, watchedAt::get)
                 Column {
                     SetPlate(
                         card = SetCard(
                             set = set,
-                            caption = resumeLine(positions[set.setId]),
-                            progress = watchedFractionOf(positions[set.setId]),
-                            watched = set.setId in watchedIds,
-                            held = set.setId in heldIds,
+                            caption = resumeLine(position),
+                            progress = watchedFractionOf(position),
+                            watched = playedOf(set, watchedIds),
+                            held = heldOf(set, heldIds),
                         ),
                         onClick = { onOpenTitle(set.setId) },
                     )
