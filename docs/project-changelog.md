@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.184.0 — Ambient on the web
+
+**Added** (web)
+
+- **Ambient in Settings → Appearance → Artwork**, as on the tablet: rounded cards, and four soft blobs drifting slowly behind the page like a lava lamp's, merging as they pass, faint. The glow takes a poster's strongest colour (its most vivid family of hue, from a few dozen pixels, lifted so dark posters still glow; a black-and-white poster glows grey), by the same pick the Android app makes. A title's or a show's page glows in its own picture's colour; Home and the shelves glow in the colour of the row scrolled to (its first poster on screen, about a third of the way down the window), easing to the next as you scroll. The glow never shows over a page's backdrop art and fades back in over 96px around it. With reduced motion the glow stays still. Drawn as one fixed layer of CSS, so it never redraws the page.
+
 ## 0.183.2 — A tidy Profiles page and a centred countdown
 
 **Changed** (web)

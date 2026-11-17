@@ -11,7 +11,6 @@
  */
 
 import { el } from "./lib/dom.js";
-import { startAmbient } from "./lib/ambient.js";
 import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/catalog/search-view.js";
 import { countDocumentaries } from "./lib/documentaries.js";
@@ -65,7 +64,6 @@ import * as dailyLimit from "./lib/daily-limit-gate.js";
 import { filmSession } from "./lib/film-session.js";
 
 const main = document.getElementById("main");
-startAmbient();
 const player = document.getElementById("player");
 const searchBox = document.getElementById("search");
 // A fragment link would be consumed as an application route. Move focus

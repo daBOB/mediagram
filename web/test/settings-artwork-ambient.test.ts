@@ -28,7 +28,9 @@ test("choosing Ambient stores it and fires the appearance event", () => {
   const told: string[] = [];
   addEventListener("mediagram:appearance", (event) => told.push(event.type), { once: true });
   const main = env.node("main");
-  renderSettings(main, { profile: null, switchProfile: () => {}, systemVisible: false, admin: null });
+  const on = { profile: null, switchProfile: () => {}, systemVisible: false, admin: null };
+  renderSettings(main, on);
+  descendants(main).find((node) => node.tagName === "BUTTON" && node.textContent === "Appearance")?.fire("click");
   const ambient = descendants(main).find((node) => node.tagName === "INPUT" && node.value === "ambient");
   expect(ambient).toBeDefined();
   ambient!.fire("change");

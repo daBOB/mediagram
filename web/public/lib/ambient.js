@@ -9,7 +9,8 @@
  * window, easing to the next as it changes. The glow keeps off the artwork of
  * a hero (`keepClearOf`): a paper-coloured veil under each, feathered over 96px.
  *
- * Mounted while `data-backdrop="ambient"` is on <html> (`appearance-boot.js`).
+ * Loaded as its own module by index.html; mounted while `data-backdrop="ambient"`
+ * is on <html> (`appearance-boot.js`).
  */
 
 import { el } from "./dom.js";
@@ -27,7 +28,7 @@ let mounted = null;
 const watched = new Set();
 
 /** Follows the viewer's Artwork choice: Ambient is mounted while it is the one chosen. */
-export function startAmbient() {
+function startAmbient() {
   const sync = () => {
     const on = document.documentElement.dataset.backdrop === "ambient";
     if (on && !mounted) mounted = mount();
@@ -122,3 +123,5 @@ function keepClearOf(veils, resizes) {
     return veil;
   }));
 }
+
+startAmbient();

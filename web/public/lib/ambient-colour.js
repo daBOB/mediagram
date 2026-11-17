@@ -72,9 +72,12 @@ export function strongestColourOf(rgba) {
   return sum.map((per) => Math.trunc(per[best] / weight[best]));
 }
 
-/** A poster's colour made into a glow: saturated a little more, and kept in a band of lightness that reads on the page. */
-export function glowOf([r, g, b]) {
-  const [h, s, l] = toHsl(r, g, b);
+/**
+ * A poster's colour made into a glow: saturated a little more, and kept in a band of lightness that reads on the page.
+ * @param {number[]} rgb
+ */
+export function glowOf(rgb) {
+  const [h, s, l] = toHsl(rgb[0], rgb[1], rgb[2]);
   return fromHsl(h, Math.min(f32(f32(s * 1.3) + 0.08), 0.85), clamp(l, 0.42, 0.6));
 }
 
