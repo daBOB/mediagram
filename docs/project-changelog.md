@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.182.1 — The calm Profiles page closes its forms and menus the way keys expect
+
+**Fixed**
+
+- The Grown-up / Kid choice in *Add someone* shows one selection: keyboard focus rings the whole choice and follows the option picked.
+- Rename, Change admin and Move a grown-up here, opened from a household's ⋯, have a Cancel and close on Escape, back to that ⋯. The ⋯ list closes when Tab leaves it.
+- Each *Add someone* is announced with its household ("Add someone to Home"). After Reset PIN or Change your PIN focus returns to that person's row; after a household is deleted, to the next household or *Create a household*.
+
 ## 0.182.0 — The owner manages every household from one calm page
 
 **Added**
