@@ -109,7 +109,7 @@ async function add(root: Node, household: string, label: string, name: string, s
 /** Settings' Profiles tab with `profile` watching. */
 function settingsAs(profile: { name: string } | null) {
   const main = new Node();
-  const stop = renderSettings(main, { profile, switchProfile: () => {}, systemVisible: false, admin: null });
+  const stop = renderSettings(main, { profile, switchProfile: () => {}, admin: null });
   buttonNamed(main, "Profiles").fire("click");
   return { main, stop };
 }

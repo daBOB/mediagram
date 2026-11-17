@@ -848,7 +848,7 @@ describe("kids profiles", () => {
     await start();
     await env.navigate("#/settings");
     descendants(env.node("main")).find((node) => node.className.split(" ").includes("tab") && textOf(node) === "Profiles")!.fire("click");
-    expect(page()).toContain("Viewer · Kids · FSK 6");
+    expect(page()).toContain("ViewerKid · FSK 6");
   });
 
   test("a kids profile is offered no way to change the household's editor's choice", async () => {

@@ -48,6 +48,8 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
   const message = el("p", "pin-message");
   message.setAttribute("role", "alert");
   const owner = () => state.everyone().find((one) => one.owner === true && !one.kids);
+  /** Who is managing, said only when that is not who is watching. */
+  const asNote = (actor) => (actor.id === chosen.profile?.id ? [] : [el("p", "who-note", `As ${actor.name}`)]);
   /** `{ actorId, pin }` once a grown-up has said who they are; watching as the owner, theirs with the PIN still to ask. */
   let session = chosen.profile?.id != null && chosen.profile.id === owner()?.id ? { actorId: chosen.profile.id, pin: null } : null;
   let gone = false;
@@ -133,7 +135,7 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
     const boss = owner();
     const asOwner = session !== null && session.actorId === boss?.id;
     if (asOwner) {
-      body.append(el("h1", null, "Manage profiles"), el("p", "who-note", `As ${boss.name}`),
+      body.append(el("h1", null, "Manage profiles"), ...asNote(boss),
         ...ownerView(boss, { draws, person, act, keep, switchProfile: chosen.switchProfile ?? (() => {}) }));
     } else {
       const view = session === null || !state.profiles().some((one) => one.id === session.actorId) ? null : api.manageable(state.everyone(), session.actorId);
@@ -160,14 +162,13 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
         if (await state.loadProfiles() && !gone) draw();
       } }));
   }
-
   /** What opens under a person's row: one's own, a grown-up's, a kid's. */
   const draws = manageRows({ send, report, keep, newPin });
 
   /** Anyone but the owner: their own household's people as the owner's view draws them, unnamed, with Add someone. */
   function drawRole(view) {
     const add = addSomeone({ grownUp: view.actor.admin === true, kid: true, act, keep });
-    body.append(el("h1", null, "Manage profiles"), el("p", "who-note", `As ${view.actor.name}`),
+    body.append(el("h1", null, "Manage profiles"), ...asNote(view.actor),
       byHousehold(view, state.profiles(), { person, draws, add }));
   }
 
@@ -181,7 +182,6 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
     if (own) session.pin = given;
     report({ ok: true });
   }
-
   root.append(body, message);
   container.append(root);
   draw();

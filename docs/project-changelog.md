@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.183.2 — A tidy Profiles page and a centred countdown
+
+**Changed** (web)
+
+- **Settings → Profiles reads as one list.** You is now a row like the people under Manage profiles — the initial, the name, who they are (Owner · Admin, or Kid · FSK 6), Switch profile at its end — with Subtitles on a row of the same columns. A household's name sits over its *Admin X · N profiles* line, its ⋯ at the end of both. *As X* under Manage profiles shows only when the one managing is not the one watching. The System and playback status link is gone from the page: the rail's System link goes to the same place.
+- **The loading countdown stands in the middle of the screen**, its words under it, instead of low on the left of an empty page.
+
 ## 0.183.1 — Settings opens before the profiles are read
 
 **Fixed**

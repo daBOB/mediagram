@@ -52,7 +52,7 @@ function manageRoute() {
 
 function settingsAs(id: string) {
   const main = new Node();
-  renderSettings(main, { profile: everyone.find((one: any) => one.id === id) as never, switchProfile: () => {}, systemVisible: false, admin: null });
+  renderSettings(main, { profile: everyone.find((one: any) => one.id === id) as never, switchProfile: () => {}, admin: null });
   buttonNamed(main, "Profiles").fire("click");
   return main;
 }
@@ -127,14 +127,14 @@ test("a wrong PIN says so on the tiles and nothing opens", async () => {
 test("Settings for a grown-up who is not the owner shows the same tiles and no Everyone here", () => {
   const main = settingsAs("kai");
   // This device stays theirs to switch, a line below the tiles.
-  expect(headings(main)).toEqual(["Settings", "Who is watching", "Subtitles", W.whosManaging]);
+  expect(headings(main)).toEqual(["Settings", "You", W.whosManaging]);
   expect(byClass(main, "device-line").hidden).toBe(false);
   expect(tilesOf(main)).toEqual([`andre · ${W.owner}`, "Kai"]);
   expect(textOf(main)).not.toContain("Everyone here");
   expect(textOf(main)).not.toContain("Who are you?");
   expect(textOf(main)).not.toContain(OWNER_NOTE);
   // A kid still sees only You.
-  expect(headings(settingsAs("lea"))).toEqual(["Settings", "Who is watching", "Subtitles"]);
+  expect(headings(settingsAs("lea"))).toEqual(["Settings", "You"]);
 });
 
 test("the manage route shows no Everyone here, no Households gate and no This device block", () => {

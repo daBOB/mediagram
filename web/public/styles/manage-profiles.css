@@ -6,11 +6,15 @@
    submit inside an open form. */
 
 .manage-inline .who-note { margin-bottom: 32px; }
+/* With no As X under it (the one managing is the one watching), the heading keeps that room itself. */
+.manage-inline h1:not(:has(+ .who-note)) { margin-bottom: 32px; }
 .manage-household { margin: 0 0 40px; }
 .manage-household:last-of-type { margin-bottom: 24px; }
-.manage-inline .household-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 4px 16px; padding: 0 0 12px; border-bottom: 1px solid var(--rule); }
+/* A household's name over who runs it and how many it holds, its ⋯ at the end of both. */
+.manage-inline .household-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 16px; padding: 0 0 12px; border-bottom: 1px solid var(--rule); }
 .manage-inline .household-row > h2 { margin: 0; font: 500 1.375rem/1.2 var(--display); letter-spacing: -0.01em; color: var(--ink); overflow-wrap: anywhere; }
-.household-row > .setting-value { margin: 0; color: var(--ink-3); font-size: 0.8125rem; }
+.household-row > .setting-value { grid-column: 1; margin: 0; color: var(--ink-3); font-size: 0.8125rem; }
+.household-row > .household-more { grid-column: 2; grid-row: 1 / 3; }
 .household-row > :is(.household-form, .pin-message) { grid-column: 1 / -1; }
 .household-row > :is(.household-form, .pin-message):empty { display: none; }
 .manage-people { border-top: 1px solid var(--rule); }
@@ -82,6 +86,17 @@ button.manage-row:hover .manage-chevron { color: var(--ink); }
 .tray-form .quiet { margin: 0; }
 .household-admin { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-3); font-size: 0.875rem; }
 
+/* You: who is watching and their subtitles, on the columns of the people
+   under Manage profiles — the initial, the name, who they are — with the
+   control where a person's › would be. */
+.you > .setting-title { margin: 0; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.you :is(.manage-row, .setting-row) { grid-template-columns: 36px minmax(0, 10rem) minmax(0, 1fr) auto; border-bottom: 1px solid var(--rule-soft); }
+.setting-row { display: grid; align-items: center; gap: 0 16px; min-height: 64px; padding: 12px 0; }
+.setting-row > :first-child { grid-column: 2; }
+.setting-row > .setting-value { margin: 0; color: var(--ink-3); font-size: 0.875rem; }
+.setting-row > select { margin: 0; }
+.you .pill { min-height: 40px; padding: 0 18px; font-size: 0.875rem; }
+
 /* This device: one quiet line under everything, the way to another household at its end. */
 .device-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; padding-top: 16px; border-top: 1px solid var(--rule-soft); color: var(--ink-3); font-size: 0.875rem; }
 .device-line > .setting-value { margin: 0; color: var(--ink); }
@@ -90,9 +105,9 @@ button.manage-row:hover .manage-chevron { color: var(--ink); }
 .device-line > .who-ask { flex-basis: 100%; margin: 8px 0 0; }
 
 @media (max-width: 599px) {
-  .manage-inline .household-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .household-row > .setting-value { grid-column: 1; }
-  .household-row > .household-more { grid-column: 2; grid-row: 1 / 3; }
+  .you :is(.manage-row, .setting-row) { grid-template-columns: 36px minmax(0, 1fr) auto; }
+  .you .manage-row > .pill, .setting-row > select { grid-column: 3; grid-row: 1 / 3; }
+  .setting-row > .setting-value { grid-column: 2; }
   .manage-row { grid-template-columns: 36px minmax(0, 1fr) 16px; gap: 2px 14px; }
   .manage-row::before { grid-row: 1 / 3; }
   .manage-row > .setting-value { grid-column: 2; }

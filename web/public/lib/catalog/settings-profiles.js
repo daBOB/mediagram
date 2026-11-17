@@ -11,7 +11,7 @@
  */
 
 import { el } from "../dom.js";
-import { href } from "../address.js";
+import { initialOf } from "../profile-tiles.js";
 import { mountManage } from "../profile-manage.js";
 import * as state from "../watch-state.js";
 import { thisHousehold } from "../household.js";
@@ -24,22 +24,26 @@ export const PROFILES = "Profiles";
 
 const SUBTITLE_LANGUAGES = [["off", "Off"], ["de", "German"], ["en", "English"]];
 
-/** Who is watching and the way to switch, their subtitles, and for a local viewer the System link. */
-function you(profile, switchProfile, systemVisible) {
-  const set = el("div", "setting");
-  set.append(el("h2", "setting-title", "Who is watching"));
-  set.append(el("p", "setting-value", `${profile.name}${profile.kids ? ` · Kids · FSK ${kidsLimitOf(profile)}` : ""}`));
+/** Who someone is, as the rows under Manage profiles say it, without the PIN. */
+const roleOf = (profile) => (profile.kids ? `${HOUSEHOLD_WORDS.kid} · FSK ${kidsLimitOf(profile)}`
+  : [profile.owner && HOUSEHOLD_WORDS.owner, profile.admin ? HOUSEHOLD_WORDS.admin : HOUSEHOLD_WORDS.grownUp].filter(Boolean).join(" · "));
+
+/**
+ * You: who is watching, drawn as the people under Manage profiles are — the
+ * initial, the name, who they are — with the way to switch at the row's end,
+ * then their subtitles on a row of the same columns.
+ */
+function you(profile, switchProfile) {
+  const set = el("section", "setting you");
+  set.append(el("h2", "setting-title", "You"));
+  const me = el("div", "manage-row");
+  me.dataset.initial = initialOf(profile.name);
   const change = el("button", "pill pill-line", "Switch profile");
   change.type = "button";
   change.addEventListener("click", switchProfile);
-  set.append(change);
-  const parts = [set, subtitlePreference()];
-  if (systemVisible) {
-    const system = el("a", "dept-all", "System and playback status →");
-    system.href = href({ page: "system" });
-    parts.push(system);
-  }
-  return parts;
+  me.append(el("span", "manage-name", profile.name), el("span", "setting-value", roleOf(profile)), change);
+  set.append(me, subtitlePreference());
+  return set;
 }
 
 /**
@@ -48,9 +52,9 @@ function you(profile, switchProfile, systemVisible) {
  * scope `"profile"`, unlike every other preference here, which is per show.
  */
 function subtitlePreference() {
-  const set = el("div", "setting");
-  set.append(el("h2", "setting-title", "Subtitles"));
+  const row = el("div", "setting-row");
   const select = el("select");
+  select.id = "profile-subtitles";
   for (const [value, label] of SUBTITLE_LANGUAGES) {
     const option = document.createElement("option");
     option.value = value;
@@ -59,8 +63,10 @@ function subtitlePreference() {
   }
   select.value = state.preferenceOf("profile", "subtitle") ?? "off";
   select.addEventListener("change", () => state.setPreference("profile", "subtitle", select.value));
-  set.append(select, el("p", "setting-value", "Forced subtitles still appear when a film switches language."));
-  return set;
+  const label = el("label", "manage-name", "Subtitles");
+  label.htmlFor = select.id;
+  row.append(label, el("span", "setting-value", "Forced subtitles still appear when a film switches language."), select);
+  return row;
 }
 
 /**
@@ -86,14 +92,14 @@ function drawThisDevice(set, promptHost, onJoined, shown) {
 
 /**
  * @param {HTMLElement} promptHost PIN prompts open over this element
- * @param {{ profile: {name: string, kids?: boolean, kidsAge?: number|null}|null,
- *   switchProfile?: () => void, systemVisible?: boolean }} chosen who is watching, if anyone;
+ * @param {{ profile: {name: string, kids?: boolean, kidsAge?: number|null, owner?: boolean, admin?: boolean}|null,
+ *   switchProfile?: () => void }} chosen who is watching, if anyone;
  *   `switchProfile` asks again, after switching household too
  * @returns {{ box: HTMLElement, stop: () => void }} `stop` removes the bodies and drops their PINs
  */
-export function profilesPanel(promptHost, { profile, switchProfile, systemVisible = false }) {
+export function profilesPanel(promptHost, { profile, switchProfile }) {
   const box = el("div", "settings-panel");
-  if (profile) box.append(...you(profile, switchProfile, systemVisible));
+  if (profile) box.append(you(profile, switchProfile));
   // A kid manages nothing, so is shown nobody else either.
   if (profile?.kids) return { box, stop: () => {} };
   // Scoped faces (appearance.css) make the shared body read as settings sections.

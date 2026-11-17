@@ -180,7 +180,7 @@ test("a taken household name says so in the household's own words", async () => 
 
 test("leaving the page drops the owner's PIN", async () => {
   const main = new Node();
-  const stop = renderSettings(main, { profile: OWNER, switchProfile: () => {}, systemVisible: false, admin: null });
+  const stop = renderSettings(main, { profile: OWNER, switchProfile: () => {}, admin: null });
   const profiles = () => buttonNamed(main, "Profiles").fire("click");
   profiles();
   buttonNamed(menuOf(rowOf(main, "Attic")), W.delete).fire("click");

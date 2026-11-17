@@ -39,7 +39,7 @@ const tabsOf = (main: Node) => descendants(main).filter((node) => node.tagName =
 
 function settings(profile: { name: string; kids?: boolean } | null) {
   const main = new Node();
-  const stop = renderSettings(main, { profile, switchProfile: () => {}, systemVisible: false, admin: null });
+  const stop = renderSettings(main, { profile, switchProfile: () => {}, admin: null });
   return { main, stop };
 }
 const openProfiles = (main: Node) => buttonNamed(main, "Profiles").fire("click");
@@ -56,15 +56,15 @@ const sectionsOf = (main: Node) => descendants(main).filter((node) => ["H1", "H2
 test("a kid sees only You", () => {
   const { main } = settings(find("Tim"));
   openProfiles(main);
-  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles"]);
-  expect(textOf(main)).toContain("Tim · Kids · FSK 6");
+  expect(sectionsOf(main)).toEqual(["Settings", "You"]);
+  expect(textOf(main)).toContain("TimKid · FSK 6");
   expect(buttonNamed(main, "Switch profile")).toBeDefined();
 });
 
 test("a grown-up sees You, then Who's managing?", () => {
   const { main } = settings(find("Maja"));
   openProfiles(main);
-  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", HOUSEHOLD_WORDS.whosManaging]);
+  expect(sectionsOf(main)).toEqual(["Settings", "You", HOUSEHOLD_WORDS.whosManaging]);
 });
 
 test("with nobody chosen there is no You, only Who's managing?", () => {
@@ -147,7 +147,9 @@ test("leavingTheTabDropsThePin", async () => {
   openProfiles(main);
   tileNamed(main, "Maja").fire("click");
   await answerPin(main, "4321");
-  expect(textOf(main)).toContain("As Maja");
+  // Past Who's managing?, and not told "As Maja": she is the one watching.
+  expect(textOf(main)).not.toContain(HOUSEHOLD_WORDS.whosManaging);
+  expect(textOf(main)).not.toContain("As Maja");
   buttonNamed(main, "Appearance").fire("click");
   openProfiles(main);
   expect(textOf(main)).not.toContain("As Maja");
@@ -193,7 +195,7 @@ test("the Profiles page says this device's household and offers Switch only with
   const { main } = settings(find("Maja"));
   openProfiles(main);
   // This device is a line under Who's managing?, not a section of its own.
-  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", HOUSEHOLD_WORDS.whosManaging]);
+  expect(sectionsOf(main)).toEqual(["Settings", "You", HOUSEHOLD_WORDS.whosManaging]);
   const row = byClass(main, "device-line");
   expect(row.hidden).toBe(false);
   expect(textOf(row)).toStartWith(HOUSEHOLD_WORDS.thisDevice);
@@ -232,7 +234,7 @@ test("a household change shows on the rest of the page: this device's household,
   const people = (name: string) => descendants(rowOf(main, name).parent!).filter((node) => node.className === "manage-row").map((row) => row.children[0]!.textContent);
   expect(people("Home")).toEqual(["andre", "Lea"]);
   expect(people("Flat")).toEqual(["Maja", "Tim"]);
-  expect(textOf(main)).toContain("As andre");
+  expect(textOf(main)).not.toContain(HOUSEHOLD_WORDS.whosManaging);
 });
 
 test("a grown-up added in the owner's view can be moved at once, and a rename keeps the owner's PIN", async () => {
@@ -255,5 +257,5 @@ test("a grown-up added in the owner's view can be moved at once, and a rename ke
   await fill(main, "Flat", HOUSEHOLD_WORDS.rename, "The flat");
   expect(prompting(main)).toBe(false);
   expect(writesOf(env.requests).at(-1)?.[1]).toBe("/api/households/flat/name");
-  expect(textOf(main)).toContain("As andre");
+  expect(textOf(main)).not.toContain(HOUSEHOLD_WORDS.whosManaging);
 });

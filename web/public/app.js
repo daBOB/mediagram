@@ -582,7 +582,7 @@ function drawRoute() {
   if (address.page === "person") return renderPerson(main, address.id, { ...openers, byKey: titlesByKey(library) }, () => generation === routeGeneration);
   if (address.page === "settings") {
     stopSettings = renderSettings(main, {
-      profile: state.profile(), switchProfile, systemVisible: !document.getElementById("nav-system").hidden,
+      profile: state.profile(), switchProfile,
       admin: adminSettings ? renderAdminSettings : null,
     });
     return;
