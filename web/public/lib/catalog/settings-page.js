@@ -28,6 +28,7 @@ const BACKDROPS = [
   ["blurred", "Blurred", "Colour and light, softened"],
   ["artwork", "Artwork", "The picture behind the words"],
   ["solid", "Solid", "Plain pages, no artwork"],
+  ["ambient", "Ambient", "The poster's colour, drifting behind the page"],
 ];
 
 function read(name, fallback) {

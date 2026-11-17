@@ -18,7 +18,8 @@
 
 /* Artwork: how a hero (cover, title spread, department) shows its picture.
    Default fades it into the page; Blurred softens it to colour and light;
-   Artwork lets it run behind the words; Solid leaves the page plain. */
+   Artwork lets it run behind the words; Solid leaves the page plain;
+   Ambient (ambient.css) draws a Default hero over a drifting glow. */
 [data-backdrop="blurred"] :is(.spread-art, .dept-art, .cover-stage) img { filter: blur(28px) saturate(1.25); transform: scale(1.12); }
 [data-backdrop="artwork"] :is(.spread-art, .dept-art) { inset: 0; }
 [data-backdrop="solid"] :is(.spread-art, .dept-art) { display: none; }
@@ -53,6 +54,7 @@
 .backdrop-blurred { background: radial-gradient(circle at 70% 40%, #c07a4a, #2b3550 70%); filter: saturate(0.8); } /* deslop-ignore 06 19: previews the blurred artwork mode */
 .backdrop-artwork { background: linear-gradient(120deg, #6b4b2a, #1c2a3a); }
 .backdrop-solid { background: var(--paper-sunk); }
+.backdrop-ambient { background: radial-gradient(circle at 70% 25%, color-mix(in srgb, var(--accent) 40%, transparent), var(--paper-sunk) 70%); }
 .accents .option { grid-template-columns: auto; justify-items: center; }
 .dot { display: block; width: 34px; height: 34px; border-radius: 50%; transition: box-shadow var(--hover); } /* deslop-ignore 19: accent swatch */
 .option input:checked + .dot { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
