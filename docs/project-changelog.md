@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.194.0 — Zündstoff is a bomb thrown round a circle in 3D
+
+**Changed**
+
+- Zündstoff asks no questions any more. The TV shows the players' avatars standing in a circle round a felt table, seen from high above; whoever holds the bomb taps a name on the phone to throw it, and it flies about a second. The target's phone shows one key, "Fangen!": a tap as the bomb lands catches it, a tap too early fumbles it, no tap misses. A missed bomb drops at the target's feet and can be thrown on two seconds later, once it is picked up. Throwing straight back is allowed.
+- The fuse is hidden (18–40 s, stretched by Tempo); nothing on the TV or the phones hints at it. Whoever holds the bomb when it goes off loses one of three lives (Dauer: 2, 3 or 5); a bomb in the air hits its target; the last one with lives left wins, and the victim starts the next round. The house throws for an away holder; an away target never catches.
+- With no questions left, kids play Zündstoff like everyone else.
+- The TV's avatar copies carry five more clips (throw, leaping catch, catch and fall, bend-over pick-up, the fall at the blast), rigged and animated on Meshy for all 22 avatars; the copies grow from 41 to 43 MB. Zündstoff's TV is built for the funstation. Spec `docs/superpowers/specs/2026-11-15-zuendstoff-3d-design.md`, plan `plans/261115-2340-zuendstoff-3d/`.
+
 ## 0.181.0 — A film held more than once is one entry
 
 **Added**
