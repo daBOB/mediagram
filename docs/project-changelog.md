@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.182.0 — The owner manages every household from one calm page
+
+**Added**
+
+- The owner can add a grown-up straight into any household and a kid for any grown-up. `POST /api/profiles` takes an optional `household` (grown-up) or `parentId` (kid); a household with no admin makes the new grown-up its admin. The rule is the same in the web server, the Rust core and Android, held to `profile-rules.json`; clients that send neither field behave as before.
+- Watching as the owner, Settings → Profiles shows every household on one page: its name, *Admin X · N profiles* and a ⋯ menu with the actions the rule allows (Rename, Change admin, Move a grown-up here, Use on this device, Delete); one row per person (name, role line) that opens that person's controls on a tap; one *Add someone* per household (Grown-up or Kid, *Belongs to* only with more than one grown-up, defaulting to the admin); *Create a household*; *This device* as one line. The owner's PIN is asked once, at the first change, and dropped when the page is left or on a wrong PIN.
+- Picker → Manage profiles asks *Who's managing?* with the same avatar tiles as *Who's watching?*: the owner first and labelled Owner, an Owner tile at the end on a device showing another household. The Everyone here list, the Who are you? pills and the separate Owner button are gone. A grown-up who is not the owner sees the same tiles in Settings, with This device below them, and then the same calm rows for what they may manage.
+- Android (tablet/phone and TV) has the owner view and add-anywhere in its first, denser form; Who's managing? and the calm rows follow there. Not released to devices.
+
+Spec `docs/superpowers/specs/2026-11-16-owner-profiles-view-design.md` and `2026-11-17-who-is-managing-and-calm-owner-view-design.md`, plan `plans/261116-2016-owner-profiles-view/`.
+
 ## Spieltisch 0.194.0 — Zündstoff is a bomb thrown round a circle in 3D
 
 **Changed**
