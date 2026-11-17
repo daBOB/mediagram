@@ -14,7 +14,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -166,17 +165,10 @@ abstract class ProfileGateHarness {
         compose.onNodeWithText("As $name").assertExists()
     }
 
-    /** [name]'s row on Manage opened, unless it already is. */
-    fun opened(name: String) {
-        compose.onNode(personRow(name)).openIfClosed()
-        compose.waitForIdle()
-    }
+    /** [name]'s row on Manage, or Add someone, opened unless it already is. */
+    fun opened(name: String) = compose.onNode(personRow(name)).openIfClosed()
 
-    /** Add someone opened, unless it already is: anyone but the owner has one, unnamed. */
-    fun openAdd() {
-        compose.onNode(hasContentDescription(HouseholdWords.ADD_SOMEONE) and hasClickAction()).openIfClosed()
-        compose.waitForIdle()
-    }
+    fun openAdd() = compose.onNode(addSomeoneUnnamed).openIfClosed()
 
     fun profile(id: String) = household.core.profiles.single { it.id == id }
 

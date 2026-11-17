@@ -1,89 +1,38 @@
 package ui.profile
 
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isSelectable
-import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextDecoration
 import catalog.profile.ManageUiState
 import model.HouseholdWords
 import model.Profile
-import org.junit.After
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
-import ui.common.profile.ManageActions
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 /** Manage profiles drawn from its state as `profile-manage.js` draws it: Who's managing?, then one calm row per person that opens on a tap. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
-class ManageProfilesScreenTest {
-    @get:Rule val compose = createEmptyComposeRule()
-    private lateinit var controller: ActivityController<ComponentActivity>
+class ManageProfilesScreenTest : ManageScreenHarness() {
     private val andre = Profile("a", "andre", admin = true, hasPin = true)
     private val bea = Profile("b", "Bea", hasPin = true)
     private val tom = Profile("t", "Tom", kids = true, kidsAge = 12, parentId = "b")
-    private val calls = mutableListOf<String>()
-    private val shown = mutableStateOf<ManageUiState>(ManageUiState.Closed)
-    private val actions =
-        ManageActions(
-            onActAs = { calls += "actAs $it" },
-            onAddKid = { name, age, daily, _ -> calls += "addKid $name $age $daily" },
-            onSetKidsAge = { id, age -> calls += "age $id $age" },
-            onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
-            onSetHiddenSections = { id, sections -> calls += "sections $id $sections" },
-            onRemove = { calls += "remove $it" },
-            onAddGrownUp = { name, _ -> calls += "addGrownUp $name" },
-            onChangePin = { calls += "pin $it" },
-            onClose = { calls += "close" },
-        )
 
-    @After fun close() {
-        compose.runOnUiThread { if (::controller.isInitialized) controller.close() }
-    }
-
-    private fun show(state: ManageUiState) {
-        shown.value = state
-        compose.runOnUiThread {
-            controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
-            controller.get().setContent { MaterialTheme { ManageProfilesScreen(shown.value, actions) } }
-        }
-        compose.waitForIdle()
-    }
-
-    private fun inDialog(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(isDialog()))
-
-    // Drawn in a tall window with no page scroll around it: a tap reaches every row as it is.
-    private fun opened(name: String) = compose.onNode(personRow(name)).performClick()
-
-    private fun openAdd() = compose.onNode(hasContentDescription(HouseholdWords.ADD_SOMEONE) and hasClickAction()).performClick()
-
-    @Test fun whoAreYouOffersTheGrownUpsAndSaysWhyItAsksAgain() {
+    @Test fun whoIsManagingOffersTheGrownUpsAsTilesAndSaysWhyItAsksAgain() {
         show(ManageUiState.ChoosingActor(listOf(andre, bea), notice = "Your PIN is no longer valid. Choose who you are again."))
         compose.onNodeWithText(HouseholdWords.WHOS_MANAGING).assertExists()
         compose.onNodeWithText("Your PIN is no longer valid. Choose who you are again.").assertExists()
@@ -206,12 +155,6 @@ class ManageProfilesScreenTest {
         opened("Bea")
         compose.onNode(hasText("Tutorials") and hasAnyAncestor(hasContentDescription("Sections for Bea"))).performClick()
         assertEquals(listOf("sections b [tutorials]"), calls)
-    }
-
-    private fun decorationOf(text: String): TextDecoration? {
-        val layouts = mutableListOf<TextLayoutResult>()
-        compose.onNode(hasText(text), useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-        return layouts.single().layoutInput.style.textDecoration
     }
 
     @Test fun whyTheLastChangeFailedIsSaidAndOwnPinIsChangedHere() {

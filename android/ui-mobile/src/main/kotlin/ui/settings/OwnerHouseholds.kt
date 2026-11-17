@@ -91,7 +91,9 @@ private fun HouseholdHeader(
     val id = row.household.id
     val name = row.household.name
     var form by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(took) { if (took > 0) form = null }
+    // Only a change made since this was drawn closes the form: one from before, the count already higher, does not.
+    val before = remember { took }
+    LaunchedEffect(took) { if (took > before) form = null }
     val send = { action: () -> Unit ->
         onSend()
         action()

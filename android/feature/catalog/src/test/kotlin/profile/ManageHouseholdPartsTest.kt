@@ -49,6 +49,14 @@ class ManageHouseholdPartsTest {
         assertEquals(listOf(true to true, true to true, true to true), owner.parts().map { it.addsGrownUp to it.addsKid })
     }
 
+    /** The one managing removed on another device: Who's managing? again, the owner's tile still there, labelled, at the row's end. */
+    @Test
+    fun whoIsManagingKeepsTheOwnersTileOnceTheManagerIsGone() {
+        val asked = manageable(listOf(ida), maja.id, null, install = install) as ManageUiState.ChoosingActor
+        assertEquals(andre, asked.owner)
+        assertEquals(listOf("Ida", "andre"), asked.managers.map { it.name })
+    }
+
     @Test
     fun aHouseholdWithNobodyInItKeepsItsPartToAddAGrownUp() {
         val owner = panel(andre, listOf(andre, lea), install.copy(everyone = listOf(andre, maja, tim, lea)))

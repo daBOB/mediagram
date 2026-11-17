@@ -112,7 +112,7 @@ class OwnerViewAddsTest : HouseholdsOwnerHarness() {
 
         assertEquals(1, ys(hasText(failed)).size)
         assertEquals(0, countIn("Barn", hasText(failed)))
-        val create = ys(hasContentDescription(HouseholdWords.CREATE_A_HOUSEHOLD)).single()
+        val create = ys(createOpener).single()
         assertTrue(ys(hasText(failed)).single() > create, "expected the refusal at the page's end")
     }
 }

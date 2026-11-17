@@ -143,7 +143,7 @@ private fun ThisDevice() {
             Text(HouseholdWords.THIS_DEVICE, style = MaterialTheme.typography.bodyMedium, color = quiet)
             Text(" · ", style = MaterialTheme.typography.bodyMedium, color = quiet)
             Text(state.here?.name.orEmpty(), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            if (!switching) CatalogueTextButton(onClick = { switching = true }) { Text(HouseholdWords.SWITCH_HOUSEHOLD) }
+            if (!switching) CatalogueTextButton(onClick = { switching = true }) { Text(HouseholdWords.SWITCH_HOUSEHOLD, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
         if (switching) JoinHousehold(join, Modifier.padding(top = Spacing.small), titleStyle = SectionHead)
     }

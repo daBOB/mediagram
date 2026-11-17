@@ -91,6 +91,10 @@ abstract class HouseholdsOwnerHarness : ProfilesSettingsHarness() {
         compose.waitForIdle()
     }
 
+    /** Create a household's button, which opens its form; the form's own button says the same, unnamed. */
+    val createOpener = hasContentDescription(HouseholdWords.CREATE_A_HOUSEHOLD)
+    val createSubmit = hasText(HouseholdWords.CREATE_A_HOUSEHOLD) and hasClickAction() and !createOpener
+
     /** A household's one Add someone, named for it. */
     fun addSomeone(household: String): SemanticsNodeInteraction = compose.onNode(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} $household"))
 

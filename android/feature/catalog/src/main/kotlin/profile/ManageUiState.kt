@@ -87,7 +87,7 @@ internal fun manageable(
     install: Households = Households(),
 ): ManageUiState {
     val local = profiles.find { it.id == actorId && !it.kids }
-    val actor = local ?: install.owner?.takeIf { it.id == actorId } ?: return ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
+    val actor = local ?: install.owner?.takeIf { it.id == actorId } ?: return whoIsManaging(profiles, notice, install)
     // This device's household from [profiles], read with every change; the others only as the households were last read.
     val here = local?.household ?: install.joined ?: actor.household
     val elsewhere = if (actor.owner) install.everyone.filter { it.household != here } else emptyList()
@@ -104,4 +104,14 @@ internal fun manageable(
         rows = if (actor.owner) install.rowsFor(actor) else emptyList(),
         everyone = reached,
     )
+}
+
+/** Who's managing? over [profiles], this device's household: its grown-ups, and the install's owner, here or not. */
+internal fun whoIsManaging(
+    profiles: List<Profile>,
+    notice: String?,
+    install: Households,
+): ManageUiState.ChoosingActor {
+    val here = profiles.filterNot { it.kids }
+    return ManageUiState.ChoosingActor(here, notice, install.owner ?: here.find { it.owner })
 }

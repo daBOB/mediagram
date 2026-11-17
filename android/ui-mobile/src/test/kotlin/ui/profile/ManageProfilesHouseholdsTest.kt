@@ -1,8 +1,5 @@
 package ui.profile
 
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -10,7 +7,6 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
-import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import catalog.profile.ADD_A_GROWN_UP
@@ -23,15 +19,10 @@ import catalog.profile.YOUR_PIN
 import model.Household
 import model.HouseholdWords
 import model.Profile
-import org.junit.After
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
-import ui.common.profile.ManageActions
 import kotlin.test.assertEquals
 
 /**
@@ -41,40 +32,13 @@ import kotlin.test.assertEquals
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
-class ManageProfilesHouseholdsTest {
-    @get:Rule val compose = createEmptyComposeRule()
-    private lateinit var controller: ActivityController<ComponentActivity>
+class ManageProfilesHouseholdsTest : ManageScreenHarness() {
     private val andre = Profile("andre", "andre", admin = true, hasPin = true, owner = true)
     private val lea = Profile("lea", "Lea", kids = true, kidsAge = 12)
     private val maja = Profile("maja", "Maja", admin = true, hasPin = true, household = "flat")
     private val tim = Profile("tim", "Tim", kids = true, kidsAge = 6, parentId = "maja", household = "flat")
     private val ida = Profile("ida", "Ida", admin = true, hasPin = true, household = "loft")
     private val live = listOf(Household("loft", "Loft", "ida"), Household("flat", "Flat", "maja"), Household("home", "Home", "andre"))
-    private val calls = mutableListOf<String>()
-    private val actions =
-        ManageActions(
-            onActAs = { calls += "actAs $it" },
-            onAddKid = { name, age, daily, parent -> calls += "addKid $name $age $daily $parent" },
-            onSetKidsAge = { id, age -> calls += "age $id $age" },
-            onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
-            onSetHiddenSections = { id, sections -> calls += "sections $id $sections" },
-            onRemove = { calls += "remove $it" },
-            onAddGrownUp = { name, household -> calls += "addGrownUp $name $household" },
-            onChangePin = { calls += "pin $it" },
-            onClose = { calls += "close" },
-        )
-
-    @After fun close() {
-        compose.runOnUiThread { if (::controller.isInitialized) controller.close() }
-    }
-
-    private fun show(state: ManageUiState) {
-        compose.runOnUiThread {
-            controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
-            controller.get().setContent { MaterialTheme { ManageProfilesScreen(state, actions) } }
-        }
-        compose.waitForIdle()
-    }
 
     /** The headings and add forms, top to bottom, with the households' [names]. */
     private fun drawn(vararg names: String): List<String> {
@@ -103,7 +67,7 @@ class ManageProfilesHouseholdsTest {
         assertEquals(listOf("pin ida", "age tim 12", "sections ida [anime]", "remove ida"), calls)
     }
 
-    @Test fun anyoneElseSeesThisHouseholdUnnamedAsBefore() {
+    @Test fun anyoneElseSeesTheirOwnRowsUnnamedThenAddSomeone() {
         show(ManageUiState.Managing(maja, grownUps = emptyList(), kids = listOf(tim), households = live))
         // Themselves, then their kid, then Add someone: no household named, no Grown-ups, Kids or Your PIN.
         assertEquals(listOf(HouseholdWords.ADD_SOMEONE), drawn("Home", "Loft", "Flat"))

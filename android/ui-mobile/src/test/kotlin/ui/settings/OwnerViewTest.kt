@@ -89,7 +89,7 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
         compose.onNode(hasContentDescription("Age limit for Tom")).assertDoesNotExist()
         compose.onNodeWithText(YOUR_PIN).assertDoesNotExist()
         // Create a household after the last household, This device after it.
-        val create = ys(hasContentDescription(HouseholdWords.CREATE_A_HOUSEHOLD)).single()
+        val create = ys(createOpener).single()
         assertTrue(create > ys(hasText("Madani") and isHeading()).single(), "expected Create a household after Madani")
         assertTrue(ys(hasText(HouseholdWords.THIS_DEVICE)).single() > create, "expected This device after Create a household")
     }

@@ -1,12 +1,11 @@
 package ui.settings
 
-import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasStateDescription
-import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithText
@@ -20,11 +19,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.profile.COLLAPSED
+import ui.profile.tile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import ui.profile.COLLAPSED
-import ui.profile.tile
 
 /**
  * The owner's household changes on the Profiles page — the web's
@@ -34,11 +33,7 @@ import ui.profile.tile
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class HouseholdsOwnerBlockTest : HouseholdsOwnerHarness() {
-    /** Create a household's button, which opens its form; the form's own button says the same, unnamed. */
-    private val createOpener = hasContentDescription(HouseholdWords.CREATE_A_HOUSEHOLD)
-    private val createSubmit = hasText(HouseholdWords.CREATE_A_HOUSEHOLD) and hasClickAction() and !createOpener
-
+class OwnerHouseholdsTest : HouseholdsOwnerHarness() {
     @Test
     @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
     fun theOwnerSeesEveryHouseholdWithItsLine() {
