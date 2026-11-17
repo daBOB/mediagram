@@ -5,7 +5,7 @@ Status: todo · Depends on: Phases 01–07
 - [ ] **Step 1:** `scripts/check.sh` → all green (clippy, cargo test, web test/typecheck/lint, Android units).
 - [ ] **Step 2:** Whole-branch review against the spec (one fresh reviewer); fix what it confirms.
 - [ ] **Step 3: Version** — media library line only, minor bump from whatever `main` holds at that moment
-  (0.180.11 → 0.181.0 as of 2026-11-16), in step: `Cargo.toml` `version`, `web/package.json` `version`,
+  (main is 0.181.0 on 2026-11-17 → 0.182.0), in step: `Cargo.toml` `version`, `web/package.json` `version`,
   `android/app/build.gradle.kts` `versionName`. Bump by pattern, not exact string (other sessions commit to `main`).
   Spieltisch line untouched.
 - [ ] **Step 4: Docs** — `docs/project-changelog.md` entry; `docs/web-player.md` Profiles section if it
