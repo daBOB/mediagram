@@ -127,7 +127,7 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val unread = (state as? ProfileUiState.Picking)?.takeIf { it.error == null && it.needsFirstProfile && !joining.read }?.copy(synced = false)
     when {
         // A join from the owner's view leaves for the picker, which then shows that household.
-        inManage -> TvManageScreen(manage)
+        inManage -> TvManageScreen(manage, overPicker = true)
         pickPrompt != null -> TvPinPrompt(pickPrompt, onPin = viewModel::enterPin, onCancel = viewModel::cancelPin)
         joiningElsewhere && joining.joinsElsewhere -> {
             BackHandler { joiningElsewhere = false }
@@ -166,14 +166,15 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
  * itself. [onClose] is Done, and Back on Who's managing?; Back from a view a
  * tile opened is that question again, the remote on the tile — from one
  * opened at once, for the owner watching, it is [onClose] too. [onJoined]
- * runs once Use on this device moved the box: over the picker, which then
- * shows that household, Manage closes.
+ * runs once Use on this device or Switch household moved the box: over the
+ * picker ([overPicker]), which then shows that household, Manage closes.
  */
 @Composable
 internal fun TvManageScreen(
     manage: ManageProfilesViewModel,
     onClose: () -> Unit = manage::close,
     onJoined: () -> Unit = onClose,
+    overPicker: Boolean = false,
 ) {
     val state by manage.state.collectAsStateWithLifecycle()
     val prompt by manage.pin.collectAsStateWithLifecycle()
@@ -181,6 +182,6 @@ internal fun TvManageScreen(
     val spot = remember { TvWhoSpot() }
     val back = if (spot.chosen != null) ({ manage.open() }) else onClose
     val managing = state as? ManageUiState.Managing
-    if (managing?.ownersView == true) return TvOwnerView(manage, managing, prompt, actions, back, onJoined)
-    prompt?.let { TvPinPrompt(it, onPin = manage::enterPin, onCancel = manage::cancelPin) } ?: TvManageProfiles(state, actions, back, spot)
+    if (managing?.ownersView == true) return TvOwnerView(manage, managing, prompt, actions, back, onJoined, overPicker)
+    TvManageProfiles(state, actions, back, spot, prompt, manage::enterPin, manage::cancelPin)
 }

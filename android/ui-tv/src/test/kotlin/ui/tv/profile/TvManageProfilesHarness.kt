@@ -1,5 +1,6 @@
 package ui.tv.profile
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
@@ -43,7 +44,22 @@ abstract class TvManageProfilesHarness : TvScreenStateTest() {
         InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
     }
 
-    protected fun manage(state: ManageUiState) = show { TvManageProfiles(state, actions) }
+    private val shown = mutableStateOf<ManageUiState>(ManageUiState.Closed)
+
+    protected fun manage(state: ManageUiState) {
+        shown.value = state
+        show { TvManageProfiles(shown.value, actions) }
+    }
+
+    /** The panel's next answer, as the view model hands it on: [edit] of what it shows, one more answered. */
+    protected fun answer(edit: (ManageUiState.Managing) -> ManageUiState.Managing) {
+        compose.runOnUiThread {
+            val now = shown.value as ManageUiState.Managing
+            val next = edit(now)
+            shown.value = next.copy(answers = now.answers + 1, everyone = listOf(next.actor) + next.grownUps + next.kids)
+        }
+        compose.waitForIdle()
+    }
 
     /** A key to whatever holds the remote — the dialog's window first, while one is open. */
     protected fun press(key: Key) {

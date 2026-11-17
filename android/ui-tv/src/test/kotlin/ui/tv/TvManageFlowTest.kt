@@ -21,6 +21,7 @@ import ui.tv.profile.TvManageProfilesTag
 import ui.tv.profile.tvDailyLimitTag
 import ui.tv.profile.tvKidsLimitTag
 import ui.tv.profile.tvManagerTileTag
+import ui.tv.setup.TvTextQuestionFieldTag
 import kotlin.test.assertEquals
 
 /**
@@ -103,7 +104,8 @@ class TvManageFlowTest : TvProfilesHarness() {
         press(Key.DirectionCenter)
         compose.onNode(rowOf("Lina")).assert(hasText("Kid · Bo · FSK 6"))
 
-        walkTo(rowOf("Lina"), Key.DirectionDown)
+        compose.onNode(rowOf(HouseholdWords.ADD_SOMEONE)).assertIsFocused()
+        walkTo(rowOf("Lina"), Key.DirectionUp)
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
@@ -113,8 +115,9 @@ class TvManageFlowTest : TvProfilesHarness() {
         assertEquals("b", lina.parentId)
     }
 
+    /** A taken name, refused by the core, is said on the add's own step, and Back finds the age and the name as they were chosen and typed. */
     @Test
-    fun aNameAlreadyTakenIsSaidOnThePanel() {
+    fun aRefusedAddKeepsWhatWasTypedAndSaysWhyOnTheAdd() {
         launch(listOf(andre, bo, cy), chosen = null)
         openManageAs("a", "1234")
         walkTo(rowOf(HouseholdWords.ADD_SOMEONE), Key.DirectionDown)
@@ -122,10 +125,17 @@ class TvManageFlowTest : TvProfilesHarness() {
         walkTo(rowOf(HouseholdWords.KID), Key.DirectionDown)
         press(Key.DirectionCenter)
         name("cy")
+        press(Key.DirectionDown)
         press(Key.DirectionCenter)
+        press(Key.DirectionDown)
         press(Key.DirectionCenter)
-        compose.onNodeWithText("That name is already used on this install.").assertExists()
+        compose.onAllNodesWithText("That name is already used on this install.").assertCountEquals(1)
+        compose.onNodeWithTag(tvDailyLimitTag(30)).assertIsFocused()
         assertEquals(3, fixture.core.profiles.size)
+        back()
+        compose.onNodeWithTag(tvKidsLimitTag(12)).assertIsFocused()
+        back()
+        compose.onNodeWithTag(TvTextQuestionFieldTag).assert(hasText("cy"))
     }
 
     /** A wrong PIN is said on the pad and opens nothing; Back is the tiles again, the remote on the one tried, and Back again the picker. */

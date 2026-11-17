@@ -31,6 +31,7 @@ import androidx.tv.material3.Text
 import catalog.initialsOf
 import designsystem.Spacing
 import designsystem.TvType
+import model.HouseholdWords
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 
@@ -81,6 +82,35 @@ internal fun TvPersonRow(
             line?.let { Text(it, style = TvType.bodySmall, color = colors.onSurfaceVariant) }
         }
         if (onClick != null && line != null) Text("›", style = TvType.titleLarge, color = ink, modifier = Modifier.clearAndSetSemantics {})
+    }
+}
+
+/**
+ * This device's quiet line — the web's `drawThisDevice`, the tablet's
+ * `ThisDevice`: [text], the household this box shows, then Switch household,
+ * which OK opens ([onSwitch]). One row as wide as the page, so Down reaches it
+ * as every other row; focused, Switch household takes the accent.
+ */
+@Composable
+internal fun TvDeviceRow(
+    text: String,
+    onSwitch: () -> Unit,
+    modifier: Modifier,
+    focusRequester: FocusRequester,
+) {
+    var focused by remember { mutableStateOf(false) }
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .onFocusChanged { focused = it.isFocused }
+                .clickable(indication = null, interactionSource = null, onClick = onSwitch)
+                .padding(vertical = Spacing.extraSmall),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text, style = TvType.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Text(HouseholdWords.SWITCH_HOUSEHOLD, style = TvFocus.textStyle(TvType.bodyMedium, focused))
     }
 }
 

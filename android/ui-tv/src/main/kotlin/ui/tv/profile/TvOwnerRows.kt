@@ -30,7 +30,8 @@ import ui.tv.TvTextRow
  * every household, this device's first, as its header ("Name · Admin X · N
  * profiles"), whose OK opens its actions; then its people, one row each,
  * whose OK opens what may be changed of them, and one Add someone
- * ([TvManagePart], [onAdd]). Then Create a household, and Done. A household
+ * ([TvManagePart], [adds]). Then Create a household, This device over the
+ * picker ([device]), and Done. A household
  * the list does not name yet keeps its people, unheaded, as on the web.
  * [notice] says why the last change did not take.
  *
@@ -39,8 +40,9 @@ import ui.tv.TvTextRow
  * over for the person under it, its centre that much further off.
  *
  * The remote lands on household [landing]'s header — on Create a household
- * for [NEW] — or the first. Opening someone's controls makes their household
- * the landing, and Back from them is their row again. When the person whose
+ * for [NEW] — or the first; back from an add, on its Add someone, and from
+ * Switch household on This device. Opening someone's controls makes their
+ * household the landing, and Back from them is their row again. When the person whose
  * row holds the remote leaves the household it was drawn in — removed, or
  * moved to another one — the remote goes to that household's header, or the
  * landing once that is gone too: never to nothing.
@@ -52,12 +54,15 @@ internal fun TvOwnerRows(
     landing: String?,
     notice: String?,
     go: (TvHouseholdStep) -> Unit,
-    onAdd: (household: String) -> Unit,
+    adds: TvAdds,
+    device: TvDeviceLine? = null,
 ) {
     var step by remember { mutableStateOf<TvManageStep>(TvManageStep.List) }
     val parts = state.parts()
     val headers = remember { mutableMapOf<String, FocusRequester>() }
     val create = remember { FocusRequester() }
+    val addRows = remember { mutableMapOf<String, FocusRequester>() }
+    val deviceRow = remember { FocusRequester() }
     val headed = parts.filter { it.household != null }.mapNotNull { it.id }
 
     // Read once the rows are drawn, which is when their requesters are.
@@ -71,7 +76,12 @@ internal fun TvOwnerRows(
 
     fun gone(held: Pair<String, String>?) = held != null && everyone.none { it.id == held.first && it.household == held.second }
     val lost = gone(holding)
-    LaunchedEffect(Unit) { target().requestFocus() }
+    LaunchedEffect(Unit) {
+        val back = if (device?.back == true) deviceRow else adds.backTo?.let(addRows::get)
+        (back ?: target()).requestFocus()
+        adds.backTo = null
+        device?.onLanded?.invoke()
+    }
     LaunchedEffect(lost) {
         if (!lost) return@LaunchedEffect
         val from = holding?.second
@@ -101,11 +111,25 @@ internal fun TvOwnerRows(
                     go(TvHouseholdStep.List(id))
                     step = next
                 }
-                TvManagePart(part, state, onOpen = open, onAdd = { onAdd(id) }, holds = { holds(id, it) })
+                val add = remember { FocusRequester() }.also { addRows[id] = it }
+                TvManagePart(part, state, onOpen = open, onAdd = { adds.adding = id }, holds = { holds(id, it) }, addRequester = add)
             }
         }
         TvTextRow(HouseholdWords.CREATE_A_HOUSEHOLD, onClick = { go(TvHouseholdStep.CreateName()) }, holds(NEW).fillMaxWidth().padding(top = Spacing.medium), create)
+        device?.let { TvDeviceRow(it.text, it.onSwitch, holds(NEW).padding(top = Spacing.medium), deviceRow) }
         TvTextRow(DONE, onClick = actions.onClose, holds(NEW).fillMaxWidth().padding(top = Spacing.medium))
     }
     TvManageDialog(step, state, actions) { step = it }
 }
+
+/**
+ * This device's line at the end of the owner's view over the picker: [text]
+ * names the household it shows, [onSwitch] opens Switch household, and [back]
+ * — Back from there — lands the remote on it once ([onLanded]).
+ */
+internal class TvDeviceLine(
+    val text: String,
+    val back: Boolean,
+    val onSwitch: () -> Unit,
+    val onLanded: () -> Unit,
+)

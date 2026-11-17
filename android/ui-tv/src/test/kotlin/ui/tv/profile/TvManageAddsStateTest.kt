@@ -1,13 +1,18 @@
 package ui.tv.profile
 
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import catalog.profile.ManageUiState
 import model.HouseholdWords
+import model.Profile
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -36,7 +41,34 @@ class TvManageAddsStateTest : TvManageProfilesHarness() {
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
         assertEquals(listOf("addKid Lina 6 30"), calls)
-        row(HouseholdWords.ADD_SOMEONE).assertExists()
+        answer { it.copy(kids = it.kids + Profile("l", "Lina", kids = true, kidsAge = 6, parentId = "b")) }
+        row("Lina").assertExists()
+        row(HouseholdWords.ADD_SOMEONE).assertIsFocused()
+    }
+
+    /** A taken name is said on the step that sent it, and Back walks through the age and the name as they were chosen and typed. */
+    @Test
+    fun aRefusedAddKeepsWhatWasTypedAndSaysWhyOnTheAdd() {
+        val taken = "That name is already used on this install."
+        manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
+        repeat(2) { press(Key.DirectionDown) }
+        press(Key.DirectionCenter)
+        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput("Tom")
+        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
+        compose.waitForIdle()
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        assertEquals(listOf("addKid Tom 12 30"), calls)
+
+        answer { it.copy(notice = taken) }
+        compose.onAllNodesWithText(taken).assertCountEquals(1)
+        compose.onNodeWithTag(tvDailyLimitTag(30)).assertIsFocused()
+        back()
+        compose.onNodeWithTag(tvKidsLimitTag(12)).assertIsFocused()
+        back()
+        compose.onNodeWithTag(TvTextQuestionFieldTag).assert(hasText("Tom"))
     }
 
     @Test
@@ -50,7 +82,7 @@ class TvManageAddsStateTest : TvManageProfilesHarness() {
         back()
         compose.onNodeWithText("Lina").assertExists()
         back()
-        row("Bea").assertIsFocused()
+        row(HouseholdWords.ADD_SOMEONE).assertIsFocused()
         assertEquals(emptyList(), calls)
     }
 

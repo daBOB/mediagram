@@ -1,19 +1,19 @@
 package ui.tv.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
 import catalog.profile.PinPrompt
-import catalog.profile.parts
+import model.HouseholdWords
 import ui.common.profile.ManageActions
 
 /**
@@ -21,8 +21,11 @@ import ui.common.profile.ManageActions
  * from one panel, its header opening the household's own steps
  * ([TvHouseholdsPanel]), its people and its Add someone Manage's
  * ([TvOwnerManage]). One owner's PIN, the page's, serves both. Drawn where
- * Manage is ([TvManageScreen]) once Manage manages as the owner. Back from
- * the rows is [onBack]; [onJoined] runs once Use on this device moved the box.
+ * Manage is ([TvManageScreen]) once Manage manages as the owner. Over the
+ * picker ([overPicker]) it ends, as the web's and the tablet's page there does,
+ * with This device while there is another household to switch to — Settings
+ * has its own row for it. Back from the rows is [onBack]; [onJoined] runs once
+ * Use on this device, or Switch household, moved the box.
  */
 @Composable
 internal fun TvOwnerView(
@@ -32,24 +35,22 @@ internal fun TvOwnerView(
     actions: ManageActions,
     onBack: () -> Unit,
     onJoined: () -> Unit,
+    overPicker: Boolean = false,
 ) {
     val owner: HouseholdsOwnerViewModel = hiltViewModel()
     val join: JoinHouseholdViewModel = hiltViewModel()
+    val here by join.state.collectAsStateWithLifecycle()
+    val device = here.takeIf { overPicker && it.canSwitch }?.let { listOfNotNull(HouseholdWords.THIS_DEVICE, it.here?.name).joinToString(" · ") }
     TvHouseholdsPanel(owner, join::reread, onDone = onBack, onJoined = onJoined) { landing, go ->
-        TvOwnerManage(state, actions, landing, go, prompt, manage::enterPin, manage::cancelPin)
+        TvOwnerManage(state, actions, landing, go, prompt, manage::enterPin, manage::cancelPin, device) { TvJoinHousehold(join) { onJoined() } }
     }
 }
 
 /**
- * The owner's view ([TvOwnerRows]) and Manage's steps on it, over [state]. An
- * add — into a household, by its Add someone ([TvAddSomeone]) — stays on the
- * step that sent it until its answer — a PIN pad given up is none — and
- * keeps what was chosen and typed, as the web's form does: one that took
- * lands the remote on its household's header; a refusal is said on that
- * step, and goes with the add when it is given up. While one is out, presses
- * send nothing more. Manage's PIN pad ([prompt]) stands in the view's place,
- * the add held under it. [go] moves the panel around it: to a household's
- * step, or back to the rows, landing on a header.
+ * The owner's view ([TvOwnerRows]) and Manage's steps on it, over [state]:
+ * the adds ([TvManageAdds]), each landing the panel ([go]) on its household
+ * once it ends, and — with [device], This device's line — Switch household
+ * ([switchHousehold]) in the rows' place, Back from it landing on that line.
  */
 @Composable
 internal fun TvOwnerManage(
@@ -60,58 +61,21 @@ internal fun TvOwnerManage(
     prompt: PinPrompt? = null,
     onPin: (String) -> Unit = {},
     onCancelPin: () -> Unit = {},
+    device: String? = null,
+    switchHousehold: @Composable () -> Unit = {},
 ) {
-    val forms = rememberSaveableStateHolder()
-    // The household an add is under way into.
-    var adding by remember { mutableStateOf<String?>(null) }
-    // The add out, and the answers counted as it went: only a later count is its answer.
-    var sent by remember { mutableStateOf<Pair<String, Int>?>(null) }
-    // The add whose step says why it did not take, and that answer; none once that add was given up, said nowhere then.
-    var refused by remember { mutableStateOf<Pair<String?, Int>?>(null) }
-    LaunchedEffect(state.answers) {
-        val (from, at) = sent ?: return@LaunchedEffect
-        if (state.answers <= at) return@LaunchedEffect
-        sent = null
-        if (state.notice != null) {
-            if (adding == from) refused = from to state.answers
-            return@LaunchedEffect
+    var switching by remember { mutableStateOf(false) }
+    var switched by remember { mutableStateOf(false) }
+    TvManageAdds(state, actions, prompt, onPin, onCancelPin, onEnded = { go(TvHouseholdStep.List(it)) }) { adds, notice ->
+        if (switching) {
+            BackHandler {
+                switching = false
+                switched = true
+            }
+            switchHousehold()
+        } else {
+            val line = device?.let { TvDeviceLine(it, back = switched, onSwitch = { switching = true }, onLanded = { switched = false }) }
+            TvOwnerRows(state, actions, landing, notice, go, adds, line)
         }
-        forms.removeState(from)
-        if (adding == from) {
-            adding = null
-            go(TvHouseholdStep.List(from))
-        }
-    }
-    if (prompt != null) {
-        TvPinPrompt(prompt, onPin = onPin) {
-            sent = null
-            onCancelPin()
-        }
-        return
-    }
-    val parts = state.parts()
-    // A household gone — deleted, here or elsewhere — takes its add with it.
-    val add = adding?.takeIf { one -> parts.any { it.id == one } }
-    if (add == null) {
-        TvOwnerRows(state, actions, landing, state.notice.takeIf { refused?.second != state.answers }, go) { adding = it }
-        return
-    }
-    forms.SaveableStateProvider(add) {
-        TvAddSomeone(
-            part = parts.first { it.id == add },
-            notice = state.notice.takeIf { refused == add to state.answers },
-            onAdd = { name, age, dailyLimit, parentId ->
-                if (sent == null) {
-                    sent = add to state.answers
-                    if (age != null) actions.onAddKid(name, age, dailyLimit, parentId) else actions.onAddGrownUp(name, add)
-                }
-            },
-            onCancel = {
-                forms.removeState(add)
-                refused = refused?.let { null to it.second }
-                adding = null
-                go(TvHouseholdStep.List(add))
-            },
-        )
     }
 }

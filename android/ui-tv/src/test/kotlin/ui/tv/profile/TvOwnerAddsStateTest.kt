@@ -4,6 +4,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -25,7 +26,7 @@ class TvOwnerAddsStateTest : TvOwnerViewHarness() {
     /**
      * A refused add stays on the step that sent it, says why there, and keeps
      * what was chosen — across a PIN pad given up, too; the one that took
-     * lands the remote on its household's header.
+     * lands the remote back on its Add someone.
      */
     @Test
     fun aRefusedAddKeepsWhatWasChosenAndSaysWhyOnItsStep() {
@@ -58,7 +59,7 @@ class TvOwnerAddsStateTest : TvOwnerViewHarness() {
         press(Key.DirectionCenter)
         press(Key.DirectionCenter)
         assertEquals(listOf("kid Tim 12 30 maja", "kid Tim 12 30 maja", "kid Tia 12 30 maja"), calls)
-        focusedOn("Flat · Admin Maja")
+        compose.onNode(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} Flat")).assertIsFocused()
         assertEquals(TvHouseholdStep.List("flat"), went.last())
     }
 
@@ -77,7 +78,7 @@ class TvOwnerAddsStateTest : TvOwnerViewHarness() {
         compose.onNodeWithText("That name is taken.").assertExists()
 
         repeat(4) { back() }
-        focusedOn("Flat · Admin Maja")
+        compose.onNode(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} Flat")).assertIsFocused()
         compose.onAllNodesWithText("That name is taken.").assertCountEquals(0)
         walkTo(hasText(HouseholdWords.ADD_SOMEONE))
         press(Key.DirectionCenter)

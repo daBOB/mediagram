@@ -4,6 +4,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onAllNodesWithText
@@ -88,7 +89,7 @@ class TvOwnerViewTest : TvProfilesHarness() {
         }
     }
 
-    /** Flat's Add someone, Grown-up, makes them in Flat — the owner's PIN asked at this first change — and the remote is back on Flat's header. */
+    /** Flat's Add someone, Grown-up, makes them in Flat — the owner's PIN asked at this first change — and the remote is back on Flat's Add someone. */
     @Test
     fun addGrownUpUnderAHouseholdSendsThatHousehold() {
         openOwnersView()
@@ -104,7 +105,8 @@ class TvOwnerViewTest : TvProfilesHarness() {
         pin("2468")
 
         assertEquals("flat", fixture.core.profiles.single { it.name == "Eve" }.household)
-        compose.onNode(rowOf("Flat · Admin Dan · 2 profiles")).assertIsFocused()
+        compose.onNode(rowOf("Flat · Admin Dan · 2 profiles")).assertExists()
+        compose.onNode(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} Flat")).assertIsFocused()
     }
 
     /** Home has two grown-ups: Belongs to comes first, on its admin; the kid made for Bo is Bo's. Flat has one, so asks nothing. */
@@ -124,7 +126,8 @@ class TvOwnerViewTest : TvProfilesHarness() {
         val mia = fixture.core.profiles.single { it.name == "Mia" }
         assertEquals("b", mia.parentId)
         assertEquals(HOME_HOUSEHOLD, mia.household)
-        compose.onNode(rowOf("Home · Admin andre · 3 profiles")).assertIsFocused()
+        compose.onNode(rowOf("Home · Admin andre · 3 profiles")).assertExists()
+        compose.onNode(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} Home")).assertIsFocused()
         // Bo's kid in the owner's own household is Bo's to change: listed, not a row.
         compose.onNodeWithText("Kid · Bo · FSK 6").assertExists()
         compose.onAllNodes(rowOf("Mia")).assertCountEquals(0)

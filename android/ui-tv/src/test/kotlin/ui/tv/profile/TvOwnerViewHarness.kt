@@ -84,9 +84,14 @@ abstract class TvOwnerViewHarness : TvScreenStateTest() {
     fun leaveTouchMode() {
         InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
         show {
-            TvOwnerManage(shown.value, actions, landing.value, { step -> went += step.also { if (it is TvHouseholdStep.List) landing.value = it.row } }, prompt.value) {
-                prompt.value = null
-            }
+            TvOwnerManage(
+                shown.value,
+                actions,
+                landing.value,
+                { step -> went += step.also { if (it is TvHouseholdStep.List) landing.value = it.row } },
+                prompt.value,
+                onCancelPin = { prompt.value = null },
+            )
         }
     }
 

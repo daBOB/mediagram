@@ -168,7 +168,7 @@ class TvWhoIsManagingTest : TvProfilesHarness() {
         compose.onNode(rowOf(HouseholdWords.KID)).assertIsFocused()
     }
 
-    /** Flat's Add someone makes a grown-up in Flat, not here, and the remote is back on Flat's header. */
+    /** Flat's Add someone makes a grown-up in Flat, not here, and the remote is back on Flat's Add someone. */
     @Test
     fun addSomeoneUnderAHouseholdSendsThatHousehold() {
         ownersView()
@@ -183,7 +183,7 @@ class TvWhoIsManagingTest : TvProfilesHarness() {
         pin("2468")
 
         assertEquals("flat", fixture.core.profiles.single { it.name == "Eve" }.household)
-        compose.onNode(rowOf("Flat · Admin Dan · 2 profiles")).assertIsFocused()
+        compose.onNode(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} Flat")).assertIsFocused()
     }
 
     /** Back from a person's panel is back on their row, not on the household's header. */

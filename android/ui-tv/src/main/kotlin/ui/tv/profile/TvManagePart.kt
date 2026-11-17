@@ -19,8 +19,9 @@ import model.Profile
  * them ([onOpen]): the manager's own PIN, a kid's limits, a grown-up's PIN;
  * someone they may not change ([ManagePart.readOnly]) opens nothing. Then one
  * Add someone ([onAdd]) where adding is offered, named for its household
- * where each has its own. [first] is the first row's; [holds] marks the row
- * holding the remote, by person, null for Add someone.
+ * where each has its own. [first] is the first row's, [addRequester] Add
+ * someone's; [holds] marks the row holding the remote, by person, null for
+ * Add someone.
  */
 @Composable
 internal fun TvManagePart(
@@ -30,6 +31,7 @@ internal fun TvManagePart(
     onAdd: () -> Unit,
     first: FocusRequester? = null,
     holds: (id: String?) -> Modifier = { Modifier },
+    addRequester: FocusRequester? = null,
 ) {
     val owners = state.ownersView
     val people = if (owners) part.people else listOf(state.actor) + part.grownUps + part.kids
@@ -42,7 +44,7 @@ internal fun TvManagePart(
     }
     if (part.addsGrownUp || part.addsKid) {
         val named = part.household?.let { "${HouseholdWords.ADD_SOMEONE_TO} ${part.name}" }
-        TvPersonRow(HouseholdWords.ADD_SOMEONE, null, onAdd, holds(null), first.takeIf { people.isEmpty() }, mark = "+", description = named)
+        TvPersonRow(HouseholdWords.ADD_SOMEONE, null, onAdd, holds(null), addRequester, mark = "+", description = named)
     }
 }
 
