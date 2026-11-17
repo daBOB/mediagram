@@ -124,7 +124,8 @@ test("a wrong PIN says so on the tiles and nothing opens", async () => {
 
 test("Settings for a grown-up who is not the owner shows the same tiles and no Everyone here", () => {
   const main = settingsAs("kai");
-  expect(headings(main)).toEqual(["Settings", "Who is watching", "Subtitles", W.whosManaging]);
+  // This device stays theirs to switch, below the tiles.
+  expect(headings(main)).toEqual(["Settings", "Who is watching", "Subtitles", W.whosManaging, W.thisDevice]);
   expect(tilesOf(main)).toEqual([`andre · ${W.owner}`, "Kai"]);
   expect(textOf(main)).not.toContain("Everyone here");
   expect(textOf(main)).not.toContain("Who are you?");

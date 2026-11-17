@@ -184,21 +184,15 @@ async function inTheFlat() {
   await state.loadProfiles();
 }
 
-test("the owner's view says this device's household and offers Switch only with two", async () => {
-  household = [{ ...ANDRE, owner: true }, MAJA, TIM, LEA];
-  await state.loadProfiles();
-  const alone = settings(find("andre")).main;
+test("the Profiles page says this device's household and offers Switch only with two", async () => {
+  const alone = settings(find("Maja")).main;
   openProfiles(alone);
   expect(sectionsOf(alone)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
 
   await inTheFlat();
-  // Anyone but the owner is asked Who's managing?, with no This device.
-  const other = settings(find("Maja")).main;
-  openProfiles(other);
-  expect(sectionsOf(other)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
-  const { main } = settings(find("andre"));
+  const { main } = settings(find("Maja"));
   openProfiles(main);
-  expect(sectionsOf(main).at(-1)).toBe(HOUSEHOLD_WORDS.thisDevice);
+  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", HOUSEHOLD_WORDS.whosManaging, HOUSEHOLD_WORDS.thisDevice]);
   const row = descendants(main).find((node) => node.className === "setting" && textOf(node).startsWith(HOUSEHOLD_WORDS.thisDevice))!;
   expect(textOf(byClass(row, "setting-value"))).toBe("Flat");
   buttonNamed(row, HOUSEHOLD_WORDS.switchHousehold).fire("click");

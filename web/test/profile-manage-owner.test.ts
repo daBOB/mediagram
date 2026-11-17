@@ -203,9 +203,9 @@ test("an empty household offers Add a grown-up and Delete but not Add a kid", as
   expect(formsOf(householdOf(main, "Attic"))).toEqual(["Add a grown-up"]);
 });
 
-test("This device shows with the owner view, and not to anyone else", async () => {
+test("This device shows in Settings for the owner's view and for anyone else", async () => {
   expect(thisDevice(settingsAs(OWNER).main).hidden).toBe(false);
-  expect(textOf(settingsAs(MAJA).main)).not.toContain(W.thisDevice);
+  expect(thisDevice(settingsAs(MAJA).main).hidden).toBe(false);
 });
 
 test("from the picker, choosing the owner opens the owner view", async () => {

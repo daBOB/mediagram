@@ -3,7 +3,8 @@
  * to switch, your subtitle language — then managing the household, which asks
  * Who's managing? with the picker's tiles. Watching as the owner, the owner's
  * view of every household opens at once instead, with — while there is more
- * than one — the household this device shows. A kid sees only You; with nobody
+ * than one — the household this device shows, which any grown-up in Settings
+ * sees too. A kid sees only You; with nobody
  * chosen, which is how the picker's Manage profiles opens it, there is no You.
  * Changing anything asks that grown-up's PIN — the owner's only at the first
  * change — which the body holds only until the page is left.
@@ -64,14 +65,13 @@ function subtitlePreference() {
 
 /**
  * Draws into `set` which household's profiles this device shows, and a way to
- * another — only in the owner's view (`owning`), and while there is more than
- * one. Joining one takes the device off the profile chosen here, so
- * `onJoined` asks who is watching again.
+ * another — when `shown`, and while there is more than one. Joining one takes
+ * the device off the profile chosen here, so `onJoined` asks who is watching again.
  */
-function drawThisDevice(set, promptHost, onJoined, owning) {
+function drawThisDevice(set, promptHost, onJoined, shown) {
   set.textContent = "";
   // Hidden, not just empty: an empty section would still take the panel's gap.
-  set.hidden = !owning || state.households().length < 2;
+  set.hidden = !shown || state.households().length < 2;
   if (set.hidden) return;
   const here = thisHousehold();
   const change = pill(HOUSEHOLD_WORDS.switchHousehold, () => {
@@ -97,7 +97,8 @@ export function profilesPanel(promptHost, { profile, switchProfile, systemVisibl
   const manage = el("div", "setting manage-inline");
   const device = el("div", "setting");
   let owning = false;
-  const drawDevice = () => drawThisDevice(device, promptHost, switchProfile, owning);
+  // Over the picker, nobody chosen, Who's managing? stands alone until the owner's view opens; in Settings every grown-up has it.
+  const drawDevice = () => drawThisDevice(device, promptHost, switchProfile, profile != null || owning);
   // A change can add the second household: the page follows.
   const managed = mountManage(manage, { promptHost, chosen: { profile, switchProfile }, onChange: drawDevice });
   managed.onOwnerView((showing) => {
