@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -51,7 +52,7 @@ class TvManageHouseholdsStateTest : TvScreenStateTest() {
     private val actions =
         ManageActions(
             onActAs = {},
-            onAddKid = { _, _, _ -> },
+            onAddKid = { _, _, _, _ -> },
             onSetKidsAge = { id, age ->
                 calls += "age $id $age"
                 change { it.copy(kids = it.kids.map { kid -> if (kid.id == id) kid.copy(kidsAge = age) else kid }) }
@@ -62,7 +63,7 @@ class TvManageHouseholdsStateTest : TvScreenStateTest() {
                 calls += "remove $id"
                 change { it.copy(grownUps = it.grownUps.filterNot { one -> one.id == id }) }
             },
-            onAddGrownUp = {},
+            onAddGrownUp = { _, _ -> },
             onChangePin = { calls += "pin $it" },
             onClose = {},
         )
@@ -87,31 +88,34 @@ class TvManageHouseholdsStateTest : TvScreenStateTest() {
     @Test
     fun everyHouseholdsRowsAreReachedWalkingDownAndTheirNamesTakeNoFocus() {
         listOf("Home", "Loft", "Flat").forEach { compose.onNodeWithText(it).assertExists() }
-        // This device's household first, where adding stays.
-        compose.onNodeWithText(ADD_A_GROWN_UP).assertIsFocused()
+        // This device's household first; every household adds a grown-up and a kid of its own.
+        compose.onAllNodesWithText(ADD_A_GROWN_UP)[0].assertIsFocused()
         press(Key.DirectionDown, 2)
-        compose.onNodeWithText(ADD_A_KID).assertIsFocused()
-        // Past the Loft's name, Grown-ups, and on to the Flat's.
+        compose.onAllNodesWithText(ADD_A_KID)[0].assertIsFocused()
+        // Past the Loft's name, Grown-ups, and on through its adds to the Flat's.
         press(Key.DirectionDown)
         compose.onNodeWithText("Ida").assertIsFocused()
+        press(Key.DirectionDown, 2)
+        compose.onAllNodesWithText(ADD_A_KID)[1].assertIsFocused()
         press(Key.DirectionDown)
         compose.onNodeWithText("Maja").assertIsFocused()
-        press(Key.DirectionDown)
+        press(Key.DirectionDown, 2)
         compose.onNodeWithText("Tim · FSK 6 · No limit").assertIsFocused()
-        press(Key.DirectionDown)
+        press(Key.DirectionDown, 2)
         compose.onNodeWithText(CHANGE_YOUR_PIN).assertIsFocused()
     }
 
     @Test
     fun anotherHouseholdsRowsAreChangedByRemoteAndAKidsRowKeepsIt() {
-        press(Key.DirectionDown, 5)
+        press(Key.DirectionDown, 8)
         press(Key.DirectionCenter)
         // The current limit holds the remote; the other is one step down.
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
         assertEquals(listOf("age tim 12"), calls)
         compose.onNodeWithText("Tim · FSK 12 · No limit").assertIsFocused()
-        press(Key.DirectionUp)
+        // Up past the Flat's Add a grown-up, to Maja.
+        press(Key.DirectionUp, 2)
         press(Key.DirectionCenter)
         press(Key.DirectionCenter)
         // Where the remote is after the PIN pad is the pad's to say: in the app it stands in this screen's place.
@@ -119,7 +123,7 @@ class TvManageHouseholdsStateTest : TvScreenStateTest() {
     }
 
     @Test
-    fun aHouseholdLeftWithNobodyToManageLosesItsName() {
+    fun aHouseholdLeftWithNobodyKeepsItsNameToAddAGrownUp() {
         press(Key.DirectionDown, 3)
         press(Key.DirectionCenter)
         // Reset PIN -> Sections -> Remove, then past Cancel.
@@ -128,8 +132,8 @@ class TvManageHouseholdsStateTest : TvScreenStateTest() {
         press(Key.DirectionRight)
         press(Key.DirectionCenter)
         assertEquals(listOf("remove ida"), calls)
-        compose.onNodeWithText("Loft").assertDoesNotExist()
+        compose.onNodeWithText("Loft").assertExists()
         // The row the remote was on went; it starts again at the top.
-        compose.onNodeWithText(ADD_A_GROWN_UP).assertIsFocused()
+        compose.onAllNodesWithText(ADD_A_GROWN_UP)[0].assertIsFocused()
     }
 }

@@ -40,19 +40,20 @@ class ManageHouseholdPartsTest {
         assertEquals(
             listOf(
                 listOf("Home", GROWN_UPS, KIDS_SECTION) to listOf("Lea"),
-                listOf("Loft", GROWN_UPS) to listOf("Ida"),
+                listOf("Loft", GROWN_UPS, KIDS_SECTION) to listOf("Ida"),
                 listOf("Flat", GROWN_UPS, KIDS_SECTION) to listOf("Maja", "Tim"),
             ),
             owner.drawn(),
         )
-        // Adding stays with this device's household; the Households part places people elsewhere.
-        assertEquals(listOf(true to true, false to false, false to false), owner.parts().map { it.addsGrownUp to it.addsKid })
+        // The owner adds in every household, each kid for one of its grown-ups.
+        assertEquals(listOf(true to true, true to true, true to true), owner.parts().map { it.addsGrownUp to it.addsKid })
     }
 
     @Test
-    fun aHouseholdWithNobodyToManageHasNoHeading() {
+    fun aHouseholdWithNobodyInItKeepsItsPartToAddAGrownUp() {
         val owner = panel(andre, listOf(andre, lea), install.copy(everyone = listOf(andre, maja, tim, lea)))
-        assertEquals(listOf("Home", "Flat"), owner.parts().map { it.name })
+        assertEquals(listOf("Home", "Loft", "Flat"), owner.parts().map { it.name })
+        assertEquals(true to false, owner.parts()[1].let { it.addsGrownUp to it.addsKid })
     }
 
     @Test
@@ -72,9 +73,9 @@ class ManageHouseholdPartsTest {
     }
 
     @Test
-    fun theOwnerOfOneHouseholdSeesManageAsBeforeUnnamed() {
+    fun theOwnerOfOneHouseholdGetsTheOwnersViewToo() {
         val alone = Households("home", live.takeLast(1), listOf(andre, lea, maja.copy(household = "home", admin = false)))
         val owner = panel(andre, alone.everyone, alone)
-        assertEquals(listOf(listOf(GROWN_UPS, KIDS_SECTION) to listOf("Maja", "Lea")), owner.drawn())
+        assertEquals(listOf(listOf("Home", GROWN_UPS, KIDS_SECTION) to listOf("Maja", "Lea")), owner.drawn())
     }
 }

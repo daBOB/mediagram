@@ -48,12 +48,12 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
     private val actions =
         ManageActions(
             onActAs = { calls += "actAs $it" },
-            onAddKid = { name, age, daily -> calls += "addKid $name $age $daily" },
+            onAddKid = { name, age, daily, _ -> calls += "addKid $name $age $daily" },
             onSetKidsAge = { id, age -> calls += "age $id $age" },
             onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
             onSetHiddenSections = { id, sections -> calls += "sections $id $sections" },
             onRemove = { calls += "remove $it" },
-            onAddGrownUp = { calls += "addGrownUp $it" },
+            onAddGrownUp = { name, _ -> calls += "addGrownUp $name" },
             onChangePin = { calls += "pin $it" },
             onClose = { calls += "close" },
         )

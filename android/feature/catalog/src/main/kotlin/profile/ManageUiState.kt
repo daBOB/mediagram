@@ -26,7 +26,8 @@ sealed interface ManageUiState {
      * changes answered while managing: a control held until its answer waits
      * for it to move, which even a refusal it has heard before does. The
      * owner's rows reach into every household; [households], the live ones,
-     * name them ([parts]).
+     * name them ([parts]), [here] — this device's — first, each with the
+     * owner's [rows] of actions on it.
      */
     data class Managing(
         val actor: Profile,
@@ -35,6 +36,8 @@ sealed interface ManageUiState {
         val notice: String? = null,
         val answers: Int = 0,
         val households: List<Household> = emptyList(),
+        val here: String = actor.household,
+        val rows: List<HouseholdRow> = emptyList(),
     ) : ManageUiState {
         val canAddGrownUp: Boolean get() = actor.admin
 
@@ -47,8 +50,9 @@ sealed interface ManageUiState {
  * The panel for [actorId] over [profiles], this device's household — the
  * web's `manageable`: the admin sees every other grown-up, everyone the kids
  * that are their own, and the owner everyone in every other household of
- * [install] too. With the actor gone (removed on another device) there is
- * nobody to manage as, so it asks who is here again.
+ * [install] too — from any device, theirs or not. With the actor gone
+ * (removed on another device) there is nobody to manage as, so it asks who
+ * is here again.
  */
 internal fun manageable(
     profiles: List<Profile>,
@@ -57,15 +61,21 @@ internal fun manageable(
     answers: Int = 0,
     install: Households = Households(),
 ): ManageUiState {
-    val actor = profiles.find { it.id == actorId && !it.kids } ?: return ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
+    val local = profiles.find { it.id == actorId && !it.kids }
+    val actor = local ?: install.owner?.takeIf { it.id == actorId } ?: return ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
     // This device's household from [profiles], read with every change; the others only as the households were last read.
-    val elsewhere = if (actor.owner) install.everyone.filter { it.household != actor.household } else emptyList()
+    val here = local?.household ?: install.joined ?: actor.household
+    val elsewhere = if (actor.owner) install.everyone.filter { it.household != here } else emptyList()
+    val reached = profiles + elsewhere
     return ManageUiState.Managing(
         actor = actor,
         grownUps = ((if (actor.admin) profiles else emptyList()) + elsewhere).filter { !it.kids && it.id != actorId },
-        kids = profiles.filter { it.kids && profiles.ownerOf(it) == actorId } + elsewhere.filter { it.kids },
+        // In their own household the owner manages their own kids, as anyone does; elsewhere, every kid.
+        kids = reached.filter { it.kids && (reached.ownerOf(it) == actorId || (actor.owner && it.household != actor.household)) },
         notice = notice,
         answers = answers,
         households = install.list,
+        here = here,
+        rows = if (actor.owner) install.rowsFor(actor) else emptyList(),
     )
 }

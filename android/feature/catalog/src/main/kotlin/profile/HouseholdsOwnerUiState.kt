@@ -61,31 +61,34 @@ internal fun Households.ownersPart(
     sending: Boolean,
 ): HouseholdsOwnerUiState {
     val boss = owner ?: return HouseholdsOwnerUiState.Closed()
-    val live = list.map { it.id }
-    val grownUps = everyone.filterNot { it.kids }
-
-    fun may(
-        action: HouseholdAction,
-        id: String,
-        targetId: String = "",
-    ) = everyone.householdAllowed(live, boss.id, action, id, targetId)
-
-    val rows =
-        list.map { household ->
-            val id = household.id
-            HouseholdRow(
-                household = household,
-                line = householdLine(everyone.find { it.id == household.adminId }?.name, members(id)),
-                isHere = id == joined,
-                canRename = may(HouseholdAction.RENAME, id),
-                canUseHere = id != joined && may(HouseholdAction.JOIN, id),
-                canDelete = may(HouseholdAction.DELETE, id),
-                adminChoices = grownUps.filter { it.id != household.adminId && may(HouseholdAction.SET_ADMIN, id, it.id) },
-                moveChoices = grownUps.filter { may(HouseholdAction.MOVE, id, it.id) },
-            )
-        }
-    return HouseholdsOwnerUiState.Open(rows, grownUps.filter { may(HouseholdAction.CREATE, "", it.id) }, notice, answers, sending)
+    val creators = everyone.filter { !it.kids && may(boss, HouseholdAction.CREATE, "", it.id) }
+    return HouseholdsOwnerUiState.Open(rowsFor(boss), creators, notice, answers, sending)
 }
+
+/** Every live household as a row: what [boss], the owner, may do to it by the household rule. */
+internal fun Households.rowsFor(boss: Profile): List<HouseholdRow> {
+    val grownUps = everyone.filterNot { it.kids }
+    return list.map { household ->
+        val id = household.id
+        HouseholdRow(
+            household = household,
+            line = householdLine(everyone.find { it.id == household.adminId }?.name, members(id)),
+            isHere = id == joined,
+            canRename = may(boss, HouseholdAction.RENAME, id),
+            canUseHere = id != joined && may(boss, HouseholdAction.JOIN, id),
+            canDelete = may(boss, HouseholdAction.DELETE, id),
+            adminChoices = grownUps.filter { it.id != household.adminId && may(boss, HouseholdAction.SET_ADMIN, id, it.id) },
+            moveChoices = grownUps.filter { may(boss, HouseholdAction.MOVE, id, it.id) },
+        )
+    }
+}
+
+private fun Households.may(
+    boss: Profile,
+    action: HouseholdAction,
+    id: String,
+    targetId: String = "",
+) = everyone.householdAllowed(list.map { it.id }, boss.id, action, id, targetId)
 
 /** The owner is who is watching here: the part opens at once for them, on every visit, as on the web. */
 internal fun Households.watchedByOwner(chosenId: String?) = chosenId != null && chosenId == owner?.id

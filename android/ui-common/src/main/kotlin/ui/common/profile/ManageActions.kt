@@ -11,12 +11,14 @@ import catalog.profile.addKid
  */
 class ManageActions(
     val onActAs: (id: String) -> Unit,
-    val onAddKid: (name: String, age: Int, dailyLimit: Int?) -> Unit,
+    /** [parentId]: one of the part's [catalog.profile.ManagePart.kidParents], or null for whoever adds it. */
+    val onAddKid: (name: String, age: Int, dailyLimit: Int?, parentId: String?) -> Unit,
     val onSetKidsAge: (id: String, age: Int) -> Unit,
     val onSetDailyLimit: (id: String, minutes: Int?) -> Unit,
     val onSetHiddenSections: (id: String, sections: List<String>) -> Unit,
     val onRemove: (id: String) -> Unit,
-    val onAddGrownUp: (name: String) -> Unit,
+    /** [household]: the part's id, null for the maker's own. */
+    val onAddGrownUp: (name: String, household: String?) -> Unit,
     val onChangePin: (id: String) -> Unit,
     val onClose: () -> Unit,
 )

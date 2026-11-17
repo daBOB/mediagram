@@ -57,7 +57,7 @@ internal fun ManagePartRows(
                 }
             }
         }
-        if (part.addsGrownUp) NameForm(ADD_A_GROWN_UP, onSubmit = actions.onAddGrownUp, modifier = Modifier.padding(top = Spacing.small))
+        if (part.addsGrownUp) NameForm(ADD_A_GROWN_UP, onSubmit = { actions.onAddGrownUp(it, part.id) }, modifier = Modifier.padding(top = Spacing.small))
     }
     if (!part.showsKids) return
     Section(KIDS_SECTION, style = sub)
@@ -75,19 +75,22 @@ internal fun ManagePartRows(
             }
         }
     }
-    if (part.addsKid) AddKidForm(actions)
+    if (part.addsKid) AddKidForm(actions, part.kidParents.firstOrNull()?.id)
 }
 
-/** A new kid's name, then its age limit — the stricter to start — and any daily limit. */
+/** A new kid's name, then its age limit — the stricter to start — and any daily limit; [parentId]'s, or its maker's. */
 @Composable
-private fun AddKidForm(actions: ManageActions) {
+private fun AddKidForm(
+    actions: ManageActions,
+    parentId: String?,
+) {
     var newLimit by rememberSaveable { mutableIntStateOf(NEW_KID_LIMIT) }
     // Saved as 0 for "No limit": no menu entry is zero minutes, and the saver takes no null.
     var newDaily by rememberSaveable { mutableIntStateOf(0) }
     NameForm(
         ADD_A_KID,
         onSubmit = { name ->
-            actions.onAddKid(name, newLimit, newDaily.takeIf { it > 0 })
+            actions.onAddKid(name, newLimit, newDaily.takeIf { it > 0 }, parentId)
             newLimit = NEW_KID_LIMIT
             newDaily = 0
         },

@@ -40,7 +40,8 @@ import ui.tv.player.TvSettingsHeading
 private sealed interface TvManageStep {
     data object List : TvManageStep
 
-    data class Adding(val kid: Boolean) : TvManageStep
+    /** Into household [household], a kid for [parentId]: its part's, null for the maker's own. */
+    data class Adding(val kid: Boolean, val household: String?, val parentId: String?) : TvManageStep
 
     data class KidActions(val kid: Profile) : TvManageStep
 
@@ -103,7 +104,7 @@ private fun TvManaging(
             askLimit = adding.kid,
             onAdd = { name, age, dailyLimit ->
                 step = TvManageStep.List
-                if (age != null) actions.onAddKid(name, age, dailyLimit) else actions.onAddGrownUp(name)
+                if (age != null) actions.onAddKid(name, age, dailyLimit, adding.parentId) else actions.onAddGrownUp(name, adding.household)
             },
             onCancel = { step = TvManageStep.List },
         )
@@ -120,7 +121,7 @@ private fun TvManaging(
                     first.takeIf { index == 0 },
                     onGrownUp = { step = TvManageStep.GrownUpActions(it) },
                     onKid = { step = TvManageStep.KidActions(it) },
-                    onAdd = { step = TvManageStep.Adding(kid = it) },
+                    onAdd = { step = TvManageStep.Adding(kid = it, part.id, part.kidParents.firstOrNull()?.id) },
                 )
             }
         }
