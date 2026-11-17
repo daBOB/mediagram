@@ -4,8 +4,9 @@ import model.Profile
 
 /**
  * One household's part of Manage profiles: household [id] — what a screen
- * keys it by — whose [name] heads it in the owner's view. Both are null where
- * Manage is drawn as it always was. Adding a grown-up ([addsGrownUp]) or a kid
+ * keys it by — whose [name] heads it in the owner's view; none for one the
+ * list does not name yet, which is drawn unheaded, as on the web. Both are
+ * null where Manage is drawn as it always was. Adding a grown-up ([addsGrownUp]) or a kid
  * ([addsKid]) is offered where it may be: the admin's own household, and in
  * the owner's view every household, a kid only where a grown-up is. There
  * [household] is the owner's actions on it; [kidParents] the grown-ups a new
@@ -62,7 +63,7 @@ fun ManageUiState.Managing.parts(): List<ManagePart> {
         val parents = people.filterNot { it.kids }
         ManagePart(
             id = id,
-            name = households.find { it.id == id }?.name ?: id,
+            name = households.find { it.id == id }?.name,
             grownUps = grownUps.filter { it.household == id },
             kids = kids.filter { it.household == id },
             addsGrownUp = true,

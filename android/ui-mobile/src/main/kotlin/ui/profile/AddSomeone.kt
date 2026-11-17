@@ -133,7 +133,7 @@ internal fun AddSomeone(
     }
     Tray {
         if (grownUp && kid) {
-            Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            Row(Modifier.selectableGroup().semantics { contentDescription = HouseholdWords.ADD_SOMEONE }, horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
                 SettingsChip(HouseholdWords.GROWN_UP, selected = !kids, onClick = { kids = false })
                 SettingsChip(HouseholdWords.KID, selected = kids, onClick = { kids = true })
             }

@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.tv.profile.ownersAddSomeone
 import ui.tv.profile.tvManagerTileTag
 import ui.tv.setup.TvTextQuestionFieldTag
 import kotlin.test.assertEquals
@@ -49,11 +50,11 @@ class TvOwnerViewTest : TvProfilesHarness() {
         press(Key.DirectionCenter)
     }
 
-    private fun assertFocusedOn(text: String) = compose.onNode(isFocused()).assert(hasText(text))
+    private fun assertFocusedOn(text: String) = compose.onNode(isFocused()).assert(hasText(text) or hasContentDescription(text))
 
     /** The next Add someone down, then Kid. */
     private fun addAKidBelow() {
-        walkTo(rowOf(HouseholdWords.ADD_SOMEONE), Key.DirectionDown)
+        walkTo(ownersAddSomeone, Key.DirectionDown)
         press(Key.DirectionCenter)
         walkTo(rowOf(HouseholdWords.KID), Key.DirectionDown)
         press(Key.DirectionCenter)
@@ -77,8 +78,8 @@ class TvOwnerViewTest : TvProfilesHarness() {
         compose.onAllNodesWithText(HouseholdWords.OWNERS_PIN).assertCountEquals(0)
         val rows =
             listOf(
-                home to null, "andre" to "Owner · Admin · PIN set", "Bo" to "Grown-up · PIN set", HouseholdWords.ADD_SOMEONE to null,
-                flat to null, "Dan" to "Admin · No PIN", HouseholdWords.ADD_SOMEONE to null,
+                home to null, "andre" to "Owner · Admin · PIN set", "Bo" to "Grown-up · PIN set", "${HouseholdWords.ADD_SOMEONE_TO} Home" to null,
+                flat to null, "Dan" to "Admin · No PIN", "${HouseholdWords.ADD_SOMEONE_TO} Flat" to null,
                 HouseholdWords.CREATE_A_HOUSEHOLD to null, DONE to null,
             )
         rows.forEachIndexed { index, (row, line) ->
@@ -93,7 +94,7 @@ class TvOwnerViewTest : TvProfilesHarness() {
     fun addGrownUpUnderAHouseholdSendsThatHousehold() {
         openOwnersView()
         walkTo(rowOf(flat), Key.DirectionDown)
-        walkTo(rowOf(HouseholdWords.ADD_SOMEONE), Key.DirectionDown)
+        walkTo(ownersAddSomeone, Key.DirectionDown)
         press(Key.DirectionCenter)
         press(Key.DirectionCenter)
         name("Eve")

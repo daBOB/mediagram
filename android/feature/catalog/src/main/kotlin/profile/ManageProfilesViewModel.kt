@@ -52,10 +52,14 @@ class ManageProfilesViewModel
             combine(step, repository.profiles, households.view) { current, profiles, install -> current.shown(profiles, install) }
                 .stateIn(viewModelScope, SharingStarted.Eagerly, ManageUiState.Closed)
 
-        /** Who's managing? — or, with [chosen] the owner watching here, the owner's view at once. */
+        /**
+         * Who's managing? — or, with [chosen] the owner watching here, the owner's view at once. A fresh
+         * question every time, the television's Back to the tiles too: no PIN is held, the owner's included.
+         */
         fun open(chosen: Profile? = null) {
             ask.cancel()
             heldPin = null
+            ownerPin.drop()
             go(if (chosen?.owner == true && !chosen.kids) ManageStep.Managing(chosen.id) else ManageStep.ChoosingActor())
         }
 

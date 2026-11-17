@@ -41,7 +41,7 @@ internal const val COLLAPSED = "Collapsed"
  * and a › when the manager may change something, which opens [controls] in
  * place under it on a tap ([onToggle]). [open] is whether it is; the page
  * keeps one open at a time. With no [controls] — someone the manager may not
- * change — the row is no button and opens nothing.
+ * change — the row is no button and opens nothing, but is still one thing said.
  */
 @Composable
 internal fun PersonRow(
@@ -54,7 +54,7 @@ internal fun PersonRow(
     val colors = MaterialTheme.colorScheme
     val press =
         if (controls == null) {
-            Modifier
+            Modifier.semantics(mergeDescendants = true) {}
         } else {
             Modifier.clickable(role = Role.Button, onClick = onToggle).semantics { stateDescription = if (open) EXPANDED else COLLAPSED }
         }

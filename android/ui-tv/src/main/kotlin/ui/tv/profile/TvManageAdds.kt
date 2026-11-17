@@ -20,7 +20,10 @@ import ui.common.profile.ManageActions
  * a later count is its answer; the one whose step says why it did not take,
  * and that answer ([refused]) — no form once that add was given up, said
  * nowhere then; and the one whose Add someone the remote returns to once the
- * rows are drawn again ([backTo]), which the rows clear as they land.
+ * rows are drawn again ([backTo]), which the rows clear as they land. Kept
+ * here too, since a PIN pad standing in for the rows outlives them: the
+ * person whose row holds the remote, with the household it is drawn in
+ * ([holding]) — null on any other row — whom the rows land on again after it.
  */
 @Stable
 internal class TvAdds {
@@ -28,6 +31,7 @@ internal class TvAdds {
     var sent by mutableStateOf<Pair<String, Int>?>(null)
     var refused by mutableStateOf<Pair<String?, Int>?>(null)
     var backTo by mutableStateOf<String?>(null)
+    var holding by mutableStateOf<Pair<String, String>?>(null)
 }
 
 /** A part's form: its household, "" for the one part that has none. */

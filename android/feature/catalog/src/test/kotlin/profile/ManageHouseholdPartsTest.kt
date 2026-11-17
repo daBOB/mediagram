@@ -86,11 +86,14 @@ class ManageHouseholdPartsTest {
         assertEquals(listOf(true, true), listOf(owner, admin).map { it.parts().first().addsSomeone })
     }
 
+    /** As on the web, a household the list does not name yet keeps its people, but is not headed by its raw id. */
     @Test
-    fun aRowInAHouseholdTheListDoesNotNameStaysVisibleAfterTheNamedOnes() {
+    fun aHouseholdTheListDoesNotNameKeepsItsPeopleUnnamedAfterTheNamedOnes() {
         val barn = Profile("ned", "Ned", household = "barn")
         val owner = panel(andre, listOf(andre, lea), install.copy(everyone = install.everyone + barn))
-        assertEquals(listOf("Home", "Loft", "Flat", "barn"), owner.parts().map { it.name })
+        assertEquals(listOf("home", "loft", "flat", "barn"), owner.parts().map { it.id })
+        assertEquals(listOf("Home", "Loft", "Flat", null), owner.parts().map { it.name })
+        assertEquals(listOf("Ned"), owner.parts().last().people.map { it.profile.name })
     }
 
     @Test

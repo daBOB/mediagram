@@ -39,7 +39,7 @@ internal fun HouseholdPart(
     val owners = state.ownersView
     val row = part.household
     if (owners) {
-        // A household the list does not name yet (a sync mid-way) keeps its people, under its id.
+        // A household the list does not name yet (a sync mid-way) keeps its people, unheaded, as on the web.
         if (row != null) header(row) else part.name?.let { Section(it, Modifier.semantics { heading() }) }
     }
     for (person in part.people) {

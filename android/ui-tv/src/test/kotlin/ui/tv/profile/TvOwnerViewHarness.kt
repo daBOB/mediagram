@@ -5,6 +5,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
@@ -19,11 +21,15 @@ import catalog.profile.HouseholdRow
 import catalog.profile.ManageUiState
 import catalog.profile.PinPrompt
 import model.Household
+import model.HouseholdWords
 import model.Profile
 import org.junit.Before
 import ui.common.profile.ManageActions
 import ui.tv.catalog.TvScreenStateTest
 import ui.tv.setup.TvTextQuestionFieldTag
+
+/** An Add someone of the owner's view, said once as the household it adds to. */
+internal val ownersAddSomeone: SemanticsMatcher = hasContentDescription(HouseholdWords.ADD_SOMEONE_TO, substring = true) and hasClickAction()
 
 /**
  * The owner's view on television ([TvOwnerManage]), walked with the remote:
@@ -106,7 +112,8 @@ abstract class TvOwnerViewHarness : TvScreenStateTest() {
         compose.waitForIdle()
     }
 
-    protected fun focusedOn(start: String) = compose.onNode(isFocused()).assert(hasText(start, substring = true))
+    /** What holds the remote says [start], in its words or — Add someone's — its one name. */
+    protected fun focusedOn(start: String) = compose.onNode(isFocused()).assert(hasText(start, substring = true) or hasContentDescription(start, substring = true))
 
     protected fun walkTo(target: SemanticsMatcher) {
         repeat(20) { if (compose.onAllNodes(target and isFocused()).fetchSemanticsNodes().isEmpty()) press(Key.DirectionDown) }

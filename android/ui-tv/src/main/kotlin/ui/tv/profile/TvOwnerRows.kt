@@ -42,7 +42,8 @@ import ui.tv.TvTextRow
  * The remote lands on household [landing]'s header — on Create a household
  * for [NEW] — or the first; back from an add, on its Add someone, and from
  * Switch household on This device. Opening someone's controls makes their
- * household the landing, and Back from them is their row again. When the person whose
+ * household the landing, and Back from them is their row again, as is the
+ * end of a PIN pad asked from them. When the person whose
  * row holds the remote leaves the household it was drawn in — removed, or
  * moved to another one — the remote goes to that household's header, or the
  * landing once that is gone too: never to nothing.
@@ -62,6 +63,7 @@ internal fun TvOwnerRows(
     val headers = remember { mutableMapOf<String, FocusRequester>() }
     val create = remember { FocusRequester() }
     val addRows = remember { mutableMapOf<String, FocusRequester>() }
+    val people = remember { mutableMapOf<String, FocusRequester>() }
     val deviceRow = remember { FocusRequester() }
     val headed = parts.filter { it.household != null }.mapNotNull { it.id }
 
@@ -71,13 +73,15 @@ internal fun TvOwnerRows(
     fun target() = if (landing == NEW) create else header(landing) ?: header(headed.firstOrNull()) ?: create
 
     // Who holds the remote, and in which household's rows: a person, or null for any other row.
-    var holding by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var holding by adds::holding
     val everyone by rememberUpdatedState(state.everyone)
 
     fun gone(held: Pair<String, String>?) = held != null && everyone.none { it.id == held.first && it.household == held.second }
     val lost = gone(holding)
     LaunchedEffect(Unit) {
-        val back = if (device?.back == true) deviceRow else adds.backTo?.let(addRows::get)
+        // Back from a PIN pad, which stood in for the rows: on the person it was asked from.
+        val held = holding?.takeUnless(::gone)?.let { people[it.first] }
+        val back = if (device?.back == true) deviceRow else adds.backTo?.let(addRows::get) ?: held
         (back ?: target()).requestFocus()
         adds.backTo = null
         device?.onLanded?.invoke()
@@ -112,7 +116,7 @@ internal fun TvOwnerRows(
                     step = next
                 }
                 val add = remember { FocusRequester() }.also { addRows[id] = it }
-                TvManagePart(part, onOpen = open, onAdd = { adds.adding = id }, holds = { holds(id, it) }, addRequester = add)
+                TvManagePart(part, onOpen = open, onAdd = { adds.adding = id }, requesters = people, holds = { holds(id, it) }, addRequester = add)
             }
         }
         TvTextRow(HouseholdWords.CREATE_A_HOUSEHOLD, onClick = { go(TvHouseholdStep.CreateName()) }, holds(NEW).fillMaxWidth().padding(top = Spacing.medium), create)

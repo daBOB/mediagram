@@ -41,9 +41,10 @@ import ui.tv.rememberStableRequester
  * opens something ([onClick]). Focused, the name takes the accent and
  * underline every TV text row does ([TvFocus.textStyle]). With no [onClick] —
  * someone the manager may not change — it is no control, and the remote
- * passes over it. A row with no line is an action, Add someone's: no ›, as it
- * opens a question rather than someone's controls. [description] names the
- * row where its words alone would not tell it from its like.
+ * passes over it, but it is still one thing said. A row with no line is an
+ * action, Add someone's: no ›, as it opens a question rather than someone's
+ * controls. [description] names the row, in place of its words, where they
+ * alone would not tell it from its like.
  */
 @Composable
 internal fun TvPersonRow(
@@ -61,13 +62,13 @@ internal fun TvPersonRow(
     val ink = if (focused) colors.primary else colors.onSurfaceVariant
     val press =
         if (onClick == null) {
-            Modifier
+            Modifier.semantics(mergeDescendants = true) {}
         } else {
             Modifier
                 .focusRequester(requester)
                 .onFocusChanged { focused = it.isFocused }
                 .clickable(indication = null, interactionSource = null, onClick = onClick)
-                .semantics { description?.let { contentDescription = it } }
+                .then(description?.let { Modifier.clearAndSetSemantics { contentDescription = it } } ?: Modifier)
         }
     Row(
         modifier = modifier.fillMaxWidth().then(press).padding(vertical = Spacing.extraSmall),

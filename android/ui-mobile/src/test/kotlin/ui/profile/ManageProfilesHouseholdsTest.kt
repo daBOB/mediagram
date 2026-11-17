@@ -4,6 +4,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
@@ -49,6 +50,23 @@ class ManageProfilesHouseholdsTest : ManageScreenHarness() {
         show(ManageUiState.Managing(andre, grownUps = listOf(maja, ida), kids = listOf(lea, tim), households = live))
         val add = HouseholdWords.ADD_SOMEONE
         assertEquals(listOf("Home", add, "Loft", add, "Flat", add), drawn("Home", "Loft", "Flat"))
+    }
+
+    // A household the list does not name yet keeps its people, unheaded: the web draws no heading for it.
+    @Test fun aHouseholdTheListDoesNotNameYetHasNoHeading() {
+        val ned = Profile("ned", "Ned", admin = true, hasPin = true, household = "barn")
+        show(ManageUiState.Managing(andre, grownUps = listOf(maja, ida, ned), kids = listOf(lea, tim), households = live))
+        val add = HouseholdWords.ADD_SOMEONE
+        assertEquals(listOf("Home", add, "Loft", add, "Flat", add, add), drawn("Home", "Loft", "Flat", "barn"))
+        compose.onNode(personRow("Ned")).assertExists()
+    }
+
+    // Someone the owner may not change is one thing said, their name with their line, and no button.
+    @Test fun aReadOnlyRowIsReadAsOne() {
+        val test = Profile("test", "test", hasPin = true)
+        val kim = Profile("kim", "Kim", kids = true, kidsAge = 6, parentId = "test")
+        show(ManageUiState.Managing(andre, listOf(test), listOf(lea), households = live, everyone = listOf(andre, test, lea, kim)))
+        compose.onNode(hasText("Kim") and hasText("Kid · test · FSK 6") and !hasClickAction()).assertExists()
     }
 
     @Test fun anotherHouseholdsRowsKeepTheirActions() {

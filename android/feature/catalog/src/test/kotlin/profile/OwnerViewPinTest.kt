@@ -33,6 +33,21 @@ class OwnerViewPinTest : HouseholdsOwnerHarness() {
             assertEquals(6, profile("m").kidsAge)
         }
 
+    /** The television's Back from the owner's view is Who's managing? again: a fresh question, so the owner's tile asks their PIN again. */
+    @Test
+    fun backToTheTilesThenTheOwnersTileAsksThePinAgain() =
+        runTest(UnconfinedTestDispatcher()) {
+            val (manage) = page()
+            manage.open()
+            manage.actAs("a")
+            manage.enterPin("1234")
+            assertEquals("andre", manage.view().actor.name)
+            manage.open()
+            assertNull(ownerPin.held)
+            manage.actAs("a")
+            assertEquals(ownersPin, manage.pin.value)
+        }
+
     /** The television's households panel closes the part as it goes, while Manage still shows the owner's view. */
     @Test
     fun leavingAHouseholdStepKeepsTheOwnerViewAndItsPinUntilThePageIsLeft() =

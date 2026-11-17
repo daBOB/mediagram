@@ -1,5 +1,7 @@
 package ui.profile
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
@@ -121,6 +123,8 @@ class ManageProfilesScreenTest : ManageScreenHarness() {
     @Test fun theAdminAddsAGrownUpByName() {
         show(ManageUiState.Managing(andre, emptyList(), emptyList()))
         openAdd()
+        // Grown-up or Kid is one group, named as the web's is.
+        compose.onNode(hasContentDescription(HouseholdWords.ADD_SOMEONE) and SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup)).assertExists()
         compose.onNode(hasSetTextAction() and hasContentDescription("Add a grown-up: name")).performTextInput("Carl")
         compose.onNodeWithText("Add a grown-up").performClick()
         assertEquals(listOf("addGrownUp Carl"), calls)

@@ -2,6 +2,7 @@ package ui.tv.profile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import catalog.profile.ManagePart
@@ -17,22 +18,24 @@ import model.HouseholdWords
  * ([onOpen]): the manager's own PIN, a kid's limits, a grown-up's PIN;
  * someone they may not change opens nothing. Then one Add someone ([onAdd])
  * where adding is offered, named for its household where each has its own.
- * [first] is the first row's, [addRequester] Add someone's; [holds] marks
- * the row holding the remote, by person, null for Add someone.
+ * Each row's requester goes into [requesters], by person, [addRequester] is
+ * Add someone's; [holds] marks the row holding the remote, by person, null
+ * for Add someone.
  */
 @Composable
 internal fun TvManagePart(
     part: ManagePart,
     onOpen: (TvManageStep) -> Unit,
     onAdd: () -> Unit,
-    first: FocusRequester? = null,
+    requesters: MutableMap<String, FocusRequester>,
     holds: (id: String?) -> Modifier = { Modifier },
     addRequester: FocusRequester? = null,
 ) {
-    part.people.forEachIndexed { index, person ->
-        key(person.profile.id) {
-            val step = stepFor(person)
-            TvPersonRow(person.profile.name, person.line, step?.let { { onOpen(it) } }, holds(person.profile.id), first.takeIf { index == 0 })
+    for (person in part.people) {
+        val id = person.profile.id
+        key(id) {
+            val requester = remember { FocusRequester() }.also { requesters[id] = it }
+            TvPersonRow(person.profile.name, person.line, stepFor(person)?.let { { onOpen(it) } }, holds(id), requester)
         }
     }
     if (part.addsSomeone) {

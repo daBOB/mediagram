@@ -153,8 +153,8 @@ class TvWhoIsManagingTest : TvProfilesHarness() {
     @Test
     fun addSomeoneAsksGrownUpOrKidFirst() {
         ownersView()
-        compose.onAllNodes(rowOf(HouseholdWords.ADD_SOMEONE)).assertCountEquals(2)
-        walkTo(rowOf(HouseholdWords.ADD_SOMEONE), Key.DirectionDown)
+        compose.onAllNodes(hasContentDescription(HouseholdWords.ADD_SOMEONE_TO, substring = true)).assertCountEquals(2)
+        walkTo(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} Home"), Key.DirectionDown)
         press(Key.DirectionCenter)
         compose.onNodeWithText("${HouseholdWords.ADD_SOMEONE} · Home").assertExists()
         compose.onNode(rowOf(HouseholdWords.GROWN_UP)).assertIsFocused()
@@ -172,7 +172,7 @@ class TvWhoIsManagingTest : TvProfilesHarness() {
     fun addSomeoneUnderAHouseholdSendsThatHousehold() {
         ownersView()
         walkTo(rowOf(flat), Key.DirectionDown)
-        walkTo(rowOf(HouseholdWords.ADD_SOMEONE), Key.DirectionDown)
+        walkTo(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} Flat"), Key.DirectionDown)
         press(Key.DirectionCenter)
         compose.onNodeWithText("${HouseholdWords.ADD_SOMEONE} · Flat").assertExists()
         press(Key.DirectionCenter)

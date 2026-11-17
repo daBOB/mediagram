@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.platform.app.InstrumentationRegistry
 import catalog.profile.ManageUiState
+import catalog.profile.PinPrompt
 import model.Profile
 import org.junit.Before
 import ui.common.profile.ManageActions
@@ -46,9 +47,12 @@ abstract class TvManageProfilesHarness : TvScreenStateTest() {
 
     private val shown = mutableStateOf<ManageUiState>(ManageUiState.Closed)
 
+    /** The PIN Manage asks for, as the view model hands it on; given up, it is gone. */
+    protected val prompt = mutableStateOf<PinPrompt?>(null)
+
     protected fun manage(state: ManageUiState) {
         shown.value = state
-        show { TvManageProfiles(shown.value, actions) }
+        show { TvManageProfiles(shown.value, actions, prompt = prompt.value, onCancelPin = { prompt.value = null }) }
     }
 
     /** The panel's next answer, as the view model hands it on: [edit] of what it shows, one more answered. */

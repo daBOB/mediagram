@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import catalog.profile.CHANGE_YOUR_PIN
 import catalog.profile.ManageUiState
+import catalog.profile.PinPrompt
 import model.HouseholdWords
 import model.Profile
 import org.junit.Test
@@ -114,6 +115,21 @@ class TvManageProfilesStateTest : TvManageProfilesHarness() {
         press(Key.DirectionCenter)
         press(Key.DirectionCenter)
         assertEquals(listOf("pin b"), calls)
+    }
+
+    /** A PIN pad stands in for the rows while it asks; once it is done, the remote is back on the person it was asked for. */
+    @Test
+    fun afterAPinPadTheRemoteIsBackOnThatPerson() {
+        manage(ManageUiState.Managing(andre, listOf(bea), emptyList()))
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        press(Key.DirectionCenter)
+        assertEquals(listOf("pin b"), calls)
+        compose.runOnUiThread { prompt.value = PinPrompt("A new PIN for Bea", newPin = true) }
+        compose.onNodeWithText("A new PIN for Bea").assertExists()
+        compose.runOnUiThread { prompt.value = null }
+        compose.waitForIdle()
+        row("Bea").assertIsFocused()
     }
 
     /** The manager's own row says what OK on it does — Change your PIN — and the bottom of a long panel is reached by walking down. */

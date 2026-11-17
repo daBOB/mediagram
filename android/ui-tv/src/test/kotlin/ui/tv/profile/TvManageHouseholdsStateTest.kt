@@ -22,9 +22,9 @@ class TvManageHouseholdsStateTest : TvOwnerViewHarness() {
     fun everyHouseholdsHeaderPeopleAndAddsAreReachedWalkingDown() {
         val walk =
             listOf(
-                "Home · Admin andre", "andre", "Lea", HouseholdWords.ADD_SOMEONE,
-                "Loft · Admin Ida", "Ida", HouseholdWords.ADD_SOMEONE,
-                "Flat · Admin Maja", "Maja", "Tim", HouseholdWords.ADD_SOMEONE,
+                "Home · Admin andre", "andre", "Lea", "${HouseholdWords.ADD_SOMEONE_TO} Home",
+                "Loft · Admin Ida", "Ida", "${HouseholdWords.ADD_SOMEONE_TO} Loft",
+                "Flat · Admin Maja", "Maja", "Tim", "${HouseholdWords.ADD_SOMEONE_TO} Flat",
                 HouseholdWords.CREATE_A_HOUSEHOLD, DONE,
             )
         walk.forEachIndexed { index, row ->
@@ -78,7 +78,7 @@ class TvManageHouseholdsStateTest : TvOwnerViewHarness() {
         press(Key.DirectionCenter)
         assertEquals(listOf("remove ida"), calls)
         compose.onAllNodesWithText("Ida", substring = true).assertCountEquals(1)
-        compose.onAllNodesWithText(HouseholdWords.ADD_SOMEONE).assertCountEquals(3)
+        compose.onAllNodes(ownersAddSomeone).assertCountEquals(3)
         focusedOn("Loft · Admin Ida")
         press(Key.DirectionDown)
         press(Key.DirectionCenter)

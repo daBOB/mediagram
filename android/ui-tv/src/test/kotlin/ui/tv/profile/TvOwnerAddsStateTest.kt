@@ -31,7 +31,7 @@ class TvOwnerAddsStateTest : TvOwnerViewHarness() {
     @Test
     fun aRefusedAddKeepsWhatWasChosenAndSaysWhyOnItsStep() {
         walkTo(hasText("Flat · Admin Maja", substring = true))
-        walkTo(hasText(HouseholdWords.ADD_SOMEONE))
+        walkTo(ownersAddSomeone)
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
@@ -67,7 +67,7 @@ class TvOwnerAddsStateTest : TvOwnerViewHarness() {
     @Test
     fun aCancelledAddForgetsItsRefusal() {
         walkTo(hasText("Flat · Admin Maja", substring = true))
-        walkTo(hasText(HouseholdWords.ADD_SOMEONE))
+        walkTo(ownersAddSomeone)
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
@@ -80,11 +80,22 @@ class TvOwnerAddsStateTest : TvOwnerViewHarness() {
         repeat(4) { back() }
         compose.onNode(hasContentDescription("${HouseholdWords.ADD_SOMEONE_TO} Flat")).assertIsFocused()
         compose.onAllNodesWithText("That name is taken.").assertCountEquals(0)
-        walkTo(hasText(HouseholdWords.ADD_SOMEONE))
+        walkTo(ownersAddSomeone)
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
         compose.onNodeWithTag(TvTextQuestionFieldTag).assertExists()
         compose.onAllNodesWithText("That name is taken.").assertCountEquals(0)
+    }
+
+    /** A household its list does not name yet keeps its people, as on the web, but its Add someone names no raw id. */
+    @Test
+    fun anUnnamedHouseholdsAddSomeoneNamesNoHousehold() {
+        change { it.copy(grownUps = it.grownUps + Profile("ned", "Ned", admin = true, hasPin = true, household = "barn")) }
+        walkTo(hasText("Ned"))
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        compose.onNodeWithText(HouseholdWords.ADD_SOMEONE).assertExists()
+        compose.onAllNodesWithText("barn", substring = true).assertCountEquals(0)
     }
 }

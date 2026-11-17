@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.profile.DONE
@@ -96,15 +97,18 @@ private fun TvManaging(
     var step by remember { mutableStateOf<TvManageStep>(TvManageStep.List) }
     val part = state.parts().first()
     TvManageAdds(state, actions, prompt, onPin, onCancelPin) { adds, notice ->
-        val first = remember { FocusRequester() }
+        val people = remember { mutableMapOf<String, FocusRequester>() }
         val add = remember { FocusRequester() }
-        // Again whenever someone leaves the list — the row the remote was on may be the one that went — and back from an add on Add someone.
+        // Again whenever someone leaves the list — the row the remote was on may be the one that went —
+        // back from an add on Add someone, and back from a PIN pad on the person it was asked from.
         LaunchedEffect(state.grownUps.size, state.kids.size) {
-            (if (adds.backTo != null) add else first).requestFocus()
+            val held = adds.holding?.first?.takeIf { id -> part.people.any { it.profile.id == id } }
+            (if (adds.backTo != null) add else people.getValue(held ?: state.actor.id)).requestFocus()
             adds.backTo = null
         }
+        val holds = { id: String? -> Modifier.onFocusChanged { if (it.isFocused) adds.holding = id?.let { one -> one to part.form } } }
         TvManagePage(managingAs(state.actor.name), notice) {
-            TvManagePart(part, onOpen = { step = it }, onAdd = { adds.adding = part.form }, first = first, addRequester = add)
+            TvManagePart(part, onOpen = { step = it }, onAdd = { adds.adding = part.form }, requesters = people, holds = holds, addRequester = add)
             TvTextRow(DONE, onClick = actions.onClose, modifier = Modifier.fillMaxWidth().padding(top = Spacing.medium))
         }
         TvManageDialog(step, state, actions) { step = it }
