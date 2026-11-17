@@ -9,6 +9,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import model.Progress
 import player.PlayerViewModel
 import player.open
 import player.pauseIfDisplayLostWhileAway
@@ -106,9 +107,10 @@ fun PlayerNavigationEffects(
     fsk: String?,
     handPicked: Boolean,
     onSwitch: (setId: String, run: List<String>) -> Unit,
+    cutPosition: (() -> Progress?)? = null,
 ) {
     val pendingSwitch by viewModel.pendingSwitch.collectAsStateWithLifecycle()
-    LaunchedEffect(setId) { viewModel.open(setId, run, fsk, handPicked) }
+    LaunchedEffect(setId) { viewModel.open(setId, run, fsk, handPicked, cutPosition) }
     // The run alone changing (the catalog finishing its own load after this
     // title already opened) must not reopen the title — `open` would, since
     // that is not `sameTitle` to it either; only the run itself moves.

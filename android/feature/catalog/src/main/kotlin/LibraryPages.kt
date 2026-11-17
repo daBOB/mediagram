@@ -64,7 +64,10 @@ fun libraryPagesOf(
     now: Long,
 ): LibraryPages {
     val byId = allSetsById(shelves)
-    val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
+    val films = filmIndexOf(shelves).values
+    val watchedIds = filmsWatched(watch.watched.mapTo(HashSet()) { it.setId }, films)
+    // Every Continue row below sees a film held more than once once.
+    val continuing = watch.continuing(shelves)
 
     fun entriesOf(department: Department) = shelves.firstOrNull { it.department == department }?.entries.orEmpty()
     fun collectionsOf(department: Department) = entriesOf(department).filterIsInstance<Entry.Collection>()
@@ -76,7 +79,7 @@ fun libraryPagesOf(
                 magazine =
                     magazineHomeOf(
                         shelves,
-                        watch,
+                        continuing,
                         editorsChoice = watch.editorsChoice,
                         now = now,
                         heldIds = heldIds,
@@ -86,22 +89,22 @@ fun libraryPagesOf(
             ),
         latest = latestOf(shelves, posterLimit = LATEST_PAGE_LIMIT, limit = LATEST_PAGE_LIMIT),
         movies = moviesDepartmentOf(filmsOf(Department.MOVIES)) { it in watchedIds },
-        series = showsDepartmentOf(Kind.EPISODE, collectionsOf(Department.SERIES), byId, watch, heldIds),
+        series = showsDepartmentOf(Kind.EPISODE, collectionsOf(Department.SERIES), byId, continuing, heldIds),
         anime =
             animeDepartmentOf(
                 AnimeLibrary(shows = collectionsOf(Department.ANIME), films = filmsOf(Department.ANIME)),
                 byId,
-                watch,
+                continuing,
                 heldIds,
             ),
         documentaries =
             documentariesDepartmentOf(
                 DocumentaryLibrary(collections = collectionsOf(Department.DOCUMENTARIES), singles = filmsOf(Department.DOCUMENTARIES)),
                 byId,
-                watch,
+                continuing,
                 heldIds,
             ),
-        tutorials = showsDepartmentOf(Kind.TUTORIAL, collectionsOf(Department.TUTORIALS), byId, watch, heldIds),
+        tutorials = showsDepartmentOf(Kind.TUTORIAL, collectionsOf(Department.TUTORIALS), byId, continuing, heldIds),
         continueWall = continueWall(shelves, watch),
         watchlistWall = watchlistWall(shelves, watch),
     )

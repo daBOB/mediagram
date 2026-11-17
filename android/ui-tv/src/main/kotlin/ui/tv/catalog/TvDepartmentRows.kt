@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.GenreIndexEntry
 import catalog.factsLine
+import catalog.heldOf
+import catalog.versionsBadgeOf
 import catalog.keyOf
 import catalog.spelledCountOf
 import designsystem.tvDp
@@ -96,7 +98,8 @@ internal fun DeptRow(
                     onOpen = { onOpenTitle(set.setId) },
                     modifier = Modifier.width(plateWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
                     caption = factsLine(set.year, set.durationSecs),
-                    held = set.setId in heldIds,
+                    meta = versionsBadgeOf(set),
+                    held = heldOf(set, heldIds),
                     backdropPath = set.backdropPath?.let(::File),
                     inRow = true,
                 )

@@ -46,7 +46,8 @@ fun filmOverviewFacts(
 ): List<FactRow> =
     listOfNotNull(
         words("Released", set.year?.takeIf { it > 0 }?.toString()),
-        words("Runtime", humanDuration(set.durationSecs)),
+        // A film held more than once gives each copy's runtime on its own row instead.
+        words("Runtime", humanDuration(set.durationSecs).takeIf { set.versions.isEmpty() }),
         words("Rated", set.ageLabel()),
         words("Score", ratingLabel(info?.rating)),
         set.genres.takeIf { it.isNotEmpty() }?.let { "Genres" to FactValue.Genres(it) },

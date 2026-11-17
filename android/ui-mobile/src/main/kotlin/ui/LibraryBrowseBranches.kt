@@ -121,6 +121,7 @@ internal fun MoviesPageFrame(
     menuActions: MenuActions,
     profileBar: ProfileBarState,
     browse: BrowseActions,
+    play: (setId: String) -> Unit,
 ) {
     val shelf = (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.department == Department.MOVIES }
     LibraryBranch(Destination.MoviesPage, menuActions, profileBar, browse, at, at::pop) {
@@ -137,7 +138,7 @@ internal fun MoviesPageFrame(
                 view = ShelfViewChoice(chosenView, shelfViewModel::choose),
                 onOpenTitle = at::openTitle,
                 onOpenCollection = at::openCollection,
-                films = FilmShelfActions(onPlay = { at.openPlayer(it.setId) }, titleInfo = catalogViewModel::titleInfo),
+                films = FilmShelfActions(onPlay = { play(it.setId) }, titleInfo = catalogViewModel::titleInfo),
             )
         }
     }

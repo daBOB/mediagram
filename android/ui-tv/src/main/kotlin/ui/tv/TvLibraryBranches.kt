@@ -3,6 +3,7 @@ package ui.tv
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,6 +26,8 @@ import ui.tv.catalog.TvStatsRailKey
 import ui.tv.chrome.LocalNewAchievement
 import ui.tv.player.TvCastOver
 import ui.tv.player.TvPlayerScreen
+import ui.common.catalog.VersionAsk
+import ui.common.catalog.cutPositionOf
 import ui.tv.profile.TvChosenProfile
 
 /**
@@ -51,11 +54,12 @@ internal fun TvPlayerBranch(
     val catalogState by (if (at.casting) catalog.unfiltered else catalog.state).collectAsStateWithLifecycle()
     val set = catalogState.mediaSet(setId)
     val run = at.run ?: set?.let { runFor(it, catalogState) }.orEmpty()
+    val cutPosition = remember(setId, catalogState) { cutPositionOf(catalogState, setId) }
     val player: PlayerViewModel = hiltViewModel()
     TvCastOver(player, onCastOver)
     TvMediagramPlayerTheme {
         TvPlayerScreen(
-            setId = setId, set = set, run = run, handPicked = at.run != null,
+            setId = setId, set = set, run = run, handPicked = at.run != null, cutPosition = cutPosition,
             // Back out of a cast ends it, and goes where any end of one goes.
             onBack = if (at.casting) onCastOver else leave, onSwitch = at::replacePlayer, viewModel = player,
         )
@@ -85,6 +89,7 @@ internal fun TvLibraryHomeFrame(
     pendingTab: String?,
     onPendingTabHandled: () -> Unit,
     onOpenGames: () -> Unit,
+    ask: VersionAsk,
     onOpenMenu: () -> Unit,
 ) {
     // Worked out where the rail is drawn — here and [TvFrameChrome] — so nothing reads while a title plays.
@@ -154,7 +159,7 @@ internal fun TvLibraryHomeFrame(
                 // page every other plate on this screen opens.
                 onPlay = { setId ->
                     restore.opened(here, setId)
-                    at.openPlayer(setId)
+                    ask.play(setId)
                 },
                 onToggleWatchlist = catalogViewModel::setWatchlisted,
             )

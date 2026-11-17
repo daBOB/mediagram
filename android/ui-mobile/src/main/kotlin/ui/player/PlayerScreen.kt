@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.round
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import model.Progress
 import model.together.Playback
 import player.CastSenderViewModel
 import player.PlayerUiState
@@ -67,6 +68,7 @@ fun PlayerScreen(
     onBack: () -> Unit,
     onSwitch: (setId: String, run: List<String>) -> Unit,
     onCast: (id: Int) -> Unit,
+    cutPosition: (() -> Progress?)? = null,
     viewModel: PlayerViewModel = hiltViewModel(),
     cast: CastSenderViewModel = hiltViewModel(),
 ) {
@@ -88,7 +90,7 @@ fun PlayerScreen(
     // Taken by the TV, the title is stopped and saved here, as closing does, before the remote takes the frame:
     // the frame's own leaving keeps a player in picture-in-picture playing.
     CastAskHost(onOn = { id -> viewModel.stop(); onCast(id) }, sender = cast)
-    PlayerNavigationEffects(viewModel, setId, run, fsk, handPicked, onSwitch)
+    PlayerNavigationEffects(viewModel, setId, run, fsk, handPicked, onSwitch, cutPosition)
     PlayerLifecycleEffects(
         viewModel,
         // The countdown drops `isPlaying` (the title has ended) and the gate

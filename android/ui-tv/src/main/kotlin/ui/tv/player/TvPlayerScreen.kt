@@ -23,6 +23,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Overscan
 import model.MediaSet
+import model.Progress
 import player.PlayerUiState
 import player.toggleSubtitles
 import player.PlayerViewModel
@@ -65,6 +66,7 @@ fun TvPlayerScreen(
     onBack: () -> Unit,
     onSwitch: (setId: String, run: List<String>) -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
+    cutPosition: (() -> Progress?)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
@@ -83,7 +85,7 @@ fun TvPlayerScreen(
     val failed = state is PlayerUiState.Failed
     PlayerLifecycle(viewModel)
     TvDisplayModeMatch(player)
-    PlayerNavigationEffects(viewModel, setId, run, set?.fsk, handPicked, onSwitch)
+    PlayerNavigationEffects(viewModel, setId, run, set?.fsk, handPicked, onSwitch, cutPosition)
     // The phone's rule: the countdown drops playing (the title has ended)
     // and the wait for the next title's buffer pauses on purpose; neither
     // is a viewer looking away.

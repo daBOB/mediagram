@@ -7,7 +7,10 @@ import catalog.SetCard
 import model.episodeLabel
 import catalog.extentOf
 import catalog.factsLine
-import catalog.watchedFractionOf
+import catalog.heldOf
+import catalog.playedOf
+import catalog.versionsBadgeOf
+import ui.common.catalog.cardProgressOf
 import java.io.File
 import model.Progress
 
@@ -43,9 +46,11 @@ internal fun TvEntryPlate(
                 // The year and the runtime, as the phone's shelf plate sets
                 // them: the line that tells two versions of a title apart.
                 caption = factsLine(entry.set.year, entry.set.durationSecs),
-                progress = watchedFractionOf(positions[entry.set.setId]),
-                watched = entry.set.setId in watchedIds,
-                held = entry.set.setId in heldIds,
+                // A film held more than once: how many copies, played or held when any copy is, its newest place.
+                meta = versionsBadgeOf(entry.set),
+                progress = cardProgressOf(entry.set, positions),
+                watched = playedOf(entry.set, watchedIds),
+                held = heldOf(entry.set, heldIds),
                 backdropPath = entry.set.backdropPath?.let(::File),
                 inRow = inRow,
             )
@@ -99,7 +104,7 @@ internal fun TvSetPlate(
         posterPath = set.posterPath?.let(::File),
         onOpen = onOpen,
         modifier = modifier,
-        meta = listOfNotNull(set.show, episodeLabel(set).ifEmpty { null }).joinToString(" · ").ifEmpty { null },
+        meta = listOfNotNull(set.show, episodeLabel(set).ifEmpty { null }, versionsBadgeOf(set)).joinToString(" · ").ifEmpty { null },
         // Where this viewer stopped, or "Next up" — the difference between
         // the two is what the row is for.
         caption = card.caption.ifEmpty { null },
