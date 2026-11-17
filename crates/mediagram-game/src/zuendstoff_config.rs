@@ -24,6 +24,8 @@ pub struct ZuendstoffConfig {
     /// A tap this long before the landing, or `catch_after_ms` after it, catches.
     pub catch_before_ms: ServerTime,
     pub catch_after_ms: ServerTime,
+    /// After a catch the catcher may throw this long later, so a second Fangen! tap throws nothing.
+    pub catch_guard_ms: ServerTime,
     /// A dropped bomb can be thrown again this long after it landed.
     pub pickup_ms: ServerTime,
     /// How long the explosion stays on screen before the next round.
@@ -44,6 +46,7 @@ impl Default for ZuendstoffConfig {
             flight_ms: 1000.0,
             catch_before_ms: 400.0,
             catch_after_ms: 400.0,
+            catch_guard_ms: 600.0,
             pickup_ms: 2000.0,
             boom_ms: 4500.0,
             early_tolerance_ms: 150.0,

@@ -3,7 +3,8 @@
 
 use crate::game::{ViewCtx, name, unasked};
 use crate::protocol::{
-    AnswerColor, Buzz, ChoiceOption, PhoneScreen, PlayerId, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat, ZuendstoffStage,
+    AnswerColor, Buzz, ChoiceOption, PhoneScreen, PlayerId, ServerTime, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat,
+    ZuendstoffStage,
 };
 use crate::zuendstoff::ZuendstoffGame;
 use crate::zuendstoff_config::{Catch, Stage};
@@ -106,7 +107,8 @@ impl ZuendstoffGame {
     pub(crate) fn buzz(&self, player: PlayerId) -> Option<Buzz> {
         match self.stage {
             Stage::Boom { victim, .. } if victim == player => Some(Buzz::Wrong),
-            _ if self.bearer() == Some(player) => Some(Buzz::Turn),
+            // the target's phone buzzes from the throw, before the bomb leaves the hand
+            _ if self.bearer(ServerTime::INFINITY) == Some(player) => Some(Buzz::Turn),
             _ => None,
         }
     }

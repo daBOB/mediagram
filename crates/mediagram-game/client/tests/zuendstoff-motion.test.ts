@@ -77,7 +77,8 @@ test("after a drop the holder falls, then picks the bomb up and stands by the ti
 });
 
 test("after a catch the catcher finishes the leap and the thrower its follow-through, then both idle facing the middle", () => {
-  const hold: ZuendstoffStage = { stage: "hold", holder: 12, ready_at: LANDS, dropped: false };
+  // the host makes a catcher wait 600 ms after the tick that saw the catch, so a second tap throws nothing
+  const hold: ZuendstoffStage = { stage: "hold", holder: 12, ready_at: LANDS + 650, dropped: false };
   const f = at(hold, LANDS + 500, flight(true));
   expect(f.poses[2].clip).toBe(CLIP.catch);
   expect(f.poses[2].at).toBeCloseTo(1.35);

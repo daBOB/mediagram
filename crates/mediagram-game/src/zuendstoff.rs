@@ -55,11 +55,11 @@ impl ZuendstoffGame {
         players.iter().map(|p| p.id).filter(|&id| id != holder && self.alive(id)).collect()
     }
 
-    /// Who the bomb is on: its holder, or mid-flight the one it was thrown to.
-    pub(crate) fn bearer(&self) -> Option<PlayerId> {
+    /// Who the bomb is on at `now`: its holder, the thrower until it leaves the hand, then the one it was thrown to.
+    pub(crate) fn bearer(&self, now: ServerTime) -> Option<PlayerId> {
         match self.stage {
             Stage::Hold { ask, .. } => Some(ask.who()),
-            Stage::Flight { to, .. } => Some(to),
+            Stage::Flight { from, to, thrown_at, .. } => Some(if now < thrown_at + self.cfg.throw_lead_ms { from } else { to }),
             Stage::Boom { .. } | Stage::Final => None,
         }
     }
@@ -86,9 +86,9 @@ impl ZuendstoffGame {
         }
     }
 
-    /// The bomb lands by `to`: in their hands if `caught`, else at their feet.
-    fn land(&mut self, to: PlayerId, lands_at: ServerTime, caught: bool) {
-        let ready_at = if caught { lands_at } else { lands_at + self.cfg.pickup_ms };
+    /// The bomb lands by `to`, seen at `now`: in their hands if `caught`, else at their feet.
+    fn land(&mut self, to: PlayerId, lands_at: ServerTime, caught: bool, now: ServerTime) {
+        let ready_at = if caught { now + self.cfg.catch_guard_ms } else { lands_at + self.cfg.pickup_ms };
         self.stage = Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: !caught };
     }
 
@@ -119,7 +119,7 @@ impl Game for ZuendstoffGame {
         let now = ctx.now;
         match self.stage {
             Stage::Hold { ask, ready_at, dropped: false }
-                if player == ask.who() && now >= ready_at - self.cfg.early_tolerance_ms =>
+                if player == ask.who() && now >= ready_at - self.cfg.early_tolerance_ms && now < self.fuse_at =>
             {
                 let Some(&to) = self.targets(ctx.players, player).get(usize::from(index)) else {
                     return Err(ActionError::NotAllowed("Diesen Mitspieler gibt es nicht."));
@@ -140,7 +140,7 @@ impl Game for ZuendstoffGame {
         let now = ctx.now;
         // The fuse comes first: it goes off on whoever the bomb is on, caught or not.
         if now >= self.fuse_at
-            && let Some(victim) = self.bearer()
+            && let Some(victim) = self.bearer(now)
         {
             return self.explode(victim, now);
         }
@@ -158,7 +158,7 @@ impl Game for ZuendstoffGame {
             Stage::Flight { to, lands_at, catch, .. }
                 if now >= lands_at && (catch != Catch::Pending || now >= lands_at + self.cfg.catch_after_ms) =>
             {
-                self.land(to, lands_at, catch == Catch::Caught);
+                self.land(to, lands_at, catch == Catch::Caught, now);
             }
             Stage::Boom { victim, ends_at } if now >= ends_at => {
                 let alive: Vec<PlayerId> = ctx.players.iter().map(|p| p.id).filter(|&id| self.alive(id)).collect();

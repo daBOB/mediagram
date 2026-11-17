@@ -31,9 +31,9 @@ Carried over from today's Zündstoff (decided 2026-11-14, not reopened):
 - **No question before throwing** any more: the question deck leaves Zündstoff.
 - **Catch window**: the Fangen! key is live from 400 ms before the landing to 400 ms after (plus the usual
   150 ms clock tolerance). A tap before the window opens is a fumble and counts as a miss, so mashing doesn't work.
-- **After a catch** the catcher can throw at once. **After a miss** the phone shows the names again after ~2 s;
+- **After a catch** the catcher can throw 0.6 s later, so a second tap on Fangen! throws nothing (review fix, 2026-11-17). **After a miss** the phone shows the names again after ~2 s;
   the avatar picks the bomb up (pick-up clip) before throwing.
-- **Fuse runs out mid-flight**: the bomb goes off on the player it was thrown to. A dropped bomb belongs to the
+- **Fuse runs out mid-flight**: the bomb goes off on the player it was thrown to; during the 0.6 s wind-up, while it is still in the throwing hand, on the thrower. A throw tapped after the fuse ran out does not count. A dropped bomb belongs to the
   player at whose feet it lies.
 - **Throwing straight back is allowed**: the holder may throw to anyone still in, including whoever just threw.
 - **Away players** never catch (always a miss); the house throws for them after the usual delay.

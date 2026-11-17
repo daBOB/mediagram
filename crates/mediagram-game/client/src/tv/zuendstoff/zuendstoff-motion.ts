@@ -103,8 +103,10 @@ function target(lands: number, caught: boolean | null, now: number): Pose | null
 function landed(h: Hold, last: Flight | null): { lands: number; caught: boolean } | null {
   if (h.dropped) return { lands: h.ready_at - PICKUP_MS, caught: false };
   if (!last || last.to !== h.holder) return null;
-  if (Math.abs(h.ready_at - last.lands_at) < 1) return { lands: last.lands_at, caught: true };
-  if (Math.abs(h.ready_at - PICKUP_MS - last.lands_at) < 1) return { lands: last.lands_at, caught: false };
+  // A catch makes the bomb ready within a second of the landing, a drop only after the pick-up.
+  const after = h.ready_at - last.lands_at;
+  if (after >= 0 && after < PICKUP_MS - 1) return { lands: last.lands_at, caught: true };
+  if (Math.abs(after - PICKUP_MS) < 1) return { lands: last.lands_at, caught: false };
   return null;
 }
 

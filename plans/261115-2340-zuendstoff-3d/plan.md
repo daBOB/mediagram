@@ -16,7 +16,7 @@
 - No question anywhere. No clock or fuse hint on the TV or phones.
 - Throw: the holder's phone lists everyone else still in (seat order); one tap throws. Throwing straight back is allowed.
 - Flight ≈ 1 s. The target's Fangen! key looks live from the throw (no window hint). A tap from `lands_at − 400 ms − 150 ms` to `lands_at + 400 ms` catches; an earlier tap is a fumble (= miss); no tap = miss. A miss drops the bomb at the target's feet; they may throw again 2000 ms after the landing.
-- Fuse out during a flight: the target is hit. A dropped bomb belongs to the player it lies by.
+- Fuse out during a flight: the target is hit (during the throw's wind-up, the thrower). After a catch the catcher may throw `catch_guard_ms` (600) later. A dropped bomb belongs to the player it lies by.
 - Away players: the house throws for an away holder after the Ask grace (random target); an away target never catches.
 - Kids: no questions any more, so `kids: Kids::Plays`.
 - Clip names on the avatars (as `add-gestures.sh` tidied them): `Over_Shoulder_Throw`, `Leap_Right_And_Catch`, `Jump_To_Catch_And_Fall`, `Male_Bend_Over_Pick_Up`; blast victim `Falling_Down`; idle `Idle_15`.
@@ -67,4 +67,5 @@
 
 - [ ] Browser walk with the dev server (TV + 3 phones): throw, catch, fumble, drop and pick-up, boom, out, final; screenshots to `reports/`.
 - [ ] Frame rate with 8 avatars on the funstation (WayDroid), ≥ 30 fps.
-- [ ] Version bump (minor), changelog, `scripts/check.sh`, fresh review, merge, install on the funstation when the TV is idle.
+- [x] Version bump (minor, 0.194.0), changelog, `scripts/check.sh`, fresh review (fixed: a second Fangen! tap threw the bomb, a throw tapped after the fuse moved the loss, a wind-up blast hit the target; left: a TV joining mid-blast replays it), browser walk to the final ranking.
+- [ ] Merge, install on the funstation when the TV is idle.

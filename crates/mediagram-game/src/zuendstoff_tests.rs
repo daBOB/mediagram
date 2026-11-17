@@ -94,7 +94,7 @@ fn the_holder_throws_to_anyone_else_still_in_once_the_intro_is_over() {
 }
 
 #[test]
-fn a_tap_in_the_window_catches_and_the_catcher_may_throw_at_once_even_straight_back() {
+fn a_tap_in_the_window_catches_and_the_catcher_may_throw_soon_after_even_straight_back() {
     let mut t = Table::new(&["Ada", "Bo", "Cy"]);
     let cfg = t.game.cfg.clone();
     let from = t.holder();
@@ -103,10 +103,11 @@ fn a_tap_in_the_window_catches_and_the_catcher_may_throw_at_once_even_straight_b
     t.at(lands_at - cfg.catch_before_ms - cfg.early_tolerance_ms);
     t.tap(to, 0).unwrap();
     t.at(lands_at);
-    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at: lands_at, dropped: false });
+    let ready_at = lands_at + cfg.catch_guard_ms;
+    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: false });
 
     let back = t.throw(from);
-    assert_eq!(back, lands_at + cfg.throw_lead_ms + cfg.flight_ms, "thrown the moment it was caught");
+    assert_eq!(back, ready_at + cfg.throw_lead_ms + cfg.flight_ms, "thrown once the catch guard is over");
     t.now = back + cfg.catch_after_ms;
     t.tap(from, 0).unwrap();
     t.at(t.now);
@@ -199,6 +200,44 @@ fn the_fuse_costs_the_holder_a_life_and_they_start_the_next_round() {
     assert_eq!(t.game.lives_of(holder), 2);
     t.at(FUSE + t.game.cfg.boom_ms);
     assert_eq!((t.holder(), t.game.round), (holder, 2));
+}
+
+#[test]
+fn a_second_fangen_tap_right_after_the_catch_throws_nothing() {
+    let mut t = Table::new(&["Ada", "Bo", "Cy"]);
+    let cfg = t.game.cfg.clone();
+    let to = t.other();
+    let lands_at = t.throw(to);
+    t.now = lands_at + 250.0;
+    t.tap(to, 0).unwrap();
+    t.at(lands_at + 300.0);
+    // the finger lands on the same spot again, now the first name on the catcher's list
+    t.now = lands_at + 300.0 + cfg.catch_guard_ms - cfg.early_tolerance_ms - 1.0;
+    assert!(matches!(t.tap(to, 0), Err(ActionError::Ignored)));
+    assert_eq!(t.holder(), to);
+}
+
+#[test]
+fn a_throw_tapped_after_the_fuse_ran_out_is_ignored_and_the_holder_is_hit() {
+    let mut t = Table::new(&["Ada", "Bo", "Cy"]);
+    let holder = t.holder();
+    t.at(FUSE - 30.0);
+    t.now = FUSE + 10.0;
+    assert!(matches!(t.tap(holder, 0), Err(ActionError::Ignored)));
+    t.at(FUSE + 20.0);
+    assert!(matches!(t.game.stage, Stage::Boom { victim, .. } if victim == holder));
+}
+
+#[test]
+fn the_fuse_going_off_while_the_bomb_is_still_in_the_throwing_hand_hits_the_thrower() {
+    let mut t = Table::new(&["Ada", "Bo", "Cy"]);
+    let from = t.holder();
+    let to = t.other();
+    t.at(FUSE - t.game.cfg.throw_lead_ms + 100.0);
+    t.throw(to);
+    t.at(FUSE);
+    assert!(matches!(t.game.stage, Stage::Boom { victim, .. } if victim == from));
+    assert_eq!((t.game.lives_of(from), t.game.lives_of(to)), (2, 3));
 }
 
 #[test]
@@ -320,7 +359,8 @@ fn the_thrower_leaving_mid_flight_changes_nothing() {
     t.at(lands_at - 100.0);
     t.tap(to, 0).unwrap();
     t.at(lands_at);
-    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at: lands_at, dropped: false });
+    let ready_at = lands_at + t.game.cfg.catch_guard_ms;
+    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: false });
     assert_eq!(t.game.lives_of(from), 3);
 }
 
