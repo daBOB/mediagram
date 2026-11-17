@@ -5,15 +5,18 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -22,6 +25,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextDecoration
 import catalog.profile.ManageUiState
+import model.HouseholdWords
 import model.Profile
 import org.junit.After
 import org.junit.Rule
@@ -35,7 +39,7 @@ import ui.common.profile.ManageActions
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
-/** Manage profiles drawn from its state, section for section as `profile-manage.js` draws it. */
+/** Manage profiles drawn from its state as `profile-manage.js` draws it: Who's managing?, then one calm row per person that opens on a tap. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
 class ManageProfilesScreenTest {
@@ -74,12 +78,16 @@ class ManageProfilesScreenTest {
 
     private fun inDialog(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(isDialog()))
 
+    // Drawn in a tall window with no page scroll around it: a tap reaches every row as it is.
+    private fun opened(name: String) = compose.onNode(personRow(name)).performClick()
+
+    private fun openAdd() = compose.onNode(hasContentDescription(HouseholdWords.ADD_SOMEONE) and hasClickAction()).performClick()
+
     @Test fun whoAreYouOffersTheGrownUpsAndSaysWhyItAsksAgain() {
         show(ManageUiState.ChoosingActor(listOf(andre, bea), notice = "Your PIN is no longer valid. Choose who you are again."))
-        compose.onNodeWithText("Manage profiles").assertExists()
-        compose.onNodeWithText("Who are you?").assertExists()
+        compose.onNodeWithText(HouseholdWords.WHOS_MANAGING).assertExists()
         compose.onNodeWithText("Your PIN is no longer valid. Choose who you are again.").assertExists()
-        compose.onNodeWithText("Bea").performClick()
+        compose.onNode(tile("Bea")).performClick()
         compose.onNodeWithText("Done").assertDoesNotExist()
         assertEquals(listOf("actAs b"), calls)
     }
@@ -88,7 +96,11 @@ class ManageProfilesScreenTest {
         show(ManageUiState.Managing(bea, grownUps = emptyList(), kids = listOf(tom)))
         compose.onNodeWithText("As Bea").assertExists()
         compose.onNodeWithText("Grown-ups").assertDoesNotExist()
+        // Bea runs nothing: Add someone adds only a kid.
+        openAdd()
+        compose.onNode(hasText(HouseholdWords.GROWN_UP) and isSelectable()).assertDoesNotExist()
         compose.onNodeWithText("Add a grown-up").assertDoesNotExist()
+        opened("Tom")
         compose.onNode(hasText("FSK 12") and hasAnyAncestor(hasContentDescription("Age limit for Tom"))).assertIsSelected()
         compose.onNode(hasText("FSK 6") and hasAnyAncestor(hasContentDescription("Age limit for Tom"))).performClick()
         assertEquals(listOf("age t 6"), calls)
@@ -96,7 +108,8 @@ class ManageProfilesScreenTest {
 
     @Test fun theAdminResetsAndRemovesGrownUpsAndIsAskedFirst() {
         show(ManageUiState.Managing(andre, grownUps = listOf(bea), kids = emptyList()))
-        compose.onNodeWithText("Grown-ups").assertExists()
+        compose.onNode(personRow("Bea")).assert(hasText("Grown-up · PIN set"))
+        opened("Bea")
         compose.onNodeWithText("Reset PIN").performClick()
         compose.onNode(hasText("Remove") and hasContentDescription("Remove Bea")).performClick()
         inDialog("Remove Bea, their kids, and everything they have watched?").assertExists()
@@ -106,6 +119,7 @@ class ManageProfilesScreenTest {
 
     @Test fun cancellingTheQuestionRemovesNobody() {
         show(ManageUiState.Managing(bea, grownUps = emptyList(), kids = listOf(tom)))
+        opened("Tom")
         compose.onNode(hasContentDescription("Remove Tom")).performClick()
         inDialog("Remove Tom and everything they have watched?").assertExists()
         inDialog("Cancel").performClick()
@@ -114,9 +128,14 @@ class ManageProfilesScreenTest {
 
     @Test fun aNewKidNeedsANameAndStartsAtSix() {
         show(ManageUiState.Managing(bea, emptyList(), emptyList()))
+        openAdd()
         compose.onNodeWithText("Add a kid").assertIsNotEnabled()
         compose.onNode(hasSetTextAction() and hasContentDescription("Add a kid: name")).performTextInput("Lina")
         compose.onNodeWithText("Add a kid").performClick()
+        // The add went through: the form closes, and opened again starts over.
+        compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), emptyList(), answers = 1) }
+        compose.onNode(hasSetTextAction() and hasContentDescription("Add a kid: name")).assertDoesNotExist()
+        openAdd()
         compose.onNode(hasSetTextAction() and hasContentDescription("Add a kid: name")).performTextInput("Ole")
         compose.onNode(hasText("FSK 12") and hasAnyAncestor(hasContentDescription("Age limit for the new kid"))).performClick()
         compose.onNodeWithText("Add a kid").performClick()
@@ -125,6 +144,7 @@ class ManageProfilesScreenTest {
 
     @Test fun aKidsDailyLimitIsChosenFromTheFixturesMenuAndTheCurrentOneSendsNothing() {
         show(ManageUiState.Managing(bea, grownUps = emptyList(), kids = listOf(tom.copy(dailyLimit = 60))))
+        opened("Tom")
         val menu = hasAnyAncestor(hasContentDescription("Daily limit for Tom"))
         compose.onNode(hasText("1 h") and menu).assertIsSelected()
         compose.onNode(hasText("1 h") and menu).performClick()
@@ -135,11 +155,13 @@ class ManageProfilesScreenTest {
 
     @Test fun aLimitOffTheMenuShowsAsItself() {
         show(ManageUiState.Managing(bea, grownUps = emptyList(), kids = listOf(tom.copy(dailyLimit = 50))))
+        opened("Tom")
         compose.onNode(hasText("50 min") and hasAnyAncestor(hasContentDescription("Daily limit for Tom"))).assertIsSelected()
     }
 
     @Test fun aNewKidCanStartWithADailyLimit() {
         show(ManageUiState.Managing(bea, emptyList(), emptyList()))
+        openAdd()
         compose.onNode(hasSetTextAction() and hasContentDescription("Add a kid: name")).performTextInput("Ole")
         compose.onNode(hasText("No limit") and hasAnyAncestor(hasContentDescription("Daily limit for the new kid"))).assertIsSelected()
         compose.onNode(hasText("45 min") and hasAnyAncestor(hasContentDescription("Daily limit for the new kid"))).performClick()
@@ -149,6 +171,7 @@ class ManageProfilesScreenTest {
 
     @Test fun theAdminAddsAGrownUpByName() {
         show(ManageUiState.Managing(andre, emptyList(), emptyList()))
+        openAdd()
         compose.onNode(hasSetTextAction() and hasContentDescription("Add a grown-up: name")).performTextInput("Carl")
         compose.onNodeWithText("Add a grown-up").performClick()
         assertEquals(listOf("addGrownUp Carl"), calls)
@@ -157,6 +180,7 @@ class ManageProfilesScreenTest {
     /** A turn sends the whole list, an unknown key kept, and holds every switch until the answer; the next turn builds on the new list. */
     @Test fun aKidsSectionsAreSwitchesAndASecondTurnWaitsForTheFirstsAnswer() {
         show(ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("anime", "later")))))
+        opened("Tom")
         val ofTom = hasAnyAncestor(hasContentDescription("Sections for Tom"))
         compose.onNode(hasText("Movies") and ofTom).assertIsOn()
         compose.onNode(hasText("Anime") and ofTom).assertIsOff().performClick()
@@ -170,13 +194,16 @@ class ManageProfilesScreenTest {
     /** The look the user chose: a section the profile sees is a quiet outlined chip; only a hidden one is struck through. */
     @Test fun aHiddenSectionIsStruckThroughAndAShownOneIsNot() {
         show(ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("anime")))))
+        opened("Tom")
         assertEquals(TextDecoration.LineThrough, decorationOf("Anime"))
         assertNotEquals(TextDecoration.LineThrough, decorationOf("Movies"))
     }
 
     @Test fun theAdminSetsAnotherGrownUpsSectionsAndHasNoneOfItsOwn() {
         show(ManageUiState.Managing(andre, grownUps = listOf(bea), kids = emptyList()))
+        opened("andre")
         compose.onNode(hasContentDescription("Sections for andre")).assertDoesNotExist()
+        opened("Bea")
         compose.onNode(hasText("Tutorials") and hasAnyAncestor(hasContentDescription("Sections for Bea"))).performClick()
         assertEquals(listOf("sections b [tutorials]"), calls)
     }
@@ -190,7 +217,9 @@ class ManageProfilesScreenTest {
     @Test fun whyTheLastChangeFailedIsSaidAndOwnPinIsChangedHere() {
         show(ManageUiState.Managing(bea, emptyList(), emptyList(), notice = "A profile with that name already exists."))
         compose.onNodeWithText("A profile with that name already exists.").assertExists()
-        compose.onNodeWithText("Your PIN").assertExists()
+        // One's own PIN is on one's own row, as the web's is: no Your PIN section.
+        compose.onNodeWithText("Your PIN").assertDoesNotExist()
+        opened("Bea")
         compose.onNodeWithText("Change your PIN").performClick()
         assertEquals(listOf("pin b"), calls)
     }

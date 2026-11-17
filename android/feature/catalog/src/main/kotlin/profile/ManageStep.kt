@@ -16,7 +16,7 @@ internal sealed interface ManageStep {
 internal fun ManageStep.shown(profiles: List<Profile>, install: Households): ManageUiState =
     when (this) {
         ManageStep.Closed -> ManageUiState.Closed
-        is ManageStep.ChoosingActor -> ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
+        is ManageStep.ChoosingActor -> profiles.filterNot { it.kids }.let { here -> ManageUiState.ChoosingActor(here, notice, install.owner ?: here.find { it.owner }) }
         is ManageStep.Managing -> manageable(profiles, actorId, notice, answers, install)
     }
 

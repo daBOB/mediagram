@@ -40,27 +40,33 @@ internal const val HouseholdFormTag = "household-form"
  * sends while not [enabled]: a change is already out.
  */
 
-/** A household's new name, starting from [current]. */
+/** A household's new name, starting from [current]; [onCancel] closes it unsent. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun RenameForm(
     current: String,
     enabled: Boolean,
+    onCancel: () -> Unit,
     onRename: (String) -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf(current) }
     val send = { if (enabled && name.isNotBlank()) onRename(name.trim()) }
     Column(Modifier.testTag(HouseholdFormTag), verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         NameField(name, { name = it }, HouseholdWords.HOUSEHOLD_NAME, send)
-        LinePill(HouseholdWords.RENAME, onClick = send, enabled = enabled && name.isNotBlank())
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            LinePill(HouseholdWords.RENAME, onClick = send, enabled = enabled && name.isNotBlank())
+            QuietPill(CANCEL, onClick = onCancel)
+        }
     }
 }
 
-/** One of [people], a pill each: pressing one chooses them, as the row's own pill said what for. */
+/** One of [people], a pill each: pressing one chooses them, as the action chosen from the ⋯ said what for; [onCancel] closes it. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun PersonForm(
     people: List<Profile>,
     enabled: Boolean,
+    onCancel: () -> Unit,
     onChoose: (String) -> Unit,
 ) {
     FlowRow(
@@ -69,8 +75,11 @@ internal fun PersonForm(
         modifier = Modifier.testTag(HouseholdFormTag),
     ) {
         people.forEach { one -> QuietPill(one.name, onClick = { onChoose(one.id) }, enabled = enabled) }
+        QuietPill(CANCEL, onClick = onCancel)
     }
 }
+
+private const val CANCEL = "Cancel"
 
 /**
  * A new household: its name, then its admin — a new grown-up, named here, or

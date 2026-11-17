@@ -1,8 +1,6 @@
 package ui.settings
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,20 +27,22 @@ import catalog.profile.HouseholdRow
 import catalog.profile.HouseholdsOwnerUiState
 import catalog.profile.HouseholdsOwnerViewModel
 import designsystem.LocalCatalogueTones
-import designsystem.SectionHead
 import designsystem.Spacing
 import model.HouseholdWords
+import ui.profile.Opener
+import ui.profile.Tray
 
 /**
  * The owner's household changes inside Manage's owner view — the web's
- * `household-rows.js`: each household's [content] header — its name, who
- * runs it and how many profiles are in it, the owner's actions on it, the
- * form one opens — and Create a household, which [content] places after the
- * last. Why the last change did not take is said beside the header or form
- * it was sent from; the create form's place when that household has gone. A
- * form closes, or empties, only once a change from it went through: a
- * refusal, or a PIN prompt dismissed, keeps what was typed. Nothing is
- * pressed while a change is out. Every PIN is the view model's to ask.
+ * `household-rows.js`: each household's [content] header — its name as a
+ * heading, who runs it and how many profiles are in it, and a ⋯ with what the
+ * owner may do to it ([HouseholdMenu]), the form one of those opens — and
+ * Create a household, a button that opens its form, which [content] places
+ * after the last. Why the last change did not take is said beside the header
+ * or form it was sent from; the create form's place when that household has
+ * gone. A form closes only once a change from it went through: a refusal, or
+ * a PIN prompt dismissed, keeps what was typed. Nothing is pressed while a
+ * change is out. Every PIN is the view model's to ask.
  */
 @Composable
 internal fun OwnerHouseholds(
@@ -69,18 +69,16 @@ internal fun OwnerHouseholds(
         },
         {
             part?.let { open ->
-                CreateHouseholdForm(open.createChoices, enabled = !open.sending, took = took[""] ?: 0) { name, adminId, adminName ->
+                CreateHousehold(open, took[""] ?: 0, open.notice.takeIf { noticeAt == null }) { name, adminId, adminName ->
                     sentFrom = null
                     owners.create(name, adminId, adminName)
                 }
-                open.notice.takeIf { noticeAt == null }?.let { Notice(it) }
             }
         },
     )
 }
 
-/** One household's header: its name as a heading, its line, what the owner may do to it, the form one of those opens, and its notice. */
-@OptIn(ExperimentalLayoutApi::class)
+/** One household's line: its name as a heading, its line and ⋯, the form an action opens under it, and its notice. */
 @Composable
 private fun HouseholdHeader(
     row: HouseholdRow,
@@ -98,41 +96,53 @@ private fun HouseholdHeader(
         onSend()
         action()
     }
-    // Opens its form under the header, and closes it again.
-    val opens = @Composable { label: String -> RowPill(label, name, enabled) { form = label.takeUnless { form == label } } }
-    Row(Modifier.fillMaxWidth().padding(top = Spacing.large, bottom = Spacing.small), verticalAlignment = Alignment.CenterVertically) {
-        // A heading, so a screen reader can move from household to household.
-        Text(name, style = SectionHead, modifier = Modifier.weight(1f).semantics { heading() })
-        Text(row.line, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    // Opens its form under the line, and closes it again.
+    val opens = { label: String -> { form = label.takeUnless { form == label } } }
+    val actions =
+        with(HouseholdWords) {
+            listOfNotNull(
+                (RENAME to opens(RENAME)).takeIf { row.canRename },
+                (CHANGE_ADMIN to opens(CHANGE_ADMIN)).takeIf { row.canChangeAdmin },
+                (MOVE_HERE to opens(MOVE_HERE)).takeIf { row.canMove },
+                (USE_HERE to { send { owners.useHere(id) } }).takeIf { row.canUseHere },
+                (DELETE to { send { owners.delete(id) } }).takeIf { row.canDelete },
+            )
+        }
+    Row(Modifier.fillMaxWidth().padding(top = Spacing.extraLarge, bottom = Spacing.small), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            // A heading, so a screen reader can move from household to household.
+            Text(name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+            Text(row.line, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        HouseholdMenu(name, actions, enabled)
     }
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-        verticalArrangement = Arrangement.spacedBy(Spacing.small),
-        modifier = Modifier.padding(bottom = Spacing.small),
-    ) {
-        if (row.canRename) opens(HouseholdWords.RENAME)
-        if (row.canChangeAdmin) opens(HouseholdWords.CHANGE_ADMIN)
-        if (row.canMove) opens(HouseholdWords.MOVE_HERE)
-        if (row.canUseHere) RowPill(HouseholdWords.USE_HERE, name, enabled) { send { owners.useHere(id) } }
-        if (row.canDelete) RowPill(HouseholdWords.DELETE, name, enabled) { send { owners.delete(id) } }
-    }
+    val cancel = { form = null }
     when (form) {
-        HouseholdWords.RENAME -> RenameForm(name, enabled) { send { owners.rename(id, it) } }
-        HouseholdWords.CHANGE_ADMIN -> PersonForm(row.adminChoices, enabled) { send { owners.changeAdmin(id, it) } }
-        HouseholdWords.MOVE_HERE -> PersonForm(row.moveChoices, enabled) { send { owners.moveHere(id, it) } }
+        HouseholdWords.RENAME -> Tray { RenameForm(name, enabled, cancel) { send { owners.rename(id, it) } } }
+        HouseholdWords.CHANGE_ADMIN -> Tray { PersonForm(row.adminChoices, enabled, cancel) { send { owners.changeAdmin(id, it) } } }
+        HouseholdWords.MOVE_HERE -> Tray { PersonForm(row.moveChoices, enabled, cancel) { send { owners.moveHere(id, it) } } }
     }
     notice?.let { Notice(it, Modifier.padding(bottom = Spacing.small)) }
     HorizontalDivider(thickness = 0.5.dp, color = LocalCatalogueTones.current.ruleSoft)
 }
 
-/** Named for its household, so a screen reader does not hear a column of the same action. */
+/** Create a household: a button that opens its form, closed again once one was made from it ([took] rises). */
 @Composable
-private fun RowPill(
-    label: String,
-    household: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) = QuietPill(label, onClick = onClick, enabled = enabled, contentDescription = "$label $household")
+private fun CreateHousehold(
+    open: HouseholdsOwnerUiState.Open,
+    took: Int,
+    notice: String?,
+    onCreate: (name: String, adminId: String?, adminName: String?) -> Unit,
+) {
+    var creating by rememberSaveable { mutableStateOf(false) }
+    val before = remember { took }
+    LaunchedEffect(took) { if (took > before) creating = false }
+    Column(Modifier.padding(top = Spacing.medium)) {
+        Opener(HouseholdWords.CREATE_A_HOUSEHOLD, creating, { creating = !creating })
+        if (creating) Tray { CreateHouseholdForm(open.createChoices, enabled = !open.sending, took = took, onCreate = onCreate) }
+        notice?.let { Notice(it) }
+    }
+}
 
 /** Why a change did not take, read out as it changes. */
 @Composable

@@ -43,6 +43,7 @@ import io.mockk.unmockkStatic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import model.HouseholdWords
 import model.Profile
 import org.junit.After
 import org.junit.Before
@@ -159,11 +160,22 @@ abstract class ProfileGateHarness {
         digits: String,
     ) {
         compose.onNodeWithText("Manage profiles").performClick()
-        compose.onNodeWithText("Who are you?").assertExists()
-        // The pill, not the same name in Everyone here above it.
-        compose.onNode(hasText(name) and hasClickAction()).performScrollTo().performClick()
+        compose.onNodeWithText(HouseholdWords.WHOS_MANAGING).assertExists()
+        compose.onNode(tile(name)).performScrollTo().performClick()
         pin(digits)
         compose.onNodeWithText("As $name").assertExists()
+    }
+
+    /** [name]'s row on Manage opened, unless it already is. */
+    fun opened(name: String) {
+        compose.onNode(personRow(name)).openIfClosed()
+        compose.waitForIdle()
+    }
+
+    /** Add someone opened, unless it already is: anyone but the owner has one, unnamed. */
+    fun openAdd() {
+        compose.onNode(hasContentDescription(HouseholdWords.ADD_SOMEONE) and hasClickAction()).openIfClosed()
+        compose.waitForIdle()
     }
 
     fun profile(id: String) = household.core.profiles.single { it.id == id }

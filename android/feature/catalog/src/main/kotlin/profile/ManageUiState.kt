@@ -13,11 +13,27 @@ val NEW_KID_LIMIT: Int = KIDS_LIMITS.min()
 sealed interface ManageUiState {
     data object Closed : ManageUiState
 
-    /** Only a grown-up manages anything. [notice] says why the panel was left, or a first PIN refused. */
+    /**
+     * Only a grown-up manages anything. [notice] says why the panel was left,
+     * or a first PIN refused. [owner] is the install's, here or not.
+     */
     data class ChoosingActor(
         val grownUps: List<Profile>,
         val notice: String? = null,
-    ) : ManageUiState
+        val owner: Profile? = null,
+    ) : ManageUiState {
+        /**
+         * Who's managing?'s tiles — the web's `profile-manage-who.js`: the
+         * grown-ups here, the owner first; on a device showing another
+         * household, where the owner is not among them, the owner ends the row.
+         */
+        val managers: List<Profile>
+            get() {
+                val boss = owner ?: return grownUps
+                val others = grownUps.filterNot { it.id == boss.id }
+                return if (grownUps.any { it.id == boss.id }) listOf(boss) + others else others + boss
+            }
+    }
 
     /**
      * [actor]'s PIN was right. For the admin, every other grown-up and a way

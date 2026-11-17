@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,7 +28,6 @@ import designsystem.Spacing
 import kotlinx.coroutines.flow.merge
 import ui.chrome.ProfileBarState
 import ui.common.profile.ForgetManageWhenAway
-import ui.common.settings.SettingsSection
 import ui.settings.ProfilesPage
 import ui.settings.QuietPill
 
@@ -121,9 +118,10 @@ private fun PickerRoute(
 }
 
 /**
- * The Profiles page with nobody chosen — everyone here and managing them, no
- * You — under the page's own name, as the web's picker shows it; Done and Back
- * leave it for the picker, dropping the PINs Manage and the owner's part held.
+ * The Profiles page with nobody chosen — no You, only Who's managing?, asked
+ * as Who's watching? is, until someone manages — as the web's picker shows it;
+ * Done and Back leave it for the picker, dropping the PINs Manage and the
+ * owner's part held.
  * Leaving the app drops the owner's too, as Settings' visit does: nothing given
  * here waits at the picker for whoever comes next.
  */
@@ -135,7 +133,6 @@ private fun ProfilesOverPicker(
     LifecycleStartEffect(owners) { onStopOrDispose { owners.close() } }
     BackHandler(onBack = onDone)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.large)) {
-        Text(SettingsSection.PROFILES.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = Spacing.large))
         ProfilesPage(chosen = null)
         QuietPill(DONE, onClick = onDone, modifier = Modifier.padding(top = Spacing.large))
     }

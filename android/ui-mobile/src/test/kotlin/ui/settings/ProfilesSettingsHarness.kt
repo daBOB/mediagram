@@ -4,8 +4,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -51,6 +49,7 @@ import ui.common.settings.SettingsSection
 import ui.profile.PinFieldTag
 import ui.profile.ProfileGate
 import ui.profile.householdViewModels
+import ui.profile.tile
 
 /**
  * Settings drawn inside the real [ProfileGate], as the app draws it, over the
@@ -154,9 +153,9 @@ abstract class ProfilesSettingsHarness {
         }
     }
 
-    /** Says who you are from the section's own "Who are you?": Bea, by her PIN. */
+    /** Says who you are from the section's own Who's managing?: Bea, by her PIN. */
     fun actAsBea() {
-        compose.onNode(hasText("Bea") and hasClickAction()).performScrollTo().performClick()
+        compose.onNode(tile("Bea")).performScrollTo().performClick()
         compose.onNodeWithTag(PinFieldTag).performTextInput("2468")
         compose.waitForIdle()
     }

@@ -20,16 +20,14 @@ import javax.inject.Inject
 
 /**
  * Manage profiles — the web's `profile-manage.js`: say who you are, prove it
- * with your PIN, then act within your role. The PIN is held here only while
- * the panel is open and sent with every change, since the core checks PIN and
- * role each time; [close] drops it — as both gates do once the library shows
- * again or the app is left, since this outlives the screen. Nothing opens this but [open] — entering
- * a profile never hands a child the controls. The owner's view of every
- * household ([parts]) opens at once for the owner watching, after their PIN
- * at Who are you?, or after the Owner button's ([asOwner]); their PIN is the
- * page's one ([OwnerPin]), asked at the first change. What the panel offers follows
- * the household's rule, but the core decides: something offered by mistake
- * is still refused there, and the refusal is shown as it comes.
+ * with your PIN, then act within your role. The PIN is held only while the
+ * panel is open and sent with every change, since the core checks PIN and role
+ * each time; [close] drops it, as both gates do once the library shows again or
+ * the app is left. Only [open] opens this — entering a profile never hands a
+ * child the controls. The owner's view of every household ([parts]) opens at
+ * once for the owner watching, or after the owner's PIN ([actAs], [asOwner]),
+ * which is the page's one ([OwnerPin]). The core decides all the same: what is
+ * offered by mistake is still refused there, and the refusal is shown.
  */
 @HiltViewModel
 class ManageProfilesViewModel
@@ -69,11 +67,16 @@ class ManageProfilesViewModel
             go(ManageStep.Managing(owner.id))
         }
 
-        /** The actor's PIN, or — from before PINs existed — a first one typed twice, which becomes theirs. */
+        /**
+         * The actor's PIN, or — from before PINs existed — a first one typed twice, which becomes theirs.
+         * The owner's tile asks the owner's PIN, from any household's device, and the page holds it; one
+         * given anywhere on the page is not asked again. An owner here with no PIN yet chooses one first.
+         */
         fun actAs(id: String) {
-            val actor = repository.profiles.value.find { it.id == id && !it.kids } ?: return
-            // The owner's PIN given anywhere on the page is not asked again.
-            if (actor.owner && ownerPin.held != null) return go(ManageStep.Managing(id))
+            val here = repository.profiles.value.find { it.id == id && !it.kids }
+            val boss = households.view.value.owner?.takeIf { it.id == id && (it.hasPin || here == null) }
+            if (boss != null) return ask.ownersPin(ownerPin, repository, boss) { go(ManageStep.Managing(id)) }
+            val actor = here ?: return
             ask.ask(
                 PinPrompt(pinTitleFor(actor), newPin = !actor.hasPin),
                 send = { pin -> shared(proving(actor, pin)) },

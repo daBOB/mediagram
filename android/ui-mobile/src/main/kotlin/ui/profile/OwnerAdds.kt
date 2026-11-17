@@ -8,27 +8,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import ui.common.profile.ManageActions
 
-/** One of the owner's add forms: household [part]'s, for a [kid] or a grown-up. */
-internal data class AddForm(val part: String, val kid: Boolean)
-
 /**
- * What became of the owner's adds — the web's `act(said, …)`, which says an
- * add's refusal beside its form and keeps what was typed there until the add
- * went through. Manage counts its answers but not whose they are, so every
- * change notes where it was sent from as it goes: an add its form ([sent]),
+ * What became of the adds — the web's `act(said, …)`, which says an add's
+ * refusal beside its form and keeps what was typed there until the add went
+ * through. A form is its household part's id, "" for an unnamed part. Manage
+ * counts its answers but not whose they are, so every change notes where it
+ * was sent from as it goes: an add its form ([sent]),
  * anything else nowhere ([elsewhere], through [notingOthers]). The answer
  * after the latest note is that change's. An add whose PIN prompt was
  * dismissed sent nothing, and the next change's note replaces it.
  */
 @Stable
 internal class OwnerAdds {
-    private var from by mutableStateOf<AddForm?>(null)
+    private var from by mutableStateOf<String?>(null)
     private var at by mutableIntStateOf(0)
-    private val took = mutableStateMapOf<AddForm, Int>()
+    private val took = mutableStateMapOf<String, Int>()
     private var seen: Int? = null
 
     /** An add from [form] going out, [answers] answers in. */
-    fun sent(form: AddForm, answers: Int) {
+    fun sent(form: String, answers: Int) {
         from = form
         at = answers
     }
@@ -38,10 +36,10 @@ internal class OwnerAdds {
     }
 
     /** The add form [answers]' latest answer came back to, if it answered an add. */
-    fun answered(answers: Int): AddForm? = from?.takeIf { answers == at + 1 }
+    fun answered(answers: Int): String? = from?.takeIf { answers == at + 1 }
 
     /** How many adds from [form] went through: it empties as this rises. */
-    fun took(form: AddForm): Int = took[form] ?: 0
+    fun took(form: String): Int = took[form] ?: 0
 
     /** Manage's [answers] heard, with its [notice]: none means the change took. */
     fun heard(answers: Int, notice: String?) {

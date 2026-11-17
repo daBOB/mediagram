@@ -21,6 +21,7 @@ import catalog.profile.ManageUiState
 import catalog.profile.RESET_PIN
 import catalog.profile.YOUR_PIN
 import model.Household
+import model.HouseholdWords
 import model.Profile
 import org.junit.After
 import org.junit.Rule
@@ -77,25 +78,25 @@ class ManageProfilesHouseholdsTest {
 
     /** The headings and add forms, top to bottom, with the households' [names]. */
     private fun drawn(vararg names: String): List<String> {
-        val kept = setOf(*names, GROWN_UPS, KIDS_SECTION, ADD_A_GROWN_UP, ADD_A_KID, YOUR_PIN)
+        val kept = setOf(*names, GROWN_UPS, KIDS_SECTION, ADD_A_GROWN_UP, ADD_A_KID, YOUR_PIN, HouseholdWords.ADD_SOMEONE)
         fun SemanticsNode.texts(): List<String> = config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } + children.flatMap { it.texts() }
         return compose.onRoot(useUnmergedTree = true).fetchSemanticsNode().texts().filter { it in kept }
     }
 
-    // The web's owner view: people straight under their household, no Grown-ups or Kids, the owner's PIN on their own row.
+    // The web's owner view: people straight under their household, no Grown-ups or Kids, one Add someone each.
     @Test fun theOwnerSeesEveryHouseholdUnderItsNameThisDevicesFirstAndAddsInEach() {
         show(ManageUiState.Managing(andre, grownUps = listOf(maja, ida), kids = listOf(lea, tim), households = live))
-        val adds = arrayOf(ADD_A_GROWN_UP, ADD_A_KID)
-        assertEquals(
-            listOf("Home", *adds, "Loft", *adds, "Flat", *adds),
-            drawn("Home", "Loft", "Flat"),
-        )
+        val add = HouseholdWords.ADD_SOMEONE
+        assertEquals(listOf("Home", add, "Loft", add, "Flat", add), drawn("Home", "Loft", "Flat"))
     }
 
     @Test fun anotherHouseholdsRowsKeepTheirActions() {
         show(ManageUiState.Managing(andre, grownUps = listOf(ida), kids = listOf(tim), households = live))
+        compose.onNode(personRow("Ida")).performClick()
         compose.onNode(hasText(RESET_PIN)).performClick()
+        compose.onNode(personRow("Tim")).performClick()
         compose.onNode(hasText("FSK 12") and hasAnyAncestor(hasContentDescription("Age limit for Tim"))).performClick()
+        compose.onNode(personRow("Ida")).performClick()
         compose.onNode(hasText("Anime") and hasAnyAncestor(hasContentDescription("Sections for Ida"))).performClick()
         compose.onNode(hasContentDescription("Remove Ida")).performClick()
         compose.onNode(hasText("Remove") and hasAnyAncestor(isDialog())).performClick()
@@ -104,6 +105,9 @@ class ManageProfilesHouseholdsTest {
 
     @Test fun anyoneElseSeesThisHouseholdUnnamedAsBefore() {
         show(ManageUiState.Managing(maja, grownUps = emptyList(), kids = listOf(tim), households = live))
-        assertEquals(listOf(GROWN_UPS, ADD_A_GROWN_UP, KIDS_SECTION, ADD_A_KID, YOUR_PIN), drawn("Home", "Loft", "Flat"))
+        // Themselves, then their kid, then Add someone: no household named, no Grown-ups, Kids or Your PIN.
+        assertEquals(listOf(HouseholdWords.ADD_SOMEONE), drawn("Home", "Loft", "Flat"))
+        compose.onNode(personRow("Maja")).assertExists()
+        compose.onNode(personRow("Tim")).assertExists()
     }
 }

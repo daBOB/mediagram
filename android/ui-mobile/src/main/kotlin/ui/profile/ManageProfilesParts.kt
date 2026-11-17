@@ -1,84 +1,86 @@
 package ui.profile
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
-import catalog.profile.ADD_A_GROWN_UP
-import catalog.profile.GROWN_UPS
-import catalog.profile.KIDS_SECTION
-import catalog.profile.ManagePart
+import androidx.compose.ui.unit.dp
+import catalog.profile.CHANGE_YOUR_PIN
 import catalog.profile.ManageUiState
 import catalog.profile.REMOVE
 import catalog.profile.RESET_PIN
+import designsystem.LocalCatalogueTones
 import designsystem.SectionHead
 import designsystem.Spacing
 import model.DailyLimitWords
 import model.Profile
+import model.SectionAccessWords
 import ui.common.profile.ManageActions
 import ui.settings.QuietPill
 
-/**
- * Manage on the phone for anyone but the owner — the web's `byHousehold`:
- * Grown-ups for the admin, each with Reset PIN and Remove, and a way to add
- * one; then Kids, each with its limits and Remove, and a way to add one.
- * Every row has the sections it is shown ([SectionSwitches]) on its own line,
- * as the web's are. The owner's view of every household is [OwnerPartRows].
- */
-@Composable
-internal fun ManagePartRows(
-    part: ManagePart,
-    state: ManageUiState.Managing,
-    actions: ManageActions,
-    onRemove: (Profile) -> Unit,
-) {
-    if (part.showsGrownUps) {
-        Section(GROWN_UPS)
-        part.grownUps.forEach { grownUp -> key(grownUp.id) { GrownUpRow(grownUp, state, actions, onRemove) } }
-        if (part.addsGrownUp) NameForm(ADD_A_GROWN_UP, onSubmit = { actions.onAddGrownUp(it, part.id) }, modifier = Modifier.padding(top = Spacing.small))
-    }
-    if (!part.showsKids) return
-    Section(KIDS_SECTION)
-    part.kids.forEach { kid -> key(kid.id) { KidRow(kid, state, actions, onRemove) } }
-    if (part.addsKid) AddKidForm(actions, part.kidParents, part.kidParentDefault)
-}
+/** What a kid's age limit is called where it is set. */
+internal const val AGE_LIMIT = "Age limit"
 
-/** A grown-up another may manage: Reset PIN, Remove, and the sections it is shown; [line] says who it is. */
+/*
+ * What opens under a person's row on Manage — the web's `profile-manage-rows.js`:
+ * one's own PIN; a grown-up's sections, PIN and removal; a kid's age and daily
+ * limits, sections and removal — each laid out as a short list, what a line
+ * sets above its control, the actions last.
+ */
+
+/** The manager's own row: their PIN. */
 @Composable
-internal fun GrownUpRow(
+internal fun YouControls(
+    you: Profile,
+    actions: ManageActions,
+) = QuietPill(CHANGE_YOUR_PIN, onClick = { actions.onChangePin(you.id) }, small = true)
+
+/** A grown-up another may manage: the sections they are shown, then Reset PIN and Remove. */
+@Composable
+internal fun GrownUpControls(
     grownUp: Profile,
     state: ManageUiState.Managing,
     actions: ManageActions,
     onRemove: (Profile) -> Unit,
-    line: String? = null,
 ) {
-    ProfileRow(grownUp.name, below = { Sections(grownUp, state, actions) }, line = line) {
-        QuietPill(RESET_PIN, onClick = { actions.onChangePin(grownUp.id) }, small = true)
-        RemovePill(grownUp, onRemove)
-    }
+    Sections(grownUp, state, actions)
+    Actions(grownUp, onRemove) { QuietPill(RESET_PIN, onClick = { actions.onChangePin(grownUp.id) }, small = true) }
 }
 
-/** A kid: its age limit, daily limit, sections, and Remove; [line] says who it is. */
+/** A kid: its age limit, daily limit and sections, then Remove. */
 @Composable
-internal fun KidRow(
+internal fun KidControls(
     kid: Profile,
     state: ManageUiState.Managing,
     actions: ManageActions,
     onRemove: (Profile) -> Unit,
-    line: String? = null,
 ) {
-    ProfileRow(
-        kid.name,
-        below = {
-            DailyLimitChips(kid.dailyLimit, "${DailyLimitWords.LABEL} for ${kid.name}", { actions.onSetDailyLimit(kid.id, it) })
-            Sections(kid, state, actions)
-        },
-        line = line,
-    ) {
-        LimitChoice(kid.kidsLimit, "Age limit for ${kid.name}") { age -> actions.onSetKidsAge(kid.id, age) }
-        RemovePill(kid, onRemove)
+    Line(AGE_LIMIT) { LimitChoice(kid.kidsLimit, "Age limit for ${kid.name}") { age -> actions.onSetKidsAge(kid.id, age) } }
+    Line(DailyLimitWords.LABEL) { DailyLimitChips(kid.dailyLimit, "${DailyLimitWords.LABEL} for ${kid.name}", { actions.onSetDailyLimit(kid.id, it) }) }
+    Sections(kid, state, actions)
+    Actions(kid, onRemove)
+}
+
+/** One line of an open part: what it sets, for the eye — each control names itself — then the control. */
+@Composable
+internal fun Line(
+    label: String,
+    control: @Composable () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = LocalCatalogueTones.current.quiet, modifier = Modifier.clearAndSetSemantics {})
+        control()
     }
 }
 
@@ -89,10 +91,26 @@ private fun Sections(
     state: ManageUiState.Managing,
     actions: ManageActions,
 ) {
-    if (profile in state.sectionRows) SectionSwitches(profile, state.answers) { actions.onSetHiddenSections(profile.id, it) }
+    if (profile in state.sectionRows) Line(SectionAccessWords.TITLE) { SectionSwitches(profile, state.answers) { actions.onSetHiddenSections(profile.id, it) } }
 }
 
-/** A heading of Manage's: a household's name, Grown-ups, Kids, or Your PIN. */
+/** An open part's actions, under a rule: [first] at the start, removing [profile] apart at the end. */
+@Composable
+private fun Actions(
+    profile: Profile,
+    onRemove: (Profile) -> Unit,
+    first: @Composable RowScope.() -> Unit = {},
+) {
+    HorizontalDivider(thickness = 0.5.dp, color = LocalCatalogueTones.current.ruleSoft)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        first()
+        Spacer(Modifier.weight(1f))
+        // Named for whom it removes, so a screen reader does not hear a column of "Remove".
+        QuietPill(REMOVE, onClick = { onRemove(profile) }, small = true, contentDescription = "$REMOVE ${profile.name}")
+    }
+}
+
+/** A heading of Manage's: a household's name where it has no line of its own. */
 @Composable
 internal fun Section(
     title: String,
@@ -101,10 +119,3 @@ internal fun Section(
 ) {
     Text(title, style = style, modifier = modifier.padding(top = Spacing.large, bottom = Spacing.small))
 }
-
-/** Named for whom it removes, so a screen reader does not hear a column of "Remove". */
-@Composable
-private fun RemovePill(
-    profile: Profile,
-    onRemove: (Profile) -> Unit,
-) = QuietPill(REMOVE, onClick = { onRemove(profile) }, small = true, contentDescription = "$REMOVE ${profile.name}")
