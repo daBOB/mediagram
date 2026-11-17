@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.181.0 — A film held more than once is one entry
+
+**Added**
+
+- A film uploaded twice, at another quality or in another cut, is one card with a "2 versions" badge, on the web player, the phone and tablet, and the TV. Its page lists each copy (`Standard · 4K HDR · 3h 5m · 13 GB`, with codecs and audio languages) with its own Play, in place of the one Play button. Copies are grouped by their TMDB id when the catalogue is read; the index, the watch state and the sync record are unchanged.
+- A card that plays straight away (Continue, My List, a list, search) asks which copy to play: a dialog on the web, a bottom sheet on the phone. Escape, Back or Cancel plays nothing. A Join, a scene and the hand-over to the next title on a list play their copy without asking.
+- A position carries between copies of one cut (stop the 1080p copy, resume in 4K) but never into another cut. A film counts as watched when any copy is; Continue lists it once.
+- The uploader guesses a film's cut from its file name (Director's Cut, Extended, Uncut, Final Cut, Remastered; only the tags after the year) and asks to confirm it at a terminal. When the film is already held it says which copies are, and it refuses an exact duplicate (same quality, HDR, cut and audio languages) unless someone at the terminal says yes.
+
 ## Spieltisch 0.193.7 — The final screen counts the players who played
 
 **Changed**

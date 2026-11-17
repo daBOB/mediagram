@@ -1553,6 +1553,33 @@ differs on purpose:
 - **Under the Blurred backdrop the cover's drift is the one thing to watch**:
   see the changelog's 0.121.0 entry for the frame times.
 
+### Films held more than once
+
+A port of the web's rules (`docs/web-player.md`, Films held more than once).
+The core hands each set's cut to Kotlin as `MediaSet.variant`.
+`feature/catalog`'s `FilmVersions.kt` groups films by their TMDB poster key
+after the kids filter, orders copies, labels them and applies the per-cut
+position and played rules; `FilmWatch.kt` reads watch state per film for
+cards, and `FilmVersionRows.kt` builds the rows. `FilmVersionsFixtureTest`
+runs the web's `test/fixtures/film-versions/` files, so the two surfaces
+cannot drift apart.
+
+- **Where the copies live.** On the representative `MediaSet` itself
+  (`MediaSet.versions`), as on the web, not on `Entry.Film`: many screens
+  unwrap an entry to its set and rebuild it, which would drop the copies.
+  `filmOf` finds the film for any copy's id.
+- **The choice.** The title page (phone and TV) replaces Play with a Versions
+  list. A card that plays straight away asks through `VersionAsk`
+  (`ui-common`): a bottom sheet on phone and tablet, the TV's own `TvDialog` on
+  television, the one deliberate difference from the web's centred dialog.
+  The TV's Continue and My List walls open the title page, as they always
+  have, so there the Versions list is the choice.
+- **Not asked** for a row on the title page, a Join, a scene, or the
+  player's up-next hand-over, as on the web. The player opens a copy at its
+  cut's position (`cutPosition`).
+- **Preload** (Android only) preloads the first copy of a film held more
+  than once.
+
 ### Settings and System
 
 Settings is a two-pane index — Telegram, Storage, Appearance, Profile, System — on phone,
