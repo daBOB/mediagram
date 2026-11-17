@@ -27,11 +27,13 @@ import designsystem.Overscan
  * landing names, and moves to a step: OK on a household's header offers only
  * what the household rule allows, each a step of its own ([TvHouseholdStep]).
  *
- * Opened from the Owner row, it asks the owner's PIN first, and giving that
- * up leaves it; opened by the owner watching, it shows at once and asks the
- * PIN at the first change. The PIN is dropped when the panel is left, for
- * anything — another section, the app — and asked again on the way back,
- * unless the owner's view still shows ([catalog.profile.OwnerPin]).
+ * Opened after the owner's tile on Who's managing?, the owner's PIN is held
+ * already; opened by the owner watching, it shows at once and asks the PIN at
+ * the first change. Opened neither way, it asks the owner's PIN first, and
+ * giving that up leaves it. The PIN is dropped when the panel is left, for
+ * anything — another section, the app, Who's managing? again — and asked
+ * again on the way back, unless the owner's view still shows
+ * ([catalog.profile.OwnerPin]).
  *
  * A change stays on the step that sent it until its answer — a PIN pad given
  * up is none — and keeps what was typed: one that took lands the remote on

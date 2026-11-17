@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
@@ -75,9 +76,10 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
     private fun answer(hidden: List<String>, notice: String? = null) =
         compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = hidden)), notice, ++answered) }
 
-    /** Tom's row → Sections, which says what is hidden as the Everyone line does: FSK 12 → Daily limit → Sections. */
+    /** Tom's row, under Bea's own → Sections, which says what is hidden as the Everyone line does: FSK 12 → Daily limit → Sections. */
     private fun openTomsSections() {
         manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
+        press(Key.DirectionDown)
         press(Key.DirectionCenter)
         repeat(2) { press(Key.DirectionDown) }
         switch("Sections · hides Anime").assertIsFocused()
@@ -140,6 +142,7 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
     @Test
     fun theAdminTurnsAGrownUpsSectionsAndDoneGoesBackToItsRow() {
         manage(ManageUiState.Managing(andre, listOf(bea), emptyList()))
+        press(Key.DirectionDown)
         press(Key.DirectionCenter)
         // Reset PIN -> Sections; Remove stays last.
         press(Key.DirectionDown)
@@ -153,6 +156,6 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
         switch("Done").assertIsFocused()
         press(Key.DirectionCenter)
         assertEquals(listOf("sections b [tutorials]"), calls)
-        compose.onNodeWithText("Bea").assertIsFocused()
+        compose.onNode(hasText("Bea") and hasClickAction()).assertIsFocused()
     }
 }

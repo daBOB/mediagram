@@ -4,8 +4,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import catalog.profile.ADD_A_GROWN_UP
-import catalog.profile.ADD_A_KID
 import catalog.profile.DONE
 import model.HouseholdWords
 import org.junit.Test
@@ -22,9 +22,9 @@ class TvManageHouseholdsStateTest : TvOwnerViewHarness() {
     fun everyHouseholdsHeaderPeopleAndAddsAreReachedWalkingDown() {
         val walk =
             listOf(
-                "Home · Admin andre", "andre · Owner", "Lea · Kid", ADD_A_GROWN_UP, ADD_A_KID,
-                "Loft · Admin Ida", "Ida · Admin", ADD_A_GROWN_UP, ADD_A_KID,
-                "Flat · Admin Maja", "Maja · Admin", "Tim · Kid", ADD_A_GROWN_UP, ADD_A_KID,
+                "Home · Admin andre", "andre", "Lea", HouseholdWords.ADD_SOMEONE,
+                "Loft · Admin Ida", "Ida", HouseholdWords.ADD_SOMEONE,
+                "Flat · Admin Maja", "Maja", "Tim", HouseholdWords.ADD_SOMEONE,
                 HouseholdWords.CREATE_A_HOUSEHOLD, DONE,
             )
         walk.forEachIndexed { index, row ->
@@ -45,23 +45,31 @@ class TvManageHouseholdsStateTest : TvOwnerViewHarness() {
 
     @Test
     fun anotherHouseholdsRowsAreChangedByRemoteAndAKidsRowKeepsIt() {
-        walkTo(hasText("Tim · Kid", substring = true))
+        walkTo(hasText("Tim"))
         press(Key.DirectionCenter)
         // The current limit holds the remote; the other is one step down.
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
         assertEquals(listOf("age tim 12"), calls)
-        focusedOn("Tim · Kid · Maja · FSK 12")
+        focusedOn("Kid · Maja · FSK 12")
         press(Key.DirectionUp)
         press(Key.DirectionCenter)
         press(Key.DirectionCenter)
         assertEquals(listOf("age tim 12", "pin maja"), calls)
     }
 
-    /** Ida removed: the Loft keeps its header and a way to add a grown-up, no kid, and the remote is on its header. */
+    /** Ida moved to the Flat on another device while the remote is on her row: it lands on the Loft's header, not nowhere. */
+    @Test
+    fun aRowMovedToAnotherHouseholdHandsTheRemoteToItsHouseholdsHeader() {
+        walkTo(hasText("Ida"))
+        change { it.copy(grownUps = it.grownUps.map { one -> if (one.id == "ida") one.copy(household = "flat") else one }) }
+        focusedOn("Loft · Admin Ida")
+    }
+
+    /** Ida removed: the Loft keeps its header and Add someone, which asks no Grown-up or Kid — a kid needs a grown-up — and the remote is on its header. */
     @Test
     fun aHouseholdLeftWithNobodyKeepsItsHeaderToAddAGrownUp() {
-        walkTo(hasText("Ida · Admin", substring = true))
+        walkTo(hasText("Ida"))
         press(Key.DirectionCenter)
         // Reset PIN -> Sections -> Remove, then past Cancel.
         press(Key.DirectionDown, 2)
@@ -70,8 +78,11 @@ class TvManageHouseholdsStateTest : TvOwnerViewHarness() {
         press(Key.DirectionCenter)
         assertEquals(listOf("remove ida"), calls)
         compose.onAllNodesWithText("Ida", substring = true).assertCountEquals(1)
-        compose.onAllNodesWithText(ADD_A_GROWN_UP).assertCountEquals(3)
-        compose.onAllNodesWithText(ADD_A_KID).assertCountEquals(2)
+        compose.onAllNodesWithText(HouseholdWords.ADD_SOMEONE).assertCountEquals(3)
         focusedOn("Loft · Admin Ida")
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        compose.onNodeWithText("$ADD_A_GROWN_UP · Loft").assertExists()
+        compose.onAllNodesWithText(HouseholdWords.KID).assertCountEquals(0)
     }
 }

@@ -2,46 +2,60 @@ package ui.tv.profile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import catalog.profile.ADD_A_GROWN_UP
-import catalog.profile.ADD_A_KID
-import catalog.profile.GROWN_UPS
-import catalog.profile.KIDS_SECTION
 import catalog.profile.ManagePart
+import catalog.profile.ManageUiState
+import catalog.profile.everyoneHere
+import model.HouseholdWords
 import model.Profile
-import model.dailyLimitChoiceFor
-import ui.tv.TvTextRow
-import ui.tv.player.TvSettingsHeading
 
 /**
- * One household's part of Manage on television — the web's `byHousehold` as
- * rows the remote walks: its Grown-ups and its Kids ("Name · FSK N · daily limit"),
- * each row opening its choices, and adding where [part] offers it. The
- * headings are text the remote passes over, as the web's are no controls.
- * [first] is the part's first row, for the part drawn first.
+ * One household's people on television, as calm rows — the web's
+ * `profile-manage-person.js` and the tablet's `HouseholdPart`: in the owner's
+ * view everyone in it, grown-ups first; for anyone else themselves, then the
+ * grown-ups and kids they manage. Each is one [TvPersonRow] — their name, the
+ * line Everyone here gives them, › — whose OK opens what may be changed of
+ * them ([onOpen]): the manager's own PIN, a kid's limits, a grown-up's PIN;
+ * someone they may not change ([ManagePart.readOnly]) opens nothing. Then one
+ * Add someone ([onAdd]) where adding is offered, named for its household
+ * where each has its own. [first] is the first row's; [holds] marks the row
+ * holding the remote, by person, null for Add someone.
  */
 @Composable
 internal fun TvManagePart(
     part: ManagePart,
-    first: FocusRequester?,
-    onGrownUp: (Profile) -> Unit,
-    onKid: (Profile) -> Unit,
-    onAdd: (kid: Boolean) -> Unit,
+    state: ManageUiState.Managing,
+    onOpen: (TvManageStep) -> Unit,
+    onAdd: () -> Unit,
+    first: FocusRequester? = null,
+    holds: (id: String?) -> Modifier = { Modifier },
 ) {
-    if (part.showsGrownUps) {
-        TvSettingsHeading(GROWN_UPS)
-        part.grownUps.forEachIndexed { index, grownUp ->
-            key(grownUp.id) { TvTextRow(grownUp.name, onClick = { onGrownUp(grownUp) }, focusRequester = first.takeIf { index == 0 }) }
-        }
-        if (part.addsGrownUp) TvTextRow(ADD_A_GROWN_UP, onClick = { onAdd(false) }, focusRequester = first.takeIf { part.grownUps.isEmpty() })
-    }
-    if (!part.showsKids) return
-    val kidsLead = !part.showsGrownUps
-    TvSettingsHeading(KIDS_SECTION)
-    part.kids.forEachIndexed { index, kid ->
-        key(kid.id) {
-            TvTextRow("${kid.name} · FSK ${kid.kidsLimit} · ${dailyLimitChoiceFor(kid.dailyLimit).label}", onClick = { onKid(kid) }, focusRequester = first.takeIf { kidsLead && index == 0 })
+    val owners = state.ownersView
+    val people = if (owners) part.people else listOf(state.actor) + part.grownUps + part.kids
+    val lines = everyoneHere(if (owners) part.people else state.everyone).associate { (one, line) -> one.id to line }
+    people.forEachIndexed { index, one ->
+        key(one.id) {
+            val step = stepFor(one, part, state)
+            TvPersonRow(one.name, lines[one.id].orEmpty(), step?.let { { onOpen(it) } }, holds(one.id), first.takeIf { index == 0 })
         }
     }
-    if (part.addsKid) TvTextRow(ADD_A_KID, onClick = { onAdd(true) }, focusRequester = first.takeIf { kidsLead && part.kids.isEmpty() })
+    if (part.addsGrownUp || part.addsKid) {
+        val named = part.household?.let { "${HouseholdWords.ADD_SOMEONE_TO} ${part.name}" }
+        TvPersonRow(HouseholdWords.ADD_SOMEONE, null, onAdd, holds(null), first.takeIf { people.isEmpty() }, mark = "+", description = named)
+    }
 }
+
+/** What OK on [one]'s row opens: the manager's own PIN, a kid's limits, a grown-up's PIN — nothing for one they may not change. */
+private fun stepFor(
+    one: Profile,
+    part: ManagePart,
+    state: ManageUiState.Managing,
+): TvManageStep? =
+    when {
+        one.id == state.actor.id -> TvManageStep.You(one)
+        one.id in part.readOnly -> null
+        part.kids.any { it.id == one.id } -> TvManageStep.KidActions(one)
+        part.grownUps.any { it.id == one.id } -> TvManageStep.GrownUpActions(one)
+        else -> null
+    }

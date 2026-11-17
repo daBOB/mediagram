@@ -9,12 +9,9 @@ import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import catalog.profile.ADD_A_GROWN_UP
-import catalog.profile.ADD_A_KID
 import catalog.profile.DONE
 import catalog.profile.EVERYONE_HERE
 import catalog.profile.MANAGE_PROFILES
-import catalog.profile.WHO_ARE_YOU
 import catalog.profile.managingAs
 import model.HOME_HOUSEHOLD
 import model.HouseholdWords
@@ -22,14 +19,16 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.tv.profile.tvManagerTileTag
 import ui.tv.setup.TvTextQuestionFieldTag
 import kotlin.test.assertEquals
 
 /**
  * The owner's one view on television, by remote alone ([TvProfilesHarness]) over [twoHouseholds]:
  * andre, the owner, runs Home with Bo; Dan runs Flat. The owner's Manage profiles row opens it at
- * once; on a device showing another household the Owner row opens it after the owner's PIN. What
- * an add sends is read back from the core: where the new profile landed, and whose it is.
+ * once; on a device showing another household the owner's tile, ending Who's managing?, opens it
+ * after the owner's PIN. What an add sends is read back from the core: where the new profile
+ * landed, and whose it is.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -52,6 +51,14 @@ class TvOwnerViewTest : TvProfilesHarness() {
 
     private fun assertFocusedOn(text: String) = compose.onNode(isFocused()).assert(hasText(text))
 
+    /** The next Add someone down, then Kid. */
+    private fun addAKidBelow() {
+        walkTo(rowOf(HouseholdWords.ADD_SOMEONE), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        walkTo(rowOf(HouseholdWords.KID), Key.DirectionDown)
+        press(Key.DirectionCenter)
+    }
+
     @Test
     fun ownerPageHasOneManageRowAndNoHouseholdsRow() {
         ownersPage()
@@ -61,31 +68,33 @@ class TvOwnerViewTest : TvProfilesHarness() {
         compose.onAllNodes(rowOf(HouseholdWords.OWNER)).assertCountEquals(0)
     }
 
-    /** This device's household first: its header, its people with their lines, its adds; then the next; then Create a household. No PIN just to look. */
+    /** This device's household first: its header, a row per person with their line, one Add someone; then the next; then Create a household. No PIN just to look. */
     @Test
     fun ownerViewListsEveryHouseholdWithHeaderPeopleAndAdds() {
         openOwnersView()
         compose.onNodeWithText(managingAs("andre")).assertExists()
-        compose.onAllNodesWithText(WHO_ARE_YOU).assertCountEquals(0)
+        compose.onAllNodesWithText(HouseholdWords.WHOS_MANAGING).assertCountEquals(0)
         compose.onAllNodesWithText(HouseholdWords.OWNERS_PIN).assertCountEquals(0)
         val rows =
             listOf(
-                home, "andre · Owner · Admin · PIN set", "Bo · Grown-up · PIN set", ADD_A_GROWN_UP, ADD_A_KID,
-                flat, "Dan · Admin · No PIN", ADD_A_GROWN_UP, ADD_A_KID,
-                HouseholdWords.CREATE_A_HOUSEHOLD, DONE,
+                home to null, "andre" to "Owner · Admin · PIN set", "Bo" to "Grown-up · PIN set", HouseholdWords.ADD_SOMEONE to null,
+                flat to null, "Dan" to "Admin · No PIN", HouseholdWords.ADD_SOMEONE to null,
+                HouseholdWords.CREATE_A_HOUSEHOLD to null, DONE to null,
             )
-        rows.forEachIndexed { index, row ->
+        rows.forEachIndexed { index, (row, line) ->
             if (index > 0) press(Key.DirectionDown)
             assertFocusedOn(row)
+            line?.let(::assertFocusedOn)
         }
     }
 
-    /** Flat's Add a grown-up makes them in Flat, and the remote is back on Flat's header. */
+    /** Flat's Add someone, Grown-up, makes them in Flat — the owner's PIN asked at this first change — and the remote is back on Flat's header. */
     @Test
     fun addGrownUpUnderAHouseholdSendsThatHousehold() {
         openOwnersView()
         walkTo(rowOf(flat), Key.DirectionDown)
-        walkTo(rowOf(ADD_A_GROWN_UP), Key.DirectionDown)
+        walkTo(rowOf(HouseholdWords.ADD_SOMEONE), Key.DirectionDown)
+        press(Key.DirectionCenter)
         press(Key.DirectionCenter)
         name("Eve")
         compose.onNodeWithText(HouseholdWords.OWNERS_PIN).assertExists()
@@ -102,8 +111,7 @@ class TvOwnerViewTest : TvProfilesHarness() {
     @Test
     fun addKidWithTwoGrownUpsAsksBelongsToFirst() {
         openOwnersView()
-        walkTo(rowOf(ADD_A_KID), Key.DirectionDown)
-        press(Key.DirectionCenter)
+        addAKidBelow()
         compose.onNodeWithText(HouseholdWords.BELONGS_TO).assertExists()
         compose.onNode(rowOf("andre")).assertIsFocused()
         press(Key.DirectionDown)
@@ -118,12 +126,11 @@ class TvOwnerViewTest : TvProfilesHarness() {
         assertEquals(HOME_HOUSEHOLD, mia.household)
         compose.onNode(rowOf("Home · Admin andre · 3 profiles")).assertIsFocused()
         // Bo's kid in the owner's own household is Bo's to change: listed, not a row.
-        compose.onNodeWithText("Mia · Kid · Bo · FSK 6").assertExists()
-        compose.onAllNodes(rowOf("Mia · Kid · Bo · FSK 6")).assertCountEquals(0)
+        compose.onNodeWithText("Kid · Bo · FSK 6").assertExists()
+        compose.onAllNodes(rowOf("Mia")).assertCountEquals(0)
 
         walkTo(rowOf(flat), Key.DirectionDown)
-        walkTo(rowOf(ADD_A_KID), Key.DirectionDown)
-        press(Key.DirectionCenter)
+        addAKidBelow()
         compose.onNodeWithTag(TvTextQuestionFieldTag).assertExists()
         compose.onAllNodesWithText(HouseholdWords.BELONGS_TO).assertCountEquals(0)
     }
@@ -142,13 +149,17 @@ class TvOwnerViewTest : TvProfilesHarness() {
         compose.onNode(rowOf(MANAGE_PROFILES)).assertIsFocused()
     }
 
-    /** A device showing Flat, Dan watching: the Owner row's PIN opens the same view, this device's household first, and that PIN is the only one asked. */
+    /** A device showing Flat, Dan watching: the owner's tile ends Who's managing?; its PIN opens the same view, this device's household first, and that PIN is the only one asked. */
     @Test
-    fun ownerRowOnAnotherHouseholdsDeviceOpensTheOwnerView() {
+    fun ownersTileOnAnotherHouseholdsDeviceOpensTheOwnerView() {
         launch(emptyList(), chosen = "d", seed = twoHouseholds(joined = "flat"))
         openSettingsAt(rowOf("Profiles"))
         press(Key.DirectionCenter)
-        walkTo(rowOf(HouseholdWords.OWNER), Key.DirectionDown)
+        walkTo(rowOf(MANAGE_PROFILES), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        compose.onNodeWithTag(tvManagerTileTag("d")).assertIsFocused()
+        press(Key.DirectionRight)
+        compose.onNodeWithTag(tvManagerTileTag("a")).assertIsFocused().assert(hasText(HouseholdWords.OWNER))
         press(Key.DirectionCenter)
         compose.onNodeWithText(HouseholdWords.OWNERS_PIN).assertExists()
         pin("1234")
@@ -157,8 +168,7 @@ class TvOwnerViewTest : TvProfilesHarness() {
         compose.onNode(rowOf(flat)).assertIsFocused()
         compose.onNode(rowOf(home)).assertExists()
 
-        walkTo(rowOf(ADD_A_KID), Key.DirectionDown)
-        press(Key.DirectionCenter)
+        addAKidBelow()
         name("Kai")
         press(Key.DirectionCenter)
         press(Key.DirectionCenter)

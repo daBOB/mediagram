@@ -2,12 +2,14 @@ package ui.tv.profile
 
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import catalog.profile.ADD_A_KID
 import catalog.profile.PinPrompt
+import model.HouseholdWords
 import model.Profile
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,7 +30,9 @@ class TvOwnerAddsStateTest : TvOwnerViewHarness() {
     @Test
     fun aRefusedAddKeepsWhatWasChosenAndSaysWhyOnItsStep() {
         walkTo(hasText("Flat · Admin Maja", substring = true))
-        walkTo(hasText(ADD_A_KID))
+        walkTo(hasText(HouseholdWords.ADD_SOMEONE))
+        press(Key.DirectionCenter)
+        press(Key.DirectionDown)
         press(Key.DirectionCenter)
         name("Tim")
         press(Key.DirectionDown)
@@ -56,5 +60,30 @@ class TvOwnerAddsStateTest : TvOwnerViewHarness() {
         assertEquals(listOf("kid Tim 12 30 maja", "kid Tim 12 30 maja", "kid Tia 12 30 maja"), calls)
         focusedOn("Flat · Admin Maja")
         assertEquals(TvHouseholdStep.List("flat"), went.last())
+    }
+
+    /** An add given up takes its refusal with it: neither the page nor the next Add someone says it again. */
+    @Test
+    fun aCancelledAddForgetsItsRefusal() {
+        walkTo(hasText("Flat · Admin Maja", substring = true))
+        walkTo(hasText(HouseholdWords.ADD_SOMEONE))
+        press(Key.DirectionCenter)
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        name("Tim")
+        press(Key.DirectionCenter)
+        onAdd = { change { it.copy(notice = "That name is taken.") } }
+        press(Key.DirectionCenter)
+        compose.onNodeWithText("That name is taken.").assertExists()
+
+        repeat(4) { back() }
+        focusedOn("Flat · Admin Maja")
+        compose.onAllNodesWithText("That name is taken.").assertCountEquals(0)
+        walkTo(hasText(HouseholdWords.ADD_SOMEONE))
+        press(Key.DirectionCenter)
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        compose.onNodeWithTag(TvTextQuestionFieldTag).assertExists()
+        compose.onAllNodesWithText("That name is taken.").assertCountEquals(0)
     }
 }

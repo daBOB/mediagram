@@ -32,28 +32,23 @@ import ui.tv.profile.TvManageScreen
 /**
  * The one Profiles page, television-side — the web's (`settings-profiles.js`)
  * and the phone's `ProfilesPage`: You — who is watching, the way to switch,
- * their subtitle language — then everyone in the household, then Manage
- * profiles, then — while there is more than one household — which one this
- * device shows, then the Owner row. For the owner, Manage profiles is the
- * owner's view of every household, which says all everyone here and the
- * Owner row would, so neither is drawn. A kid sees only You; with nobody [chosen], which is how the
- * picker's Manage profiles opens it, there is no You. Seeing the list needs no
- * PIN; changing anything asks who you are and that grown-up's PIN — the
- * owner's only at the first change.
+ * their subtitle language — then Manage profiles, then — while there is more
+ * than one household — which one this device shows. A kid sees only You.
  *
- * Where the phone draws Manage inline under the list, the television opens it
- * as a panel of its own ([TvProfilesPanel]) from the "Manage profiles" row,
- * Switch household (`TvJoinHousehold`) from the This device row, and the
- * owner's view after the owner's PIN from the Owner row: their
- * PIN pads and name questions take the whole screen here wherever they open,
- * and one screen at a time keeps nothing behind them competing for the
- * remote. [onOpen] opens the panel a row names.
+ * Where the phone draws Manage inline — Who's managing?'s tiles where
+ * Everyone here was — the television opens it as a panel of its own
+ * ([TvProfilesPanel]) from the "Manage profiles" row — the tiles, then that
+ * grown-up's view, or for the owner watching their view at once — and Switch
+ * household (`TvJoinHousehold`) from the This device row: their PIN pads and
+ * name questions take the whole screen here wherever they open, and one
+ * screen at a time keeps nothing behind them competing for the remote.
+ * [onOpen] opens the panel a row names. Seeing the page needs no PIN.
  *
  * [entryFocusRequester] is the page's first stop — who is watching, or with
- * nobody chosen the list — drawn whatever has loaded, so the page always has
- * somewhere to be entered. [returningFrom] lands on the row that opened that
- * panel instead — on Manage profiles where that row has gone meanwhile: back
- * from it, or over the picker, whose own Manage profiles button opened the page.
+ * nobody chosen yet Manage profiles — drawn whatever has loaded, so the page
+ * always has somewhere to be entered. [returningFrom] lands on the row that
+ * opened that panel instead — on Manage profiles where that row has gone
+ * meanwhile.
  */
 @Composable
 internal fun TvProfilesPage(
@@ -63,8 +58,7 @@ internal fun TvProfilesPage(
     entryFocusRequester: FocusRequester,
     onOpen: (TvSettingsPanel) -> Unit,
 ) {
-    val rows = remember { listOf(TvSettingsPanel.Profiles, TvSettingsPanel.Join, TvSettingsPanel.Households).associateWith { FocusRequester() } }
-    val list = remember { FocusRequester() }
+    val rows = remember { listOf(TvSettingsPanel.Profiles, TvSettingsPanel.Join).associateWith { FocusRequester() } }
     // Keyed on focusInContent alone, as Telegram's is: the hub forgets the
     // panel it came back from right after, which must not land a second time.
     // Back on one of Household's rows is Household's to land: it knows which are drawn.
@@ -72,7 +66,7 @@ internal fun TvProfilesPage(
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
         chosen?.let { You(it, entryFocusRequester) }
         // A kid manages nothing, so is shown nobody else either.
-        if (chosen?.kids != true) Household(if (chosen == null) entryFocusRequester else list, chosen?.owner == true, rows, returningFrom, onOpen)
+        if (chosen?.kids != true) Household(entryFocusRequester.takeIf { chosen == null }, rows, returningFrom, onOpen)
     }
 }
 
@@ -121,18 +115,17 @@ private fun You(
 
 /**
  * Settings' own Manage profiles, taking the whole screen as one visit
- * ([ProfilesVisit]): "Who are you?" on the way in and again on the way back
+ * ([ProfilesVisit]): Who's managing? on the way in and again on the way back
  * from the background — the owner's view at once for the owner [chosen] —
- * the PIN dropped on the way out. [asOwner], the Owner row's, asks the
- * owner's PIN and then shows the owner's view. Done and Back close the panel,
- * and the panel closing is what ends the visit.
+ * the PIN dropped on the way out. Done, and Back from Who's managing? or from
+ * the view opened at once, close the panel, and the panel closing is what
+ * ends the visit.
  */
 @Composable
 internal fun TvProfilesPanel(
     chosen: Profile?,
-    asOwner: Boolean = false,
     onDone: () -> Unit,
 ) {
     ProfilesVisit(open = true, chosen)
-    TvManageScreen(hiltViewModel(), onClose = onDone, asOwner = asOwner)
+    TvManageScreen(hiltViewModel(), onClose = onDone)
 }

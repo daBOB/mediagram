@@ -43,12 +43,12 @@ data class TvChosenProfile(
  * household shows only Join a household ([JoinHouseholdViewModel]); one
  * whose household has no grown-up left while another has offers it where
  * the first profile — which the core would refuse — would be, beside its
- * kids; and none is offered before the households are read. One screen at a time — whichever PIN is asked
- * replaces what asked for it, the picker's Manage profiles opens Settings' own
- * Profiles page in the picker's place, with nobody chosen, and that page's
- * Manage profiles row replaces it with Manage — so nothing behind competes
- * for the remote. Manage asks who you are and that PIN on every visit, there
- * and in Settings, so entering a profile never hands a child the controls. It
+ * kids; and none is offered before the households are read. One screen at a
+ * time — whichever PIN is asked replaces what asked for it, and the picker's
+ * Manage profiles puts Manage ([TvManageScreen]) in the picker's place — so
+ * nothing behind competes for the remote. Manage asks Who's managing? and
+ * that PIN on every visit, here and in Settings, so entering a profile never
+ * hands a child the controls; Done there is the picker again. It
  * closes, forgetting its PIN, when the library shows again or the app is left
  * (`ui.common.profile.ForgetManageWhenAway`).
  *
@@ -114,9 +114,8 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     // a Back of its own composed after this one, take Back first while open.
     BackHandler(enabled = (state as? ProfileUiState.Picking)?.canStay == true, onBack = viewModel::stay)
     // What the remote left the picker from, and the row's scroll, kept here
-    // while a PIN, the Profiles page or Manage stands in for the picker.
+    // while a PIN or Manage stands in for the picker.
     var landing by remember { mutableStateOf<TvPickerSpot?>(null) }
-    var profilesPage by remember { mutableStateOf(false) }
     var joiningElsewhere by remember { mutableStateOf(false) }
     // Closed by nobody left to join elsewhere, it stays closed: only a press opens it again.
     LaunchedEffect(joining.joinsElsewhere) { if (!joining.joinsElsewhere) joiningElsewhere = false }
@@ -128,13 +127,8 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val unread = (state as? ProfileUiState.Picking)?.takeIf { it.error == null && it.needsFirstProfile && !joining.read }?.copy(synced = false)
     when {
         // A join from the owner's view leaves for the picker, which then shows that household.
-        inManage ->
-            TvManageScreen(manage, onJoined = {
-                manage.close()
-                profilesPage = false
-            })
+        inManage -> TvManageScreen(manage)
         pickPrompt != null -> TvPinPrompt(pickPrompt, onPin = viewModel::enterPin, onCancel = viewModel::cancelPin)
-        profilesPage -> TvProfilesOverPicker(onManage = manage::open, onDone = { profilesPage = false })
         joiningElsewhere && joining.joinsElsewhere -> {
             BackHandler { joiningElsewhere = false }
             TvJoinHousehold(join) { joiningElsewhere = false }
@@ -156,7 +150,7 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
                 onJoin = { joiningElsewhere = true }.takeIf { joining.joinsElsewhere },
                 onManage = {
                     landing = TvPickerSpot.Manage
-                    profilesPage = true
+                    manage.open()
                 },
                 landing = landing,
                 tiles = tiles,
@@ -166,22 +160,27 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
 
 /**
  * Manage, or the PIN it asks for in its place — one screen at a time, as
- * above — wherever it is opened: the Profiles page over the picker here, or
- * Settings' Profiles panel. Managing as the owner, it is the owner's view
- * ([TvOwnerView]), which keeps its steps under the PIN pads itself; [asOwner],
- * the Owner row's, asks the owner's PIN for that view first. [onClose] is its
- * Done and its Back; [onJoined] runs once Use on this device moved the box.
+ * above — wherever it is opened: over the picker here, or Settings' Profiles
+ * panel. Who's managing? first ([TvWhoIsManaging]); managing as the owner,
+ * the owner's view ([TvOwnerView]), which keeps its steps under the PIN pads
+ * itself. [onClose] is Done, and Back on Who's managing?; Back from a view a
+ * tile opened is that question again, the remote on the tile — from one
+ * opened at once, for the owner watching, it is [onClose] too. [onJoined]
+ * runs once Use on this device moved the box: over the picker, which then
+ * shows that household, Manage closes.
  */
 @Composable
 internal fun TvManageScreen(
     manage: ManageProfilesViewModel,
     onClose: () -> Unit = manage::close,
-    asOwner: Boolean = false,
     onJoined: () -> Unit = onClose,
 ) {
     val state by manage.state.collectAsStateWithLifecycle()
     val prompt by manage.pin.collectAsStateWithLifecycle()
     val actions = remember(manage, onClose) { manage.manageActions(onClose) }
-    if (asOwner || (state as? ManageUiState.Managing)?.ownersView == true) return TvOwnerView(manage, state, prompt, actions, onJoined)
-    prompt?.let { TvPinPrompt(it, onPin = manage::enterPin, onCancel = manage::cancelPin) } ?: TvManageProfiles(state, actions)
+    val spot = remember { TvWhoSpot() }
+    val back = if (spot.chosen != null) ({ manage.open() }) else onClose
+    val managing = state as? ManageUiState.Managing
+    if (managing?.ownersView == true) return TvOwnerView(manage, managing, prompt, actions, back, onJoined)
+    prompt?.let { TvPinPrompt(it, onPin = manage::enterPin, onCancel = manage::cancelPin) } ?: TvManageProfiles(state, actions, back, spot)
 }

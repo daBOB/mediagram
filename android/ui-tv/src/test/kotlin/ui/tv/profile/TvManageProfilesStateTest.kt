@@ -1,78 +1,38 @@
 package ui.tv.profile
 
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
-import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performImeAction
-import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.test.pressKey
-import androidx.test.platform.app.InstrumentationRegistry
+import catalog.profile.CHANGE_YOUR_PIN
 import catalog.profile.ManageUiState
+import model.HouseholdWords
 import model.Profile
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.common.profile.ManageActions
-import ui.tv.catalog.TvScreenStateTest
-import ui.tv.setup.TvTextQuestionFieldTag
 import kotlin.test.assertEquals
 
 /**
- * Manage profiles on television, over plain state and recorded actions,
- * driven by the remote: who you are, then what your role lets you change —
- * each row's few choices in a dialog, adding in place. Out of touch mode,
- * where a remote always is.
+ * Manage profiles on television by remote ([TvManageProfilesHarness]): Who's
+ * managing?, then what your role lets you change — one calm row per person,
+ * the remote landing on your own, whose choices open in a dialog.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
-class TvManageProfilesStateTest : TvScreenStateTest() {
-    private val andre = Profile("a", "andre", admin = true, hasPin = true)
-    private val bea = Profile("b", "Bea", hasPin = true)
-    private val tom = Profile("t", "Tom", kids = true, kidsAge = 12, parentId = "b")
-    private val calls = mutableListOf<String>()
-    private val actions =
-        ManageActions(
-            onActAs = { calls += "actAs $it" },
-            onAddKid = { name, age, daily, _ -> calls += "addKid $name $age $daily" },
-            onSetKidsAge = { id, age -> calls += "age $id $age" },
-            onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
-            onSetHiddenSections = { id, sections -> calls += "sections $id $sections" },
-            onRemove = { calls += "remove $it" },
-            onAddGrownUp = { name, _ -> calls += "addGrownUp $name" },
-            onChangePin = { calls += "pin $it" },
-            onClose = { calls += "close" },
-        )
-
-    @Before
-    fun leaveTouchMode() {
-        InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
-    }
-
-    private fun manage(state: ManageUiState) = show { TvManageProfiles(state, actions) }
-
-    /** A key to whatever holds the remote — the dialog's window first, while one is open. */
-    private fun press(key: Key) {
-        val inDialog = isFocused() and hasAnyAncestor(isDialog())
-        val target = if (compose.onAllNodes(inDialog).fetchSemanticsNodes().isNotEmpty()) inDialog else isFocused()
-        compose.onNode(target).performKeyInput { pressKey(key) }
-        compose.waitForIdle()
-    }
-
+class TvManageProfilesStateTest : TvManageProfilesHarness() {
     @Test
-    fun whoAreYouOffersTheGrownUpsAndSaysWhyItAsksAgain() {
+    fun whoIsManagingOffersTheGrownUpsAsTilesAndSaysWhyItAsksAgain() {
         manage(ManageUiState.ChoosingActor(listOf(andre, bea), notice = "Your PIN is no longer valid. Choose who you are again."))
-        compose.onNodeWithText("Who are you?").assertExists()
+        compose.onNodeWithText(HouseholdWords.WHOS_MANAGING).assertExists()
         compose.onNodeWithText("Your PIN is no longer valid. Choose who you are again.").assertExists()
-        compose.onNodeWithText("andre").assertIsFocused()
-        press(Key.DirectionDown)
+        compose.onNodeWithTag(tvManagerTileTag("a")).assertIsFocused()
+        press(Key.DirectionRight)
         press(Key.DirectionCenter)
         assertEquals(listOf("actAs b"), calls)
     }
@@ -82,22 +42,24 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
         manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
         compose.onNodeWithText("As Bea").assertExists()
         compose.onNodeWithText("Grown-ups").assertDoesNotExist()
-        compose.onNodeWithText("Add a grown-up").assertDoesNotExist()
-        compose.onNodeWithText("Tom · FSK 12 · No limit").assertIsFocused()
+        row("Bea").assertIsFocused().assert(hasText("Grown-up · PIN set"))
+        press(Key.DirectionDown)
+        row("Tom").assertIsFocused().assert(hasText("Kid · Bea · FSK 12"))
         press(Key.DirectionCenter)
         // The current limit holds the remote; the other is one step up.
         compose.onNode(hasText("FSK 12") and hasAnyAncestor(isDialog())).assertIsFocused()
         press(Key.DirectionUp)
         press(Key.DirectionCenter)
         assertEquals(listOf("age t 6"), calls)
-        compose.onNodeWithText("Tom · FSK 12 · No limit").assertIsFocused()
+        row("Tom").assertIsFocused()
     }
 
     @Test
     fun aKidsDailyLimitOpensItsOwnDialogHoldingTheCurrentChoice() {
         val limited = tom.copy(dailyLimit = 90)
         manage(ManageUiState.Managing(bea, emptyList(), listOf(limited)))
-        compose.onNodeWithText("Tom · FSK 12 · 1 h 30 min").assertIsFocused()
+        press(Key.DirectionDown)
+        row("Tom").assertIsFocused().assert(hasText("Kid · Bea · FSK 12 · 1 h 30 min"))
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
         compose.onNode(hasText("Daily limit · 1 h 30 min") and hasAnyAncestor(isDialog())).assertIsFocused()
@@ -105,7 +67,7 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
         compose.onNode(hasText("1 h 30 min") and hasAnyAncestor(isDialog())).assertIsFocused()
         press(Key.DirectionCenter)
         assertEquals(emptyList(), calls, "the choice already set sends nothing")
-        compose.onNodeWithText("Tom · FSK 12 · 1 h 30 min").assertIsFocused()
+        row("Tom").assertIsFocused()
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
@@ -117,6 +79,7 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
     @Test
     fun aKidIsRemovedOnlyOnceTheQuestionIsAnswered() {
         manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
+        press(Key.DirectionDown)
         press(Key.DirectionCenter)
         // FSK 12 -> Daily limit -> Sections -> Remove.
         repeat(3) { press(Key.DirectionDown) }
@@ -131,8 +94,9 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
     @Test
     fun theAdminRemovesAGrownUpAfterBeingToldItsKidsGoToo() {
         manage(ManageUiState.Managing(andre, listOf(bea), emptyList()))
-        compose.onNodeWithText("Grown-ups").assertExists()
-        compose.onNodeWithText("Bea").assertIsFocused()
+        compose.onNodeWithText("Grown-ups").assertDoesNotExist()
+        row("andre").assertIsFocused()
+        press(Key.DirectionDown)
         press(Key.DirectionCenter)
         compose.onNode(hasText("Reset PIN") and hasAnyAncestor(isDialog())).assertIsFocused()
         repeat(2) { press(Key.DirectionDown) }
@@ -140,69 +104,27 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Remove Bea, their kids, and everything they have watched?").assertExists()
         press(Key.DirectionCenter)
         assertEquals(emptyList(), calls, "Cancel holds the remote first")
-        compose.onNodeWithText("Bea").assertIsFocused()
+        row("Bea").assertIsFocused()
     }
 
     @Test
     fun theAdminResetsAnotherGrownUpsPin() {
         manage(ManageUiState.Managing(andre, listOf(bea), emptyList()))
+        press(Key.DirectionDown)
         press(Key.DirectionCenter)
         press(Key.DirectionCenter)
         assertEquals(listOf("pin b"), calls)
     }
 
+    /** The manager's own row says what OK on it does — Change your PIN — and the bottom of a long panel is reached by walking down. */
     @Test
-    fun addingAKidAsksItsNameThenItsLimitStartingOnSixThenItsDailyLimitStartingOnNone() {
-        manage(ManageUiState.Managing(bea, emptyList(), emptyList()))
-        compose.onNodeWithText("Add a kid").assertIsFocused()
-        press(Key.DirectionCenter)
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput("Lina")
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
-        compose.waitForIdle()
-        compose.onNodeWithTag(tvKidsLimitTag(6)).assertIsFocused()
-        press(Key.DirectionCenter)
-        compose.onNodeWithTag(tvDailyLimitTag(null)).assertIsFocused()
-        assertEquals(emptyList(), calls)
-        press(Key.DirectionDown)
-        press(Key.DirectionCenter)
-        assertEquals(listOf("addKid Lina 6 30"), calls)
-        compose.onNodeWithText("Add a kid").assertExists()
-    }
-
-    @Test
-    fun backFromTheLimitKeepsTheNameAndBackAgainLeavesTheAddingAlone() {
-        manage(ManageUiState.Managing(bea, emptyList(), emptyList()))
-        press(Key.DirectionCenter)
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput("Lina")
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
-        compose.waitForIdle()
-        back()
-        compose.onNodeWithText("Lina").assertExists()
-        back()
-        compose.onNodeWithText("Add a kid").assertIsFocused()
-        assertEquals(emptyList(), calls)
-    }
-
-    @Test
-    fun addingAGrownUpHandsTheNameOnForItsPin() {
-        manage(ManageUiState.Managing(andre, emptyList(), emptyList()))
-        compose.onNodeWithText("Add a grown-up").assertIsFocused()
-        press(Key.DirectionCenter)
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput("Cleo")
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
-        compose.waitForIdle()
-        assertEquals(listOf("addGrownUp Cleo"), calls)
-    }
-
-    /** The bottom of a long panel is reached by walking down — the page scrolls with the remote. */
-    @Test
-    fun yourPinAndDoneAreReachedByWalkingDown() {
+    fun theOwnRowSaysChangeYourPinAndDoneIsReachedByWalkingDown() {
         val kids = (1..5).map { Profile("k$it", "Kid $it", kids = true, kidsAge = 6, parentId = "a") }
         manage(ManageUiState.Managing(andre, listOf(bea), kids))
-        repeat(1 + 1 + kids.size + 1) { press(Key.DirectionDown) }
-        compose.onNodeWithText("Change your PIN").assertIsFocused()
         press(Key.DirectionCenter)
-        press(Key.DirectionDown)
+        compose.onNode(hasText(CHANGE_YOUR_PIN) and hasAnyAncestor(isDialog())).assertIsFocused()
+        press(Key.DirectionCenter)
+        repeat(1 + kids.size + 1 + 1) { press(Key.DirectionDown) }
         compose.onNodeWithText("Done").assertIsFocused()
         press(Key.DirectionCenter)
         assertEquals(listOf("pin a", "close"), calls)
