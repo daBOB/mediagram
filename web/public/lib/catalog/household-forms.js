@@ -9,9 +9,9 @@ import { el } from "../dom.js";
 import { nameField } from "../profile-add-form.js";
 import { HOUSEHOLD_WORDS } from "../household-words.js";
 
-/** `fields`, and the button `label` that sends them, drawn as Manage's add forms are. */
+/** `fields`, and the button `label` that sends them, on one line of the tray a form opens in. */
 function inline(label, fields, submit) {
-  const form = el("form", "who-new");
+  const form = el("form", "who-new tray-form");
   const send = el("button", "who-create", label);
   send.type = "submit";
   form.addEventListener("submit", (event) => {

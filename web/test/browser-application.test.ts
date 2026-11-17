@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { answerPin, applicationEnvironment, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
+import { tap } from "./support/households-part";
 import { deferred, settle, type Node } from "./support/player-environment";
 
 let bundleDir: string;
@@ -894,7 +895,7 @@ describe("kids profiles", () => {
     buttonNamed(env.document.body, "Manage profiles").fire("click");
     tileNamed(byClass(env.document.body, "who-manage"), "Adult").fire("click");
     await answerPin(env.document.body, "1234");
-    const limit = descendants(env.document.body).find((node) => node.tagName === "SELECT" && node.getAttribute("aria-label") === "Age limit for Viewer")!;
+    const limit = descendants(tap(env.document.body, "Viewer")).find((node) => node.tagName === "SELECT" && node.getAttribute("aria-label") === "Age limit for Viewer")!;
     limit.value = "6";
     limit.fire("change");
     await settle();

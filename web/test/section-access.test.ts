@@ -19,6 +19,7 @@ import { answerPin, buttonNamed, descendants, textOf, tileNamed } from "./suppor
 import { catalogSet } from "./support/catalog-set";
 import { htmlApplicationEnvironment } from "./support/html-application";
 import { fakeLibraryPort } from "./support/library-session-port";
+import { tap } from "./support/households-part";
 import { settle, type Node } from "./support/player-environment";
 
 const film = catalogSet({ setId: "Heat", title: "Heat", kind: "movie", fsk: "12" });
@@ -192,7 +193,7 @@ describe("the page, for a profile with a section hidden", () => {
     buttonNamed(env.node("main"), "Profiles").fire("click");
     tileNamed(env.node("main"), "andre").fire("click");
     await answerPin(env.node("main"), "1357");
-    const group = descendants(env.node("main")).find((node) => node.getAttribute("aria-label") === "Sections for Maja")!;
+    const group = descendants(tap(env.node("main"), "Maja")).find((node) => node.getAttribute("aria-label") === "Sections for Maja")!;
     descendants(group).find((node) => node.getAttribute("role") === "switch" && node.textContent === SECTIONS.movies.label)!.fire("click");
     await settle();
     expect(link("movies").hidden).toBe(true);

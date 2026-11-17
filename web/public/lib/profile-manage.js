@@ -20,12 +20,13 @@ import { el } from "./dom.js";
 import * as state from "./watch-state.js";
 import * as api from "./profile-api.js";
 import { HOUSEHOLD_WORDS } from "./household-words.js";
-import { byHousehold, pill, section } from "./profile-manage-households.js";
+import { byHousehold } from "./profile-manage-households.js";
 import { manageRows } from "./profile-manage-rows.js";
+import { people } from "./profile-manage-person.js";
+import { addSomeone } from "./profile-add-someone.js";
 import { ownerView } from "./profile-manage-owner.js";
 import { whoIsManaging } from "./profile-manage-who.js";
 import { askPin, newPinTitle, promptsOver, refusalText } from "./pin-prompt.js";
-export { pill };
 
 /** What a change reports once the body is gone: nothing was sent. */
 const GONE = { ok: false, reason: "not-found" };
@@ -60,6 +61,8 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
   const named = new Map();
   let changedWith = null;
   const keep = (name, node) => { named.set(name, node); return node; };
+  /** Who is open on the page: one person at a time, still open after a redraw. */
+  const person = people();
 
   /** Whether a PIN is held, the owner's asked now when none is yet; false when none was given, or the body is gone. */
   async function pinHeld() {
@@ -98,17 +101,21 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
   }
 
   /**
-   * Runs `call(actorId, pin, newPin)` from the owner's view, saying a refusal in
-   * `said`, beside its form, which keeps what was typed. `newPinFor` names a
-   * grown-up being added, or about to run a household with no PIN yet: theirs is
-   * asked twice, after the owner's. A taken name is the household's when `named()` says so.
+   * Runs `call(actorId, pin, newPin)` from a form, saying a refusal in `said`,
+   * beside it, which keeps what was typed — but for a PIN that is no longer
+   * theirs, from anyone but the owner, who is asked who they are again.
+   * `newPinFor` names a grown-up being added, or about to run a household with
+   * no PIN yet: theirs is asked twice, after the manager's. A taken name is the
+   * household's when `named()` says so. Once it went through, the control kept
+   * as `name` has focus.
    */
-  async function act(said, call, { newPinFor = null, named: household = () => false } = {}) {
-    changedWith = null;
+  async function act(said, call, { newPinFor = null, named: household = () => false, name = null } = {}) {
+    changedWith = name;
     if (!(await pinHeld())) return;
     const run = (next) => (gone ? Promise.resolve(GONE) : call(session.actorId, session.pin, next));
     const refused = (outcome) => {
       if (gone) return;
+      if (outcome.reason === "wrong-pin" && !showing) return report(outcome);
       if (outcome.reason === "wrong-pin" && session !== null) session.pin = null;
       said.textContent = outcome.reason === "name-taken" && household() ? HOUSEHOLD_WORDS.householdNameTaken : refusalText(outcome);
     };
@@ -127,7 +134,7 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
     const asOwner = session !== null && session.actorId === boss?.id;
     if (asOwner) {
       body.append(el("h1", null, "Manage profiles"), el("p", "who-note", `As ${boss.name}`),
-        ...ownerView(boss, { draws, act, switchProfile: chosen.switchProfile ?? (() => {}) }));
+        ...ownerView(boss, { draws, person, act, keep, switchProfile: chosen.switchProfile ?? (() => {}) }));
     } else {
       const view = session === null || !state.profiles().some((one) => one.id === session.actorId) ? null : api.manageable(state.everyone(), session.actorId);
       if (view?.actor) drawRole(view);
@@ -154,12 +161,14 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
       } }));
   }
 
-  /** The rows and forms the layouts draw: one's own, a grown-up's, a kid's, and adding either. */
-  const draws = manageRows({ promptHost, ask, send, report, keep, newPin });
+  /** What opens under a person's row: one's own, a grown-up's, a kid's. */
+  const draws = manageRows({ send, report, keep, newPin });
 
+  /** Anyone but the owner: their own household's people as the owner's view draws them, unnamed, with Add someone. */
   function drawRole(view) {
-    body.append(el("h1", null, "Manage profiles"), el("p", "who-note", `As ${view.actor.name}`), ...byHousehold(view, draws),
-      section("Your PIN", [pill("Change your PIN", () => void newPin(view.actor))]));
+    const add = addSomeone({ grownUp: view.actor.admin === true, kid: true, act, keep });
+    body.append(el("h1", null, "Manage profiles"), el("p", "who-note", `As ${view.actor.name}`),
+      byHousehold(view, state.profiles(), { person, draws, add }));
   }
 
   /** A new PIN for `entry`, asked twice — the owner's own first, if not held yet. Changing one's own changes the one held here, or the next change would be refused. */

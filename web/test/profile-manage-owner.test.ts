@@ -13,7 +13,9 @@ import { newPinTitle } from "../public/lib/pin-prompt.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
 import { AT_HOME, FLAT, SPLIT, storage, writesOf } from "./support/household-fixture";
-import { actionsOf, ATTIC, fieldOf, fill, optionsOf, press, prompting, promptTitle, rowOf as householdRow, rows } from "./support/households-part";
+import {
+  actionsOf, addSomeone, ATTIC, choose, fieldOf, fill, opened, optionsOf, press, prompting, promptTitle, rowOf as householdRow, rows,
+} from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 /** A third household, listed first: Ida runs the loft. */
@@ -59,15 +61,37 @@ const headings = (root: Node) => descendants(manage(root)).filter((node) => ["H1
 const rowOf = (root: Node, name: string) => descendants(root).find((node) => node.className === "manage-row" && node.children[0]?.textContent === name);
 /** The line a profile's row says who it is in. */
 const lineOf = (root: Node, name: string) => textOf(byClass(rowOf(root, name)!, "setting-value"));
+/** A section's switch in `name`'s Sections, under `root` — their part of the page, tapped open. */
 const switchOf = (root: Node, name: string, label: string) =>
   descendants(descendants(root).find((node) => node.getAttribute("aria-label") === `Sections for ${name}`)!)
     .find((node) => node.getAttribute("role") === "switch" && node.textContent === label)!;
 /** The household `name`'s part of the owner's view: its header row, its people, its add forms. */
 const householdOf = (root: Node, name: string) => householdRow(root, name).parent!;
 const namesOf = (root: Node) => rows(root).map((row) => row.children[0]!.textContent);
-/** What the add forms under `root` add, by their buttons. */
+/** What the forms under `root` send, by their buttons. */
 const formsOf = (root: Node) => descendants(root).filter((node) => node.classes.has("who-create")).map((node) => node.textContent);
 const formOf = (root: Node, label: string) => descendants(root).find((node) => node.tagName === "FORM" && formsOf(node).includes(label))!;
+/** What Add someone under `root` adds, opening it: its button's word for each kind it may add. */
+function addsOf(root: Node) {
+  const form = addSomeone(root);
+  const kinds = descendants(form).filter((node) => node.tagName === "INPUT" && node.parent!.classes.has("add-kind-option"));
+  if (kinds.length === 0) return formsOf(form);
+  return kinds.map((kind) => {
+    choose(form, kind.parent!.children[1]!.textContent);
+    return formsOf(form)[0];
+  });
+}
+/** The household `household`'s Add someone, opened and set to add what `label` adds. */
+function addFormOf(root: Node, household: string, label: string) {
+  const form = addSomeone(householdOf(root, household));
+  if (label === "Add a kid") choose(form, W.kid);
+  return form;
+}
+/** The Create a household form, opened. */
+function createFormOf(root: Node) {
+  buttonNamed(root, W.createAHousehold).fire("click");
+  return formOf(root, W.createAHousehold);
+}
 /** Where a form's refusal is said: right after it. */
 const saidAfter = (form: Node) => form.parent!.children[form.parent!.children.indexOf(form) + 1]!;
 /** The This device part of the page, which only the owner's view shows. */
@@ -75,8 +99,8 @@ const thisDevice = (root: Node) => descendants(root).find((node) => node.childre
 
 /** Types `name` into the household `household`'s `label` form, sets what `set` sets, and sends it. */
 async function add(root: Node, household: string, label: string, name: string, set = (_form: Node) => {}) {
-  const form = formOf(householdOf(root, household), label);
-  descendants(form).find((node) => node.tagName === "INPUT")!.value = name;
+  const form = addFormOf(root, household, label);
+  fieldOf(form, "Name").value = name;
   set(form);
   form.fire("submit");
   await settle();
@@ -101,7 +125,7 @@ async function manageAs(name: string, pin: string) {
 
 /** Sets Tim's age limit: a change the owner's view always offers. */
 async function changeTim(root: Node, age = "12") {
-  const limit = fieldOf(root, "Age limit for Tim");
+  const limit = fieldOf(opened(root, "Tim"), "Age limit for Tim");
   limit.value = age;
   limit.fire("change");
   await settle();
@@ -125,18 +149,19 @@ test("watching as the owner, the page shows every household with its actions and
   expect(actionsOf(householdRow(main, "Flat"))).toEqual([W.rename, W.moveHere, W.useHere]);
   // Each household's people, each with the line Everyone here says and what the owner may change.
   expect(lineOf(householdOf(main, "Home"), "andre")).toBe(`${W.owner} · Admin · PIN set`);
-  expect(buttonNamed(rowOf(main, "andre")!, "Change your PIN")).toBeDefined();
+  expect(buttonNamed(opened(main, "andre"), "Change your PIN")).toBeDefined();
   expect(lineOf(householdOf(main, "Home"), "Lea")).toBe("Kid · andre · FSK 12");
   expect(lineOf(householdOf(main, "Flat"), "Tim")).toBe("Kid · Maja · FSK 6");
   for (const [household, name] of [["Loft", "Ida"], ["Flat", "Maja"]]) {
     const row = rowOf(householdOf(main, household!), name!)!;
     expect(textOf(byClass(row, "setting-value"))).toBe("Admin · PIN set");
-    expect(buttonNamed(row, "Reset PIN")).toBeDefined();
-    expect(buttonNamed(row, "Remove")).toBeDefined();
-    expect(switchOf(row, name!, SECTIONS.anime.label)).toBeDefined();
+    const person = opened(main, name!);
+    expect(buttonNamed(person, "Reset PIN")).toBeDefined();
+    expect(buttonNamed(person, "Remove")).toBeDefined();
+    expect(switchOf(person, name!, SECTIONS.anime.label)).toBeDefined();
   }
-  for (const household of ["Home", "Loft", "Flat"]) expect(formsOf(householdOf(main, household))).toEqual(["Add a grown-up", "Add a kid"]);
-  expect(formOf(main, W.createAHousehold)).toBeDefined();
+  for (const household of ["Home", "Loft", "Flat"]) expect(addsOf(householdOf(main, household))).toEqual(["Add a grown-up", "Add a kid"]);
+  expect(createFormOf(main)).toBeDefined();
   // Seeing it asks nothing: the PIN waits for the first change.
   expect(prompting(main)).toBe(false);
   expect(sent()).toEqual([]);
@@ -173,7 +198,7 @@ test("Add a grown-up in another household sends that household", async () => {
 test("Add a kid in another household belongs to its admin", async () => {
   const { main } = settingsAs(OWNER);
   // The flat has one grown-up, so there is nobody to choose between.
-  expect(descendants(householdOf(main, "Flat")).some((node) => node.getAttribute("aria-label") === W.belongsTo)).toBe(false);
+  expect(descendants(addFormOf(main, "Flat", "Add a kid")).some((node) => node.getAttribute("aria-label") === W.belongsTo)).toBe(false);
   await add(main, "Flat", "Add a kid", "Ben");
   await answerPin(main, "1357");
   expect(sent().at(-1)).toEqual(["POST", "/api/profiles",
@@ -184,7 +209,7 @@ test("a household with two grown-ups asks who a new kid belongs to", async () =>
   everyone = [OLE, ...everyone];
   await state.loadProfiles();
   const { main } = settingsAs(OWNER);
-  const parent = fieldOf(householdOf(main, "Flat"), W.belongsTo);
+  const parent = fieldOf(addFormOf(main, "Flat", "Add a kid"), W.belongsTo);
   expect(optionsOf(parent)).toEqual(["Ole", "Maja"]);
   // The household's admin, though not listed first.
   expect(parent.value).toBe("maja");
@@ -200,7 +225,7 @@ test("an empty household offers Add a grown-up and Delete but not Add a kid", as
   const { main } = settingsAs(OWNER);
   expect(namesOf(main)).toEqual(["Home", "Attic", "Loft", "Flat"]);
   expect(actionsOf(householdRow(main, "Attic"))).toContain(W.delete);
-  expect(formsOf(householdOf(main, "Attic"))).toEqual(["Add a grown-up"]);
+  expect(addsOf(householdOf(main, "Attic"))).toEqual(["Add a grown-up"]);
 });
 
 test("This device shows in Settings for the owner's view and for anyone else", async () => {
@@ -267,11 +292,11 @@ test("a taken name is said beside the form it was typed in", async () => {
   await answerPin(main, "1357");
   await answerPin(main, "2468", "2468");
   expect(prompting(main)).toBe(false);
-  const form = formOf(householdOf(main, "Flat"), "Add a grown-up");
+  const form = addFormOf(main, "Flat", "Add a grown-up");
   expect(textOf(saidAfter(form))).toBe(W.profileNameTaken);
   // The form keeps what was typed, to be put right; no other form says anything.
-  expect(descendants(form).find((node) => node.tagName === "INPUT")!.value).toBe("maja");
-  expect(textOf(saidAfter(formOf(householdOf(main, "Loft"), "Add a grown-up")))).toBe("");
+  expect(fieldOf(form, "Name").value).toBe("maja");
+  expect(textOf(saidAfter(addFormOf(main, "Loft", "Add a grown-up")))).toBe("");
   expect(textOf(manage(main))).not.toContain("Wrong PIN.");
 });
 
@@ -306,15 +331,15 @@ test("a household added or removed elsewhere redraws the view and keeps the PIN"
 
 test("the owner's changes in another household reach that profile: a PIN, a section, a kid's limit, a removal", async () => {
   const root = await manageAs("andre", "1357");
-  buttonNamed(rowOf(root, "Ida")!, "Reset PIN").fire("click");
+  buttonNamed(opened(root, "Ida"), "Reset PIN").fire("click");
   await answerPin(root, "2468", "2468");
   expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/ida/pin", { actorId: "andre", pin: "1357", newPin: "2468" }]);
-  switchOf(root, "Maja", SECTIONS.anime.label).fire("click");
+  switchOf(opened(root, "Maja"), "Maja", SECTIONS.anime.label).fire("click");
   await settle();
   expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/maja/hidden-sections", { actorId: "andre", pin: "1357", sections: ["anime"] }]);
   await changeTim(root);
   expect(sent().at(-1)).toEqual(timTo(12));
-  buttonNamed(rowOf(root, "Ida")!, "Remove").fire("click");
+  buttonNamed(opened(root, "Ida"), "Remove").fire("click");
   await settle();
   expect(sent().at(-1)).toEqual(["DELETE", "/api/profiles/ida", { actorId: "andre", pin: "1357" }]);
   // The loft is still there, empty now, so it may be deleted.
@@ -327,7 +352,8 @@ test("anyone else manages only this device's household, unnamed, as before", asy
   Object.assign(env.window, { localStorage: storage({ "mediagram.household": "flat" }) });
   await state.loadProfiles();
   const root = await manageAs("Maja", "4321");
-  expect(headings(root)).toEqual(["Manage profiles", "Grown-ups", "Kids", "Your PIN"]);
+  // One list of their people under the page's heading: no household's name heads it.
+  expect(headings(root)).toEqual(["Manage profiles"]);
   expect(rowOf(root, "Tim")).toBeDefined();
   for (const name of ["Ida", "Lea", "andre"]) expect(rowOf(root, name)).toBeUndefined();
   expect(rows(root)).toEqual([]);
@@ -339,8 +365,8 @@ test("the owner of one household gets the owner's view too", async () => {
   await state.loadProfiles();
   const root = await manageAs("andre", "1357");
   expect(namesOf(root)).toEqual(["Home"]);
-  expect(buttonNamed(rowOf(root, "Maja")!, "Reset PIN")).toBeDefined();
-  expect(formOf(root, W.createAHousehold)).toBeDefined();
+  expect(buttonNamed(opened(root, "Maja"), "Reset PIN")).toBeDefined();
+  expect(createFormOf(root)).toBeDefined();
 });
 
 test("a household renamed in the owner's view shows at once, and the view keeps its PIN", async () => {

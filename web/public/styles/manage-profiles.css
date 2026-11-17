@@ -1,0 +1,103 @@
+/* Manage profiles, calm: a household is a serif heading over its people; a
+   person is one row — the picker's initial, the name, the line that says who
+   they are, a › — that opens what may be changed of them in a sunk tray under
+   it. Adding and a household's actions wait behind a button until asked for,
+   so a closed page holds no field at all. The accent is kept for the one
+   submit inside an open form. */
+
+.manage-inline .who-note { margin-bottom: 32px; }
+.manage-household { margin: 0 0 40px; }
+.manage-household:last-of-type { margin-bottom: 24px; }
+.manage-inline .household-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 4px 16px; padding: 0 0 12px; border-bottom: 1px solid var(--rule); }
+.manage-inline .household-row > h2 { margin: 0; font: 500 1.375rem/1.2 var(--display); letter-spacing: -0.01em; color: var(--ink); overflow-wrap: anywhere; }
+.household-row > .setting-value { margin: 0; color: var(--ink-3); font-size: 0.8125rem; }
+.household-row > :is(.household-form, .pin-message) { grid-column: 1 / -1; }
+.household-row > :is(.household-form, .pin-message):empty { display: none; }
+.manage-people { border-top: 1px solid var(--rule); }
+
+/* ⋯ and the small list it opens, under it at its right edge. */
+.household-more { position: relative; }
+.household-more .more-button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid var(--rule); border-radius: 50%; background: none; color: var(--ink-2); font-size: 1.1rem; line-height: 1; transition: background-color var(--hover), border-color var(--hover), color var(--hover); }
+.household-more .more-button:hover, .household-more .more-button[aria-expanded="true"] { border-color: color-mix(in srgb, var(--ink) 45%, transparent); background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.household-more .more-list { left: auto; right: 0; min-width: 13rem; }
+.more-item { min-height: 44px; padding: 0 12px; border: 0; border-radius: 9px; background: none; color: var(--ink); font-size: 0.9375rem; text-align: left; }
+.more-item:hover { background: var(--rule-soft); }
+
+/* A person's row: the whole row is the button. */
+.manage-person { border-bottom: 1px solid var(--rule-soft); }
+.manage-row { display: grid; grid-template-columns: 36px minmax(0, 10rem) minmax(0, 1fr) 16px; align-items: center; gap: 0 16px; width: 100%; min-height: 64px; padding: 12px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+.manage-row::before { content: attr(data-initial); content: attr(data-initial) / ""; display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius); background: var(--paper-sunk); color: var(--ink-2); font-size: 0.9375rem; font-weight: 500; transition: background-color var(--hover), color var(--hover); }
+.manage-name { color: var(--ink); font-weight: 500; overflow-wrap: anywhere; }
+.manage-row > .setting-value { margin: 0; color: var(--ink-3); font-size: 0.875rem; }
+.manage-chevron { color: var(--ink-3); font-size: 1.25rem; line-height: 1; text-align: center; transition: transform var(--hover), color var(--hover); }
+/* As a Who's watching? tile answers a hover: the initial takes the accent's tint. */
+button.manage-row:hover::before, .manage-row[aria-expanded="true"]::before { background: var(--accent-tint); color: var(--accent); }
+button.manage-row:hover .manage-chevron { color: var(--ink); }
+.manage-row[aria-expanded="true"] .manage-chevron { transform: rotate(90deg); color: var(--ink); }
+
+/* What opens in place: a person's controls, Add someone, a household's form. */
+.manage-controls, .manage-opened, .household-form { display: grid; gap: 14px; padding: 20px; border-radius: var(--radius-card); background: var(--paper-sunk); animation: tray-in 240ms var(--ease-out) both; }
+.manage-controls, .manage-opened { margin: 0 0 16px 52px; }
+.household-form { margin-top: 12px; }
+@keyframes tray-in { from { opacity: 0; transform: translateY(-4px); } }
+.manage-line, .manage-controls .section-switches { display: flex; align-items: center; gap: 8px 16px; }
+.manage-controls .section-switches { align-items: flex-start; }
+.manage-label, .manage-controls .section-switches-title { flex: 0 0 7rem; margin: 0; color: var(--ink-3); font-size: 0.875rem; }
+.manage-controls .section-switches-title { line-height: 40px; }
+.section-switches-list { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+/* Every field in a tray is the settings page's pill, as the chips and buttons beside it are. */
+:is(.manage-line, .tray-form) :is(select, input:not([type])) { min-width: 0; min-height: 40px; margin: 0; padding: 0 18px; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 0.875rem; }
+:is(.manage-line, .tray-form) select { padding-right: 40px; }
+:is(.manage-opened, .household-form) .who-create { min-height: 40px; padding: 0 20px; border-radius: 999px; }
+.manage-line input:not([type]) { flex: 1; max-width: 20rem; font-size: 1rem; }
+.manage-line input::placeholder { color: var(--ink-3); }
+.manage-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.manage-actions:not(:first-child) { padding-top: 14px; border-top: 1px solid var(--rule-soft); }
+.manage-controls .pill { min-height: 40px; padding: 0 18px; font-size: 0.875rem; }
+.manage-remove { margin-left: auto; min-height: 40px; padding: 0 4px; border: 0; background: none; color: var(--warn); font-size: 0.875rem; }
+.manage-remove:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Add someone and Create a household: an empty slot where a new initial would go. */
+.manage-add { display: inline-flex; align-items: center; gap: 16px; min-height: 60px; padding: 0; border: 0; background: none; color: var(--ink-2); font-size: 0.9375rem; transition: color var(--hover); }
+.manage-add::before { content: "+"; content: "+" / ""; display: grid; place-items: center; width: 36px; height: 36px; border: 1px dashed var(--rule); border-radius: var(--radius); color: var(--ink-3); font-size: 1.125rem; transition: border-color var(--hover), color var(--hover), background-color var(--hover); }
+.manage-add:hover, .manage-add[aria-expanded="true"] { color: var(--ink); }
+.manage-add:hover::before, .manage-add[aria-expanded="true"]::before { border-style: solid; border-color: var(--accent); background: var(--accent-tint); color: var(--accent); }
+.household-create { margin-top: 8px; }
+
+/* The Add someone form: Grown-up or Kid, then labelled lines, then its one submit under the fields. */
+.add-form, .add-kid { display: grid; gap: 14px; }
+.add-kind { display: inline-flex; justify-self: start; padding: 3px; border: 1px solid var(--rule); border-radius: 999px; }
+.add-kind-option { position: relative; }
+.add-kind-option input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.add-kind-option span { display: block; padding: 7px 18px; border-radius: 999px; color: var(--ink-2); font-size: 0.875rem; transition: background-color var(--hover), color var(--hover); }
+.add-kind-option input:checked + span { background: var(--ink); color: var(--paper); }
+.add-kind-option input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.add-form .who-create { justify-self: start; margin-left: calc(7rem + 16px); }
+.manage-opened > .pin-message:empty { display: none; }
+.add-form + .pin-message { margin-left: calc(7rem + 16px); }
+/* A household's forms and Create a household keep their fields on one line, at the tray's left edge. */
+.tray-form { justify-content: flex-start; gap: 8px 12px; margin: 0; }
+.tray-form input:not([type]) { font-size: 1rem; }
+.household-admin { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-3); font-size: 0.875rem; }
+
+/* This device: one quiet line under everything, the way to another household at its end. */
+.device-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; padding-top: 16px; border-top: 1px solid var(--rule-soft); color: var(--ink-3); font-size: 0.875rem; }
+.device-line > .setting-value { margin: 0; color: var(--ink); }
+.device-line > .setting-value::before { content: "\00a0·\00a0"; content: "\00a0·\00a0" / ""; color: var(--ink-3); }
+.device-line > .device-switch { margin: 0 0 0 auto; }
+.device-line > .who-ask { flex-basis: 100%; margin: 8px 0 0; }
+
+@media (max-width: 599px) {
+  .manage-inline .household-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .household-row > .setting-value { grid-column: 1; }
+  .household-row > .household-more { grid-column: 2; grid-row: 1 / 3; }
+  .manage-row { grid-template-columns: 36px minmax(0, 1fr) 16px; gap: 2px 14px; }
+  .manage-row::before { grid-row: 1 / 3; }
+  .manage-row > .setting-value { grid-column: 2; }
+  .manage-chevron { grid-column: 3; grid-row: 1 / 3; }
+  .manage-controls, .manage-opened { margin-left: 0; padding: 16px; }
+  .manage-line, .manage-controls .section-switches { flex-direction: column; align-items: stretch; gap: 6px; }
+  .manage-label, .manage-controls .section-switches-title { flex: none; line-height: 1.4; }
+  .manage-line input:not([type]) { max-width: none; }
+  .add-form .who-create, .add-form + .pin-message { margin-left: 0; }
+}

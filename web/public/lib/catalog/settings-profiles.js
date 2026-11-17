@@ -12,7 +12,7 @@
 
 import { el } from "../dom.js";
 import { href } from "../address.js";
-import { mountManage, pill } from "../profile-manage.js";
+import { mountManage } from "../profile-manage.js";
 import * as state from "../watch-state.js";
 import { thisHousehold } from "../household.js";
 import { joinChoices } from "../household-join.js";
@@ -64,9 +64,10 @@ function subtitlePreference() {
 }
 
 /**
- * Draws into `set` which household's profiles this device shows, and a way to
- * another — when `shown`, and while there is more than one. Joining one takes
- * the device off the profile chosen here, so `onJoined` asks who is watching again.
+ * Draws into `set`, one quiet line at the page's end, which household's
+ * profiles this device shows, and a way to another — when `shown`, and while
+ * there is more than one. Joining one takes the device off the profile chosen
+ * here, so `onJoined` asks who is watching again.
  */
 function drawThisDevice(set, promptHost, onJoined, shown) {
   set.textContent = "";
@@ -74,11 +75,13 @@ function drawThisDevice(set, promptHost, onJoined, shown) {
   set.hidden = !shown || state.households().length < 2;
   if (set.hidden) return;
   const here = thisHousehold();
-  const change = pill(HOUSEHOLD_WORDS.switchHousehold, () => {
+  const change = el("button", "quiet device-switch", HOUSEHOLD_WORDS.switchHousehold);
+  change.type = "button";
+  change.addEventListener("click", () => {
     change.hidden = true;
     set.append(joinChoices(promptHost, { except: here?.id, onJoined }));
   });
-  set.append(el("h2", "setting-title", HOUSEHOLD_WORDS.thisDevice), el("p", "setting-value", here?.name ?? ""), change);
+  set.append(el("span", "device-label", HOUSEHOLD_WORDS.thisDevice), el("span", "setting-value", here?.name ?? ""), change);
 }
 
 /**
@@ -95,7 +98,7 @@ export function profilesPanel(promptHost, { profile, switchProfile, systemVisibl
   if (profile?.kids) return { box, stop: () => {} };
   // Scoped faces (appearance.css) make the shared body read as settings sections.
   const manage = el("div", "setting manage-inline");
-  const device = el("div", "setting");
+  const device = el("div", "setting device-line");
   let owning = false;
   // Over the picker, nobody chosen, Who's managing? stands alone until the owner's view opens; in Settings every grown-up has it.
   const drawDevice = () => drawThisDevice(device, promptHost, switchProfile, profile != null || owning);

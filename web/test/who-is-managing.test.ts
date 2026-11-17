@@ -12,7 +12,7 @@ import { HOUSEHOLD_WORDS as W } from "../public/lib/household-words.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf, tileNamed as tileOf } from "./support/browser-application";
 import { AT_HOME, FLAT, storage, writesOf } from "./support/household-fixture";
-import { ATTIC, EVERYONE, prompting, promptTitle, rows } from "./support/households-part";
+import { ATTIC, EVERYONE, opened, prompting, promptTitle, rows } from "./support/households-part";
 import { browserEnvironment, Node } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -80,7 +80,7 @@ test("the owner's tile says Owner and opens the owner view after the owner's PIN
   expect(textOf(root)).toContain("As andre");
   expect(tilesOf(root)).toEqual([]);
   // This device is the owner's to switch: it shows in the owner's view.
-  expect(headings(root)).toContain(W.thisDevice);
+  expect(byClass(root, "device-line").hidden).toBe(false);
 });
 
 test("a grown-up's tile opens their own management after their PIN", async () => {
@@ -90,7 +90,7 @@ test("a grown-up's tile opens their own management after their PIN", async () =>
   await answerPin(root, "2468");
   expect(sent()).toEqual([["POST", "/api/profiles/kai/unlock", { pin: "2468" }]]);
   expect(textOf(root)).toContain("As Kai");
-  expect(buttonNamed(root, "Change your PIN")).toBeDefined();
+  expect(buttonNamed(opened(root, "Kai"), "Change your PIN")).toBeDefined();
   expect(rows(root)).toEqual([]);
   expect(tilesOf(root)).toEqual([]);
 });
@@ -124,8 +124,9 @@ test("a wrong PIN says so on the tiles and nothing opens", async () => {
 
 test("Settings for a grown-up who is not the owner shows the same tiles and no Everyone here", () => {
   const main = settingsAs("kai");
-  // This device stays theirs to switch, below the tiles.
-  expect(headings(main)).toEqual(["Settings", "Who is watching", "Subtitles", W.whosManaging, W.thisDevice]);
+  // This device stays theirs to switch, a line below the tiles.
+  expect(headings(main)).toEqual(["Settings", "Who is watching", "Subtitles", W.whosManaging]);
+  expect(byClass(main, "device-line").hidden).toBe(false);
   expect(tilesOf(main)).toEqual([`andre · ${W.owner}`, "Kai"]);
   expect(textOf(main)).not.toContain("Everyone here");
   expect(textOf(main)).not.toContain("Who are you?");

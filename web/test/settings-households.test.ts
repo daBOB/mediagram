@@ -7,7 +7,7 @@ import { newPinTitle } from "../public/lib/pin-prompt.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
 import { AT_HOME, FLAT, storage, writesOf } from "./support/household-fixture";
-import { actionsOf, ATTIC, create, EVERYONE, fieldOf, fill, MAJA, open, optionsOf, OWNER, part, press, prompting, promptTitle, rowOf, rows } from "./support/households-part";
+import { actionsOf, ATTIC, create, EVERYONE, fieldOf, fill, MAJA, menuOf, open, optionsOf, OWNER, part, press, prompting, promptTitle, rowOf, rows } from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -89,6 +89,7 @@ test("create with a new grown-up sends the name, the admin's name and PIN", asyn
 test("create with an existing grown-up asks a PIN only when it has none", async () => {
   const { root } = part(OWNER);
   // Only those the rule lets move: never the owner, never Maja, who still has Ole to run the flat for.
+  buttonNamed(root, W.createAHousehold).fire("click");
   expect(optionsOf(fieldOf(root, W.admin))).toEqual([W.aNewGrownUp, "Ole", "Kai"]);
   await create(root, "Oma", { id: "kai" });
   await answerPin(root, "1357");
@@ -182,13 +183,13 @@ test("leaving the page drops the owner's PIN", async () => {
   const stop = renderSettings(main, { profile: OWNER, switchProfile: () => {}, systemVisible: false, admin: null });
   const profiles = () => buttonNamed(main, "Profiles").fire("click");
   profiles();
-  buttonNamed(rowOf(main, "Attic"), W.delete).fire("click");
+  buttonNamed(menuOf(rowOf(main, "Attic")), W.delete).fire("click");
   await answerPin(main, "1357");
   expect(sent().at(-1)).toEqual(["DELETE", "/api/households/attic", { actorId: "andre", pin: "1357" }]);
 
   buttonNamed(main, "Appearance").fire("click");
   profiles();
-  const remove = buttonNamed(rowOf(main, "Attic"), W.delete);
+  const remove = buttonNamed(menuOf(rowOf(main, "Attic")), W.delete);
   remove.fire("click");
   expect(promptTitle(main)).toBe(W.ownersPin);
   stop();

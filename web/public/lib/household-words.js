@@ -28,6 +28,10 @@ export const HOUSEHOLD_WORDS = {
   householdNameTaken: "A household with that name already exists.",
   profileNameTaken: "That name is already used on this install.",
   whosManaging: "Who’s managing?",
+  addSomeone: "Add someone",
+  grownUp: "Grown-up",
+  kid: "Kid",
+  actionsFor: "Actions for",
 };
 
 /** A household's line in the owner's list: who runs it, and how many profiles are in it. */

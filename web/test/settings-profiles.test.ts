@@ -6,7 +6,7 @@ import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
 import { ANDRE, AT_HOME, FLAT, LEA, MAJA, SPLIT, storage, TIM, writesOf } from "./support/household-fixture";
-import { create, fieldOf, fill, open, optionsOf, prompting, rowOf } from "./support/households-part";
+import { addSomeone, create, fieldOf, fill, open, optionsOf, prompting, rowOf } from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -123,8 +123,8 @@ test("managingAsksWhoYouAreAndThePin, then a kid added appears in their list", a
   expect(textOf(main)).toContain(HOUSEHOLD_WORDS.whosManaging);
   tileNamed(main, "Maja").fire("click");
   await answerPin(main, "4321");
-  const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a kid"))!;
-  descendants(form).find((node) => node.tagName === "INPUT")!.value = "Ben";
+  const form = addSomeone(main);
+  fieldOf(form, "Name").value = "Ben";
   form.fire("submit");
   await settle();
   expect(writesOf(env.requests).at(-1)?.[2]).toMatchObject({ actorId: "maja", pin: "4321", name: "Ben" });
@@ -136,8 +136,8 @@ const pinsSent = () => writesOf(env.requests).map((write) => (write[2] as { pin?
 
 /** Adds a kid named `name` through whatever controls are on the page. */
 async function addKid(main: Node, name: string) {
-  const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a kid"))!;
-  descendants(form).find((node) => node.tagName === "INPUT")!.value = name;
+  const form = addSomeone(main);
+  fieldOf(form, "Name").value = name;
   form.fire("submit");
   await settle();
 }
@@ -165,11 +165,11 @@ test("leavingThePageDropsThePin", async () => {
   openProfiles(main);
   tileNamed(main, "Maja").fire("click");
   await answerPin(main, "4321");
-  const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a kid"))!;
+  const form = addSomeone(main);
   stop();
   const before = writesOf(env.requests).length;
   // The old controls are still in hand: a change driven from them sends nothing.
-  descendants(form).find((node) => node.tagName === "INPUT")!.value = "Ben";
+  fieldOf(form, "Name").value = "Ben";
   form.fire("submit");
   await settle();
   expect(writesOf(env.requests).length).toBe(before);
@@ -187,13 +187,16 @@ async function inTheFlat() {
 test("the Profiles page says this device's household and offers Switch only with two", async () => {
   const alone = settings(find("Maja")).main;
   openProfiles(alone);
-  expect(sectionsOf(alone)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
+  expect(byClass(alone, "device-line").hidden).toBe(true);
 
   await inTheFlat();
   const { main } = settings(find("Maja"));
   openProfiles(main);
-  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", HOUSEHOLD_WORDS.whosManaging, HOUSEHOLD_WORDS.thisDevice]);
-  const row = descendants(main).find((node) => node.className === "setting" && textOf(node).startsWith(HOUSEHOLD_WORDS.thisDevice))!;
+  // This device is a line under Who's managing?, not a section of its own.
+  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", HOUSEHOLD_WORDS.whosManaging]);
+  const row = byClass(main, "device-line");
+  expect(row.hidden).toBe(false);
+  expect(textOf(row)).toStartWith(HOUSEHOLD_WORDS.thisDevice);
   expect(textOf(byClass(row, "setting-value"))).toBe("Flat");
   buttonNamed(row, HOUSEHOLD_WORDS.switchHousehold).fire("click");
   // Every other household, never the one this device is in.
@@ -215,7 +218,7 @@ test("a household change shows on the rest of the page: this device's household,
   await state.loadProfiles();
   const { main } = settings(find("andre"));
   openProfiles(main);
-  expect(sectionsOf(main)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
+  expect(byClass(main, "device-line").hidden).toBe(true);
 
   // Maja runs the new flat, and her Tim goes with her.
   written = () => {
@@ -224,9 +227,9 @@ test("a household change shows on the rest of the page: this device's household,
   };
   await create(main, "Flat", { id: "maja" });
   await answerPin(main, "1357");
-  expect(sectionsOf(main)).toContain(HOUSEHOLD_WORDS.thisDevice);
+  expect(byClass(main, "device-line").hidden).toBe(false);
   // The owner's view draws the new household with those moved into it, and is still the owner's.
-  const people = (name: string) => rowOf(main, name).parent!.children.filter((node) => node.className === "manage-row").map((row) => row.children[0]!.textContent);
+  const people = (name: string) => descendants(rowOf(main, name).parent!).filter((node) => node.className === "manage-row").map((row) => row.children[0]!.textContent);
   expect(people("Home")).toEqual(["andre", "Lea"]);
   expect(people("Flat")).toEqual(["Maja", "Tim"]);
   expect(textOf(main)).toContain("As andre");
@@ -239,8 +242,8 @@ test("a grown-up added in the owner's view can be moved at once, and a rename ke
   await state.loadProfiles();
   const { main } = settings(find("andre"));
   openProfiles(main);
-  const form = descendants(rowOf(main, "Home").parent!).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a grown-up"))!;
-  descendants(form).find((node) => node.tagName === "INPUT")!.value = "Opa";
+  const form = addSomeone(rowOf(main, "Home").parent!);
+  fieldOf(form, "Name").value = "Opa";
   form.fire("submit");
   await settle();
   await answerPin(main, "1357");

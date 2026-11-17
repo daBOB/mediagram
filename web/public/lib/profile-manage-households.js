@@ -1,9 +1,9 @@
 /**
- * Manage profiles' parts: a button, a section, a profile's row, the line that says who
- * a profile is — which the owner's view shows — and the
- * layout of anyone but the owner, who manages only their own household, drawn
- * as it always was: Grown-ups for its admin, then Kids. The owner's view of
- * every household is `profile-manage-owner.js`.
+ * Manage profiles' parts: a button, where a refusal is said, one line of an
+ * open part, a quiet button that opens a form in place, the line that says who
+ * a profile is — and the calm list of anyone but the owner, who manages only
+ * their own household, unnamed. The owner's view of every household is
+ * `profile-manage-owner.js`.
  */
 
 import { el } from "./dom.js";
@@ -21,18 +21,53 @@ export function pill(label, onClick) {
   return button;
 }
 
-/** A part of Manage headed `title`, at `level`, holding `nodes`. */
-export function section(title, nodes, level = "h2") {
-  const box = el("section", "manage-section");
-  box.append(el(level, null, title), ...nodes);
-  return box;
+/** Where a refusal is said, beside what was refused, read out as it changes. */
+export function message() {
+  const said = el("p", "pin-message");
+  said.setAttribute("role", "alert");
+  return said;
 }
 
-/** A profile's row: its name, the line that says who it is when given, then `controls`. */
-export function row(name, line, ...controls) {
-  const one = el("div", "manage-row");
-  one.append(el("span", null, name), ...(line ? [el("span", "setting-value", line)] : []), ...controls);
+/** One line of an open part: what it sets, for the eye — each control names itself — then the control. */
+export function line(label, control) {
+  const one = el("div", "manage-line");
+  const said = el("span", "manage-label", label);
+  said.setAttribute("aria-hidden", "true");
+  one.append(said, control);
   return one;
+}
+
+/** The first field under `node`, which a form opened in place has focus on. */
+export const firstField = (node) =>
+  ["INPUT", "SELECT"].includes(node.tagName) ? node : [...node.children].map(firstField).find(Boolean);
+
+/** Tells apart the parts opened in place, which their buttons name. */
+let opened = 0;
+
+/**
+ * A quiet button saying `label` that opens what `build` draws under it, in
+ * place, with focus on its first field — and closes it again. `keep` hears of
+ * the button, to give it focus again after a redraw.
+ */
+export function opener(label, build, keep = (node) => node) {
+  const box = el("div", "manage-opener");
+  const button = keep(el("button", "manage-add", label));
+  button.type = "button";
+  const slot = el("div", "manage-opened");
+  slot.id = `manage-opened-${++opened}`;
+  button.setAttribute("aria-controls", slot.id);
+  const show = (on) => {
+    slot.replaceChildren(...(on ? build() : []));
+    slot.hidden = !on;
+    button.setAttribute("aria-expanded", String(on));
+  };
+  button.addEventListener("click", () => {
+    show(slot.hidden);
+    if (!slot.hidden) firstField(slot)?.focus();
+  });
+  show(false);
+  box.append(button, slot);
+  return box;
 }
 
 /**
@@ -43,26 +78,26 @@ export function row(name, line, ...controls) {
 export function roleLine(entry, profiles) {
   if (entry.kids) {
     const owner = profiles.find((other) => other.id === ownerOf(profiles, entry));
-    const parts = ["Kid", owner?.name, `FSK ${kidsLimitOf(entry)}`];
+    const parts = [HOUSEHOLD_WORDS.kid, owner?.name, `FSK ${kidsLimitOf(entry)}`];
     if (entry.dailyLimit != null) parts.push(dailyLimitWords(entry.dailyLimit));
     return [...parts, hidesWords(entry)].filter(Boolean).join(" · ");
   }
-  const role = `${entry.owner ? `${HOUSEHOLD_WORDS.owner} · ` : ""}${entry.admin ? "Admin" : "Grown-up"} · ${entry.hasPin ? "PIN set" : "No PIN"}`;
+  const role = `${entry.owner ? `${HOUSEHOLD_WORDS.owner} · ` : ""}${entry.admin ? HOUSEHOLD_WORDS.admin : HOUSEHOLD_WORDS.grownUp} · ${entry.hasPin ? "PIN set" : "No PIN"}`;
   return [role, hidesWords(entry)].filter(Boolean).join(" · ");
 }
 
 /**
- * The parts `view` (`manageable`'s, for anyone but the owner) is drawn in.
- * @param {{ actor: object, grownUps: object[], kids: object[] }} view
- * @param {{ grownUp: (entry: object) => HTMLElement, kid: (entry: object) => HTMLElement,
- *   addGrownUp: () => HTMLElement, addKid: () => HTMLElement }} draw a grown-up's row, a kid's, and the forms that add one
- * @returns {HTMLElement[]}
+ * The household of anyone but the owner, as the owner's view draws one but
+ * unnamed: themselves, then the grown-ups and the kids they manage, then `add`.
+ * @param {{ actor: object, grownUps: object[], kids: object[] }} view `manageable`'s
+ * @param {object[]} profiles the household's, which the role lines are read against
+ * @param {{ person: Function, draws: { you: Function, grownUp: Function, kid: Function }, add: HTMLElement }} tools
+ *   how a person's row is drawn, what opens under it, and Add someone
  */
-export function byHousehold({ actor, grownUps, kids }, draw) {
-  const parts = [];
-  if (grownUps.length > 0 || actor.admin) {
-    parts.push(section("Grown-ups", [...grownUps.map((one) => draw.grownUp(one)), ...(actor.admin ? [draw.addGrownUp()] : [])]));
-  }
-  parts.push(section("Kids", [...kids.map((one) => draw.kid(one)), draw.addKid()]));
-  return parts;
+export function byHousehold({ actor, grownUps, kids }, profiles, { person, draws, add }) {
+  const part = el("div", "manage-people");
+  const row = (one, controls) => person(one, roleLine(one, profiles), controls);
+  part.append(row(actor, () => draws.you(actor)), ...grownUps.map((one) => row(one, () => draws.grownUp(one))),
+    ...kids.map((one) => row(one, () => draws.kid(one))), add);
+  return part;
 }
