@@ -49,7 +49,7 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
   message.setAttribute("role", "alert");
   const owner = () => state.everyone().find((one) => one.owner === true && !one.kids);
   /** `{ actorId, pin }` once a grown-up has said who they are; watching as the owner, theirs with the PIN still to ask. */
-  let session = chosen.profile != null && chosen.profile.id === owner()?.id ? { actorId: chosen.profile.id, pin: null } : null;
+  let session = chosen.profile?.id != null && chosen.profile.id === owner()?.id ? { actorId: chosen.profile.id, pin: null } : null;
   let gone = false;
   let showing = false;
   const listeners = [];

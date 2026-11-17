@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.183.1 — Settings opens before the profiles are read
+
+**Fixed**
+
+- The web Profiles tab no longer breaks Settings when no owner has been read yet and the chosen profile has no id: the two missing ids no longer count as "the owner is managing". 0.183.0's Android release (channel message 51879) is unchanged.
+
 ## 0.183.0 — Who's managing? and the calm Profiles page on the tablet and the TV
 
 **Added**
