@@ -11,7 +11,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import catalog.profile.DONE
-import catalog.profile.EVERYONE_HERE
 import catalog.profile.MANAGE_PROFILES
 import catalog.profile.managingAs
 import model.HOME_HOUSEHOLD
@@ -64,7 +63,7 @@ class TvOwnerViewTest : TvProfilesHarness() {
     fun ownerPageHasOneManageRowAndNoHouseholdsRow() {
         ownersPage()
         compose.onAllNodes(rowOf(MANAGE_PROFILES)).assertCountEquals(1)
-        compose.onAllNodesWithText(EVERYONE_HERE).assertCountEquals(0)
+        compose.onAllNodesWithText("Everyone here").assertCountEquals(0)
         compose.onAllNodes(rowOf(HouseholdWords.HOUSEHOLDS)).assertCountEquals(0)
         compose.onAllNodes(rowOf(HouseholdWords.OWNER)).assertCountEquals(0)
     }

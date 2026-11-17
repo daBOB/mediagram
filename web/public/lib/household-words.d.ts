@@ -1,7 +1,6 @@
 export const HOUSEHOLD_WORDS: {
   households: string;
   owner: string;
-  ownerNote: string;
   ownersPin: string;
   thisDevice: string;
   switchHousehold: string;

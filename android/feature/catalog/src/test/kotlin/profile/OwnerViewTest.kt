@@ -11,7 +11,7 @@ import kotlin.test.assertNull
 /**
  * The owner's one view of the Profiles page — the web's `profile-manage-owner.test.ts` over
  * [HouseholdsOwnerHarness]'s install: every household with its actions, its people, and adding
- * right there, behind one owner's PIN per visit — from Settings, the picker, and the Owner button.
+ * right there, behind one owner's PIN per visit — from Settings, the picker, and another household's device.
  */
 class OwnerViewTest : HouseholdsOwnerHarness() {
     private val ownersPin = PinPrompt(HouseholdWords.OWNERS_PIN, newPin = false)
@@ -96,15 +96,18 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
         }
 
     @Test
-    fun ownerButtonOpensTheWholeOwnerView() =
+    fun theOwnersTileOnAnotherHouseholdsDeviceOpensTheWholeOwnerView() =
         runTest(UnconfinedTestDispatcher()) {
             core.homes.joined = "flat"
-            val (manage, owners) = page()
+            val (manage) = page()
             manage.open()
-            // The owner is not one of this household's to choose.
-            assertEquals(listOf("Bea", "Cy"), assertIs<ManageUiState.ChoosingActor>(manage.state.value).grownUps.map { it.name })
-            owners.open()
-            owners.enterPin("1234")
+            // The owner is not one of this household's grown-ups, but ends the row of tiles.
+            val asked = assertIs<ManageUiState.ChoosingActor>(manage.state.value)
+            assertEquals(listOf("Bea", "Cy"), asked.grownUps.map { it.name })
+            assertEquals(listOf("Bea", "Cy", "andre"), asked.managers.map { it.name })
+            manage.actAs("a")
+            assertEquals(ownersPin, manage.pin.value)
+            manage.enterPin("1234")
             assertEquals("andre", manage.view().actor.name)
             assertEquals(listOf("Flat", "Barn", "Home"), manage.view().parts().map { it.name })
             assertEquals(listOf("Mia"), manage.part("home").kids.map { it.name })

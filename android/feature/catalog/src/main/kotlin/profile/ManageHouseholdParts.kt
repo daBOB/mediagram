@@ -25,10 +25,6 @@ data class ManagePart(
     val kidParentDefault: Profile? = null,
     val people: List<PersonRowModel> = emptyList(),
 ) {
-    /** Grown-ups is drawn with someone in it or a way to add one, as Kids is. */
-    val showsGrownUps: Boolean get() = grownUps.isNotEmpty() || addsGrownUp
-    val showsKids: Boolean get() = kids.isNotEmpty() || addsKid
-
     /** Whether the part ends with Add someone: anyone at all may be added to it. */
     val addsSomeone: Boolean get() = addsGrownUp || addsKid
 }

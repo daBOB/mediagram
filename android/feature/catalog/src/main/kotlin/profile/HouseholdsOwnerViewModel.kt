@@ -28,11 +28,11 @@ import model.SetHouseholdAdmin
 import javax.inject.Inject
 
 /**
- * The owner's Households part — the web's `settings-households.js`, and the
- * household actions of the owner's view. It is open for the owner the gate
- * says is [watching], once [open] has the owner's PIN, and while the owner's
- * view shows ([OwnerPin.view]). That PIN is asked once — at [open], or at the
- * first change — then held and sent with every change until [close].
+ * The household actions of the owner's view — the web's `householdHeader`
+ * and `createHouseholdBlock`. It is open for the owner the gate says is
+ * [watching], and while the owner's view shows ([OwnerPin.view]). The owner's
+ * PIN — the page's, given already at the owner's tile — is asked at the first
+ * change when none is held, then held and sent with every change until [close].
  * A grown-up about to run a household with no PIN yet is asked a first one,
  * typed twice, before anything is sent. What a row offers follows the
  * household rule; the core decides all the same — a grown-up gone since
@@ -51,7 +51,6 @@ class HouseholdsOwnerViewModel
         private val watcher = MutableStateFlow<String?>(null)
         private val ask = PinAsk(viewModelScope)
         private val stillHere = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
-        private val toOwnerView = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
         /** The owner's PIN, or a new admin's first one, being asked for. */
         val pin: StateFlow<PinPrompt?> = ask.prompt
@@ -59,29 +58,17 @@ class HouseholdsOwnerViewModel
         /** After [useHere]: whether the profile chosen here is still here; false means the picker is shown again. */
         val joined: SharedFlow<Boolean> = stillHere.asSharedFlow()
 
-        /** After [open]'s PIN: the page shows the owner's whole view, Manage's included. */
-        val ownerView: SharedFlow<Unit> = toOwnerView.asSharedFlow()
-
         val state: StateFlow<HouseholdsOwnerUiState> =
             combine(step, households.view, watcher, ownerPin.view) { current, view, watchingId, ownerView ->
                 when {
                     view.list.isEmpty() -> HouseholdsOwnerUiState.Loading
-                    current.open || ownerView || view.watchedByOwner(watchingId) -> view.ownersPart(current.notice, current.answers, current.sending)
-                    else -> HouseholdsOwnerUiState.Closed(view.owner != null)
+                    ownerView || view.watchedByOwner(watchingId) -> view.ownersPart(current.notice, current.answers, current.sending)
+                    else -> HouseholdsOwnerUiState.Closed
                 }
             }.stateIn(viewModelScope, SharingStarted.Eagerly, HouseholdsOwnerUiState.Loading)
 
         /** Who the gate has chosen: null while its picker shows, a reopened one too, whatever the core still holds chosen. */
         fun watching(id: String?) { watcher.value = id }
-
-        /** The Owner button: the owner's PIN opens the part, and the owner's view around it. */
-        fun open() {
-            viewModelScope.launch { households.reloadQuietly() }
-            ownersPin {
-                step.update { it.copy(open = true) }
-                toOwnerView.tryEmit(Unit)
-            }
-        }
 
         /** Run by grown-up [adminId], who moves in with their kids, or by a new one called [adminName]: one of the two. */
         fun create(name: String, adminId: String?, adminName: String?) {
@@ -138,7 +125,7 @@ class HouseholdsOwnerViewModel
 
         private fun grownUp(id: String) = households.view.value.everyone.find { it.id == id && !it.kids }
 
-        private fun isOpen() = step.value.open || ownerPin.view.value || households.view.value.watchedByOwner(watcher.value)
+        private fun isOpen() = ownerPin.view.value || households.view.value.watchedByOwner(watcher.value)
 
         /** [request] sent as the owner with the held PIN — asked first if none is held — and [newPinFor]'s first PIN where named. */
         private fun act(

@@ -53,21 +53,19 @@ abstract class HouseholdsOwnerHarness {
         return HouseholdsOwnerViewModel(repository, households, sync, ownerPin).also { vm -> backgroundScope.launch { vm.joined.collect { said += it } } }
     }
 
-    /** The part opened by the owner's PIN. */
+    /** The part as the owner watching here finds it, their PIN given already on the page. */
     suspend fun TestScope.opened(): HouseholdsOwnerViewModel =
         owning().apply {
-            open()
-            enterPin("1234")
+            watching("a")
+            ownerPin.held = "1234"
         }
 
     fun HouseholdsOwnerViewModel.part() = assertIs<HouseholdsOwnerUiState.Open>(state.value)
 
-    /** Manage and the owner's Households part on one page, wired as the page wires them: the Owner button's PIN opens the owner's view. */
+    /** Manage and the owner's household actions on one page, sharing the owner's PIN as the page does. */
     suspend fun TestScope.page(): Pair<ManageProfilesViewModel, HouseholdsOwnerViewModel> {
         val owners = owning()
-        val manage = ManageProfilesViewModel(repository, households, sync, ownerPin)
-        backgroundScope.launch { owners.ownerView.collect { manage.asOwner() } }
-        return manage to owners
+        return ManageProfilesViewModel(repository, households, sync, ownerPin) to owners
     }
 
     /** The page watched by the owner: their view at once. */

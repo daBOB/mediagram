@@ -22,7 +22,7 @@ fun profilesStatus(chosen: Profile?): IndexStatus {
 /**
  * One visit to Profiles while [open]: Manage, and the owner's Households part
  * beside it, drop their PINs on the way out — to another section, out of
- * Settings, or out of the app — and Manage asks "Who are you?" whenever it
+ * Settings, or out of the app — and Manage asks Who's managing? whenever it
  * finds itself closed while the visit is still open, or, with the owner
  * [chosen], opens the owner's view at once. That covers the way
  * in, the way back from the background, and the gate's own

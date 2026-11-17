@@ -83,10 +83,10 @@ class ChosenProfileLeftBehindTest : HouseholdsOwnerHarness() {
         runTest(UnconfinedTestDispatcher()) {
             val owner = HouseholdsOwnerViewModel(repository, flaky(), sync, OwnerPin())
             backgroundScope.launch { owner.joined.collect { said += it } }
-            owner.open()
-            owner.enterPin("1234")
+            owner.watching("a")
             failing = true
             owner.useHere("flat")
+            owner.enterPin("1234")
             assertNull(repository.chosenProfileId.value)
             assertEquals(listOf(false), said)
         }

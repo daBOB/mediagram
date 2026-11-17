@@ -35,6 +35,8 @@ beforeEach(async () => {
 afterEach(() => env.restore());
 
 const sent = () => writesOf(env.requests);
+/** The note the Households gate showed beside the Owner button, both gone now. */
+const OWNER_NOTE = "Households are the owner’s to set up.";
 const page = (root: Node) => byClass(root, "who-manage");
 /** The Who's managing? tiles under `root`, by the name each says, and the line under it. */
 const tilesOf = (root: Node) => descendants(root).filter((node) => node.className === "who-tile")
@@ -130,7 +132,7 @@ test("Settings for a grown-up who is not the owner shows the same tiles and no E
   expect(tilesOf(main)).toEqual([`andre · ${W.owner}`, "Kai"]);
   expect(textOf(main)).not.toContain("Everyone here");
   expect(textOf(main)).not.toContain("Who are you?");
-  expect(textOf(main)).not.toContain(W.ownerNote);
+  expect(textOf(main)).not.toContain(OWNER_NOTE);
   // A kid still sees only You.
   expect(headings(settingsAs("lea"))).toEqual(["Settings", "Who is watching", "Subtitles"]);
 });
@@ -139,7 +141,7 @@ test("the manage route shows no Everyone here, no Households gate and no This de
   const root = manageRoute();
   // Three households, so This device would have something to switch to.
   expect(headings(page(root))).toEqual([W.whosManaging]);
-  for (const gone of ["Everyone here", "Who are you?", W.ownerNote, W.thisDevice, W.switchHousehold]) expect(textOf(root)).not.toContain(gone);
+  for (const gone of ["Everyone here", "Who are you?", OWNER_NOTE, W.thisDevice, W.switchHousehold]) expect(textOf(root)).not.toContain(gone);
   expect(descendants(root).some((node) => node.classes.has("households"))).toBe(false);
   expect(buttonNamed(root, "Done")).toBeDefined();
 });

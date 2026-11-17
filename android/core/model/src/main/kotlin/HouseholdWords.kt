@@ -4,7 +4,6 @@ package model
 object HouseholdWords {
     const val HOUSEHOLDS = "Households"
     const val OWNER = "Owner"
-    const val OWNER_NOTE = "Households are the owner’s to set up."
     const val OWNERS_PIN = "The owner’s PIN"
     const val THIS_DEVICE = "This device"
     const val SWITCH_HOUSEHOLD = "Switch household"
@@ -38,7 +37,6 @@ val HOUSEHOLD_WORDS: Map<String, String> =
         mapOf(
             "households" to HOUSEHOLDS,
             "owner" to OWNER,
-            "ownerNote" to OWNER_NOTE,
             "ownersPin" to OWNERS_PIN,
             "thisDevice" to THIS_DEVICE,
             "switchHousehold" to SWITCH_HOUSEHOLD,

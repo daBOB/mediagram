@@ -9,7 +9,7 @@ import model.ownerOf
 /** A new kid starts at the stricter limit; its parent raises it — the web's add-kid form's default. */
 val NEW_KID_LIMIT: Int = KIDS_LIMITS.min()
 
-/** What Manage profiles shows: nothing, "Who are you?", or what that grown-up's role allows. */
+/** What Manage profiles shows: nothing, Who's managing?, or what that grown-up's role allows. */
 sealed interface ManageUiState {
     data object Closed : ManageUiState
 
@@ -62,7 +62,7 @@ sealed interface ManageUiState {
          * Whether this is the owner's view of every household ([parts]) — the
          * one answer every screen draws it by. Before the households are read
          * there is nothing to head the parts with, so Manage is drawn as it
-         * always was, Everyone here beside it.
+         * always was.
          */
         val ownersView: Boolean get() = actor.owner && households.isNotEmpty()
 

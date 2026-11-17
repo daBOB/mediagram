@@ -25,7 +25,7 @@ import javax.inject.Inject
  * each time; [close] drops it, as both gates do once the library shows again or
  * the app is left. Only [open] opens this — entering a profile never hands a
  * child the controls. The owner's view of every household ([parts]) opens at
- * once for the owner watching, or after the owner's PIN ([actAs], [asOwner]),
+ * once for the owner watching, or after the owner's tile and PIN ([actAs]),
  * which is the page's one ([OwnerPin]). The core decides all the same: what is
  * offered by mistake is still refused there, and the refusal is shown.
  */
@@ -52,19 +52,11 @@ class ManageProfilesViewModel
             combine(step, repository.profiles, households.view) { current, profiles, install -> current.shown(profiles, install) }
                 .stateIn(viewModelScope, SharingStarted.Eagerly, ManageUiState.Closed)
 
-        /** Who are you? — or, with [chosen] the owner watching here, the owner's view at once. */
+        /** Who's managing? — or, with [chosen] the owner watching here, the owner's view at once. */
         fun open(chosen: Profile? = null) {
             ask.cancel()
             heldPin = null
             go(if (chosen?.owner == true && !chosen.kids) ManageStep.Managing(chosen.id) else ManageStep.ChoosingActor())
-        }
-
-        /** After the Owner button's PIN: the owner's view in this panel's place, whoever was managing. */
-        fun asOwner() {
-            val owner = households.view.value.owner?.takeIf { ownerPin.held != null } ?: return
-            ask.cancel()
-            heldPin = null
-            go(ManageStep.Managing(owner.id))
         }
 
         /**
@@ -178,7 +170,7 @@ class ManageProfilesViewModel
             if (owner(actorId) != null) ownerPin.held = pin else heldPin = pin
         }
 
-        /** [then] with the PIN sent as [actorId]: theirs from Who are you?, or the owner's, asked now if none is held. */
+        /** [then] with the PIN sent as [actorId]: theirs from Who's managing?, or the owner's, asked now if none is held. */
         private fun withPin(actorId: String, then: (String) -> Unit) {
             val owner = owner(actorId)
             if (owner == null) heldPin?.let(then) else ask.ownersPin(ownerPin, repository, owner, then)

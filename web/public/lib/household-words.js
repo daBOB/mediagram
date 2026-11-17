@@ -7,7 +7,6 @@
 export const HOUSEHOLD_WORDS = {
   households: "Households",
   owner: "Owner",
-  ownerNote: "Households are the owner’s to set up.",
   ownersPin: "The owner’s PIN",
   thisDevice: "This device",
   switchHousehold: "Switch household",

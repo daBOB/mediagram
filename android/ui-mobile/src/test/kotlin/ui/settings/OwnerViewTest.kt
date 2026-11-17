@@ -18,10 +18,8 @@ import androidx.compose.ui.test.performScrollTo
 import catalog.profile.ADD_A_GROWN_UP
 import catalog.profile.ADD_A_KID
 import catalog.profile.CHANGE_YOUR_PIN
-import catalog.profile.EVERYONE_HERE
 import catalog.profile.MANAGE_PROFILES
 import catalog.profile.SWITCH_PROFILE
-import catalog.profile.YOUR_PIN
 import model.HouseholdWords
 import model.Profile
 import org.junit.Test
@@ -34,6 +32,10 @@ import ui.profile.tile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+
+/** Words of the page before the calm owner view, which nothing draws any more. */
+private const val EVERYONE_HERE = "Everyone here"
+private const val OWNER_NOTE = "Households are the owner’s to set up."
 
 /**
  * The owner's one view on the Profiles page — the web's `profile-manage-owner.js`:
@@ -87,7 +89,7 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
         compose.onNode(personRow("Tom")).assertDoesNotExist()
         compose.onNode(hasContentDescription("Remove Tom")).assertDoesNotExist()
         compose.onNode(hasContentDescription("Age limit for Tom")).assertDoesNotExist()
-        compose.onNodeWithText(YOUR_PIN).assertDoesNotExist()
+        compose.onNodeWithText("Your PIN").assertDoesNotExist()
         // Create a household after the last household, This device after it.
         val create = ys(createOpener).single()
         assertTrue(create > ys(hasText("Madani") and isHeading()).single(), "expected Create a household after Madani")
@@ -143,7 +145,7 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
         openWithMadani(owner)
         compose.onNodeWithText(EVERYONE_HERE).assertDoesNotExist()
         compose.onNodeWithText(HouseholdWords.HOUSEHOLDS).assertDoesNotExist()
-        compose.onNodeWithText(HouseholdWords.OWNER_NOTE).assertDoesNotExist()
+        compose.onNodeWithText(OWNER_NOTE).assertDoesNotExist()
         compose.onNode(hasText(HouseholdWords.OWNER) and hasClickAction()).assertDoesNotExist()
 
         // Over the picker nobody is chosen: Who's managing?, and no Everyone here or Owner button, until the owner's tile and PIN.
@@ -156,7 +158,7 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
         pin("1234")
         compose.onNodeWithText("As andre").assertExists()
         compose.onNodeWithText(EVERYONE_HERE).assertDoesNotExist()
-        compose.onNodeWithText(HouseholdWords.OWNER_NOTE).assertDoesNotExist()
+        compose.onNodeWithText(OWNER_NOTE).assertDoesNotExist()
         assertEquals(listOf("Home", "Barn", "Madani"), headings())
     }
 
@@ -171,7 +173,7 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
 
         compose.onNodeWithText("As andre").assertExists()
         compose.onNodeWithText(EVERYONE_HERE).assertDoesNotExist()
-        compose.onNodeWithText(HouseholdWords.OWNER_NOTE).assertDoesNotExist()
+        compose.onNodeWithText(OWNER_NOTE).assertDoesNotExist()
         assertEquals(listOf("Madani", "Barn", "Home"), headings())
         // The PIN given to the tile is the view's: a change asks nothing more.
         add("Madani", addKid, ADD_A_KID, "Kai")

@@ -27,21 +27,17 @@ class ManageHouseholdPartsTest {
         households: Households = install,
     ) = manageable(here, actor.id, null, install = households) as ManageUiState.Managing
 
-    /** Each part as the headings it is drawn under, and its rows. */
-    private fun ManageUiState.Managing.drawn() =
-        parts().map { part ->
-            listOfNotNull(part.name, GROWN_UPS.takeIf { part.showsGrownUps }, KIDS_SECTION.takeIf { part.showsKids }) to
-                (part.grownUps + part.kids).map { it.name }
-        }
+    /** Each part as the name it is drawn under, and whom in it the manager changes. */
+    private fun ManageUiState.Managing.drawn() = parts().map { part -> part.name to (part.grownUps + part.kids).map { it.name } }
 
     @Test
     fun theOwnerSeesThisDevicesHouseholdFirstThenTheOthersInTheLiveOrder() {
         val owner = panel(andre, listOf(andre, lea))
         assertEquals(
             listOf(
-                listOf("Home", GROWN_UPS, KIDS_SECTION) to listOf("Lea"),
-                listOf("Loft", GROWN_UPS, KIDS_SECTION) to listOf("Ida"),
-                listOf("Flat", GROWN_UPS, KIDS_SECTION) to listOf("Maja", "Tim"),
+                "Home" to listOf("Lea"),
+                "Loft" to listOf("Ida"),
+                "Flat" to listOf("Maja", "Tim"),
             ),
             owner.drawn(),
         )
@@ -100,16 +96,17 @@ class ManageHouseholdPartsTest {
     @Test
     fun anyoneElseManagesOnlyThisDevicesHouseholdUnnamed() {
         val admin = panel(maja, listOf(maja, tim), install.copy(joined = "flat"))
-        assertEquals(listOf(listOf(GROWN_UPS, KIDS_SECTION) to listOf("Tim")), admin.drawn())
+        assertEquals(listOf(null to listOf("Tim")), admin.drawn())
         assertEquals(true to true, admin.parts().single().let { it.addsGrownUp to it.addsKid })
         val parent = panel(maja.copy(admin = false), listOf(maja.copy(admin = false), tim), install.copy(joined = "flat"))
-        assertEquals(listOf(listOf(KIDS_SECTION) to listOf("Tim")), parent.drawn())
+        assertEquals(listOf(null to listOf("Tim")), parent.drawn())
+        assertEquals(false to true, parent.parts().single().let { it.addsGrownUp to it.addsKid })
     }
 
     @Test
     fun theOwnerOfOneHouseholdGetsTheOwnersViewToo() {
         val alone = Households("home", live.takeLast(1), listOf(andre, lea, maja.copy(household = "home", admin = false)))
         val owner = panel(andre, alone.everyone, alone)
-        assertEquals(listOf(listOf("Home", GROWN_UPS, KIDS_SECTION) to listOf("Maja", "Lea")), owner.drawn())
+        assertEquals(listOf("Home" to listOf("Maja", "Lea")), owner.drawn())
     }
 }

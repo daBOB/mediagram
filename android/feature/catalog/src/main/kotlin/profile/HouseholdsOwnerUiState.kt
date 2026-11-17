@@ -8,15 +8,13 @@ import model.householdAllowed
 import model.householdLine
 import java.text.Normalizer
 
-/** The owner's Households part, as the web's `settings-households.js` draws it. */
+/** The household actions of the owner's view, as the web's owner view draws them. */
 sealed interface HouseholdsOwnerUiState {
     /** The households not read yet. */
     data object Loading : HouseholdsOwnerUiState
 
-    /** The owner's note; [canOpen] when there is an owner, whose button asks their PIN. */
-    data class Closed(
-        val canOpen: Boolean = false,
-    ) : HouseholdsOwnerUiState
+    /** Neither the owner watching nor the owner's view showing. */
+    data object Closed : HouseholdsOwnerUiState
 
     /**
      * Every live household as a row, and [createChoices]: the grown-ups who
@@ -60,7 +58,7 @@ internal fun Households.ownersPart(
     answers: Int,
     sending: Boolean,
 ): HouseholdsOwnerUiState {
-    val boss = owner ?: return HouseholdsOwnerUiState.Closed()
+    val boss = owner ?: return HouseholdsOwnerUiState.Closed
     val creators = everyone.filter { !it.kids && may(boss, HouseholdAction.CREATE, "", it.id) }
     return HouseholdsOwnerUiState.Open(rowsFor(boss), creators, notice, answers, sending)
 }

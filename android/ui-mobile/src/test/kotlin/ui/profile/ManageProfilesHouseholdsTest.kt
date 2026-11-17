@@ -11,11 +11,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import catalog.profile.ADD_A_GROWN_UP
 import catalog.profile.ADD_A_KID
-import catalog.profile.GROWN_UPS
-import catalog.profile.KIDS_SECTION
 import catalog.profile.ManageUiState
 import catalog.profile.RESET_PIN
-import catalog.profile.YOUR_PIN
 import model.Household
 import model.HouseholdWords
 import model.Profile
@@ -42,7 +39,7 @@ class ManageProfilesHouseholdsTest : ManageScreenHarness() {
 
     /** The headings and add forms, top to bottom, with the households' [names]. */
     private fun drawn(vararg names: String): List<String> {
-        val kept = setOf(*names, GROWN_UPS, KIDS_SECTION, ADD_A_GROWN_UP, ADD_A_KID, YOUR_PIN, HouseholdWords.ADD_SOMEONE)
+        val kept = setOf(*names, "Grown-ups", "Kids", ADD_A_GROWN_UP, ADD_A_KID, "Your PIN", HouseholdWords.ADD_SOMEONE)
         fun SemanticsNode.texts(): List<String> = config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } + children.flatMap { it.texts() }
         return compose.onRoot(useUnmergedTree = true).fetchSemanticsNode().texts().filter { it in kept }
     }

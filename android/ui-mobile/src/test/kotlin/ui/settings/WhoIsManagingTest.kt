@@ -12,7 +12,6 @@ import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import catalog.profile.EVERYONE_HERE
 import catalog.profile.MANAGE_PROFILES
 import catalog.profile.SWITCH_PROFILE
 import model.HouseholdWords
@@ -58,8 +57,8 @@ class WhoIsManagingTest : HouseholdsOwnerHarness() {
         assertEquals(listOf("andre", "Bea"), tiles())
         // One question: no Who are you?, Everyone here, Households gate or This device beside it.
         compose.onNodeWithText("Who are you?").assertDoesNotExist()
-        compose.onNodeWithText(EVERYONE_HERE).assertDoesNotExist()
-        compose.onNodeWithText(HouseholdWords.OWNER_NOTE).assertDoesNotExist()
+        compose.onNodeWithText("Everyone here").assertDoesNotExist()
+        compose.onNodeWithText("Households are the owner’s to set up.").assertDoesNotExist()
         compose.onNodeWithText(HouseholdWords.THIS_DEVICE).assertDoesNotExist()
     }
 

@@ -40,7 +40,7 @@ class OwnerHouseholdsTest : HouseholdsOwnerHarness() {
         openAs(owner)
         // Each household heads its part of the owner's view: there is no Households section beside it.
         compose.onNodeWithText(HouseholdWords.HOUSEHOLDS).assertDoesNotExist()
-        compose.onNodeWithText(HouseholdWords.OWNER_NOTE).assertDoesNotExist()
+        compose.onNodeWithText("Households are the owner’s to set up.").assertDoesNotExist()
         compose.onNodeWithText("No admin · 0 profiles").assertExists()
         compose.onNodeWithText("Admin Dan · 2 profiles").assertExists()
         compose.onNodeWithText("Admin andre · 3 profiles").assertExists()

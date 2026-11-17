@@ -14,7 +14,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import catalog.profile.CHANGE_YOUR_PIN
-import catalog.profile.EVERYONE_HERE
 import catalog.profile.REMOVE
 import catalog.profile.RESET_PIN
 import catalog.profile.managingAs
@@ -84,7 +83,7 @@ class TvWhoIsManagingTest : TvProfilesHarness() {
         compose.onNode(tile("b")).assertIsFocused()
         compose.onAllNodes(tile("m")).assertCountEquals(0)
         compose.onAllNodesWithText(HouseholdWords.OWNER).assertCountEquals(1)
-        compose.onAllNodesWithText(EVERYONE_HERE).assertCountEquals(0)
+        compose.onAllNodesWithText("Everyone here").assertCountEquals(0)
         compose.onAllNodesWithText(HouseholdWords.THIS_DEVICE, substring = true).assertCountEquals(0)
 
         back()

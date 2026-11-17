@@ -21,19 +21,23 @@ class OwnerPinSharedTest : HouseholdsOwnerHarness() {
     @Test
     fun ownersPinGivenToHouseholdsIsNotAskedAgainByManage() =
         runTest(UnconfinedTestDispatcher()) {
-            opened()
-            val vm = manage().apply { open(); actAs("a") }
-            assertNull(vm.pin.value)
-            assertIs<ManageUiState.Managing>(vm.state.value)
+            val (manage, owners) = watchedByTheOwner()
+            owners.rename("barn", "Shed")
+            owners.enterPin("1234")
+            manage.setKidsAge("m", 12)
+            assertNull(manage.pin.value)
+            assertEquals(12, profile("m").kidsAge)
         }
 
     @Test
     fun ownersPinGivenToManageIsNotAskedAgainByHouseholds() =
         runTest(UnconfinedTestDispatcher()) {
             manage().apply { open(); actAs("a"); enterPin("1234") }
-            val vm = owning().apply { open() }
-            assertNull(vm.pin.value)
+            val vm = owning()
             assertIs<HouseholdsOwnerUiState.Open>(vm.state.value)
+            vm.rename("barn", "Shed")
+            assertNull(vm.pin.value)
+            assertEquals("Shed", household("barn")?.name)
         }
 
     @Test
@@ -55,7 +59,9 @@ class OwnerPinSharedTest : HouseholdsOwnerHarness() {
             core.roles.pins["a"] = "9999"
             manage.remove("c")
             assertNull(ownerPin.held)
-            val vm = owning().apply { open() }
+            // The owner's view still shows: its next household change asks the PIN again.
+            val vm = owning()
+            vm.rename("barn", "Shed")
             assertEquals(PinPrompt(model.HouseholdWords.OWNERS_PIN, newPin = false), vm.pin.value)
         }
 
@@ -67,7 +73,7 @@ class OwnerPinSharedTest : HouseholdsOwnerHarness() {
             manage.enterPin("2468")
             manage.enterPin("2468")
             assertEquals("2468", ownerPin.held)
-            val vm = owning().apply { open() }
+            val vm = owning()
             vm.rename("barn", "Shed")
             assertNull(vm.pin.value)
             assertEquals("Shed", household("barn")?.name)

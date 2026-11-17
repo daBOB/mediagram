@@ -53,8 +53,8 @@ class OwnerViewPinTest : HouseholdsOwnerHarness() {
             assertEquals(ownersPin, owners.pin.value)
             assertEquals("Shed", household("barn")?.name)
             owners.cancelPin()
-            // Opened again at Who are you?, nothing of the owner's view is left.
+            // Opened again at Who's managing?, nothing of the owner's view is left.
             manage.open()
-            assertEquals(HouseholdsOwnerUiState.Closed(canOpen = true), owners.state.value)
+            assertEquals(HouseholdsOwnerUiState.Closed, owners.state.value)
         }
 }

@@ -88,11 +88,11 @@ class HouseholdsOwnerVisitsTest : HouseholdsOwnerHarness() {
         runTest(UnconfinedTestDispatcher()) {
             core.chosen = "a"
             val vm = owning()
-            assertEquals(HouseholdsOwnerUiState.Closed(canOpen = true), vm.state.value)
+            assertEquals(HouseholdsOwnerUiState.Closed, vm.state.value)
             vm.watching("a")
             vm.part()
             vm.watching(null)
-            assertEquals(HouseholdsOwnerUiState.Closed(canOpen = true), vm.state.value)
+            assertEquals(HouseholdsOwnerUiState.Closed, vm.state.value)
             vm.rename("barn", "Shed")
             assertNull(vm.pin.value)
             assertEquals("Barn", household("barn")?.name)
@@ -130,9 +130,8 @@ class HouseholdsOwnerVisitsTest : HouseholdsOwnerHarness() {
             vm.rename("barn", "Flat")
             assertTrue(vm.part().sending)
 
+            // Still open for the owner watching: a new visit.
             vm.close()
-            vm.open()
-            vm.enterPin("1234")
             door.complete(Unit)
 
             val part = vm.part()
