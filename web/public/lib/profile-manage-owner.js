@@ -3,8 +3,8 @@
  * then the others in the live order — with its header (its name, who runs it,
  * the owner's actions on it), then its people, each with the line that says
  * who they are and what the owner may change, then adding a grown-up or a kid
- * right there; and last, creating a household. It replaces Everyone here and
- * the Households part while it shows, so the owner manages from one place.
+ * right there; and last, creating a household. The owner manages every
+ * household from this one place.
  *
  * Drawing only: `mountManage` holds the owner's one PIN and hands in `act`,
  * which sends every change made here and says a refusal beside its form.

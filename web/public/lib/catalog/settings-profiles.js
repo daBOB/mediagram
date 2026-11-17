@@ -1,13 +1,12 @@
 /**
  * The one Profiles page, Settings' Profiles tab: You — who is watching, the way
- * to switch, your subtitle language — then everyone in the household, then
- * managing them, then — while there is more than one — the household this
- * device shows, then the Owner button. While the owner manages, the owner's
- * view of every household takes the place of everyone here and the button.
- * A kid sees only You; with nobody chosen, which is how the picker's Manage
- * profiles opens it, there is no You. Seeing the list needs no PIN; changing
- * anything asks who you are and that grown-up's PIN — the owner's only at the
- * first change — which the body holds only until the page is left.
+ * to switch, your subtitle language — then managing the household, which asks
+ * Who's managing? with the picker's tiles. Watching as the owner, the owner's
+ * view of every household opens at once instead, with — while there is more
+ * than one — the household this device shows. A kid sees only You; with nobody
+ * chosen, which is how the picker's Manage profiles opens it, there is no You.
+ * Changing anything asks that grown-up's PIN — the owner's only at the first
+ * change — which the body holds only until the page is left.
  */
 
 import { el } from "../dom.js";
@@ -17,11 +16,9 @@ import * as state from "../watch-state.js";
 import { thisHousehold } from "../household.js";
 import { joinChoices } from "../household-join.js";
 import { HOUSEHOLD_WORDS } from "../household-words.js";
-import { householdsPart } from "./settings-households.js";
-import { roleLine } from "../profile-manage-households.js";
 import { kidsLimitOf } from "../age-rating.js";
 
-/** The page's name: its Settings tab, and its heading over the picker. */
+/** The page's name: its Settings tab. */
 export const PROFILES = "Profiles";
 
 const SUBTITLE_LANGUAGES = [["off", "Off"], ["de", "German"], ["en", "English"]];
@@ -65,27 +62,16 @@ function subtitlePreference() {
   return set;
 }
 
-/** Draws the household into `set`, read afresh from the watch state. */
-function drawEveryone(set) {
-  const profiles = state.profiles();
-  set.textContent = "";
-  set.append(el("h2", "setting-title", "Everyone here"));
-  for (const entry of [...profiles.filter((p) => !p.kids), ...profiles.filter((p) => p.kids)]) {
-    const line = el("div", "manage-row everyone-row");
-    line.append(el("span", null, entry.name), el("span", "setting-value", roleLine(entry, profiles)));
-    set.append(line);
-  }
-}
-
 /**
  * Draws into `set` which household's profiles this device shows, and a way to
- * another — only while there is more than one. Joining one takes the device
- * off the profile chosen here, so `onJoined` asks who is watching again.
+ * another — only in the owner's view (`owning`), and while there is more than
+ * one. Joining one takes the device off the profile chosen here, so
+ * `onJoined` asks who is watching again.
  */
-function drawThisDevice(set, promptHost, onJoined) {
+function drawThisDevice(set, promptHost, onJoined, owning) {
   set.textContent = "";
   // Hidden, not just empty: an empty section would still take the panel's gap.
-  set.hidden = state.households().length < 2;
+  set.hidden = !owning || state.households().length < 2;
   if (set.hidden) return;
   const here = thisHousehold();
   const change = pill(HOUSEHOLD_WORDS.switchHousehold, () => {
@@ -107,23 +93,17 @@ export function profilesPanel(promptHost, { profile, switchProfile, systemVisibl
   if (profile) box.append(...you(profile, switchProfile, systemVisible));
   // A kid manages nothing, so is shown nobody else either.
   if (profile?.kids) return { box, stop: () => {} };
-  const list = el("div", "setting");
-  drawEveryone(list);
   // Scoped faces (appearance.css) make the shared body read as settings sections.
   const manage = el("div", "setting manage-inline");
   const device = el("div", "setting");
-  drawThisDevice(device, promptHost, switchProfile);
-  // A change can move people out of this household, or add the second one: the page follows.
-  const managed = mountManage(manage, { promptHost, chosen: { profile, switchProfile }, onChange: () => {
-    drawEveryone(list);
-    drawThisDevice(device, promptHost, switchProfile);
-  } });
-  const households = householdsPart(promptHost, { onOwner: managed.asOwner });
-  // The owner's view says all that Everyone here says, and is where the Owner button leads.
+  let owning = false;
+  const drawDevice = () => drawThisDevice(device, promptHost, switchProfile, owning);
+  // A change can add the second household: the page follows.
+  const managed = mountManage(manage, { promptHost, chosen: { profile, switchProfile }, onChange: drawDevice });
   managed.onOwnerView((showing) => {
-    list.hidden = showing;
-    households.box.hidden = showing;
+    owning = showing;
+    drawDevice();
   });
-  box.append(list, manage, device, households.box);
-  return { box, stop: () => { managed.stop(); households.stop(); } };
+  box.append(manage, device);
+  return { box, stop: managed.stop };
 }

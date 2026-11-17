@@ -1,6 +1,6 @@
 /**
  * Manage profiles' parts: a button, a section, a profile's row, the line that says who
- * a profile is — which Everyone here and the owner's view both show — and the
+ * a profile is — which the owner's view shows — and the
  * layout of anyone but the owner, who manages only their own household, drawn
  * as it always was: Grown-ups for its admin, then Kids. The owner's view of
  * every household is `profile-manage-owner.js`.

@@ -27,6 +27,7 @@ export const HOUSEHOLD_WORDS = {
   delete: "Delete",
   householdNameTaken: "A household with that name already exists.",
   profileNameTaken: "That name is already used on this install.",
+  whosManaging: "Who’s managing?",
 };
 
 /** A household's line in the owner's list: who runs it, and how many profiles are in it. */

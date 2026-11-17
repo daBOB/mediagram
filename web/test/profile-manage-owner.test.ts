@@ -1,7 +1,7 @@
 /**
  * The owner's view of the Profiles page: every household with its actions, its people with their
  * controls, and adding a grown-up or a kid right in it, behind one owner's PIN per visit — from
- * Settings, from the picker, and through the Owner button. Anyone else's Manage as before.
+ * Settings, and from the owner's tile in Who's managing?. Anyone else's Manage as before.
  */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
@@ -11,7 +11,7 @@ import { openProfilesPage } from "../public/lib/profiles-page-overlay.js";
 import { HOUSEHOLD_WORDS as W } from "../public/lib/household-words.js";
 import { newPinTitle } from "../public/lib/pin-prompt.js";
 import * as state from "../public/lib/watch-state.js";
-import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
+import { answerPin, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
 import { AT_HOME, FLAT, SPLIT, storage, writesOf } from "./support/household-fixture";
 import { actionsOf, ATTIC, fieldOf, fill, optionsOf, press, prompting, promptTitle, rowOf as householdRow, rows } from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
@@ -70,8 +70,8 @@ const formsOf = (root: Node) => descendants(root).filter((node) => node.classes.
 const formOf = (root: Node, label: string) => descendants(root).find((node) => node.tagName === "FORM" && formsOf(node).includes(label))!;
 /** Where a form's refusal is said: right after it. */
 const saidAfter = (form: Node) => form.parent!.children[form.parent!.children.indexOf(form) + 1]!;
-const everyoneHere = (root: Node) => descendants(root).find((node) => node.children[0]?.textContent === "Everyone here")!;
-const gate = (root: Node) => byClass(root, "households");
+/** The This device part of the page, which only the owner's view shows. */
+const thisDevice = (root: Node) => descendants(root).find((node) => node.children[0]?.textContent === W.thisDevice)!;
 
 /** Types `name` into the household `household`'s `label` form, sets what `set` sets, and sends it. */
 async function add(root: Node, household: string, label: string, name: string, set = (_form: Node) => {}) {
@@ -94,7 +94,7 @@ function settingsAs(profile: { name: string } | null) {
 async function manageAs(name: string, pin: string) {
   const root = new Node();
   openProfilesPage(root, () => {});
-  buttonNamed(manage(root), name).fire("click");
+  tileNamed(manage(root), name).fire("click");
   await answerPin(root, pin);
   return root;
 }
@@ -111,7 +111,7 @@ const timTo = (age: number, pin = "1357") => ["PUT", "/api/profiles/tim/kids-age
 
 test("watching as the owner, the page shows every household with its actions and no Who are you", () => {
   const { main } = settingsAs(OWNER);
-  expect(textOf(main)).not.toContain("Who are you?");
+  expect(textOf(main)).not.toContain(W.whosManaging);
   // This device's household first, then the others in the live order: each a heading its part is named by.
   expect(namesOf(main)).toEqual(["Home", "Loft", "Flat"]);
   expect(headings(main)).toEqual(["Manage profiles", "Home", "Loft", "Flat"]);
@@ -203,45 +203,33 @@ test("an empty household offers Add a grown-up and Delete but not Add a kid", as
   expect(formsOf(householdOf(main, "Attic"))).toEqual(["Add a grown-up"]);
 });
 
-test("Everyone here and the Owner button are gone while the owner view shows", async () => {
-  const { main } = settingsAs(OWNER);
-  expect(everyoneHere(main).hidden).toBe(true);
-  expect(gate(main).hidden).toBe(true);
-  // This device's household is the device's, not the owner's: it stays.
-  expect(descendants(main).find((node) => node.children[0]?.textContent === W.thisDevice)!.hidden).toBe(false);
-  // Anyone else keeps both.
-  const other = settingsAs(MAJA).main;
-  expect(everyoneHere(other).hidden).toBe(false);
-  expect(gate(other).hidden).toBe(false);
-  expect(textOf(gate(other))).toContain(W.ownerNote);
+test("This device shows with the owner view, and not to anyone else", async () => {
+  expect(thisDevice(settingsAs(OWNER).main).hidden).toBe(false);
+  expect(textOf(settingsAs(MAJA).main)).not.toContain(W.thisDevice);
 });
 
 test("from the picker, choosing the owner opens the owner view", async () => {
   const root = await manageAs("andre", "1357");
   expect(namesOf(root)).toEqual(["Home", "Loft", "Flat"]);
-  expect(textOf(root)).not.toContain("Who are you?");
-  expect(everyoneHere(root).hidden).toBe(true);
-  expect(gate(root).hidden).toBe(true);
+  expect(textOf(root)).not.toContain(W.whosManaging);
   // The PIN given there is held: a change asks nothing more.
   await changeTim(root);
   expect(prompting(root)).toBe(false);
   expect(sent()).toEqual([["POST", "/api/profiles/andre/unlock", { pin: "1357" }], timTo(12)]);
 });
 
-test("on a device in another household, the Owner button opens the whole owner view", async () => {
+test("on a device in another household, the Owner tile opens the whole owner view", async () => {
   Object.assign(env.window, { localStorage: storage({ "mediagram.household": "flat" }) });
   await state.loadProfiles();
   const { main } = settingsAs(MAJA);
-  // The owner is not one of this household's to choose.
-  expect(descendants(byClass(main, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["Maja"]);
-  buttonNamed(gate(main), W.owner).fire("click");
+  // The owner is not one of this household's: their tile comes last.
+  expect(descendants(main).filter((node) => node.className === "who-tile").map((tile) => tile.children[1]!.textContent)).toEqual(["Maja", "andre"]);
+  tileNamed(main, "andre").fire("click");
   expect(promptTitle(main)).toBe(W.ownersPin);
   await answerPin(main, "1357");
   expect(namesOf(main)).toEqual(["Flat", "Loft", "Home"]);
   expect(headings(main)).toEqual(["Manage profiles", "Flat", "Loft", "Home"]);
-  expect(textOf(main)).not.toContain("Who are you?");
-  expect(everyoneHere(main).hidden).toBe(true);
-  expect(gate(main).hidden).toBe(true);
+  expect(textOf(main)).not.toContain(W.whosManaging);
   // The owner's PIN is held: adding asks only the new grown-up's.
   await add(main, "Loft", "Add a grown-up", "Opa");
   expect(promptTitle(main)).toBe(newPinTitle("Opa"));
@@ -373,7 +361,7 @@ test("a grown-up moved out of this device's household elsewhere is asked who the
   await state.loadProfiles();
   env.window.dispatchEvent(new Event("mediagram:profiles"));
   expect(textOf(root)).not.toContain("As Maja");
-  expect(textOf(root)).toContain("Who are you?");
+  expect(textOf(root)).toContain(W.whosManaging);
 });
 
 test("a household is headed by its name, never its id", async () => {

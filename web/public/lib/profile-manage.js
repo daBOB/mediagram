@@ -3,11 +3,12 @@
  *
  * Part of the Profiles page (`catalog/settings-profiles.js`), in Settings and
  * over the picker. A device left on a grown-up's profile does not hand a child
- * these controls: the page hides them from kids and asks who you are and the
- * PIN on every visit — but for the owner, whose view of every household
- * (`profile-manage-owner.js`) opens at once when watching as them, asking
- * their PIN at the first change. A PIN is given once, held while the body is
- * mounted, sent with every change, and dropped when it is torn down.
+ * these controls: the page hides them from kids and asks Who's managing?
+ * (`profile-manage-who.js`) and that PIN on every visit — but for the owner,
+ * whose view of every household (`profile-manage-owner.js`) opens at once when
+ * watching as them, asking their PIN at the first change. A PIN is given once,
+ * held while the body is mounted, sent with every change, and dropped when it
+ * is torn down.
  *
  * What the panel offers follows the household's rule: the admin adds, removes and resets grown-ups;
  * every grown-up manages their own kids and their own PIN; the owner, everyone in every household.
@@ -22,7 +23,8 @@ import { HOUSEHOLD_WORDS } from "./household-words.js";
 import { byHousehold, pill, section } from "./profile-manage-households.js";
 import { manageRows } from "./profile-manage-rows.js";
 import { ownerView } from "./profile-manage-owner.js";
-import { askGrownUp, askPin, newPinTitle, promptsOver, refusalText } from "./pin-prompt.js";
+import { whoIsManaging } from "./profile-manage-who.js";
+import { askPin, newPinTitle, promptsOver, refusalText } from "./pin-prompt.js";
 export { pill };
 
 /** What a change reports once the body is gone: nothing was sent. */
@@ -35,9 +37,9 @@ const GONE = { ok: false, reason: "not-found" };
  *   chosen?: { profile?: {id: string}|null, switchProfile?: () => void } }} options PIN prompts open over
  *   `promptHost`; `onChange` runs after each change that went through, once the list is read again;
  *   `chosen` is who is watching, the owner's view at once for the owner
- * @returns {{ stop: () => void, asOwner: (pin: string) => void, onOwnerView: (listener: (showing: boolean) => void) => void }}
- *   `stop` removes the body and drops the PIN held; `asOwner` opens the owner's view with the owner's `pin`;
- *   `onOwnerView`'s listener hears at once, and on every change, whether it shows
+ * @returns {{ stop: () => void, onOwnerView: (listener: (showing: boolean) => void) => void }}
+ *   `stop` removes the body and drops the PIN held; `onOwnerView`'s listener hears at once, and on every
+ *   change, whether the owner's view shows
  */
 export function mountManage(container, { promptHost, onChange, chosen = {} }) {
   const root = el("div");
@@ -138,23 +140,18 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
 
   function drawWho() {
     session = null;
-    body.append(el("h1", null, "Manage profiles"), el("p", "who-note", "Who are you?"));
-    const choices = el("div", "who-ask");
-    for (const entry of state.profiles().filter((profile) => !profile.kids)) {
-      choices.append(pill(entry.name, async () => {
-        // A first PIN refused is news from another player: read who is here again.
-        const pin = await ask(() => askGrownUp(promptHost, entry, (given) => (gone ? GONE : api.prove(entry, given)), async (outcome) => {
-          if (gone) return;
-          message.textContent = refusalText(outcome);
-          if (await state.loadProfiles() && !gone) draw();
-        }));
-        if (pin === null || gone) return;
+    body.append(whoIsManaging({ promptHost, ask, gone: () => gone,
+      chosen: (entry, pin) => {
         session = { actorId: entry.id, pin };
         message.textContent = "";
         draw();
-      }));
-    }
-    body.append(choices);
+      },
+      // A first PIN refused is news from another player: read who is here again.
+      refused: async (outcome) => {
+        if (gone) return;
+        message.textContent = refusalText(outcome);
+        if (await state.loadProfiles() && !gone) draw();
+      } }));
   }
 
   /** The rows and forms the layouts draw: one's own, a grown-up's, a kid's, and adding either. */
@@ -188,12 +185,6 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
       session = null;
       prompts.close();
       root.remove();
-    },
-    asOwner(pin) {
-      if (gone || owner() === undefined) return;
-      session = { actorId: owner().id, pin };
-      message.textContent = "";
-      draw();
     },
     onOwnerView: (listener) => { listeners.push(listener); listener(showing); },
   };

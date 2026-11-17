@@ -24,6 +24,7 @@ object HouseholdWords {
     const val DELETE = "Delete"
     const val HOUSEHOLD_NAME_TAKEN = "A household with that name already exists."
     const val PROFILE_NAME_TAKEN = "That name is already used on this install."
+    const val WHOS_MANAGING = "Who’s managing?"
 }
 
 /** [HouseholdWords] keyed as the web's object, so the fixture compares them whole. */
@@ -52,6 +53,7 @@ val HOUSEHOLD_WORDS: Map<String, String> =
             "delete" to DELETE,
             "householdNameTaken" to HOUSEHOLD_NAME_TAKEN,
             "profileNameTaken" to PROFILE_NAME_TAKEN,
+            "whosManaging" to WHOS_MANAGING,
         )
     }
 

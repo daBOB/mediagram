@@ -6,7 +6,7 @@ import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import { openProfilesPage } from "../public/lib/profiles-page-overlay.js";
 import { mountManage } from "../public/lib/profile-manage.js";
 import * as state from "../public/lib/watch-state.js";
-import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
+import { answerPin, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
 import { ANDRE, LEA, MAJA, TIM, writesOf } from "./support/household-fixture";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
@@ -39,15 +39,18 @@ async function manageAs(name: string, ...pins: string[]) {
   const root = new Node();
   let closes = 0;
   openProfilesPage(root, () => { closes++; });
-  buttonNamed(root, name).fire("click");
+  tileNamed(root, name).fire("click");
   await answerPin(root, ...pins);
   return { root, closes: () => closes };
 }
 
+/** The names on the Who's managing? tiles under `root`. */
+const tilesOf = (root: Node) => descendants(root).filter((node) => node.className === "who-tile").map((tile) => tile.children[1]!.textContent);
+
 test("only grown-ups are offered as who you are", () => {
   const root = new Node();
   openProfilesPage(root, () => {});
-  expect(descendants(byClass(root, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre", "Maja"]);
+  expect(tilesOf(root)).toEqual(["andre", "Maja"]);
 });
 
 test("a parent sees its own kids and its own PIN — no grown-ups, no other parent's kids", async () => {
@@ -218,7 +221,7 @@ test("a wrong PIN on a change asks who you are again", async () => {
   limitOf(root, "Tim").fire("change");
   await settle();
   expect(textOf(byClass(root, "pin-message"))).toBe("Your PIN is no longer valid. Choose who you are again.");
-  expect(textOf(root)).toContain("Who are you?");
+  expect(textOf(root)).toContain(HOUSEHOLD_WORDS.whosManaging);
 });
 
 const prompting = (root: Node) => descendants(root).some((node) => node.className.split(" ").includes("pin-prompt"));
@@ -232,7 +235,7 @@ test("a held PIN that no longer works ends a new-PIN dialog at once: nothing is 
   expect(prompting(root)).toBe(false);
   expect(writes("PUT")).toBe(1);
   expect(textOf(byClass(root, "pin-message"))).toBe("Your PIN is no longer valid. Choose who you are again.");
-  expect(textOf(root)).toContain("Who are you?");
+  expect(textOf(root)).toContain(HOUSEHOLD_WORDS.whosManaging);
 });
 
 test("so does a reset of another grown-up's PIN", async () => {
@@ -242,7 +245,7 @@ test("so does a reset of another grown-up's PIN", async () => {
   await answerPin(root, "2468", "2468");
   expect(prompting(root)).toBe(false);
   expect(writes("PUT")).toBe(1);
-  expect(textOf(root)).toContain("Who are you?");
+  expect(textOf(root)).toContain(HOUSEHOLD_WORDS.whosManaging);
 });
 
 test("a grown-up's name already here is said, and the PIN dialog is gone", async () => {
@@ -311,7 +314,7 @@ test("closing drops the PIN: the next opening asks who you are", async () => {
   expect(closes()).toBe(1);
   expect(descendants(root).some((node) => node.className.includes("who-manage"))).toBe(false);
   openProfilesPage(root, () => {});
-  expect(textOf(root)).toContain("Who are you?");
+  expect(textOf(root)).toContain(HOUSEHOLD_WORDS.whosManaging);
   expect(rowOf(root, "Tim")).toBeUndefined();
 });
 
@@ -319,9 +322,9 @@ test("theBodyMountsOutsideTheOverlay", async () => {
   const page = new Node();
   const host = new Node();
   const { stop: unmount } = mountManage(page, { promptHost: host });
-  expect(textOf(page)).toContain("Who are you?");
-  expect(descendants(byClass(page, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre", "Maja"]);
-  buttonNamed(page, "Maja").fire("click");
+  expect(textOf(page)).toContain(HOUSEHOLD_WORDS.whosManaging);
+  expect(tilesOf(page)).toEqual(["andre", "Maja"]);
+  tileNamed(page, "Maja").fire("click");
   await settle();
   expect(host.childElementCount).toBe(1);
   expect(page.childElementCount).toBe(1);
@@ -335,7 +338,7 @@ test("closingTheBodyMidPrompt leavesNothingBehind", async () => {
   const page = new Node();
   const host = new Node();
   const { stop: unmount } = mountManage(page, { promptHost: host });
-  buttonNamed(page, "Maja").fire("click");
+  tileNamed(page, "Maja").fire("click");
   await settle();
   const prompt = byClass(host, "pin-prompt");
   unmount();

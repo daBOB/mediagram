@@ -1,10 +1,10 @@
-/** Settings' one Profiles tab: you, then who is here, then the management the picker opens too. */
+/** Settings' one Profiles tab: you, then the management the picker opens too. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { renderSettings } from "../public/lib/catalog/settings-page.js";
 import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import * as state from "../public/lib/watch-state.js";
-import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
+import { answerPin, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
 import { ANDRE, AT_HOME, FLAT, LEA, MAJA, SPLIT, storage, TIM, writesOf } from "./support/household-fixture";
 import { create, fieldOf, fill, open, optionsOf, prompting, rowOf } from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
@@ -61,26 +61,30 @@ test("a kid sees only You", () => {
   expect(buttonNamed(main, "Switch profile")).toBeDefined();
 });
 
-test("a grown-up sees You, then Everyone here, then Manage profiles", () => {
+test("a grown-up sees You, then Who's managing?", () => {
   const { main } = settings(find("Maja"));
   openProfiles(main);
-  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", "Everyone here", "Manage profiles", HOUSEHOLD_WORDS.households]);
-  expect(textOf(main)).toContain("Who are you?");
+  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", HOUSEHOLD_WORDS.whosManaging]);
 });
 
-test("with nobody chosen there is no You, only Everyone here and Manage profiles", () => {
+test("with nobody chosen there is no You, only Who's managing?", () => {
   const { main } = settings(null);
   openProfiles(main);
-  expect(sectionsOf(main)).toEqual(["Settings", "Everyone here", "Manage profiles", HOUSEHOLD_WORDS.households]);
+  expect(sectionsOf(main)).toEqual(["Settings", HOUSEHOLD_WORDS.whosManaging]);
   expect(textOf(main)).not.toContain("Switch profile");
 });
 
-test("everyoneIsListedWithTheirRole", () => {
+/** Every profile's row in the owner's view, by its name and the line that says who it is. */
+const ownersLines = (main: Node) => descendants(byClass(main, "manage-inline")).filter((node) => node.className === "manage-row")
+  .map((row) => `${row.children[0]!.textContent}${textOf(row.children[1]!)}`);
+
+test("everyoneIsListedWithTheirRole in the owner's view", async () => {
+  household = [{ ...ANDRE, owner: true }, MAJA, { ...TIM, dailyLimit: 45 }, LEA];
+  await state.loadProfiles();
   const { main } = settings(find("andre"));
   openProfiles(main);
-  const lines = descendants(main).filter((node) => node.classes.has("everyone-row")).map(textOf);
-  expect(lines).toEqual([
-    "andreAdmin · PIN set",
+  expect(ownersLines(main)).toEqual([
+    `andre${HOUSEHOLD_WORDS.owner} · Admin · PIN set`,
     "MajaGrown-up · PIN set",
     "TimKid · Maja · FSK 6 · 45 min",
     "LeaKid · andre · FSK 12",
@@ -92,12 +96,10 @@ test("the owner's line reads Owner · Admin, on the owner's own row in their vie
   await state.loadProfiles();
   const { main } = settings(find("andre"));
   openProfiles(main);
-  const lines = descendants(byClass(main, "manage-inline")).filter((node) => node.className === "manage-row")
-    .map((row) => `${row.children[0]!.textContent}${textOf(row.children[1]!)}`);
-  expect(lines.slice(0, 2)).toEqual([`andre${HOUSEHOLD_WORDS.owner} · Admin · PIN set`, "MajaGrown-up · PIN set"]);
+  expect(ownersLines(main).slice(0, 2)).toEqual([`andre${HOUSEHOLD_WORDS.owner} · Admin · PIN set`, "MajaGrown-up · PIN set"]);
 });
 
-test("the Everyone line says which sections someone is not shown, in the nav's order — never for the owner", async () => {
+test("the role line says which sections someone is not shown, in the nav's order — never for the owner", async () => {
   household = [
     { ...ANDRE, owner: true, hiddenSections: ["anime"] },
     { ...MAJA, hiddenSections: ["tutorials", "movies"] },
@@ -105,11 +107,9 @@ test("the Everyone line says which sections someone is not shown, in the nav's o
     { ...LEA, hiddenSections: ["podcasts"] },
   ];
   await state.loadProfiles();
-  // Anyone but the owner, whose view takes Everyone here's place.
-  const { main } = settings(find("Maja"));
+  const { main } = settings(find("andre"));
   openProfiles(main);
-  const lines = descendants(main).filter((node) => node.classes.has("everyone-row")).map(textOf);
-  expect(lines).toEqual([
+  expect(ownersLines(main)).toEqual([
     `andre${HOUSEHOLD_WORDS.owner} · Admin · PIN set`,
     "MajaGrown-up · PIN set · hides Movies, Tutorials",
     "TimKid · Maja · FSK 6 · 45 min · hides Anime, Tutorials",
@@ -117,18 +117,18 @@ test("the Everyone line says which sections someone is not shown, in the nav's o
   ]);
 });
 
-test("managingAsksWhoYouAreAndThePin, then a kid added appears in Everyone", async () => {
+test("managingAsksWhoYouAreAndThePin, then a kid added appears in their list", async () => {
   const { main } = settings(find("Maja"));
   openProfiles(main);
-  expect(textOf(main)).toContain("Who are you?");
-  buttonNamed(main, "Maja").fire("click");
+  expect(textOf(main)).toContain(HOUSEHOLD_WORDS.whosManaging);
+  tileNamed(main, "Maja").fire("click");
   await answerPin(main, "4321");
   const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a kid"))!;
   descendants(form).find((node) => node.tagName === "INPUT")!.value = "Ben";
   form.fire("submit");
   await settle();
   expect(writesOf(env.requests).at(-1)?.[2]).toMatchObject({ actorId: "maja", pin: "4321", name: "Ben" });
-  expect(descendants(main).some((node) => node.classes.has("everyone-row") && textOf(node).startsWith("BenKid · Maja"))).toBe(true);
+  expect(descendants(main).some((node) => node.className === "manage-row" && node.children[0]?.textContent === "Ben")).toBe(true);
 });
 
 /** Every PIN a write carried, in order. */
@@ -145,14 +145,14 @@ async function addKid(main: Node, name: string) {
 test("leavingTheTabDropsThePin", async () => {
   const { main } = settings(find("Maja"));
   openProfiles(main);
-  buttonNamed(main, "Maja").fire("click");
+  tileNamed(main, "Maja").fire("click");
   await answerPin(main, "4321");
   expect(textOf(main)).toContain("As Maja");
   buttonNamed(main, "Appearance").fire("click");
   openProfiles(main);
   expect(textOf(main)).not.toContain("As Maja");
-  expect(textOf(main)).toContain("Who are you?");
-  buttonNamed(main, "Maja").fire("click");
+  expect(textOf(main)).toContain(HOUSEHOLD_WORDS.whosManaging);
+  tileNamed(main, "Maja").fire("click");
   await answerPin(main, "9999");
   const after = writesOf(env.requests).length;
   await addKid(main, "Ben");
@@ -163,7 +163,7 @@ test("leavingTheTabDropsThePin", async () => {
 test("leavingThePageDropsThePin", async () => {
   const { main, stop } = settings(find("Maja"));
   openProfiles(main);
-  buttonNamed(main, "Maja").fire("click");
+  tileNamed(main, "Maja").fire("click");
   await answerPin(main, "4321");
   const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a kid"))!;
   stop();
@@ -184,15 +184,21 @@ async function inTheFlat() {
   await state.loadProfiles();
 }
 
-test("the Profiles page says this device's household and offers Switch only with two", async () => {
-  const alone = settings(find("Maja")).main;
+test("the owner's view says this device's household and offers Switch only with two", async () => {
+  household = [{ ...ANDRE, owner: true }, MAJA, TIM, LEA];
+  await state.loadProfiles();
+  const alone = settings(find("andre")).main;
   openProfiles(alone);
   expect(sectionsOf(alone)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
 
   await inTheFlat();
-  const { main } = settings(find("Maja"));
+  // Anyone but the owner is asked Who's managing?, with no This device.
+  const other = settings(find("Maja")).main;
+  openProfiles(other);
+  expect(sectionsOf(other)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
+  const { main } = settings(find("andre"));
   openProfiles(main);
-  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", "Everyone here", "Manage profiles", HOUSEHOLD_WORDS.thisDevice, HOUSEHOLD_WORDS.households]);
+  expect(sectionsOf(main).at(-1)).toBe(HOUSEHOLD_WORDS.thisDevice);
   const row = descendants(main).find((node) => node.className === "setting" && textOf(node).startsWith(HOUSEHOLD_WORDS.thisDevice))!;
   expect(textOf(byClass(row, "setting-value"))).toBe("Flat");
   buttonNamed(row, HOUSEHOLD_WORDS.switchHousehold).fire("click");

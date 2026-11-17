@@ -21,7 +21,8 @@
     "useHere": "Use on this device",
     "delete": "Delete",
     "householdNameTaken": "A household with that name already exists.",
-    "profileNameTaken": "That name is already used on this install."
+    "profileNameTaken": "That name is already used on this install.",
+    "whosManaging": "Who’s managing?"
   },
   "lines": [
     {"name":"a household run by the owner, with four profiles","fn":"householdLine","args":["andre",4],"expect":"Admin andre · 4 profiles"},

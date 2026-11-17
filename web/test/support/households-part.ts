@@ -15,16 +15,13 @@ export const EVERYONE = [...SPLIT, OLE, KAI];
 export const OWNER = EVERYONE[0]!;
 export const MAJA = EVERYONE[1]!;
 
-/** The Profiles page as `profile` sees it — the owner's view for the owner, the Owner button for anyone else — over a host the PIN prompts open on. */
+/** The Profiles page as `profile` sees it — the owner's view for the owner, Who's managing? for anyone else — over a host the PIN prompts open on. */
 export function part(profile: { id: string; name: string } | null, switchProfile = () => {}) {
   const root = new Node();
   const drawn = profilesPanel(root, { profile, switchProfile });
   root.append(drawn.box);
   return { root, ...drawn };
 }
-
-/** The Owner button's part of the page: the note and the button, shown wherever the owner's view is not. */
-export const gate = (root: Node) => byClass(root, "households");
 
 export const rows = (root: Node) => descendants(root).filter((node) => node.classes.has("household-row"));
 export const rowOf = (root: Node, name: string) => rows(root).find((row) => row.children[0]!.textContent === name)!;

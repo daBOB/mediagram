@@ -1,13 +1,13 @@
-/** Households on the Profiles page: every household in the owner's view, the owner's changes to them with one PIN per visit, and the Owner button for anyone else. */
+/** Households on the Profiles page: every household in the owner's view, the owner's changes to them with one PIN per visit, and the owner's tile for anyone else. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { renderSettings } from "../public/lib/catalog/settings-page.js";
 import { HOUSEHOLD_WORDS as W } from "../public/lib/household-words.js";
 import { newPinTitle } from "../public/lib/pin-prompt.js";
 import * as state from "../public/lib/watch-state.js";
-import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
+import { answerPin, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
 import { AT_HOME, FLAT, storage, writesOf } from "./support/household-fixture";
-import { actionsOf, ATTIC, create, EVERYONE, fieldOf, fill, gate, MAJA, open, optionsOf, OWNER, part, press, prompting, promptTitle, rowOf, rows } from "./support/households-part";
+import { actionsOf, ATTIC, create, EVERYONE, fieldOf, fill, MAJA, open, optionsOf, OWNER, part, press, prompting, promptTitle, rowOf, rows } from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -38,23 +38,27 @@ test("the owner sees every household with its admin and member count, this devic
     ["Attic", "No admin · 0 profiles"],
     ["Flat", "Admin Maja · 3 profiles"],
   ]);
-  expect(gate(root).hidden).toBe(true);
+  expect(descendants(root).some((node) => node.className === "who-tile")).toBe(false);
   // Seeing them asks nothing: the PIN waits for the first change.
   expect(prompting(root)).toBe(false);
   expect(sent()).toEqual([]);
 });
 
-test("anyone else sees an Owner button that asks the owner's PIN once", async () => {
-  expect(textOf(gate(part(null).root))).toContain(W.ownerNote);
+/** Each Who's managing? tile under `root`: its name, and the line under it when it has one. */
+const tilesOf = (root: Node) => descendants(root).filter((node) => node.className === "who-tile")
+  .map((tile) => tile.children.slice(1).map(textOf).join(" · "));
+
+test("anyone else sees the owner's tile, which asks the owner's PIN once", async () => {
+  expect(tilesOf(part(null).root)).toEqual([`andre · ${W.owner}`, "Kai"]);
   const { root } = part(MAJA);
-  expect(textOf(gate(root))).toContain(W.ownerNote);
+  expect(tilesOf(root)).toEqual([`andre · ${W.owner}`, "Kai"]);
   expect(rows(root)).toEqual([]);
-  buttonNamed(gate(root), W.owner).fire("click");
+  tileNamed(root, "andre").fire("click");
   expect(promptTitle(root)).toBe(W.ownersPin);
   await answerPin(root, "1357");
   expect(sent()).toEqual([["POST", "/api/profiles/andre/unlock", { pin: "1357" }]]);
-  // The button opens the owner's view, which takes its place.
-  expect(gate(root).hidden).toBe(true);
+  // The tile opens the owner's view, which takes the tiles' place.
+  expect(tilesOf(root)).toEqual([]);
   expect(rows(root).length).toBe(3);
   await press(root, "Attic", W.delete);
   expect(prompting(root)).toBe(false);
@@ -62,12 +66,10 @@ test("anyone else sees an Owner button that asks the owner's PIN once", async ()
   expect(unlocks().length).toBe(1);
 });
 
-test("no Owner button on an install with no owner", async () => {
+test("no Owner tile on an install with no owner", async () => {
   everyone = EVERYONE.map((one) => ({ ...one, owner: false }));
   await state.loadProfiles();
-  const { root } = part(MAJA);
-  expect(textOf(gate(root))).toContain(W.ownerNote);
-  expect(descendants(gate(root)).some((node) => node.tagName === "BUTTON")).toBe(false);
+  expect(tilesOf(part(MAJA).root)).toEqual(["andre", "Kai"]);
 });
 
 test("create with a new grown-up sends the name, the admin's name and PIN", async () => {

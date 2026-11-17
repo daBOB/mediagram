@@ -17,6 +17,15 @@
 .who-note { margin: 24px auto 0; max-width: 48ch; color: var(--ink-3); font-size: 0.875rem; }
 /* The Profiles page over the picker reads as it does in Settings: the settings width, at the left edge. */
 .who-manage .who-card { width: min(100%, 52rem); text-align: left; }
+/* Who's managing? is Who's watching?'s tiles: under a settings title at the left edge in Settings, and over the picker centred under the picker's own heading, with Done below as Stay as I am is. */
+.who-owner { color: var(--accent); font-size: 0.75rem; }
+.manage-inline .manage-who h1 { margin-bottom: 16px; }
+.manage-inline .manage-who .who-tiles { justify-content: flex-start; margin: 0; }
+.who-manage .manage-inline h1 { margin-bottom: 8px; font-size: clamp(1.75rem, 4vw, 2.5rem); line-height: 1.15; letter-spacing: -0.035em; }
+.who-manage .manage-inline .manage-who { text-align: center; }
+.who-manage .manage-inline .manage-who h1 { margin-bottom: 40px; line-height: 1.5; text-align: center; }
+.who-manage .manage-inline .manage-who .who-tiles { justify-content: center; }
+.who-manage .who-card > .quiet { display: block; margin: 32px auto 0; }
 .quiet { min-height: 44px; margin: 0 4px; padding: 8px 12px; border: none; border-radius: var(--radius); background: none; color: var(--ink-2); font-size: 0.8125rem; }
 .quiet:hover { color: var(--accent); background: var(--accent-tint); }
 .list-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
@@ -101,6 +110,6 @@
 @media (max-width: 767px) {
   .who-tiles { gap: 20px; }
   .who-initial { width: 80px; height: 80px; }
-  .who-card h1 { margin-bottom: 32px; }
+  .who-card h1, .who-manage .manage-inline .manage-who h1 { margin-bottom: 32px; }
   .status { grid-template-columns: minmax(0, 1fr); }
 }
