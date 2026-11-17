@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.tv.material3.Button
 import androidx.tv.material3.Text
+import catalog.profile.ManageUiState
 import catalog.profile.REMOVE
 import catalog.profile.RESET_PIN
 import catalog.profile.removeQuestion
@@ -22,10 +23,54 @@ import model.DailyLimitWords
 import model.KIDS_LIMITS
 import model.Profile
 import model.dailyLimitChoiceFor
+import ui.common.profile.ManageActions
 import ui.tv.TvTextRow
 import ui.tv.player.TvChoiceRow
 import ui.tv.setup.TvConfirmDialog
 import ui.tv.setup.TvDialog
+
+/**
+ * The dialog [step] opens over Manage's rows, if it is one — a person's
+ * choices, a kid's daily limit, someone's sections — wherever those rows are
+ * drawn. [onStep] moves to the next; List closes it.
+ */
+@Composable
+internal fun TvManageDialog(
+    step: TvManageStep,
+    state: ManageUiState.Managing,
+    actions: ManageActions,
+    onStep: (TvManageStep) -> Unit,
+) {
+    val back = { onStep(TvManageStep.List) }
+    when (step) {
+        is TvManageStep.KidActions ->
+            TvKidActions(
+                step.kid,
+                onAge = { actions.onSetKidsAge(step.kid.id, it) },
+                onDailyLimit = { onStep(TvManageStep.DailyLimit(step.kid)) },
+                onSections = { onStep(TvManageStep.Sections(step.kid.id)) },
+                onRemove = { actions.onRemove(step.kid.id) },
+                onDismiss = back,
+            )
+        is TvManageStep.DailyLimit -> TvDailyLimitChoices(step.kid, onChoose = { actions.onSetDailyLimit(step.kid.id, it) }, onDismiss = back)
+        is TvManageStep.GrownUpActions ->
+            TvGrownUpActions(
+                step.grownUp,
+                onResetPin = {
+                    back()
+                    actions.onChangePin(step.grownUp.id)
+                },
+                onSections = { onStep(TvManageStep.Sections(step.grownUp.id)) },
+                onRemove = { actions.onRemove(step.grownUp.id) },
+                onDismiss = back,
+            )
+        is TvManageStep.Sections ->
+            state.sectionRows.find { it.id == step.id }?.let { profile ->
+                TvSectionSwitches(profile, state.notice, state.answers, onSet = { actions.onSetHiddenSections(profile.id, it) }, onDismiss = back)
+            }
+        else -> Unit
+    }
+}
 
 /**
  * A kid's choices for its grown-up: its limit — the web's select, the

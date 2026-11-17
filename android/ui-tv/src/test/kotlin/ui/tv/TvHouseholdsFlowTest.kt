@@ -121,16 +121,15 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
         compose.onNode(rowOf("${HouseholdWords.THIS_DEVICE} · Home")).assertIsFocused()
     }
 
-    /** The owner watching opens Households with no PIN; the first change asks it, and the remote is back on the household. */
+    /** The owner watching opens their view with no PIN; the first change asks it, and the remote is back on the household's header. */
     @Test
     fun theOwnerMovesAGrownUpWithTheRemote() {
         launch(emptyList(), chosen = "a", seed = twoHouseholds())
         openSettingsAt(rowOf("Profiles"))
         press(Key.DirectionCenter)
-        walkTo(rowOf(HouseholdWords.HOUSEHOLDS), Key.DirectionDown)
+        walkTo(rowOf("Manage profiles"), Key.DirectionDown)
         press(Key.DirectionCenter)
-        compose.onNode(rowOf("Flat · Admin Dan · 1 profile")).assertIsFocused()
-        press(Key.DirectionDown)
+        compose.onNode(rowOf("Home · Admin andre · 2 profiles")).assertIsFocused()
         press(Key.DirectionCenter)
         walkTo(rowOf(HouseholdWords.MOVE_HERE), Key.DirectionDown)
         press(Key.DirectionCenter)
@@ -143,7 +142,7 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
         assertEquals(HOME_HOUSEHOLD, fixture.core.profiles.single { it.id == "d" }.household)
     }
 
-    /** Leaving the owner's panel drops their PIN: the Owner row asks it again. */
+    /** Leaving the owner's view drops their PIN: the Owner row asks it again. */
     @Test
     fun leavingTheOwnersPanelForgetsThePin() {
         launch(emptyList(), chosen = "b", seed = twoHouseholds())
@@ -152,7 +151,7 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
         walkTo(rowOf(HouseholdWords.OWNER), Key.DirectionDown)
         press(Key.DirectionCenter)
         pin("1234")
-        compose.onNode(rowOf("Flat · Admin Dan · 1 profile")).assertIsFocused()
+        compose.onNode(rowOf("Home · Admin andre · 2 profiles")).assertIsFocused()
 
         back()
         compose.onNode(rowOf(HouseholdWords.OWNER)).assertIsFocused()

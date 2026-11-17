@@ -15,8 +15,7 @@ import ui.tv.player.TvSettingsHeading
 
 /**
  * One household's part of Manage on television — the web's `byHousehold` as
- * rows the remote walks: the household's name while the owner manages more
- * than one, then its Grown-ups and its Kids ("Name · FSK N · daily limit"),
+ * rows the remote walks: its Grown-ups and its Kids ("Name · FSK N · daily limit"),
  * each row opening its choices, and adding where [part] offers it. The
  * headings are text the remote passes over, as the web's are no controls.
  * [first] is the part's first row, for the part drawn first.
@@ -29,7 +28,6 @@ internal fun TvManagePart(
     onKid: (Profile) -> Unit,
     onAdd: (kid: Boolean) -> Unit,
 ) {
-    part.name?.let { TvSettingsHeading(it) }
     if (part.showsGrownUps) {
         TvSettingsHeading(GROWN_UPS)
         part.grownUps.forEachIndexed { index, grownUp ->

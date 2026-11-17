@@ -1,5 +1,7 @@
 package ui.tv.profile
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
@@ -23,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import model.HouseholdWords
 import org.junit.After
 import org.junit.Before
 import testing.FakeCore
@@ -33,7 +36,8 @@ import uniffi.mediagram_core.Profile
 import kotlin.test.assertIs
 
 /**
- * The owner's Households panel over the real view model and [FakeCore]:
+ * The owner's household steps over the real view model and [FakeCore], drawn
+ * around a stand-in for the owner's view that lists only the households:
  * andre, the owner, runs Home; Bea runs Flat, with Cy, who has no PIN.
  * Nobody is watching unless a test says so, and then the panel opens as the
  * Owner row opens it: the owner's PIN first.
@@ -76,7 +80,18 @@ abstract class TvHouseholdsPanelHarness : TvScreenStateTest() {
         owner = HouseholdsOwnerViewModel(repository, DefaultHouseholdsRepository(provider, repository, scope, Dispatchers.Unconfined), mockk(relaxed = true), OwnerPin())
         // As the gate says it, which this panel is drawn without.
         if (watching) owner.watching("a")
-        show { TvHouseholdsPanel(owner, reread = {}, onDone = { left++ }) }
+        show { TvHouseholdsPanel(owner, reread = {}, onDone = { left++ }) { landing, go -> Headers(landing, go) } }
+    }
+
+    /** A stand-in for the owner's view around the panel: each household's header, then Create a household. */
+    @Composable
+    private fun Headers(
+        landing: String?,
+        go: (TvHouseholdStep) -> Unit,
+    ) {
+        val rows = (owner.state.collectAsState().value as? HouseholdsOwnerUiState.Open)?.rows.orEmpty()
+        val headers = rows.map { it.household.id to "${it.household.name} · ${it.line}" } + (NEW to HouseholdWords.CREATE_A_HOUSEHOLD)
+        TvChoicesScreen(HouseholdWords.HOUSEHOLDS, null, headers, landing) { go(if (it == NEW) TvHouseholdStep.CreateName() else TvHouseholdStep.Actions(it)) }
     }
 
     /** The panel, the owner's PIN given. */

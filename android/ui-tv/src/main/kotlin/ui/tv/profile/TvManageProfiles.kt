@@ -36,12 +36,11 @@ import ui.common.profile.ManageActions
 import ui.tv.TvTextRow
 import ui.tv.player.TvSettingsHeading
 
-/** What covers or replaces the list while it is open. */
-private sealed interface TvManageStep {
+/** What covers or replaces Manage's rows while it is open. */
+internal sealed interface TvManageStep {
     data object List : TvManageStep
 
-    /** Into household [household], a kid for [parentId]: its part's, null for the maker's own. */
-    data class Adding(val kid: Boolean, val household: String?, val parentId: String?) : TvManageStep
+    data class Adding(val kid: Boolean) : TvManageStep
 
     data class KidActions(val kid: Profile) : TvManageStep
 
@@ -56,8 +55,8 @@ private sealed interface TvManageStep {
 /**
  * Manage profiles on television — the web's panel (`profile-manage.js`) as
  * one column the remote walks: who you are; then, for the admin, the other
- * grown-ups; every grown-up's own kids; for the owner, every household's,
- * each under its name ([TvManagePart]); its own PIN; Done.
+ * grown-ups; every grown-up's own kids ([TvManagePart]); its own PIN; Done.
+ * The owner's view of every household is drawn by [TvOwnerView] instead.
  * A row opens its few choices in a dialog rather than laying the web's
  * buttons along it, so Down always means the next person; the sections it is
  * shown are one of them, in a dialog of switches of its own. Adding asks the
@@ -102,9 +101,9 @@ private fun TvManaging(
         TvAddProfileFlow(
             heading = if (adding.kid) ADD_A_KID else ADD_A_GROWN_UP,
             askLimit = adding.kid,
-            onAdd = { name, age, dailyLimit ->
+            onAdd = { name, age, dailyLimit, _ ->
                 step = TvManageStep.List
-                if (age != null) actions.onAddKid(name, age, dailyLimit, adding.parentId) else actions.onAddGrownUp(name, adding.household)
+                if (age != null) actions.onAddKid(name, age, dailyLimit, null) else actions.onAddGrownUp(name, null)
             },
             onCancel = { step = TvManageStep.List },
         )
@@ -121,7 +120,7 @@ private fun TvManaging(
                     first.takeIf { index == 0 },
                     onGrownUp = { step = TvManageStep.GrownUpActions(it) },
                     onKid = { step = TvManageStep.KidActions(it) },
-                    onAdd = { step = TvManageStep.Adding(kid = it, part.id, part.kidParentDefault?.id) },
+                    onAdd = { step = TvManageStep.Adding(kid = it) },
                 )
             }
         }
@@ -129,40 +128,12 @@ private fun TvManaging(
         TvTextRow(CHANGE_YOUR_PIN, onClick = { actions.onChangePin(state.actor.id) })
         TvTextRow(DONE, onClick = actions.onClose, modifier = Modifier.padding(top = Spacing.medium))
     }
-    val back = { step = TvManageStep.List }
-    when (val current = step) {
-        is TvManageStep.KidActions ->
-            TvKidActions(
-                current.kid,
-                onAge = { actions.onSetKidsAge(current.kid.id, it) },
-                onDailyLimit = { step = TvManageStep.DailyLimit(current.kid) },
-                onSections = { step = TvManageStep.Sections(current.kid.id) },
-                onRemove = { actions.onRemove(current.kid.id) },
-                onDismiss = back,
-            )
-        is TvManageStep.DailyLimit -> TvDailyLimitChoices(current.kid, onChoose = { actions.onSetDailyLimit(current.kid.id, it) }, onDismiss = back)
-        is TvManageStep.GrownUpActions ->
-            TvGrownUpActions(
-                current.grownUp,
-                onResetPin = {
-                    back()
-                    actions.onChangePin(current.grownUp.id)
-                },
-                onSections = { step = TvManageStep.Sections(current.grownUp.id) },
-                onRemove = { actions.onRemove(current.grownUp.id) },
-                onDismiss = back,
-            )
-        is TvManageStep.Sections ->
-            state.sectionRows.find { it.id == current.id }?.let { profile ->
-                TvSectionSwitches(profile, state.notice, state.answers, onSet = { actions.onSetHiddenSections(profile.id, it) }, onDismiss = back)
-            }
-        else -> Unit
-    }
+    TvManageDialog(step, state, actions) { step = it }
 }
 
 /** The page both steps share: Manage's heading, who it is for, and why the last change did not take. */
 @Composable
-private fun TvManagePage(
+internal fun TvManagePage(
     subheading: String,
     notice: String?,
     content: @Composable ColumnScope.() -> Unit,

@@ -127,7 +127,12 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     // reading them, never offering a first profile they may rule out. A failed read keeps its own Try again.
     val unread = (state as? ProfileUiState.Picking)?.takeIf { it.error == null && it.needsFirstProfile && !joining.read }?.copy(synced = false)
     when {
-        inManage -> TvManageScreen(manage)
+        // A join from the owner's view leaves for the picker, which then shows that household.
+        inManage ->
+            TvManageScreen(manage, onJoined = {
+                manage.close()
+                profilesPage = false
+            })
         pickPrompt != null -> TvPinPrompt(pickPrompt, onPin = viewModel::enterPin, onCancel = viewModel::cancelPin)
         profilesPage -> TvProfilesOverPicker(onManage = manage::open, onDone = { profilesPage = false })
         joiningElsewhere && joining.joinsElsewhere -> {
@@ -162,15 +167,21 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
 /**
  * Manage, or the PIN it asks for in its place — one screen at a time, as
  * above — wherever it is opened: the Profiles page over the picker here, or
- * Settings' Profiles panel. [onClose] is its Done and its Back.
+ * Settings' Profiles panel. Managing as the owner, it is the owner's view
+ * ([TvOwnerView]), which keeps its steps under the PIN pads itself; [asOwner],
+ * the Owner row's, asks the owner's PIN for that view first. [onClose] is its
+ * Done and its Back; [onJoined] runs once Use on this device moved the box.
  */
 @Composable
 internal fun TvManageScreen(
     manage: ManageProfilesViewModel,
     onClose: () -> Unit = manage::close,
+    asOwner: Boolean = false,
+    onJoined: () -> Unit = onClose,
 ) {
     val state by manage.state.collectAsStateWithLifecycle()
     val prompt by manage.pin.collectAsStateWithLifecycle()
     val actions = remember(manage, onClose) { manage.manageActions(onClose) }
+    if (asOwner || (state as? ManageUiState.Managing)?.ownersView == true) return TvOwnerView(manage, state, prompt, actions, onJoined)
     prompt?.let { TvPinPrompt(it, onPin = manage::enterPin, onCancel = manage::cancelPin) } ?: TvManageProfiles(state, actions)
 }

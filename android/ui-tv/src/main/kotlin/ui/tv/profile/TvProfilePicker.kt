@@ -107,7 +107,7 @@ private fun TvPickerBody(
         TvAddProfileFlow(
             heading = FIRST_PROFILE,
             askLimit = false,
-            onAdd = { name, _, _ ->
+            onAdd = { name, _, _, _ ->
                 naming = false
                 actions.onCreateFirst(name)
             },

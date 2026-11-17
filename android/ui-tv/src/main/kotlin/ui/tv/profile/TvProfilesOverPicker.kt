@@ -16,7 +16,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.tv.material3.Text
 import catalog.profile.DONE
-import catalog.profile.JoinHouseholdViewModel
 import designsystem.Overscan
 import designsystem.Spacing
 import ui.common.settings.SettingsSection
@@ -28,8 +27,9 @@ import ui.tv.settings.TvSettingsPanel
  * The Profiles page with nobody chosen — everyone here and the Manage profiles
  * row, no You — under the page's own name, as the web's picker shows it, the
  * remote on the row the picker's own button named. Done and Back leave it for
- * the picker. Switch household and the owner's Households take the page's
- * place, Back from them landing on their row; once this box joins another
+ * the picker. Switch household and the Owner row's PIN take the page's
+ * place, Back from them landing on their row; that PIN given, the gate shows
+ * the owner's view in Manage's place. Once this box joins another
  * household it leaves for the picker, which then shows that household, as
  * the web's does.
  */
@@ -46,7 +46,7 @@ internal fun TvProfilesOverPicker(
         return
     }
     if (panel == TvSettingsPanel.Households) {
-        TvHouseholdsPanel(hiltViewModel(), hiltViewModel<JoinHouseholdViewModel>()::reread, onDone = { panel = null }, onJoined = onDone)
+        TvManageScreen(hiltViewModel(), onClose = { panel = null }, asOwner = true)
         return
     }
     BackHandler(onBack = onDone)

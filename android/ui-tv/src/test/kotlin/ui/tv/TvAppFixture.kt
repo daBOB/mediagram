@@ -229,7 +229,9 @@ internal class TvAppFixture(
         profile = ProfileViewModel(viewer.repository, NoopWatchSync)
         // Over the same core, read for as long as the store holds the picker.
         val households = DefaultHouseholdsRepository(viewer.provider, viewer.repository, profile.viewModelScope, Dispatchers.Unconfined)
-        manage = ManageProfilesViewModel(viewer.repository, households, NoopWatchSync, OwnerPin())
+        // One for the whole page, as the app's activity-retained one is: Manage and the owner's households share it.
+        val ownerPin = OwnerPin()
+        manage = ManageProfilesViewModel(viewer.repository, households, NoopWatchSync, ownerPin)
         coEvery { repository.refresh() } returns RefreshOutcome.AlreadyCurrent
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
@@ -325,7 +327,7 @@ internal class TvAppFixture(
                 // Beside the picker's in TvProfileGate: Manage profiles, Join a household, and the owner's Households.
                 ManageProfilesViewModel::class.java to manage,
                 JoinHouseholdViewModel::class.java to JoinHouseholdViewModel(viewer.repository, households),
-                HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(viewer.repository, households, NoopWatchSync, OwnerPin()),
+                HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(viewer.repository, households, NoopWatchSync, ownerPin),
                 CatalogViewModel::class.java to catalog,
                 FetchViewModel::class.java to fetch,
                 SearchViewModel::class.java to search,
