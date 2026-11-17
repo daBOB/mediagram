@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.183.0 — Who's managing? and the calm Profiles page on the tablet and the TV
+
+**Added**
+
+- The Android tablet/phone and TV Profiles pages match the web's: picker → Manage profiles asks *Who's managing?* with the picker's own avatar tiles (the owner first, labelled Owner, asking the owner's PIN; an Owner tile at the end on a device showing another household). The owner's view lists every household with its actions (⋯ on the tablet, the household line's OK on the TV), one row per person that opens that person's controls, one *Add someone* per household (Grown-up or Kid, *Belongs to* only with more than one grown-up), *Create a household*, and *This device* as one line. Anyone else managing gets the same rows for what they may manage.
+- On the TV, Back from the owner view returns to the tiles with the chosen tile focused; after an add or a PIN the remote returns to the row it came from. A refused add keeps what was typed on every surface.
+- Which rows a manager sees and what each opens is decided once, in the shared Android state, for both the tablet and the TV.
+
+**Removed**
+
+- The households-only Owner button and its panel, the *Everyone here* list and the *Who are you?* pills on Android, as on the web.
+
+Not released to devices yet: Android reaches the tablet and the TV with the next release.
+
 ## 0.182.1 — The calm Profiles page closes its forms and menus the way keys expect
 
 **Fixed**

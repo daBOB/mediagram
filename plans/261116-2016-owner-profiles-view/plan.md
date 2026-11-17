@@ -37,20 +37,31 @@
 
 | # | Phase | Depends on | Status |
 |---|---|---|---|
-| 01 | [Shared rule: the owner adds anywhere](phase-01-shared-rule-add-anywhere.md) | — | todo |
-| 02 | [Web server: create in a household / for a parent](phase-02-web-server-create-in-household.md) | 01 | todo |
-| 03 | [Rust core and Android calls](phase-03-rust-core-and-android-calls.md) | 01 | todo |
-| 04 | [Web: one owner view](phase-04-web-owner-view.md) | 02 | todo |
-| 05 | [Android: owner view state](phase-05-android-owner-view-state.md) | 03, 04 | todo |
-| 06 | [Tablet/phone owner view](phase-06-tablet-owner-view.md) | 05 | todo |
-| 07 | [TV owner view](phase-07-tv-owner-view.md) | 05 | todo |
-| 09 | [Web: Who's managing? and the calm view](phase-09-web-who-is-managing-and-calm-view.md) | 04 | todo |
-| 10 | [Tablet/phone: Who's managing? and the calm view](phase-10-tablet-who-is-managing-and-calm-view.md) | 09 | todo |
-| 11 | [TV: Who's managing? and the calm view](phase-11-tv-who-is-managing-and-calm-view.md) | 09, 07 | todo |
-| 08 | [Verify, version, docs, merge](phase-08-verify-version-merge.md) — runs last | 01–07, 09–11 | todo |
+| 01 | [Shared rule: the owner adds anywhere](phase-01-shared-rule-add-anywhere.md) | — | done |
+| 02 | [Web server: create in a household / for a parent](phase-02-web-server-create-in-household.md) | 01 | done |
+| 03 | [Rust core and Android calls](phase-03-rust-core-and-android-calls.md) | 01 | done |
+| 04 | [Web: one owner view](phase-04-web-owner-view.md) | 02 | done |
+| 05 | [Android: owner view state](phase-05-android-owner-view-state.md) | 03, 04 | done |
+| 06 | [Tablet/phone owner view](phase-06-tablet-owner-view.md) | 05 | done |
+| 07 | [TV owner view](phase-07-tv-owner-view.md) | 05 | done |
+| 09 | [Web: Who's managing? and the calm view](phase-09-web-who-is-managing-and-calm-view.md) | 04 | done |
+| 10 | [Tablet/phone: Who's managing? and the calm view](phase-10-tablet-who-is-managing-and-calm-view.md) | 09 | done |
+| 11 | [TV: Who's managing? and the calm view](phase-11-tv-who-is-managing-and-calm-view.md) | 09, 07 | done |
+| 08 | [Verify, version, docs, merge](phase-08-verify-version-merge.md) — runs last | 01–07, 09–11 | done |
 
 02 and 03 can run in parallel; so can 06 and 07.
 
 2026-11-17: after seeing picker → Manage profiles, the user chose *Who's managing?* tiles and a calm owner view
 (tap a person to open their controls). Phases 09–11 add that; Phase 08 runs after them.
 Spec: `docs/superpowers/specs/2026-11-17-who-is-managing-and-calm-owner-view-design.md`.
+
+## Review (2026-11-17)
+
+- Phases 01–07 built the one owner view (add anywhere, one PIN) on web, tablet and TV; the user then called the
+  picker route "crazy ugly" and the dense owner view "chaotic", and chose *Who's managing?* tiles and calm rows
+  (phases 09–11). Web merged and live as 0.182.0 / 0.182.1; tablet and TV merge as 0.183.0.
+- Every task had a fresh implementer and a task review; fix rounds: 4.1, 4.2, 5.1, 5.2 (follow-up), 6.1, 9.1, 9.2 (polish),
+  10.1, 11.1. One final whole-branch review over the Android calm work, one fix wave (shared row model, dead code, TV focus).
+- Owed: tablet walk (caad49da not connected), owner-view walk on the TV emulator and the box (needs the owner's PIN);
+  Android release only on the user's ask.
+- Rulings and deferred minors: `.superpowers/sdd/plan/progress.md` (summarised in the session's final message).

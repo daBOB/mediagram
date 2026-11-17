@@ -398,7 +398,7 @@ so it fails if this table and `address.js` ever disagree.
 | `#/latest` | Latest added |
 | `#/person/<id>` | Person page (cast/crew filmography) |
 | `#/search/<query>` | Search results (grouped by type) |
-| `#/settings` | Settings (Appearance / Profiles: who is watching, everyone here, Manage profiles with each managed profile's Sections, This device (Switch household, with more than one), Households (the owner's: create, rename, change admin, move, delete) / admin Library & Telegram); the picker's Manage profiles opens the same Profiles page, and asks "Join a household" first on a browser that has none |
+| `#/settings` | Settings (Appearance / Profiles: who is watching; for the owner, every household on one page — its name, *Admin X · N profiles* and a ⋯ with the household's actions, one row per person that opens their controls on a tap, one *Add someone* per household, *Create a household*, then *This device* as one line; for another grown-up, *Who's managing?* tiles, then the same rows for what they may manage, with This device below / admin Library & Telegram); the picker's Manage profiles asks *Who's managing?* with the picker's tiles (owner first, labelled Owner), and asks "Join a household" first on a browser that has none |
 | `#/stats` | Stats: minutes watched, the last 30 days, achievements |
 | `#/system` | Player status, own-network viewers only |
 | `#/continue` | Continue |
