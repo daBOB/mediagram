@@ -12,12 +12,14 @@ import { initialOf } from "./profile-tiles.js";
 let panels = 0;
 
 /**
- * What draws people for one page, remembering who is open.
+ * What draws people for one page, remembering who is open. `keep` hears of
+ * each row that opens, by its person, to give it focus again after a redraw.
+ * @param {(name: string, node: HTMLElement) => HTMLElement} [keep]
  * @returns {(entry: {id: string, name: string}, line: string, controls: (() => HTMLElement[])|null) => HTMLElement}
  *   a person's part: `controls` are drawn when they are opened, and `null` is
  *   someone the manager may not change, whose row is not a button
  */
-export function people() {
+export function people(keep = (_name, node) => node) {
   let openId = null;
   let shut = () => {};
 
@@ -31,6 +33,7 @@ export function people() {
     box.append(row);
     if (controls === null) return box;
 
+    keep(`person ${entry.id}`, row);
     row.type = "button";
     const chevron = el("span", "manage-chevron", "›");
     chevron.setAttribute("aria-hidden", "true");

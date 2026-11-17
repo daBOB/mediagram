@@ -32,6 +32,7 @@ export const HOUSEHOLD_WORDS = {
   grownUp: "Grown-up",
   kid: "Kid",
   actionsFor: "Actions for",
+  addSomeoneTo: "Add someone to",
 };
 
 /** A household's line in the owner's list: who runs it, and how many profiles are in it. */

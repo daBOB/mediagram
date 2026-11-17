@@ -9,8 +9,8 @@ import { el } from "../dom.js";
 import { nameField } from "../profile-add-form.js";
 import { HOUSEHOLD_WORDS } from "../household-words.js";
 
-/** `fields`, and the button `label` that sends them, on one line of the tray a form opens in. */
-function inline(label, fields, submit) {
+/** `fields`, the button `label` that sends them and, given `cancel`, a quiet Cancel, on one line of the tray a form opens in. */
+function inline(label, fields, submit, cancel = null) {
   const form = el("form", "who-new tray-form");
   const send = el("button", "who-create", label);
   send.type = "submit";
@@ -19,6 +19,12 @@ function inline(label, fields, submit) {
     void submit();
   });
   form.append(...fields, send);
+  if (cancel) {
+    const back = el("button", "quiet", "Cancel");
+    back.type = "button";
+    back.addEventListener("click", cancel);
+    form.append(back);
+  }
   return form;
 }
 
@@ -42,16 +48,16 @@ export function personChoice(label, people) {
   return choice;
 }
 
-/** A new name for the household now called `current`. */
-export function renameForm(current, submit) {
+/** A new name for the household now called `current`; `cancel` closes it unsent. */
+export function renameForm(current, submit, cancel) {
   const name = householdName(current);
-  return inline(HOUSEHOLD_WORDS.rename, [name], () => name.value.trim() && submit(name.value.trim()));
+  return inline(HOUSEHOLD_WORDS.rename, [name], () => name.value.trim() && submit(name.value.trim()), cancel);
 }
 
-/** One of `people`, chosen under `label`, which is also what sends them. */
-export function personForm(label, people, submit) {
+/** One of `people`, chosen under `label`, which is also what sends them; `cancel` closes it unsent. */
+export function personForm(label, people, submit, cancel) {
   const choice = personChoice(label, people);
-  return inline(label, [choice], () => submit(people.find((one) => one.id === choice.value)));
+  return inline(label, [choice], () => submit(people.find((one) => one.id === choice.value)), cancel);
 }
 
 /**

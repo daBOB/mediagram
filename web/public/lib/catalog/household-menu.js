@@ -2,7 +2,8 @@
  * A household's ⋯ on the owner's view: one round button, named for the
  * household, that opens a small list under it of what may be done to it.
  * Choosing one closes it, as do Escape — which hands focus back to the ⋯ and
- * goes no further, so the page under it stays open — and a press anywhere else.
+ * goes no further, so the page under it stays open — a press anywhere else,
+ * and focus moving on past it.
  */
 
 import { el } from "../dom.js";
@@ -45,6 +46,11 @@ export function actionsMenu(label, actions, keep = (node) => node) {
   more.addEventListener("click", () => {
     show(list.hidden);
     if (!list.hidden) list.children[0]?.focus();
+  });
+  // Tabbed past, it closes rather than cover what is below. Focus going nowhere (a
+  // press on the page, which some browsers do not focus) is the press's to close.
+  box.addEventListener("focusout", (event) => {
+    if (event.relatedTarget && !box.contains(event.relatedTarget)) show(false);
   });
   box.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || list.hidden) return;

@@ -18,14 +18,16 @@ import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
 let everyone: object[];
+let households: object[];
 let refusal: { status: number; body: object } | null;
 beforeEach(async () => {
   env = browserEnvironment();
   everyone = EVERYONE;
+  households = [ATTIC, FLAT, AT_HOME];
   refusal = null;
   Object.assign(env.window, { localStorage: storage({ "mediagram.household": "home" }), confirm: () => true });
   env.respondWith(async (url, options) => {
-    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, heard: true, profiles: everyone, households: [ATTIC, FLAT, AT_HOME] });
+    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, heard: true, profiles: everyone, households });
     if (refusal && !url.endsWith("/unlock")) return Response.json(refusal.body, { status: refusal.status });
     return new Response(null, { status: 204 });
   });
@@ -270,4 +272,103 @@ test("a household's admin sees the same rows for their household and no menu", a
   // One Add someone, which may add either: she runs the flat.
   expect(addsIn(manage(root)).length).toBe(1);
   expect(kindsOf(addSomeone(manage(root)))).toEqual([W.grownUp, W.kid]);
+});
+
+test("choosing Grown-up or Kid takes focus to the choice made", () => {
+  const { root } = part(OWNER);
+  const form = addSomeone(householdOf(root, "Home"));
+  const choiceOf = (label: string) => descendants(form).find((node) => node.tagName === "INPUT" && node.parent!.children[1]?.textContent === label)!;
+  // Opening it starts on the choice already made, so focus and selection are one option.
+  expect(env.document.activeElement).toBe(choiceOf(W.grownUp));
+  choose(form, W.kid);
+  expect(env.document.activeElement).toBe(choiceOf(W.kid));
+  choose(form, W.grownUp);
+  expect(env.document.activeElement).toBe(choiceOf(W.grownUp));
+});
+
+test("a household's ⋯ closes when focus moves on past it", () => {
+  const { root } = part(OWNER);
+  const flat = rowOf(root, "Flat");
+  const box = byClass(flat, "more-menu");
+  const list = menuOf(flat);
+  const focusOut = (to: Node | null) => box.dispatchEvent(Object.assign(new Event("focusout"), { relatedTarget: to }));
+  // Within the list, or to nowhere (a press that takes focus to the page), it stays.
+  focusOut(list.children[1]!);
+  expect(list.hidden).toBe(false);
+  focusOut(null);
+  expect(list.hidden).toBe(false);
+  // Tabbed past, onto the first person below, it closes rather than cover them.
+  focusOut(rowIn(personOf(root, "Maja")));
+  expect(list.hidden).toBe(true);
+  expect(expanded(byClass(flat, "more-button"))).toBe("false");
+});
+
+test("a form opened from ⋯ closes on Cancel or Escape, with focus back on its ⋯", () => {
+  const { root } = part(OWNER);
+  for (const action of [W.rename, W.changeAdmin, W.moveHere]) {
+    const flat = rowOf(root, "Flat");
+    buttonNamed(menuOf(flat), action).fire("click");
+    const slot = byClass(flat, "household-form");
+    const cancel = buttonNamed(slot, "Cancel");
+    // Cancel is quiet: the form's one orange button is still what sends it.
+    expect(cancel.classes.has("who-create")).toBe(false);
+    expect(descendants(slot).filter((node) => node.classes.has("who-create")).length).toBe(1);
+    cancel.fire("click");
+    expect(slot.children).toEqual([]);
+    expect(env.document.activeElement).toBe(byClass(flat, "more-button"));
+    buttonNamed(menuOf(flat), action).fire("click");
+    expect(fields(slot).length).toBeGreaterThan(0);
+    escape(slot);
+    expect(slot.children).toEqual([]);
+    expect(env.document.activeElement).toBe(byClass(flat, "more-button"));
+    // The same action opens it again: closing forgot which one was open.
+    buttonNamed(menuOf(flat), action).fire("click");
+    expect(fields(slot).length).toBeGreaterThan(0);
+    escape(slot);
+  }
+  expect(sent()).toEqual([]);
+});
+
+test("each Add someone is named for its household", async () => {
+  const { root } = part(OWNER);
+  for (const name of ["Home", "Attic", "Flat"]) {
+    const add = addsIn(householdOf(root, name))[0]!;
+    expect(add.textContent).toBe(W.addSomeone);
+    expect(add.getAttribute("aria-label")).toBe(`${W.addSomeoneTo} ${name}`);
+  }
+  // Anyone else has the one, for their own household: its words are its name.
+  Object.assign(env.window, { localStorage: storage({ "mediagram.household": "flat" }) });
+  await state.loadProfiles();
+  const other = part(MAJA).root;
+  tileNamed(other, "Maja").fire("click");
+  await answerPin(other, "4321");
+  expect(addsIn(manage(other))[0]!.getAttribute("aria-label")).toBeNull();
+});
+
+test("focus goes back to the person after a new PIN, and on past a household deleted", async () => {
+  const { root } = part(OWNER);
+  buttonNamed(controlsOf(tap(root, "Maja")), "Reset PIN").fire("click");
+  await settle();
+  await answerPin(root, "1357");
+  await answerPin(root, "2468", "2468");
+  expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/maja/pin", { actorId: "andre", pin: "1357", newPin: "2468" }]);
+  expect(env.document.activeElement).toBe(rowIn(personOf(root, "Maja")));
+  buttonNamed(controlsOf(tap(root, "andre")), "Change your PIN").fire("click");
+  await answerPin(root, "1470", "1470");
+  expect(env.document.activeElement).toBe(rowIn(personOf(root, "andre")));
+  // The attic is drawn between Home and the flat: the flat's heading is what followed it.
+  buttonNamed(menuOf(rowOf(root, "Attic")), W.delete).fire("click");
+  await settle();
+  expect(sent().at(-1)).toEqual(["DELETE", "/api/households/attic", { actorId: "andre", pin: "1470" }]);
+  expect(env.document.activeElement).toBe(rowOf(root, "Flat").children[0]!);
+});
+
+test("deleting the last household drawn takes focus to Create a household", async () => {
+  households = [FLAT, AT_HOME, ATTIC];
+  await state.loadProfiles();
+  const { root } = part(OWNER);
+  expect(rows(root).map((row) => row.children[0]!.textContent)).toEqual(["Home", "Flat", "Attic"]);
+  buttonNamed(menuOf(rowOf(root, "Attic")), W.delete).fire("click");
+  await answerPin(root, "1357");
+  expect(env.document.activeElement).toBe(buttonNamed(manage(root), W.createAHousehold));
 });

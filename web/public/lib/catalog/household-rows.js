@@ -20,7 +20,9 @@ import { actionsMenu } from "./household-menu.js";
  * @property {(action: string, householdId: string, targetId?: string) => boolean} may what the household rule lets the owner do
  * @property {(said: HTMLElement, call: Function, opts?: object) => Promise<void>} act runs `call` as the owner, saying the outcome in `said`
  * @property {() => void} switchProfile asks who is watching again, once this device moves household
- * @property {(name: string, node: HTMLElement) => HTMLElement} keep names a button to have focus again after a redraw
+ * @property {(name: string, node: HTMLElement) => HTMLElement} keep names a control to have focus again after a redraw
+ * @property {string|null} [next] the household drawn after this one, whose heading has focus once this one is deleted;
+ *   none for the last, after which Create a household has it
  */
 
 /** Tells apart the headings of the households drawn, which their parts are named by. */
@@ -35,7 +37,7 @@ const key = (name) => name.normalize("NFC").trim().replace(/\s+/g, " ").toLowerC
  * @param {{id: string, name: string, adminId: string|null}} household
  * @param {HouseholdCtx} ctx
  */
-export function householdHeader(household, { everyone, may, act: send, switchProfile, keep }) {
+export function householdHeader(household, { everyone, may, act: send, switchProfile, keep, next = null }) {
   const grownUps = everyone.filter((one) => !one.kids);
   const line = el("div", "household-row");
   const admin = everyone.find((one) => one.id === household.adminId);
@@ -45,31 +47,45 @@ export function householdHeader(household, { everyone, may, act: send, switchPro
   const said = message();
   const id = household.id;
   // Once a change went through, focus is back on this household's ⋯.
-  const act = (where, call, opts = {}) => send(where, call, { ...opts, name: `more ${id}` });
-  /** An action that opens `build`'s form under the line, with focus in it — and closes it again. */
+  const act = (where, call, opts = {}) => send(where, call, { name: `more ${id}`, ...opts });
+  let more = null;
+  /** Closes the form open under the line unsent, with focus back on the ⋯ it was opened from. */
+  const close = () => {
+    slot.replaceChildren();
+    slot.dataset.open = "";
+    said.textContent = "";
+    more?.focus();
+  };
+  slot.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !slot.dataset.open) return;
+    // The form's, not the page's: over the picker, Escape would otherwise close the whole page.
+    event.stopPropagation();
+    close();
+  });
+  /** An action that opens `build(close)`'s form under the line, with focus in it — and closes it again. */
   const opens = (label, build) => actions.push([label, () => {
     const again = slot.dataset.open === label;
-    slot.replaceChildren(...(again ? [] : [build()]));
+    slot.replaceChildren(...(again ? [] : [build(close)]));
     slot.dataset.open = again ? "" : label;
     said.textContent = "";
     if (!again) firstField(slot)?.focus();
   }]);
 
   if (may("rename-household", id)) {
-    opens(HOUSEHOLD_WORDS.rename, () => renameForm(household.name, (name) =>
-      act(said, (actor, pin) => api.rename(actor, pin, id, name), { named: () => true })));
+    opens(HOUSEHOLD_WORDS.rename, (cancel) => renameForm(household.name, (name) =>
+      act(said, (actor, pin) => api.rename(actor, pin, id, name), { named: () => true }), cancel));
   }
   const admins = grownUps.filter((one) => one.id !== household.adminId && may("set-household-admin", id, one.id));
   if (admins.length > 0) {
-    opens(HOUSEHOLD_WORDS.changeAdmin, () => personForm(HOUSEHOLD_WORDS.changeAdmin, admins, (one) =>
-      act(said, (actor, pin, next) => api.setAdmin(actor, pin, id, one.id, next), { newPinFor: one.hasPin ? null : one.name })));
+    opens(HOUSEHOLD_WORDS.changeAdmin, (cancel) => personForm(HOUSEHOLD_WORDS.changeAdmin, admins, (one) =>
+      act(said, (actor, pin, newPin) => api.setAdmin(actor, pin, id, one.id, newPin), { newPinFor: one.hasPin ? null : one.name }), cancel));
   }
   const movers = grownUps.filter((one) => may("move-to-household", id, one.id));
   if (movers.length > 0) {
     // Into a household nobody runs, the one moved runs it, so needs a PIN.
-    opens(HOUSEHOLD_WORDS.moveHere, () => personForm(HOUSEHOLD_WORDS.moveHere, movers, (one) =>
-      act(said, (actor, pin, next) => api.move(actor, pin, id, one.id, next),
-        { newPinFor: household.adminId === null && !one.hasPin ? one.name : null })));
+    opens(HOUSEHOLD_WORDS.moveHere, (cancel) => personForm(HOUSEHOLD_WORDS.moveHere, movers, (one) =>
+      act(said, (actor, pin, newPin) => api.move(actor, pin, id, one.id, newPin),
+        { newPinFor: household.adminId === null && !one.hasPin ? one.name : null }), cancel));
   }
   if (id !== thisHousehold()?.id && may("join-household", id)) {
     actions.push([HOUSEHOLD_WORDS.useHere, () => void act(said, async (_actor, pin) => {
@@ -80,13 +96,17 @@ export function householdHeader(household, { everyone, may, act: send, switchPro
     })]);
   }
   if (may("delete-household", id)) {
-    actions.push([HOUSEHOLD_WORDS.delete, () => void act(said, (actor, pin) => api.remove(actor, pin, id))]);
+    // It goes from the page, so focus moves on to what followed it.
+    actions.push([HOUSEHOLD_WORDS.delete, () => void act(said, (actor, pin) => api.remove(actor, pin, id),
+      { name: next === null ? "create" : `heading ${next}` })]);
   }
   // A heading, under Manage profiles, so a screen reader can move from household to household.
-  const name = el("h2", null, household.name);
+  const name = keep(`heading ${id}`, el("h2", null, household.name));
   name.id = `household-${++headings}`;
+  // Not a stop on the way through the page, but somewhere focus can be put.
+  name.tabIndex = -1;
   line.append(name, el("span", "setting-value", householdLine(admin?.name ?? null, count)),
-    actionsMenu(`${HOUSEHOLD_WORDS.actionsFor} ${household.name}`, actions, (node) => keep(`more ${id}`, node)), slot, said);
+    actionsMenu(`${HOUSEHOLD_WORDS.actionsFor} ${household.name}`, actions, (node) => (more = keep(`more ${id}`, node))), slot, said);
   return line;
 }
 

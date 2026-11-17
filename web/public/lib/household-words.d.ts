@@ -26,6 +26,7 @@ export const HOUSEHOLD_WORDS: {
   grownUp: string;
   kid: string;
   actionsFor: string;
+  addSomeoneTo: string;
 };
 export function householdLine(adminName: string | null, count: number): string;
 export function joinPinTitle(admin: { name: string; owner?: boolean } | null): string;

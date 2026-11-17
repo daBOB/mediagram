@@ -26,7 +26,8 @@
     "addSomeone": "Add someone",
     "grownUp": "Grown-up",
     "kid": "Kid",
-    "actionsFor": "Actions for"
+    "actionsFor": "Actions for",
+    "addSomeoneTo": "Add someone to"
   },
   "lines": [
     {"name":"a household run by the owner, with four profiles","fn":"householdLine","args":["andre",4],"expect":"Admin andre · 4 profiles"},

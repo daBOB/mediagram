@@ -31,7 +31,11 @@ function kindChoice(choose) {
     radio.type = "radio";
     radio.name = name;
     radio.checked = !kid;
-    radio.addEventListener("change", () => choose(kid));
+    // Focus goes with the choice, so the option ringed is the one chosen.
+    radio.addEventListener("change", () => {
+      choose(kid);
+      radio.focus();
+    });
     option.append(radio, el("span", null, label));
     group.append(option);
   }
@@ -40,14 +44,15 @@ function kindChoice(choose) {
 
 /**
  * @param {{ grownUp: boolean, kid: boolean, parents?: Array<{id: string, name: string, admin?: boolean}>,
- *   household?: string, act: (said: HTMLElement, call: Function, opts?: object) => Promise<void>,
+ *   household?: string, householdName?: string, act: (said: HTMLElement, call: Function, opts?: object) => Promise<void>,
  *   keep: (name: string, node: HTMLElement) => HTMLElement }} options what may be added; `parents`, the grown-ups
  *   a new kid may belong to — none where the manager's own kids are added; `household`, where a grown-up goes,
- *   the manager's own when none; `act` sends the add, saying a refusal in the place it is given; `keep` names
- *   the button, which has focus again once an add went through
+ *   the manager's own when none; `householdName` names the button where there is one per household; `act`
+ *   sends the add, saying a refusal in the place it is given; `keep` names the button, which has focus again
+ *   once an add went through
  * @returns {HTMLElement}
  */
-export function addSomeone({ grownUp, kid, parents = [], household, act, keep }) {
+export function addSomeone({ grownUp, kid, parents = [], household, householdName, act, keep }) {
   const named = `add ${household ?? ""}`;
   /** The form, drawn each time Add someone opens. */
   function build() {
@@ -86,5 +91,6 @@ export function addSomeone({ grownUp, kid, parents = [], household, act, keep })
     });
     return [form, said];
   }
-  return opener(HOUSEHOLD_WORDS.addSomeone, build, (node) => keep(named, node));
+  return opener(HOUSEHOLD_WORDS.addSomeone, build, (node) => keep(named, node),
+    householdName && `${HOUSEHOLD_WORDS.addSomeoneTo} ${householdName}`);
 }

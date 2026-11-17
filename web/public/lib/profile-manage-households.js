@@ -47,12 +47,14 @@ let opened = 0;
 /**
  * A quiet button saying `label` that opens what `build` draws under it, in
  * place, with focus on its first field — and closes it again. `keep` hears of
- * the button, to give it focus again after a redraw.
+ * the button, to give it focus again after a redraw; `name`, when given, is
+ * the button's name where `label` alone would not tell it from its like.
  */
-export function opener(label, build, keep = (node) => node) {
+export function opener(label, build, keep = (node) => node, name = null) {
   const box = el("div", "manage-opener");
   const button = keep(el("button", "manage-add", label));
   button.type = "button";
+  if (name) button.setAttribute("aria-label", name);
   const slot = el("div", "manage-opened");
   slot.id = `manage-opened-${++opened}`;
   button.setAttribute("aria-controls", slot.id);

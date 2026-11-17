@@ -29,6 +29,7 @@ object HouseholdWords {
     const val GROWN_UP = "Grown-up"
     const val KID = "Kid"
     const val ACTIONS_FOR = "Actions for"
+    const val ADD_SOMEONE_TO = "Add someone to"
 }
 
 /** [HouseholdWords] keyed as the web's object, so the fixture compares them whole. */
@@ -62,6 +63,7 @@ val HOUSEHOLD_WORDS: Map<String, String> =
             "grownUp" to GROWN_UP,
             "kid" to KID,
             "actionsFor" to ACTIONS_FOR,
+            "addSomeoneTo" to ADD_SOMEONE_TO,
         )
     }
 

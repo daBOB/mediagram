@@ -45,6 +45,7 @@ export function ownerView(owner, { draws, person, act, keep, switchProfile }) {
   };
   // The server places everyone in a live household, a gone one reading as home, so every profile's is listed.
   const ids = [...new Set([householdId() ?? placed(owner), ...live])];
+  const headed = ids.filter((id) => households.some((one) => one.id === id));
   const parts = ids.map((id) => {
     const people = everyone.filter((one) => placed(one) === id);
     const grown = people.filter((one) => !one.kids);
@@ -52,13 +53,13 @@ export function ownerView(owner, { draws, person, act, keep, switchProfile }) {
     const part = el("section", "manage-section manage-household");
     // A household the list doesn't name yet (a sync mid-way) keeps its people, unheaded, rather than breaking the page.
     if (household !== undefined) {
-      const header = householdHeader(household, ctx);
+      const header = householdHeader(household, { ...ctx, next: headed[headed.indexOf(id) + 1] ?? null });
       part.setAttribute("aria-labelledby", header.children[0].id);
       part.append(header);
     }
     part.append(...[...grown, ...people.filter((one) => one.kids)].map((one) => personRow(one, people)),
       // A kid always belongs to a grown-up, so a household with none offers no kid.
-      addSomeone({ grownUp: true, kid: grown.length > 0, parents: grown, household: id, act, keep }));
+      addSomeone({ grownUp: true, kid: grown.length > 0, parents: grown, household: id, householdName: household?.name, act, keep }));
     return part;
   });
   return [...parts, createHouseholdBlock(ctx)];

@@ -62,7 +62,7 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
   let changedWith = null;
   const keep = (name, node) => { named.set(name, node); return node; };
   /** Who is open on the page: one person at a time, still open after a redraw. */
-  const person = people();
+  const person = people(keep);
 
   /** Whether a PIN is held, the owner's asked now when none is yet; false when none was given, or the body is gone. */
   async function pinHeld() {
@@ -171,12 +171,12 @@ export function mountManage(container, { promptHost, onChange, chosen = {} }) {
       byHousehold(view, state.profiles(), { person, draws, add }));
   }
 
-  /** A new PIN for `entry`, asked twice — the owner's own first, if not held yet. Changing one's own changes the one held here, or the next change would be refused. */
+  /** A new PIN for `entry`, asked twice — the owner's own first, if not held yet — then focus on their row. Changing one's own changes the one held here, or the next change would be refused. */
   async function newPin(entry) {
     if (session?.pin === null && !(await pinHeld())) return;
     const own = entry.id === session.actorId;
     const given = await ask(() => askPin(promptHost, { title: own ? "Your new PIN" : `A new PIN for ${entry.name}`, confirm: true,
-      refused: report, send: (pin) => send((id, held) => api.setPin(id, held, entry.id, pin)) }));
+      refused: report, send: (pin) => send((id, held) => api.setPin(id, held, entry.id, pin), `person ${entry.id}`) }));
     if (given === null || gone) return;
     if (own) session.pin = given;
     report({ ok: true });
