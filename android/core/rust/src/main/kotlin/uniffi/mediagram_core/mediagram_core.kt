@@ -744,6 +744,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_report_send(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_mark_scene(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_remove_scene(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_search(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_revoke_session(
@@ -760,11 +764,7 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_editors_choice(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_mark_scene(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_profiles(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_remove_scene(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_retire_local_state(
     ): Int
@@ -942,6 +942,10 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_report_send(`ptr`: Long,`text`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_mark_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_remove_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_search(`ptr`: Long,`query`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_revoke_session(`ptr`: Long,`id`: RustBuffer.ByValue,
@@ -958,11 +962,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_editors_choice(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_mark_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,
-    ): Long
     external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
-    ): Long
-    external fun uniffi_mediagram_core_fn_method_core_remove_scene(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_retire_local_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): Unit
@@ -1265,6 +1265,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_report_send() and 0xFFFF) != 34453) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_mark_scene() and 0xFFFF) != 51073) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_remove_scene() and 0xFFFF) != 54899) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_search() and 0xFFFF) != 53359) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1289,13 +1295,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_editors_choice() and 0xFFFF) != 8907) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_mark_scene() and 0xFFFF) != 19538) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 65036) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_remove_scene() and 0xFFFF) != 53733) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
@@ -2213,6 +2213,18 @@ public interface CoreInterface {
     suspend fun `reportSend`(`text`: kotlin.String)
 
     /**
+     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
+     * mark's id, or `None` for an `at` that is no film second or a profile
+     * that is gone.
+     */
+    suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double): kotlin.String?
+
+    /**
+     * Takes a scene mark off. `false` when no live mark has that id.
+     */
+    suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
+
+    /**
      * The catalog's sets matching every word of `query`, best first.
      * Empty for an empty query or a catalog that has not loaded yet —
      * neither is an error, both are "nothing to show".
@@ -2258,21 +2270,9 @@ public interface CoreInterface {
     suspend fun `editorsChoice`(): kotlin.String?
 
     /**
-     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
-     * mark's id, or `None` for an `at` that is no film second or a profile
-     * that is gone.
-     */
-    suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double): kotlin.String?
-
-    /**
      * Who watches this library. Empty until someone says.
      */
     suspend fun `profiles`(): List<Profile>
-
-    /**
-     * Takes a scene mark off. `false` when no live mark has that id.
-     */
-    suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String): kotlin.Boolean
 
     /**
      * Permanently stops this core's local watch-state access and closes its
@@ -3473,6 +3473,59 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
+     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
+     * mark's id, or `None` for an `at` that is no film second or a profile
+     * that is gone.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_mark_scene(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`setId`),
+        FfiConverterDouble.lower(`at`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Takes a scene mark off. `false` when no live mark has that id.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_remove_scene(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
      * The catalog's sets matching every word of `query`, best first.
      * Empty for an empty query or a catalog that has not loaded yet —
      * neither is an error, both are "nothing to show".
@@ -3674,34 +3727,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Marks a scene: a moment of `set_id`, `at` film seconds in. The new
-     * mark's id, or `None` for an `at` that is no film second or a profile
-     * that is gone.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `markScene`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double) : kotlin.String? {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_mark_scene(
-                uniffiHandle,
-
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`setId`),
-        FfiConverterDouble.lower(`at`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalString.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
-    /**
      * Who watches this library. Empty until someone says.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -3718,31 +3743,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterSequenceTypeProfile.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
-    /**
-     * Takes a scene mark off. `false` when no live mark has that id.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `removeScene`(`profileId`: kotlin.String, `id`: kotlin.String) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_remove_scene(
-                uniffiHandle,
-
-        FfiConverterString.lower(`profileId`),
-        FfiConverterString.lower(`id`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -6443,6 +6443,12 @@ data class SetSummary (
     ,
     var `duration`: kotlin.UInt?
     ,
+    /**
+     * A film's cut (`Director's Cut`, …); `None` is the standard cut. Named
+     * as the web player names it.
+     */
+    var `variant`: kotlin.String?
+    ,
     var `posterKey`: kotlin.String?
     ,
     /**
@@ -6607,6 +6613,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
             FfiConverterLong.read(buf),
@@ -6647,6 +6654,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.allocationSize(value.`quality`) +
             FfiConverterOptionalString.allocationSize(value.`hdr`) +
             FfiConverterOptionalUInt.allocationSize(value.`duration`) +
+            FfiConverterOptionalString.allocationSize(value.`variant`) +
             FfiConverterOptionalString.allocationSize(value.`posterKey`) +
             FfiConverterOptionalString.allocationSize(value.`posterPath`) +
             FfiConverterULong.allocationSize(value.`total`) +
@@ -6688,6 +6696,7 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterOptionalString.write(value.`quality`, buf)
             FfiConverterOptionalString.write(value.`hdr`, buf)
             FfiConverterOptionalUInt.write(value.`duration`, buf)
+            FfiConverterOptionalString.write(value.`variant`, buf)
             FfiConverterOptionalString.write(value.`posterKey`, buf)
             FfiConverterOptionalString.write(value.`posterPath`, buf)
             FfiConverterULong.write(value.`total`, buf)
