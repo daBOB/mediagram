@@ -23,7 +23,8 @@ fun profilesStatus(chosen: Profile?): IndexStatus {
  * One visit to Profiles while [open]: Manage, and the owner's Households part
  * beside it, drop their PINs on the way out — to another section, out of
  * Settings, or out of the app — and Manage asks "Who are you?" whenever it
- * finds itself closed while the visit is still open. That covers the way
+ * finds itself closed while the visit is still open, or, with the owner
+ * [chosen], opens the owner's view at once. That covers the way
  * in, the way back from the background, and the gate's own
  * close when it is composed afresh around an open visit (the activity
  * recreated, or restored), whichever of the two effects runs first. Held by
@@ -32,12 +33,15 @@ fun profilesStatus(chosen: Profile?): IndexStatus {
  * panel.
  */
 @Composable
-fun ProfilesVisit(open: Boolean) {
+fun ProfilesVisit(
+    open: Boolean,
+    chosen: Profile? = null,
+) {
     if (!open) return
     val manage: ManageProfilesViewModel = hiltViewModel()
     val households: HouseholdsOwnerViewModel = hiltViewModel()
     val closed = manage.state.collectAsStateWithLifecycle().value == ManageUiState.Closed
-    LaunchedEffect(closed) { if (closed) manage.open() }
+    LaunchedEffect(closed) { if (closed) manage.open(chosen) }
     LifecycleStartEffect(manage, households) {
         onStopOrDispose {
             manage.close()

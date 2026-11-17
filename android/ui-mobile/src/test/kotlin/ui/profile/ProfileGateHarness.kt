@@ -112,8 +112,9 @@ abstract class ProfileGateHarness {
             household = WatchStateFixture(profiles.toList(), chosen, FakeCore().apply { roles.pins += pins }.apply(seed))
             val sync = mockk<WatchSync>(relaxed = true)
             val homes = DefaultHouseholdsRepository(household.provider, household.repository, scope, Dispatchers.Unconfined)
-            manage = ManageProfilesViewModel(household.repository, homes, sync, OwnerPin())
-            val models = listOf(ProfileViewModel(household.repository, sync), manage) + householdViewModels(household.repository, homes).values
+            val ownerPin = OwnerPin()
+            manage = ManageProfilesViewModel(household.repository, homes, sync, ownerPin)
+            val models = listOf(ProfileViewModel(household.repository, sync), manage) + householdViewModels(household.repository, homes, ownerPin).values
             val provider =
                 ViewModelProvider(
                     store,

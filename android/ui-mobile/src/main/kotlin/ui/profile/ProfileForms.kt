@@ -129,11 +129,17 @@ internal fun DailyLimitChips(
     }
 }
 
-/** A name and its controls on one line, a soft rule beneath — the web's `manage-row`, which Settings' Profiles list shares. */
+/**
+ * A name and its controls on one line, a soft rule beneath — the web's
+ * `manage-row`, which Settings' Profiles list shares. [line], the role line
+ * the owner's view gives everyone, sits under the name: beside it, a phone
+ * has no room once a kid's limits are there too.
+ */
 @Composable
 internal fun ProfileRow(
     name: String,
     below: @Composable () -> Unit = {},
+    line: String? = null,
     controls: @Composable RowScope.() -> Unit,
 ) {
     Row(
@@ -141,7 +147,10 @@ internal fun ProfileRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
-        Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.bodyLarge)
+            line?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
         controls()
     }
     below()

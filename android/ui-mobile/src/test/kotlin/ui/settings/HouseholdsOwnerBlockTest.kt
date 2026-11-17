@@ -23,8 +23,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * The owner's Households part on the Profiles page, the web's
- * `settings-households.js`, over the people [HouseholdsOwnerHarness] sets up.
+ * The owner's household changes on the Profiles page — the web's
+ * `household-rows.js`, in the owner's view, and the Owner button for anyone
+ * else — over the people [HouseholdsOwnerHarness] sets up.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -33,7 +34,8 @@ class HouseholdsOwnerBlockTest : HouseholdsOwnerHarness() {
     @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
     fun theOwnerSeesEveryHouseholdWithItsLine() {
         openAs(owner)
-        compose.onNodeWithText(HouseholdWords.HOUSEHOLDS).assertExists()
+        // Each household heads its part of the owner's view: there is no Households section beside it.
+        compose.onNodeWithText(HouseholdWords.HOUSEHOLDS).assertDoesNotExist()
         compose.onNodeWithText(HouseholdWords.OWNER_NOTE).assertDoesNotExist()
         compose.onNodeWithText("No admin · 0 profiles").assertExists()
         compose.onNodeWithText("Admin Dan · 2 profiles").assertExists()

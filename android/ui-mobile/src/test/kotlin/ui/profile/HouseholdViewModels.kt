@@ -20,14 +20,16 @@ import model.Households
  * [households] defaults to Home alone, read and joined, with nobody in it as
  * the households see them: neither Join a household nor This device shows,
  * a first profile is offered as before, and the owner's part stays closed.
+ * [ownerPin] is the one Manage holds too, as the app holds one for the page.
  */
 internal fun householdViewModels(
     repository: WatchStateRepository,
     households: HouseholdsRepository = homeAlone(),
+    ownerPin: OwnerPin = OwnerPin(),
 ): Map<Class<out ViewModel>, ViewModel> =
     mapOf(
         JoinHouseholdViewModel::class.java to JoinHouseholdViewModel(repository, households),
-        HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(repository, households, mockk(relaxed = true), OwnerPin()),
+        HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(repository, households, mockk(relaxed = true), ownerPin),
     )
 
 /** Home alone, read and joined, with nobody in it as the households see them — [householdViewModels]' default. */

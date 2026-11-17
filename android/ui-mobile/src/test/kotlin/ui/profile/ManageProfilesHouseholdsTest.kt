@@ -53,12 +53,12 @@ class ManageProfilesHouseholdsTest {
     private val actions =
         ManageActions(
             onActAs = { calls += "actAs $it" },
-            onAddKid = { name, age, daily, _ -> calls += "addKid $name $age $daily" },
+            onAddKid = { name, age, daily, parent -> calls += "addKid $name $age $daily $parent" },
             onSetKidsAge = { id, age -> calls += "age $id $age" },
             onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
             onSetHiddenSections = { id, sections -> calls += "sections $id $sections" },
             onRemove = { calls += "remove $it" },
-            onAddGrownUp = { name, _ -> calls += "addGrownUp $name" },
+            onAddGrownUp = { name, household -> calls += "addGrownUp $name $household" },
             onChangePin = { calls += "pin $it" },
             onClose = { calls += "close" },
         )
@@ -82,11 +82,12 @@ class ManageProfilesHouseholdsTest {
         return compose.onRoot(useUnmergedTree = true).fetchSemanticsNode().texts().filter { it in kept }
     }
 
+    // The web's owner view: people straight under their household, no Grown-ups or Kids, the owner's PIN on their own row.
     @Test fun theOwnerSeesEveryHouseholdUnderItsNameThisDevicesFirstAndAddsInEach() {
         show(ManageUiState.Managing(andre, grownUps = listOf(maja, ida), kids = listOf(lea, tim), households = live))
-        val adds = arrayOf(GROWN_UPS, ADD_A_GROWN_UP, KIDS_SECTION, ADD_A_KID)
+        val adds = arrayOf(ADD_A_GROWN_UP, ADD_A_KID)
         assertEquals(
-            listOf("Home", *adds, "Loft", *adds, "Flat", *adds, YOUR_PIN),
+            listOf("Home", *adds, "Loft", *adds, "Flat", *adds),
             drawn("Home", "Loft", "Flat"),
         )
     }

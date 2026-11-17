@@ -1,25 +1,16 @@
 package ui.profile
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import catalog.profile.ADD_A_GROWN_UP
-import catalog.profile.ADD_A_KID
 import catalog.profile.GROWN_UPS
 import catalog.profile.KIDS_SECTION
 import catalog.profile.ManagePart
 import catalog.profile.ManageUiState
-import catalog.profile.NEW_KID_LIMIT
 import catalog.profile.REMOVE
 import catalog.profile.RESET_PIN
 import designsystem.SectionHead
@@ -30,12 +21,11 @@ import ui.common.profile.ManageActions
 import ui.settings.QuietPill
 
 /**
- * One household's part of Manage on the phone — the web's `byHousehold`:
- * under the household's name while the owner manages more than one, a level
- * above its Grown-ups and Kids; each grown-up with Reset PIN and Remove, each
- * kid with its limits and Remove, every row with the sections it is shown
- * ([SectionSwitches]) on its own line, as the web's are. Adding a grown-up or
- * a kid is offered only where [part] says.
+ * Manage on the phone for anyone but the owner — the web's `byHousehold`:
+ * Grown-ups for the admin, each with Reset PIN and Remove, and a way to add
+ * one; then Kids, each with its limits and Remove, and a way to add one.
+ * Every row has the sections it is shown ([SectionSwitches]) on its own line,
+ * as the web's are. The owner's view of every household is [OwnerPartRows].
  */
 @Composable
 internal fun ManagePartRows(
@@ -44,66 +34,62 @@ internal fun ManagePartRows(
     actions: ManageActions,
     onRemove: (Profile) -> Unit,
 ) {
-    val sub = if (part.name == null) SectionHead else MaterialTheme.typography.titleSmall
-    part.name?.let { Section(it, Modifier.semantics { heading() }) }
-    val sections: @Composable (Profile) -> Unit = { p -> if (p in state.sectionRows) SectionSwitches(p, state.answers) { actions.onSetHiddenSections(p.id, it) } }
     if (part.showsGrownUps) {
-        Section(GROWN_UPS, style = sub)
-        part.grownUps.forEach { grownUp ->
-            key(grownUp.id) {
-                ProfileRow(grownUp.name, below = { sections(grownUp) }) {
-                    QuietPill(RESET_PIN, onClick = { actions.onChangePin(grownUp.id) }, small = true)
-                    RemovePill(grownUp, onRemove)
-                }
-            }
-        }
+        Section(GROWN_UPS)
+        part.grownUps.forEach { grownUp -> key(grownUp.id) { GrownUpRow(grownUp, state, actions, onRemove) } }
         if (part.addsGrownUp) NameForm(ADD_A_GROWN_UP, onSubmit = { actions.onAddGrownUp(it, part.id) }, modifier = Modifier.padding(top = Spacing.small))
     }
     if (!part.showsKids) return
-    Section(KIDS_SECTION, style = sub)
-    part.kids.forEach { kid ->
-        key(kid.id) {
-            ProfileRow(
-                kid.name,
-                below = {
-                    DailyLimitChips(kid.dailyLimit, "${DailyLimitWords.LABEL} for ${kid.name}", { actions.onSetDailyLimit(kid.id, it) })
-                    sections(kid)
-                },
-            ) {
-                LimitChoice(kid.kidsLimit, "Age limit for ${kid.name}") { age -> actions.onSetKidsAge(kid.id, age) }
-                RemovePill(kid, onRemove)
-            }
-        }
-    }
-    if (part.addsKid) AddKidForm(actions, part.kidParentDefault?.id)
+    Section(KIDS_SECTION)
+    part.kids.forEach { kid -> key(kid.id) { KidRow(kid, state, actions, onRemove) } }
+    if (part.addsKid) AddKidForm(actions, part.kidParents, part.kidParentDefault)
 }
 
-/** A new kid's name, then its age limit — the stricter to start — and any daily limit; [parentId]'s, or its maker's. */
+/** A grown-up another may manage: Reset PIN, Remove, and the sections it is shown; [line] says who it is. */
 @Composable
-private fun AddKidForm(
+internal fun GrownUpRow(
+    grownUp: Profile,
+    state: ManageUiState.Managing,
     actions: ManageActions,
-    parentId: String?,
+    onRemove: (Profile) -> Unit,
+    line: String? = null,
 ) {
-    var newLimit by rememberSaveable { mutableIntStateOf(NEW_KID_LIMIT) }
-    // Saved as 0 for "No limit": no menu entry is zero minutes, and the saver takes no null.
-    var newDaily by rememberSaveable { mutableIntStateOf(0) }
-    NameForm(
-        ADD_A_KID,
-        onSubmit = { name ->
-            actions.onAddKid(name, newLimit, newDaily.takeIf { it > 0 }, parentId)
-            newLimit = NEW_KID_LIMIT
-            newDaily = 0
+    ProfileRow(grownUp.name, below = { Sections(grownUp, state, actions) }, line = line) {
+        QuietPill(RESET_PIN, onClick = { actions.onChangePin(grownUp.id) }, small = true)
+        RemovePill(grownUp, onRemove)
+    }
+}
+
+/** A kid: its age limit, daily limit, sections, and Remove; [line] says who it is. */
+@Composable
+internal fun KidRow(
+    kid: Profile,
+    state: ManageUiState.Managing,
+    actions: ManageActions,
+    onRemove: (Profile) -> Unit,
+    line: String? = null,
+) {
+    ProfileRow(
+        kid.name,
+        below = {
+            DailyLimitChips(kid.dailyLimit, "${DailyLimitWords.LABEL} for ${kid.name}", { actions.onSetDailyLimit(kid.id, it) })
+            Sections(kid, state, actions)
         },
-        modifier = Modifier.padding(top = Spacing.small),
-        more = {
-            DailyLimitChips(
-                newDaily.takeIf { it > 0 },
-                "${DailyLimitWords.LABEL} for the new kid",
-                { newDaily = it ?: 0 },
-                Modifier.padding(top = Spacing.small),
-            )
-        },
-    ) { LimitChoice(newLimit, "Age limit for the new kid") { newLimit = it } }
+        line = line,
+    ) {
+        LimitChoice(kid.kidsLimit, "Age limit for ${kid.name}") { age -> actions.onSetKidsAge(kid.id, age) }
+        RemovePill(kid, onRemove)
+    }
+}
+
+/** The sections [profile] is shown, on the rows that carry them — never the actor's own. */
+@Composable
+private fun Sections(
+    profile: Profile,
+    state: ManageUiState.Managing,
+    actions: ManageActions,
+) {
+    if (profile in state.sectionRows) SectionSwitches(profile, state.answers) { actions.onSetHiddenSections(profile.id, it) }
 }
 
 /** A heading of Manage's: a household's name, Grown-ups, Kids, or Your PIN. */
