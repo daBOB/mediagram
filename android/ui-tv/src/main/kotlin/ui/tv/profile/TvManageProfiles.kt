@@ -104,7 +104,7 @@ private fun TvManaging(
             adds.backTo = null
         }
         TvManagePage(managingAs(state.actor.name), notice) {
-            TvManagePart(part, state, onOpen = { step = it }, onAdd = { adds.adding = part.form }, first = first, addRequester = add)
+            TvManagePart(part, onOpen = { step = it }, onAdd = { adds.adding = part.form }, first = first, addRequester = add)
             TvTextRow(DONE, onClick = actions.onClose, modifier = Modifier.fillMaxWidth().padding(top = Spacing.medium))
         }
         TvManageDialog(step, state, actions) { step = it }

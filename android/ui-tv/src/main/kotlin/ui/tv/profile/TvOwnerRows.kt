@@ -112,7 +112,7 @@ internal fun TvOwnerRows(
                     step = next
                 }
                 val add = remember { FocusRequester() }.also { addRows[id] = it }
-                TvManagePart(part, state, onOpen = open, onAdd = { adds.adding = id }, holds = { holds(id, it) }, addRequester = add)
+                TvManagePart(part, onOpen = open, onAdd = { adds.adding = id }, holds = { holds(id, it) }, addRequester = add)
             }
         }
         TvTextRow(HouseholdWords.CREATE_A_HOUSEHOLD, onClick = { go(TvHouseholdStep.CreateName()) }, holds(NEW).fillMaxWidth().padding(top = Spacing.medium), create)

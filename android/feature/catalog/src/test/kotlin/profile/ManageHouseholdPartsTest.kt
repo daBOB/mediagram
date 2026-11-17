@@ -64,21 +64,30 @@ class ManageHouseholdPartsTest {
         assertEquals(true to false, owner.parts()[1].let { it.addsGrownUp to it.addsKid })
     }
 
-    /** The web's `personRow`: everyone in a household is listed, those the owner may not change with their line alone. */
+    /** The web's `personRow`, decided once for both screens: who each row is, its line, and what it opens — nothing for someone the owner may not change. */
     @Test
-    fun anotherGrownUpsKidAtHomeIsListedReadOnly() {
+    fun eachRowSaysWhoItIsItsLineAndWhatItOpens() {
         val test = Profile("test", "test", hasPin = true)
         val kim = Profile("kim", "Kim", kids = true, kidsAge = 6, parentId = "test")
-        val here = listOf(andre, test, lea, kim)
-        val owner = panel(andre, here, install.copy(everyone = install.everyone + test + kim))
-        val home = owner.parts().first()
-        assertEquals(listOf("andre", "test", "Lea", "Kim"), home.people.map { it.name })
-        assertEquals(setOf("kim"), home.readOnly)
-        assertEquals(listOf("Lea"), home.kids.map { it.name })
-        // Elsewhere the owner changes everyone; anyone else's part is drawn as it always was.
-        assertEquals(emptySet<String>(), owner.parts().last().readOnly)
+        val owner = panel(andre, listOf(andre, test, lea, kim), install.copy(everyone = install.everyone + test + kim))
+        assertEquals(
+            listOf(
+                Triple("andre", "Owner · Admin · PIN set", RowOpens.YOU),
+                Triple("test", "Grown-up · PIN set", RowOpens.GROWN_UP),
+                Triple("Lea", "Kid · andre · FSK 12", RowOpens.KID),
+                Triple("Kim", "Kid · test · FSK 6", null),
+            ),
+            owner.parts().first().people.map { Triple(it.profile.name, it.line, it.opens) },
+        )
+        // Elsewhere the owner changes everyone.
+        assertEquals(listOf(RowOpens.GROWN_UP, RowOpens.KID), owner.parts().last().people.map { it.opens })
+        // Anyone else: themselves, then whom they manage, lined among everyone here.
         val admin = panel(maja, listOf(maja, tim), install.copy(joined = "flat"))
-        assertEquals(emptyList<Profile>() to emptySet<String>(), admin.parts().single().let { it.people to it.readOnly })
+        assertEquals(
+            listOf(Triple("Maja", "Admin · PIN set", RowOpens.YOU), Triple("Tim", "Kid · Maja · FSK 6", RowOpens.KID)),
+            admin.parts().single().people.map { Triple(it.profile.name, it.line, it.opens) },
+        )
+        assertEquals(listOf(true, true), listOf(owner, admin).map { it.parts().first().addsSomeone })
     }
 
     @Test
