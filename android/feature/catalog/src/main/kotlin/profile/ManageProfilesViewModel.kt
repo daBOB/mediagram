@@ -58,7 +58,7 @@ class ManageProfilesViewModel
         fun open(chosen: Profile? = null) {
             ask.cancel()
             heldPin = null
-            if (chosen?.owner == true && !chosen.kids) managing(chosen) else step.value = ManageStep.ChoosingActor()
+            go(if (chosen?.owner == true && !chosen.kids) ManageStep.Managing(chosen.id) else ManageStep.ChoosingActor())
         }
 
         /** After the Owner button's PIN: the owner's view in this panel's place, whoever was managing. */
@@ -66,23 +66,23 @@ class ManageProfilesViewModel
             val owner = households.view.value.owner?.takeIf { ownerPin.held != null } ?: return
             ask.cancel()
             heldPin = null
-            managing(owner)
+            go(ManageStep.Managing(owner.id))
         }
 
         /** The actor's PIN, or — from before PINs existed — a first one typed twice, which becomes theirs. */
         fun actAs(id: String) {
             val actor = repository.profiles.value.find { it.id == id && !it.kids } ?: return
             // The owner's PIN given anywhere on the page is not asked again.
-            if (actor.owner && ownerPin.held != null) return managing(actor)
+            if (actor.owner && ownerPin.held != null) return go(ManageStep.Managing(id))
             ask.ask(
                 PinPrompt(pinTitleFor(actor), newPin = !actor.hasPin),
                 send = { pin -> shared(proving(actor, pin)) },
                 done = { pin ->
                     hold(id, pin)
-                    managing(actor)
+                    go(ManageStep.Managing(id))
                 },
                 refused = { outcome ->
-                    step.value = ManageStep.ChoosingActor(outcome.reason())
+                    go(ManageStep.ChoosingActor(outcome.reason()))
                     // A first PIN refused is news from another device: read who is here again.
                     viewModelScope.launch { repository.rereadQuietly() }
                 },
@@ -124,8 +124,8 @@ class ManageProfilesViewModel
         fun close() {
             ask.cancel()
             heldPin = null
-            ownerPin.leave()
-            step.value = ManageStep.Closed
+            ownerPin.drop()
+            go(ManageStep.Closed)
         }
 
         override fun onCleared() {
@@ -136,7 +136,7 @@ class ManageProfilesViewModel
             val actorId = (step.value as? ManageStep.Managing)?.actorId ?: return
             withPin(actorId) { pin ->
                 val managing = (step.value as? ManageStep.Managing)?.takeIf { it.actorId == actorId } ?: return@withPin
-                step.value = managing.copy(notice = null)
+                go(managing.copy(notice = null))
                 viewModelScope.launch { report(actorId, orDefault(null, "profile change") { shared(request(actorId, pin)) }) }
             }
         }
@@ -161,10 +161,10 @@ class ManageProfilesViewModel
             }
         }
 
-        /** As [actor]; the owner's view opens the household actions with it, until the page is left. */
-        private fun managing(actor: Profile) {
-            if (actor.owner) ownerPin.show()
-            step.value = ManageStep.Managing(actor.id)
+        /** Every step Manage takes: the owner's view shows ([OwnerPin.view]) exactly while it manages as the owner. */
+        private fun go(next: ManageStep) {
+            step.value = next
+            ownerPin.showView(next is ManageStep.Managing && owner(next.actorId) != null)
         }
 
         /** [actorId] when they are the install's owner, whichever household this device shows. */
@@ -191,6 +191,6 @@ class ManageProfilesViewModel
                 heldPin = null
                 ownerPin.drop()
             }
-            step.value = managing.answered(outcome, ownersView = owner(actorId) != null)
+            go(managing.answered(outcome, ownersView = owner(actorId) != null))
         }
     }

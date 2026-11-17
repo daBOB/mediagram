@@ -14,7 +14,7 @@ import javax.inject.Inject
  * The owner's PIN, held once for the whole Profiles page: asked at the first
  * change by either view model, then sent with every change of both. Dropped
  * when the page is left or a change is answered with a wrong PIN. [view] says
- * whether the owner's view shows, which a wrong PIN leaves as it is.
+ * whether Manage shows the owner's view, whose household steps share the PIN.
  */
 @ActivityRetainedScoped
 class OwnerPin @Inject constructor() {
@@ -22,22 +22,21 @@ class OwnerPin @Inject constructor() {
 
     private val showing = MutableStateFlow(false)
 
-    /** Whether the owner's view of every household shows, from [show] until the page is left. */
+    /** Whether Manage shows the owner's view: [ManageProfilesViewModel] sets it with every step it takes, and only it. */
     val view: StateFlow<Boolean> = showing.asStateFlow()
 
-    fun show() {
-        showing.value = true
+    fun showView(on: Boolean) {
+        showing.value = on
     }
 
-    /** A wrong PIN: the next change asks it again. */
+    /** A wrong PIN, or the page left: the next change asks it again. */
     fun drop() {
         held = null
     }
 
-    /** The page left: the PIN goes, and the owner's view with it. */
-    fun leave() {
-        drop()
-        showing.value = false
+    /** A household step left: the PIN goes with it only when no owner's view still needs it. */
+    fun stepLeft() {
+        if (!showing.value) drop()
     }
 }
 

@@ -75,7 +75,7 @@ internal fun ManagePartRows(
             }
         }
     }
-    if (part.addsKid) AddKidForm(actions, part.kidParents.firstOrNull()?.id)
+    if (part.addsKid) AddKidForm(actions, part.kidParentDefault?.id)
 }
 
 /** A new kid's name, then its age limit — the stricter to start — and any daily limit; [parentId]'s, or its maker's. */

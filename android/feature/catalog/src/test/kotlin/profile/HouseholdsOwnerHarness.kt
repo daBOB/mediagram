@@ -62,6 +62,21 @@ abstract class HouseholdsOwnerHarness {
 
     fun HouseholdsOwnerViewModel.part() = assertIs<HouseholdsOwnerUiState.Open>(state.value)
 
+    /** Manage and the owner's Households part on one page, wired as the page wires them: the Owner button's PIN opens the owner's view. */
+    suspend fun TestScope.page(): Pair<ManageProfilesViewModel, HouseholdsOwnerViewModel> {
+        val owners = owning()
+        val manage = ManageProfilesViewModel(repository, households, sync, ownerPin)
+        backgroundScope.launch { owners.ownerView.collect { manage.asOwner() } }
+        return manage to owners
+    }
+
+    /** The page watched by the owner: their view at once. */
+    suspend fun TestScope.watchedByTheOwner() = page().also { (manage) -> manage.open(profile("a")) }
+
+    fun ManageProfilesViewModel.view() = assertIs<ManageUiState.Managing>(state.value)
+
+    fun ManageProfilesViewModel.part(id: String) = view().parts().single { it.id == id }
+
     fun household(id: String) = households.view.value.list.find { it.id == id }
 
     fun profile(id: String) = households.view.value.everyone.single { it.id == id }

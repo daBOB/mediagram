@@ -27,7 +27,7 @@ sealed interface ManageUiState {
      * for it to move, which even a refusal it has heard before does. The
      * owner's rows reach into every household; [households], the live ones,
      * name them ([parts]), [here] — this device's — first, each with the
-     * owner's [rows] of actions on it.
+     * owner's [rows] of actions on it and [everyone] in it, changed or not.
      */
     data class Managing(
         val actor: Profile,
@@ -38,6 +38,7 @@ sealed interface ManageUiState {
         val households: List<Household> = emptyList(),
         val here: String = actor.household,
         val rows: List<HouseholdRow> = emptyList(),
+        val everyone: List<Profile> = listOf(actor) + grownUps + kids,
     ) : ManageUiState {
         val canAddGrownUp: Boolean get() = actor.admin
 
@@ -77,5 +78,6 @@ internal fun manageable(
         households = install.list,
         here = here,
         rows = if (actor.owner) install.rowsFor(actor) else emptyList(),
+        everyone = reached,
     )
 }

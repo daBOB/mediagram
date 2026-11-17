@@ -124,10 +124,13 @@ class HouseholdsOwnerViewModel
 
         fun cancelPin() = ask.cancel()
 
-        /** Leaves the part, forgetting the owner's PIN and view; the watching owner's part stays open and asks it again. */
+        /**
+         * Leaves the part, and the owner's PIN unless Manage's owner's view still
+         * shows, which the part is one step of; the watching owner's part stays open.
+         */
         fun close() {
             ask.cancel()
-            ownerPin.leave()
+            ownerPin.stepLeft()
             step.value = OwnerStep(visit = step.value.visit + 1)
         }
 

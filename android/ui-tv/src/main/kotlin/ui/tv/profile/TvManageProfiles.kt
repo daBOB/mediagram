@@ -121,7 +121,7 @@ private fun TvManaging(
                     first.takeIf { index == 0 },
                     onGrownUp = { step = TvManageStep.GrownUpActions(it) },
                     onKid = { step = TvManageStep.KidActions(it) },
-                    onAdd = { step = TvManageStep.Adding(kid = it, part.id, part.kidParents.firstOrNull()?.id) },
+                    onAdd = { step = TvManageStep.Adding(kid = it, part.id, part.kidParentDefault?.id) },
                 )
             }
         }

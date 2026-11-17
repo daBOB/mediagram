@@ -56,6 +56,23 @@ class ManageHouseholdPartsTest {
         assertEquals(true to false, owner.parts()[1].let { it.addsGrownUp to it.addsKid })
     }
 
+    /** The web's `personRow`: everyone in a household is listed, those the owner may not change with their line alone. */
+    @Test
+    fun anotherGrownUpsKidAtHomeIsListedReadOnly() {
+        val test = Profile("test", "test", hasPin = true)
+        val kim = Profile("kim", "Kim", kids = true, kidsAge = 6, parentId = "test")
+        val here = listOf(andre, test, lea, kim)
+        val owner = panel(andre, here, install.copy(everyone = install.everyone + test + kim))
+        val home = owner.parts().first()
+        assertEquals(listOf("andre", "test", "Lea", "Kim"), home.people.map { it.name })
+        assertEquals(setOf("kim"), home.readOnly)
+        assertEquals(listOf("Lea"), home.kids.map { it.name })
+        // Elsewhere the owner changes everyone; anyone else's part is drawn as it always was.
+        assertEquals(emptySet<String>(), owner.parts().last().readOnly)
+        val admin = panel(maja, listOf(maja, tim), install.copy(joined = "flat"))
+        assertEquals(emptyList<Profile>() to emptySet<String>(), admin.parts().single().let { it.people to it.readOnly })
+    }
+
     @Test
     fun aRowInAHouseholdTheListDoesNotNameStaysVisibleAfterTheNamedOnes() {
         val barn = Profile("ned", "Ned", household = "barn")

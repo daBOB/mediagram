@@ -8,8 +8,13 @@ import model.Profile
  * Manage is drawn as it always was. Adding a grown-up ([addsGrownUp]) or a kid
  * ([addsKid]) is offered where it may be: the admin's own household, and in
  * the owner's view every household, a kid only where a grown-up is. There
- * [household] is the owner's actions on it, and [kidParents] the grown-ups a
- * new kid may belong to, its admin first; elsewhere a new kid is its maker's.
+ * [household] is the owner's actions on it; [kidParents] the grown-ups a new
+ * kid may belong to, as the household lists them, [kidParentDefault] — its
+ * admin, else its first — chosen; and [people] everyone in it, grown-ups
+ * first, as the web's owner view lists them: [grownUps] and [kids] with what
+ * may be changed, the owner's own row with their PIN, and [readOnly] the ones
+ * the owner may not change, drawn with their line alone. Elsewhere a new kid
+ * is its maker's, and the rows are [grownUps] and [kids].
  */
 data class ManagePart(
     val id: String?,
@@ -20,6 +25,9 @@ data class ManagePart(
     val addsKid: Boolean,
     val household: HouseholdRow? = null,
     val kidParents: List<Profile> = emptyList(),
+    val kidParentDefault: Profile? = null,
+    val people: List<Profile> = emptyList(),
+    val readOnly: Set<String> = emptySet(),
 ) {
     /** Grown-ups is drawn with someone in it or a way to add one, as Kids is. */
     val showsGrownUps: Boolean get() = grownUps.isNotEmpty() || addsGrownUp
@@ -36,9 +44,11 @@ data class ManagePart(
 fun ManageUiState.Managing.parts(): List<ManagePart> {
     if (!actor.owner || households.isEmpty()) return listOf(ManagePart(null, null, grownUps, kids, canAddGrownUp, addsKid = true))
     // A household a row is in that the list does not name stays visible, after the named ones.
-    val ids = (listOf(here) + households.map { it.id } + (grownUps + kids).map { it.household }).distinct()
+    val ids = (listOf(here) + households.map { it.id } + everyone.map { it.household }).distinct()
+    val changed = (listOf(actor) + grownUps + kids).map { it.id }.toSet()
     return ids.map { id ->
-        val parents = (listOf(actor) + grownUps).filter { it.household == id }.sortedByDescending { it.admin }
+        val people = everyone.filter { it.household == id }.sortedBy { it.kids }
+        val parents = people.filterNot { it.kids }
         ManagePart(
             id = id,
             name = households.find { it.id == id }?.name ?: id,
@@ -49,6 +59,9 @@ fun ManageUiState.Managing.parts(): List<ManagePart> {
             addsKid = parents.isNotEmpty(),
             household = rows.find { it.household.id == id },
             kidParents = parents,
+            kidParentDefault = parents.find { it.admin } ?: parents.firstOrNull(),
+            people = people,
+            readOnly = people.map { it.id }.filterNot { it in changed }.toSet(),
         )
     }
 }

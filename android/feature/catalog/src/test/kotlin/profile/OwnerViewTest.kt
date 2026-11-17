@@ -1,7 +1,5 @@
 package catalog.profile
 
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import model.HouseholdWords
@@ -17,21 +15,6 @@ import kotlin.test.assertNull
  */
 class OwnerViewTest : HouseholdsOwnerHarness() {
     private val ownersPin = PinPrompt(HouseholdWords.OWNERS_PIN, newPin = false)
-
-    /** Manage and the owner's Households part on one page, wired as the page wires them: the Owner button's PIN opens the owner's view. */
-    private suspend fun TestScope.page(): Pair<ManageProfilesViewModel, HouseholdsOwnerViewModel> {
-        val owners = owning()
-        val manage = ManageProfilesViewModel(repository, households, sync, ownerPin)
-        backgroundScope.launch { owners.ownerView.collect { manage.asOwner() } }
-        return manage to owners
-    }
-
-    /** The page watched by the owner: their view at once. */
-    private suspend fun TestScope.watchedByTheOwner() = page().also { (manage) -> manage.open(profile("a")) }
-
-    private fun ManageProfilesViewModel.view() = assertIs<ManageUiState.Managing>(state.value)
-
-    private fun ManageProfilesViewModel.part(id: String) = view().parts().single { it.id == id }
 
     private fun newPin(name: String) = PinPrompt(newPinTitleFor(name), newPin = true)
 
@@ -84,7 +67,7 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
     fun addKidElsewhereBelongsToItsAdmin() =
         runTest(UnconfinedTestDispatcher()) {
             val (manage) = watchedByTheOwner()
-            manage.addKid("Ben", 6, null, manage.part("flat").kidParents.first().id)
+            manage.addKid("Ben", 6, null, manage.part("flat").kidParentDefault?.id)
             manage.enterPin("1234")
             assertEquals("flat" to "b", households.view.value.everyone.single { it.name == "Ben" }.let { it.household to it.parentId })
             assertEquals(listOf("Ben"), manage.part("flat").kids.map { it.name })
@@ -93,12 +76,14 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
     @Test
     fun aHouseholdWithTwoGrownUpsListsBothAsKidParents() =
         runTest(UnconfinedTestDispatcher()) {
-            // Cy listed before Bea, who runs the flat.
+            // Cy listed before Bea, who runs the flat: listed as the household has them, Bea chosen.
             core.profiles = core.profiles.sortedBy { it.id != "c" }
             val (manage) = watchedByTheOwner()
-            assertEquals(listOf("Bea", "Cy"), manage.part("flat").kidParents.map { it.name })
+            assertEquals(listOf("Cy", "Bea"), manage.part("flat").kidParents.map { it.name })
+            assertEquals("Bea", manage.part("flat").kidParentDefault?.name)
             // At home a new kid is the owner's, as it always was.
             assertEquals(listOf("andre"), manage.part("home").kidParents.map { it.name })
+            assertEquals("andre", manage.part("home").kidParentDefault?.name)
         }
 
     @Test
@@ -176,23 +161,5 @@ class OwnerViewTest : HouseholdsOwnerHarness() {
             owners.rename("barn", "Shed")
             assertNull(owners.pin.value)
             assertEquals("Shed", household("barn")?.name)
-        }
-
-    @Test
-    fun aWrongPinKeepsTheOwnerViewAndAsksAgainAtTheNextChange() =
-        runTest(UnconfinedTestDispatcher()) {
-            val (manage, owners) = watchedByTheOwner()
-            manage.setKidsAge("m", 12)
-            manage.enterPin("1234")
-            // Changed on another device since it was given here.
-            core.roles.pins["a"] = "9999"
-            manage.setKidsAge("m", 6)
-            assertEquals("Wrong PIN.", manage.view().notice)
-            assertNull(ownerPin.held)
-            owners.part()
-            manage.setKidsAge("m", 6)
-            assertEquals(ownersPin, manage.pin.value)
-            manage.enterPin("9999")
-            assertEquals(6, profile("m").kidsAge)
         }
 }
