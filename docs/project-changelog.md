@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.185.0 — Continue and My List as posters
+
+**Added** (web)
+
+- **Continue and My List offer List · Grid**, beside their count, as Movies does. One choice per device, shared by all three pages. Grid draws the posters six to a row, as the tablet draws these two pages, with the progress bar, the resume time and *Mark finished* under each poster on Continue. List stays the default.
+
 ## 0.184.0 — Ambient on the web
 
 **Added** (web)

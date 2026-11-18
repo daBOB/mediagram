@@ -419,23 +419,19 @@ window.addEventListener("mediagram:profiles", () => librarySession.reapply());
 
 /** What was started and not finished, most recent first. */
 function viewContinue() {
-  const started = films.continuing()
-    .filter((row) => resumeAt(row) !== null)
-    .map((row) => byId.get(row.setId))
-    .filter(Boolean);
-
-  heading(main, KEPT.continue.label, countOf(started.length, "title"));
-  if (started.length === 0) return main.append(el("p", "empty", KEPT.continue.empty));
+  const started = films.continuing().filter((row) => resumeAt(row) !== null).map((row) => byId.get(row.setId)).filter(Boolean);
   // The shelf redraws itself from the change, so the title simply leaves it.
-  main.append(setGrid(started, play, { finish: (set) => state.markFinished(set.setId) }));
+  keptWall(KEPT.continue, started, (set) => state.markFinished(set.setId));
 }
 
 /** Titles marked to come back to. */
-function viewWatchlist() {
-  const listed = films.setsFor(state.watchlist());
-  heading(main, KEPT.watchlist.label, countOf(listed.length, "title"));
-  if (listed.length === 0) return main.append(el("p", "empty", KEPT.watchlist.empty));
-  main.append(setGrid(listed, play));
+function viewWatchlist() { keptWall(KEPT.watchlist, films.setsFor(state.watchlist())); }
+
+/** Continue or My List: its titles as a list or as plates, the device's choice shared with Movies. */
+function keptWall(kept, sets, finish) {
+  heading(main, kept.label, countOf(sets.length, "title"), sets.length > 0 ? shelfToggle(route) : null);
+  if (sets.length === 0) return main.append(el("p", "empty", kept.empty));
+  main.append(setGrid(sets, play, { finish, mode: shelfMode() }));
 }
 
 /** Asks the server, because summaries live there and are not in the catalog. */
