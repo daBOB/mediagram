@@ -232,6 +232,8 @@ internal class TvAppFixture(
         // One for the whole page, as the app's activity-retained one is: Manage and the owner's households share it.
         val ownerPin = OwnerPin()
         manage = ManageProfilesViewModel(viewer.repository, households, NoopWatchSync, ownerPin)
+        // An index with no push time on record: a start fetches artwork only when a refresh installs a newer one.
+        coEvery { repository.publishedAt() } returns null
         coEvery { repository.refresh() } returns RefreshOutcome.AlreadyCurrent
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null

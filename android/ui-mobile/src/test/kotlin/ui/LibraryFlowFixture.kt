@@ -117,6 +117,8 @@ internal class LibraryFlowFixture(
     init {
         if (!loading) catalogReady.complete(Unit)
         val stored = playback.repository
+        // An index with no push time on record: a start fetches artwork only when a refresh installs a newer one.
+        coEvery { repository.publishedAt() } returns null
         coEvery { repository.refresh() } coAnswers {
             refreshes++
             RefreshOutcome.AlreadyCurrent
