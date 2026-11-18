@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.187.1 — New titles get their posters on a device that slept through them
+
+**Fixed** (Android)
+
+- **A device catches up on the artwork of an index it installed bare.** Funstation showed no posters for the 125 titles added on 2026-11-18: the three indexes published that day arrived while its app was not listening, and opening it installed the newest one without fetching. Funstation also ran 0.180.4, a hand-installed build from before the fix that fetches when an opening installs a newer index, and that fix alone would not have caught up an index already installed. The app now remembers which index it last finished fetching artwork for; a start that reaches the channel and finds the installed index not yet fetched for fetches it once, quietly. A start that cannot reach the channel does not try, and a fetch that could not run leaves the index for the next start.
+
 ## 0.187.0 — Season posters on every show page
 
 **Changed** (web, tablet and phone)

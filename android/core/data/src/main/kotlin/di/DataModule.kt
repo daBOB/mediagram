@@ -31,12 +31,14 @@ import data.TogetherChannel
 import data.TogetherLive
 import data.WatchStateRepository
 import data.WatchSync
+import data.settings.ArtworkFetchMark
 import data.settings.EncryptedLanCacheTokenSettings
 import data.settings.EncryptedLibrarySettings
 import data.settings.EncryptedTelegramSettings
 import data.settings.EncryptedTmdbSettings
 import data.settings.LanCacheTokenSettings
 import data.settings.LibrarySettings
+import data.settings.SharedPreferencesArtworkFetchMark
 import data.settings.SharedPreferencesShelfViewSettings
 import data.settings.ShelfViewSettings
 import data.settings.TelegramSettings
@@ -65,6 +67,12 @@ object DataModule {
         @ApplicationContext context: Context,
         dispatcher: CoroutineDispatcher,
     ): LibrarySettings = EncryptedLibrarySettings(context, dispatcher)
+
+    @Provides
+    @Singleton
+    fun provideArtworkFetchMark(
+        @ApplicationContext context: Context,
+    ): ArtworkFetchMark = SharedPreferencesArtworkFetchMark(context)
 
     @Provides
     @Singleton

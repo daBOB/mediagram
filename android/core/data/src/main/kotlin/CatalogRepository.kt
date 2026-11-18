@@ -31,6 +31,9 @@ interface CatalogRepository {
 
     suspend fun sets(): List<MediaSet>
 
+    /** When the installed index was pushed, in seconds since the epoch; `null` when none is installed or it cannot be told. */
+    suspend fun publishedAt(): Long? = null
+
     /**
      * The catalog's sets matching every word of [query], best first — the
      * same ranking [uniffi.mediagram_core.CoreInterface.search] runs. A thin pass-through rather than
@@ -150,6 +153,8 @@ class DefaultCatalogRepository(
         val core = coreProvider.awaitCore()
         return withContext(dispatcher) { core.listSets().map { it.toMediaSet() } }
     }
+
+    override suspend fun publishedAt(): Long? = withContext(dispatcher) { coreProvider.awaitCore().catalogFacts().publishedAt }
 
     override suspend fun search(query: String): List<SearchHit> = coreProvider.awaitCore().search(query)
 

@@ -6,6 +6,8 @@ import data.CatalogRepository
 import data.LibraryUpdate
 import data.LibraryUpdateKind
 import data.RefreshOutcome
+import data.settings.ArtworkFetchMark
+import data.settings.InMemoryArtworkFetchMark
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -128,6 +130,38 @@ class LibraryUpdateTest {
             assertEquals(listOf("read", "read"), fixture.steps)
         }
 
+    /** An index installed while nothing fetched for it — the app asleep when it was published — is caught up on the next start, once. */
+    @Test
+    fun aReadOnAnIndexNoFetchFinishedForFetchesItOnceQuietly() =
+        runTest {
+            val fixture = UpdateFixture(FakeCatalogRepository(movies = 1).apply { publishedAt = 1_794_990_533 })
+            fixture.run(LibraryUpdateKind.Read)
+            assertEquals(listOf("read", "read", "fetch", "read"), fixture.steps)
+            assertEquals(1_794_990_533, fixture.fetchMark.fetchedFor())
+            assertNull(fixture.update.state.value.report)
+            fixture.steps.clear()
+            fixture.run(LibraryUpdateKind.Read)
+            assertEquals(listOf("read"), fixture.steps)
+        }
+
+    @Test
+    fun aRefusedReadDoesNotCatchUpEvenWhenBehind() =
+        runTest {
+            val fixture = UpdateFixture(FakeCatalogRepository(movies = 1, refreshFails = true).apply { publishedAt = 7 })
+            fixture.run(LibraryUpdateKind.Read)
+            assertEquals(listOf("read", "read"), fixture.steps)
+            assertNull(fixture.fetchMark.fetchedFor())
+        }
+
+    /** A start that could not fetch (no key, no home cache) leaves the index unmarked, so the next start tries again. */
+    @Test
+    fun aFetchThatCouldNotRunLeavesTheIndexForTheNextStart() =
+        runTest {
+            val fixture = UpdateFixture(FakeCatalogRepository(movies = 1).apply { publishedAt = 7 })
+            fixture.update.update(LibraryUpdateKind.Read)
+            assertNull(fixture.fetchMark.fetchedFor())
+        }
+
     /** A refresh can be a download of the whole index, so a first start shows what is already installed meanwhile. */
     @Test
     fun aFirstReadShowsWhatIsInstalledBeforeTheRefreshReturns() =
@@ -228,6 +262,7 @@ class LibraryUpdateTest {
 private class UpdateFixture(
     val repository: FakeCatalogRepository = FakeCatalogRepository(movies = 1),
     val report: FetchReport = FetchReport(1u, 0u, 0u, 0u, 1u, 0u, 0u, 0u),
+    val fetchMark: ArtworkFetchMark = InMemoryArtworkFetchMark(),
 ) {
     val steps = mutableListOf<String>()
     var fetchGate: CompletableDeferred<Unit>? = null
@@ -252,7 +287,7 @@ private class UpdateFixture(
         }
     // On the test's own thread, so a step the core takes has been taken when a test looks.
     private val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings(), BackdropWidth { 780 }, Dispatchers.Unconfined)
-    val update = LibraryUpdate(recorded, enrichment)
+    val update = LibraryUpdate(recorded, enrichment, fetchMark)
 
     val artworkVisible: Boolean
         get() = update.library.value?.sets?.getOrNull()?.all { it.posterPath != null } == true
