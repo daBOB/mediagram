@@ -6,6 +6,8 @@ import { ANSWER_COLORS, ANSWER_MARKS } from "../ui/answers";
 import { Token } from "../ui/Token";
 import { TRICK_NAMES } from "../ui/tricks";
 import { KopfnussClimb, KopfnussFact } from "./kopfnuss/KopfnussClimb";
+import { KopfnussArena } from "./kopfnuss/KopfnussArena";
+import type { ReactNode } from "react";
 import { useKopfnussSound } from "./kopfnuss/kopfnuss-sound";
 import { soundsDue } from "./kopfnuss/kopfnuss-sound-cues";
 import { TvFinal, byFinish } from "./TvFinal";
@@ -19,13 +21,14 @@ export function TvKopfnuss({ scene, players, conn }: Props) {
   useKopfnussSound(scene, conn, soundsDue);
   const { stage } = scene;
   const round = `Runde ${scene.round} von ${scene.rounds}`;
+  const show = (content: ReactNode) => <KopfnussArena scene={scene} players={players}>{content}</KopfnussArena>;
   switch (stage.stage) {
     case "pick":
     case "resolve":
-      return <Vote stage={stage} round={round} players={players} conn={conn} />;
+      return show(<Vote stage={stage} round={round} players={players} conn={conn} />);
     case "question": {
       const loads = new Map(stage.tricks.map((t) => [t.player, t.tricks]));
-      return (
+      return show(
         <TvQuiz
           scene={stage.quiz}
           players={players}
@@ -40,9 +43,9 @@ export function TvKopfnuss({ scene, players, conn }: Props) {
       );
     }
     case "climb":
-      return <KopfnussClimb stage={stage} players={players} conn={conn} />;
+      return show(<KopfnussClimb stage={stage} players={players} conn={conn} />);
     case "fact":
-      return <KopfnussFact stage={stage} players={players} />;
+      return show(<KopfnussFact stage={stage} players={players} />);
     case "final":
       return <TvFinal players={byFinish(players, stage.order)} conn={conn} ranked />;
   }

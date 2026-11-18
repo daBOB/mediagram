@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.195.0 — Kopfnuss plays on 3D stages (not released)
+
+**Added**
+
+- Kopfnuss's TV stages are 3D sets behind the game's text, with the players' avatars standing in them and the walnut showmaster floating beside: a hall of four glitter-gold doors for the category vote and the tricks, a quiz studio with a gloss floor, light rings and a marquee arch for question and reveal, a candy pyramid on an island above the clouds for the Gipfelsturm (climbers stand on its ten treads), and a velvet-curtain stage with a gold podium for the fact. The final keeps the shared awards ceremony. Without WebGL the earlier HTML screens show.
+- The sets are built and lit in Blender Cycles from Poly Haven scans (marble, walnut veneer, velvet, a studio HDRI, all CC0) and procedural gold, glitter, lacquer and candy, then baked into one picture per set that the TV draws unlit: soft shadows, bounce light, glow and floor reflections at the cost of one texture lookup (`tools/kopfnuss-arena`, `public/kopfnuss/kopfnuss-arena.glb`, 4.5 MB). Small shaders add the moving light on top: chasing ring and marquee lights, spot beams, sparkle on the doors, a halo round the summit star, confetti for the winner (`tv/kopfnuss/arena-fx.ts`). They stand still under reduced motion.
+- Not measured on the funstation yet. Plan: `plans/261118-0108-kopfnuss-stage-overhaul/`.
+
 ## Spieltisch 0.192.7 — Kopfnuss is a full game
 
 **Changed**
