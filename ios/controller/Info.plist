@@ -8,7 +8,7 @@
     <key>CFBundleShortVersionString</key>
     <string>0.195.0</string>
     <key>CFBundleVersion</key>
-    <string>190000</string>
+    <string>195000</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>Spieltisch sucht den Fernseher im WLAN.</string>
     <key>NSBonjourServices</key>
