@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.187.0 — Season posters on every show page
+
+**Changed** (web, tablet and phone)
+
+- **A show's seasons are a row of season posters**, as the television has had since the user chose season cards: the web's season select and the tablet's season drop-down are gone. Each card is the season's own cover where the library holds one (22,660 of 22,931 episodes do), else the show's poster with the season's number over it; the watched share is the poster's rule, and under it the season, its episode count and how many are watched. The season showing has a rule under it, as the showing tab does; a press shows that season's episodes below, through the URL on the web as before. On the tablet the row opens on the season showing.
+
 ## 0.186.0 — Continue and My List as a list on the tablet
 
 **Added** (tablet and phone)
