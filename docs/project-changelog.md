@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.186.0 — Continue and My List as a list on the tablet
+
+**Added** (tablet and phone)
+
+- **Continue and My List offer List · Grid**, as the web's did in 0.185.0 and the tablet's Movies page already did: one choice per device, the same one Movies reads. List draws a row per title with its show, episode, year and runtime, the resume time under them, and *Mark finished* on Continue's rows. Grid is still the tablet's default.
+
 ## 0.185.0 — Continue and My List as posters
 
 **Added** (web)

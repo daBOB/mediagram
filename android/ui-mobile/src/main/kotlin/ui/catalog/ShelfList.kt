@@ -73,11 +73,13 @@ internal fun ShelfList(
     }
 }
 
+/** One row of a list shelf; [resume] is this viewer's place in it, under the facts, as a plate's caption sits under its meta. */
 @Composable
-private fun ShelfRow(
+internal fun ShelfRow(
     title: String,
     caption: String?,
     onClick: () -> Unit,
+    resume: String? = null,
     watched: Boolean = false,
     held: Boolean = false,
     progress: Float? = null,
@@ -95,6 +97,9 @@ private fun ShelfRow(
         HoverTitle(if (watched) "✓ $title" else title, MaterialTheme.typography.bodyLarge, source)
         caption?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        resume?.let {
+            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         versions?.let { CardBadge(it, modifier = Modifier.padding(top = Spacing.extraSmall)) }
         if (held) OfflineBadge(modifier = Modifier.padding(top = Spacing.extraSmall))

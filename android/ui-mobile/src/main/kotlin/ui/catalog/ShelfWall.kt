@@ -24,10 +24,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.Entry
 import catalog.Page
 import catalog.Shelf
+import catalog.ShelfViewModel
 import catalog.extentOf
 import catalog.factsLine
 import catalog.filmsWatched
@@ -127,6 +130,14 @@ internal fun ShelfWall(
 
 /** This device's shelf view and the way to change it, handed down as one. */
 internal data class ShelfViewChoice(val chosen: ShelfView, val onChoose: (ShelfView) -> Unit)
+
+/** This device's shelf view, read where a page offers List · Grid: Movies, Continue and My List share it. */
+@Composable
+internal fun shelfViewChoice(): ShelfViewChoice {
+    val model: ShelfViewModel = hiltViewModel()
+    val chosen by model.view.collectAsStateWithLifecycle()
+    return ShelfViewChoice(chosen, model::choose)
+}
 
 /** One shelf card: a film's poster, or a show's or a course's. Shared with Home. */
 @Composable
