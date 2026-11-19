@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.189.0 — SmartTube on funstation
+
+**Added** (funstation)
+
+- **SmartTube (YouTube for the TV) is part of funstation**, with its own Bigscreen tile that opens it in the full Android window. `setup-funstation.sh` installs the newest stable release from GitHub once, after which it updates itself. It installs as the x86 build: the universal APK has no x86_64 libraries, so Android chose arm64 and ran it under translation. WayDroid's own SmartTube tile is hidden, because it would open the app in one-app-window mode.
+
 ## Spieltisch 0.195.2 — Lebensweg's rules play themselves with bots
 
 **Added**

@@ -54,7 +54,7 @@ chmod 600 ~/.ssh/authorized_keys
 grep -qF "$DEV_KEY" ~/.ssh/authorized_keys || echo "$DEV_KEY" >>~/.ssh/authorized_keys
 
 step "packages (and the rest of the system up to date)"
-sudo pacman -Syu --needed --noconfirm plasma-bigscreen plasma-keyboard waydroid chromium git rustup bun ffmpeg swayidle avahi
+sudo pacman -Syu --needed --noconfirm plasma-bigscreen plasma-keyboard waydroid chromium git rustup bun ffmpeg swayidle avahi jq
 
 step "announced on the network as $(hostname).local"
 # avahi alone answers for this host: systemd-resolved's own responder made avahi lose the name and rename itself funstation-2.local.
@@ -340,6 +340,33 @@ EOF
 # finishes and freezes the Android TV window behind it. WayDroid keeps a NoDisplay it
 # finds when it rewrites its tiles, so this holds even before the tile first exists.
 kwriteconfig6 --file ~/.local/share/applications/waydroid.com.google.android.tv.remote.service.desktop \
+  --group "Desktop Entry" --key NoDisplay true
+# SmartTube (YouTube for the TV), from its GitHub releases. After this it updates itself.
+# It installs as the x86 build: the universal APK has no x86_64 libraries, so Android
+# picks arm64 and runs it translated. --abi stays with the package, so its updates do too.
+if waydroid status | grep -q 'Session:.*RUNNING'; then
+  if ! sudo waydroid shell -- pm path org.smarttube.stable >/dev/null 2>&1; then
+    url=$(curl -fsSL https://api.github.com/repos/yuliskov/SmartTube/releases/latest |
+      jq -r '.assets[] | select(.name | endswith("_x86.apk")) | .browser_download_url')
+    tmp=~/.local/share/waydroid/data/local/tmp/smarttube.apk
+    sudo curl -fsSL -o "$tmp" "$url"
+    sudo waydroid shell -- pm install -r --abi x86 /data/local/tmp/smarttube.apk
+    sudo rm -f "$tmp"
+  fi
+else
+  echo "Android is not running yet: run this script again after login to install SmartTube."
+fi
+# Its own tile like mediagram's: WayDroid's would open it in one-app-window mode.
+cat >~/.local/share/applications/smarttube.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=SmartTube
+Comment=YouTube without ads
+Exec=$HOME/.local/bin/funstation-android org.smarttube.stable
+Icon=$HOME/.local/share/waydroid/data/icons/org.smarttube.stable.png
+Categories=AudioVideo;Video;
+EOF
+kwriteconfig6 --file ~/.local/share/applications/waydroid.org.smarttube.stable.desktop \
   --group "Desktop Entry" --key NoDisplay true
 # Bigscreen reads its tiles from Plasma's app cache, which missed the rewritten files and
 # kept running the tiles' old commands. Rebuilt inside the session, so it is the session
