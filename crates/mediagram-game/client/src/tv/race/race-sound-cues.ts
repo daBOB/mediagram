@@ -3,30 +3,17 @@
 // knock falls on every hop however late the TV joined.
 
 import type { RaceScene } from "../../protocol/RaceScene";
+import { clatterAt, type BoardSound } from "../table/board-sounds";
+import type { Cue, Plan } from "../table/tv-sound";
 import { TRACK, hopCells } from "./race-geometry";
 import { CAPTURE_FLY_MS } from "./race-motion";
-
-export type SoundName = "die" | "knock" | "thunk" | "scream" | "goalJingle" | "winnerJingle";
-
-export interface Cue {
-  sound: SoundName;
-  /** Host time, ms. */
-  at: number;
-}
-
-/** The die first touches the table 60 % into its flight (the bounce in race-motion). */
-const DIE_TOUCH = 0.6;
-/** The clatter's first hit sits this far into its file. */
-const CLATTER_ATTACK_MS = 70;
-/** When the clatter of a die thrown from `rolledAt` to `landsAt` starts, so its first hit meets the table. */
-export const clatterAt = (rolledAt: number, landsAt: number) => rolledAt + (landsAt - rolledAt) * DIE_TOUCH - CLATTER_ATTACK_MS;
 
 /**
  * The cues of the scene's stage, with a key naming that stage so its cues are
  * scheduled once however many frames show it. `null`: the stage makes no sound.
  * `now` times the winner's jingle, the one stage without a host timestamp.
  */
-export function stageCues(scene: RaceScene, now: number): { key: string; cues: Cue[] } | null {
+export function stageCues(scene: RaceScene, now: number): Plan<BoardSound> | null {
   const st = scene.stage;
   switch (st.stage) {
     case "roll":
@@ -40,7 +27,7 @@ export function stageCues(scene: RaceScene, now: number): { key: string; cues: C
       const { mv } = st;
       const hops = hopCells(seat.corner, mv.piece, mv.from, mv.to).length - 1;
       const end = st.started_at + hops * st.hop_ms;
-      const cues: Cue[] = [];
+      const cues: Cue<BoardSound>[] = [];
       for (let i = 1; i <= hops; i++) cues.push({ sound: "knock", at: st.started_at + i * st.hop_ms });
       if (mv.captures) {
         cues.push({ sound: "thunk", at: end }, { sound: "scream", at: end }, { sound: "knock", at: end + CAPTURE_FLY_MS });

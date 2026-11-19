@@ -1,5 +1,8 @@
-//! Flüchtig's rules, the timings of its taps, and the test hooks.
+//! Flüchtig's rules, the timings of its taps, the test hooks and its
+//! catalogue entry.
 
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::fluechtig::FluechtigGame;
 use crate::fluechtig_rules::Rules;
 
 #[derive(Debug, Clone)]
@@ -24,3 +27,10 @@ impl Default for FluechtigConfig {
         Self { rules: None, early_ms: 150.0, chain_ms: 400.0, intro_ms: 10_000.0, seed: None }
     }
 }
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // One runs, the rest share four hunter pieces (five at six players).
+    name: "Flüchtig", seats: Seats::Range(2, 6), timed: false, sized: false,
+    kids: Kids::Plays, board: false, needs: Need::Nothing,
+    start: |_, ctx, _| Box::new(FluechtigGame::new(FluechtigConfig::default(), ctx.players, ctx.now)),
+};

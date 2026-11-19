@@ -16,11 +16,16 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import catalog.profile.ManageProfilesViewModel
+import data.CatalogEnrichmentFetcher
+import data.DefaultCatalogRepository
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
+import data.LibraryUpdate
+import data.RefreshLog
 import data.StoredCoreProvider
 import data.settings.InMemoryLibrarySettings
 import data.settings.InMemoryTelegramSettings
+import data.settings.InMemoryTmdbSettings
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -85,8 +90,13 @@ class SettingsProfileRetryTest {
             }
         val library = Libraries(provider, InMemoryLibrarySettings())
         val watch = DefaultWatchStateRepository(provider, Dispatchers.Main.immediate)
+        val update =
+            LibraryUpdate(
+                DefaultCatalogRepository(provider, InMemoryLibrarySettings(), RefreshLog(), Dispatchers.Main.immediate),
+                CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings(), dispatcher = Dispatchers.Main.immediate),
+            )
         compose.runOnUiThread {
-            model = SettingsViewModel(provider, library, InMemoryCoreStorage(), settings, Dispatchers.Main.immediate, watch)
+            model = SettingsViewModel(provider, library, InMemoryCoreStorage(), settings, Dispatchers.Main.immediate, watch, update)
             // SettingsScreen is the hub: it resolves every Settings/System
             // ViewModel through hiltViewModel(), not only this one — this
             // owner has to hand back all five, or a lookup this test never

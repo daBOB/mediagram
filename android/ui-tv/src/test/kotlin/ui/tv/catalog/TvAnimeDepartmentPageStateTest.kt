@@ -11,6 +11,7 @@ import catalog.CollectionKind
 import catalog.Division
 import catalog.Entry
 import catalog.animeDepartmentOf
+import catalog.resumeCardsOf
 import designsystem.TvType
 import model.Kind
 import model.MediaSet
@@ -97,7 +98,7 @@ class TvAnimeDepartmentPageStateTest : TvScreenStateTest() {
     fun continueWatchingWinsArrivalOverTheWallWhenItHasCards() {
         val continuing = film("resuming")
         val library = AnimeLibrary(shows = listOf(show("Dragonball")), films = listOf(continuing, film("your-name", addedAt = 1)))
-        val dept = animeDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!.copy(continuing = listOf(continuing))
+        val dept = animeDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!.copy(resumeCards = resumeCardsOf(listOf(continuing), emptyList(), WatchSnapshot.Empty))
 
         show { TvAnimeDepartmentPage(dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
 

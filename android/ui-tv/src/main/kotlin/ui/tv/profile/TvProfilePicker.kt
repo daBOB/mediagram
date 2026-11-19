@@ -1,16 +1,10 @@
 package ui.tv.profile
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -107,7 +101,7 @@ private fun TvPickerBody(
         TvAddProfileFlow(
             heading = FIRST_PROFILE,
             askLimit = false,
-            onAdd = { name, _, _ ->
+            onAdd = { name, _, _, _ ->
                 naming = false
                 actions.onCreateFirst(name)
             },
@@ -151,35 +145,14 @@ private fun TvPickerBody(
             tryAgain()
         }
         if (error == null && state.needsAdmin) TvAdminQuestion(state.grownUps, actions.onClaim, focus, requester)
-        // A LazyRow, not a plain Row: in a Row, enough fixed-width tiles to
-        // run past the safe width squeeze a later one down to nothing rather
-        // than scroll to it. contentPadding carries the Overscan margin
-        // without clipping a focused edge tile's growth. The tiles narrow to
-        // fit the safe width first, so a household's profiles are all in
-        // view at once, as on the phone; only past the narrowest does the
-        // row scroll.
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(top = Spacing.large)) {
-            val tileWidth = profileTileWidth(state.profiles.size, maxWidth - Overscan.horizontal * 2, Spacing.medium)
-            LazyRow(
-                state = tiles,
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = Overscan.horizontal),
-                // Centred: with few enough profiles that the row does not
-                // scroll, the tiles still read as one centred group rather
-                // than pinned to the left edge.
-                horizontalArrangement = Arrangement.spacedBy(Spacing.medium, Alignment.CenterHorizontally),
-            ) {
-                itemsIndexed(items = state.profiles, key = { _, profile -> profile.id }) { index, profile ->
-                    TvProfileTile(
-                        profile = profile,
-                        onClick = { actions.onChoose(profile.id) },
-                        focusRequester = at(TvPickerSpot.Tile(profile.id)),
-                        tag = if (index == 0) TvProfilePickerFirstTileTag else "tv-profile-tile-${profile.id}",
-                        width = tileWidth,
-                    )
-                }
-            }
-        }
+        TvProfileTileRow(
+            profiles = state.profiles,
+            state = tiles,
+            focused = (focus as? TvPickerSpot.Tile)?.id,
+            requester = requester,
+            tagOf = { index, profile -> if (index == 0) TvProfilePickerFirstTileTag else "tv-profile-tile-${profile.id}" },
+            onChoose = actions.onChoose,
+        )
         if (state.grownUps.isNotEmpty()) {
             TvTextRow(
                 text = MANAGE_PROFILES,

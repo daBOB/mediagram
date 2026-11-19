@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import data.ProgressPoint
 import data.ResumePoint
 import kotlinx.coroutines.launch
+import model.Progress
 
 /**
  * Opens [setId], keeps its run current, and carries out an up-next switch
@@ -27,7 +28,13 @@ import kotlinx.coroutines.launch
  * republishes rather than reloading (`DefaultPlayerHandle.open`), and
  * only a real reload floors the rate to 1x (`DefaultPlayerHandle.openOn`).
  */
-fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: String? = null, handPicked: Boolean = false) {
+fun PlayerViewModel.open(
+    setId: String,
+    run: List<String> = emptyList(),
+    fsk: String? = null,
+    handPicked: Boolean = false,
+    cutPosition: (() -> Progress?)? = null,
+) {
     val sameTitle = session.openSetId == setId
     // Taken on every open: a cast armed for another title is dropped, never
     // left for whatever opens next. Playing as the caster then lasts until
@@ -52,7 +59,8 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
     // otherwise flicker and reset for no reload at all.
     _state.value = PlayerUiState.Preparing
     if (!sameTitle) choicesController.reset()
-    val progress = repository.snapshot.value.progress.find { it.setId == setId }
+    // A copy of a film held more than once starts where its cut was left, in whichever copy (the catalog's versionPosition).
+    val progress = if (cutPosition != null) cutPosition() else repository.snapshot.value.progress.find { it.setId == setId }
     val resumeSeconds = ResumePoint.resumeAt(progress?.let { ProgressPoint(it.at, it.duration) })
     // A title opened in a watch-together session, to join one or to play a
     // cast, starts at the session's place and play state, not where this

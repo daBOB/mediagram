@@ -54,9 +54,9 @@ let mounted = null;
  * @property {(set: CatalogSet, options: PlayerOptions) => void} [onOpenNext]
  * @property {number} [at] Where to start, which wins over the saved position.
  * @property {{from: number, to: number}} [clip] A stretch to loop with the clip panel open; nothing is saved while it plays.
- * @property {Promise<number|null>} [freshResume] A position read from the server
- *   after the title opened (see `play` in `app.js`), applied only for direct
- *   playback while the viewer has not really begun; see `RESUME_DRIFT_SECONDS`.
+ * @property {number|null} [saved] Where this profile left off, as `app.js` reads it: copies of a film share their cut's place.
+ * @property {Promise<number|null>} [freshResume] The same, re-read from the server after opening; applied only for
+ *   direct playback while the viewer has not really begun; see `RESUME_DRIFT_SECONDS`.
  */
 
 /**
@@ -691,7 +691,7 @@ function mountPlayer() {
     // Where this profile left off, if that is a place worth going back to —
     // `resume-point.js` decides what counts. Announced rather than done
     // silently, because a film that opens 34 minutes in looks broken.
-    const resume = sessionAt ?? options.at ?? resumeAt(state.progressOf(set.setId)) ?? 0;
+    const resume = sessionAt ?? options.at ?? ("saved" in options ? options.saved : resumeAt(state.progressOf(set.setId))) ?? 0;
     // Where the viewer is sent, as against where they left off: no "carrying on", no fresher saved position.
     const sent = sessionAt === null && options.at == null;
     // Armed before the source is attached, so nothing can become ready in the

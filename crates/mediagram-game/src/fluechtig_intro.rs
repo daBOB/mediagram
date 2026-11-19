@@ -1,7 +1,7 @@
 //! The rules cards the TV shows before round 1. Nobody moves while they run;
 //! the room's leader may skip them from their phone.
 
-use crate::fluechtig::{Ask, FluechtigGame, Step};
+use crate::fluechtig::{FluechtigGame, Step};
 use crate::game::{ActionError, GameCtx, ViewCtx, name};
 use crate::protocol::{FluechtigIntro, PlayerId, ServerTime};
 use crate::room_seats::leader;
@@ -46,6 +46,6 @@ impl FluechtigGame {
 
     fn begin_chase(&mut self, opens_at: ServerTime) {
         self.intro = None;
-        self.ask = Ask { opens_at, step: Step::Field };
+        self.ask_mover(opens_at, Step::Field);
     }
 }

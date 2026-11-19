@@ -1,6 +1,16 @@
-//! Preisfrage's numbers, in one place.
+//! Preisfrage's numbers, in one place, and its catalogue entry.
 
-use crate::protocol::{GameLength, GameSpeed, ServerTime};
+use rand::SeedableRng;
+use rand::rngs::StdRng;
+
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::factory::Night;
+use crate::game::{Game, GameCtx};
+use crate::host::ROOM_CAP;
+use crate::preisfrage::PreisfrageGame;
+use crate::preisfrage_draw::draw;
+use crate::preisfrage_rules::checked_label;
+use crate::protocol::{GameLength, GameSpeed, LobbySettings, ServerTime};
 
 /// Fewer articles than this and the lobby says the game needs some.
 pub(crate) const MIN_ARTICLES: usize = 3;
@@ -38,4 +48,17 @@ impl PreisfrageConfig {
         self.guess_ms = speed.stretch(self.guess_ms);
         self
     }
+}
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // Everyone guesses for themselves, so one player can play alone.
+    name: "Preisfrage", seats: Seats::Range(1, ROOM_CAP), timed: true, sized: true,
+    // Its gag-gift searches bring articles nobody checked for children.
+    kids: Kids::Barred, board: false, needs: Need::Articles, start,
+};
+
+fn start(night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box<dyn Game> {
+    let cfg = PreisfrageConfig::default().at(settings.speed).sized(settings.length);
+    let drawn = draw(&night.articles, cfg.rounds, &mut night.shown, &mut StdRng::from_os_rng());
+    Box::new(PreisfrageGame::new(cfg, drawn, checked_label(&night.articles.fetched), ctx.players, ctx.now))
 }

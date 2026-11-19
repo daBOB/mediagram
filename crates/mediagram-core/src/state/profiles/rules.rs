@@ -94,8 +94,15 @@ pub fn allowed(profiles: &[RoleView], actor_id: &str, action: Action, target_id:
     };
     let owns = |kid: &RoleView| owner_of(profiles, kid) == Some(actor.id.as_str());
     match (action, find(target_id)) {
-        (Action::CreateGrownUp, _) => actor.admin,
-        (Action::CreateKid, _) => true,
+        // The create-grown-up target is a household, not a profile; "" is the maker's own.
+        (Action::CreateGrownUp, _) => {
+            actor.admin && (target_id.is_empty() || target_id == household_of(actor) || actor.owner)
+        }
+        (Action::CreateKid, parent) => {
+            target_id.is_empty()
+                || target_id == actor.id
+                || (actor.owner && parent.is_some_and(|parent| !parent.kids))
+        }
         (_, None) => false,
         // Households are separate: only the owner manages a profile in another one.
         (_, Some(target)) if household_of(target) != household_of(actor) => {

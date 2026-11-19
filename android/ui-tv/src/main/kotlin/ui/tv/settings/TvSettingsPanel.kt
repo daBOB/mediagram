@@ -3,27 +3,29 @@ package ui.tv.settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import catalog.profile.JoinHouseholdViewModel
+import model.Profile
 import setup.SettingsUiState
 import setup.SettingsViewModel
-import ui.tv.profile.TvHouseholdsPanel
 import ui.tv.profile.TvJoinHousehold
 import ui.tv.setup.TvApplicationScreen
 import ui.tv.setup.TvLibraryChoiceScreen
 
 /** A part of Settings that takes the whole screen while it is open. */
-internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken, Profiles, Join, Households }
+internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken, Profiles, Join }
 
 /**
  * One of [TvSettingsPanel]'s full-screen questions — [TvSettingsScreen]
  * composes this in place of [TvSettingsPanes] whenever a panel is open, and
  * [onClose] is what actually clears its own `panel` state back to `null`.
+ * [chosen] is who is watching, whose Manage profiles is the owner's view
+ * when they are the owner.
  */
 @Composable
 internal fun TvSettingsPanelScreen(
     panel: TvSettingsPanel,
     state: SettingsUiState,
     settingsViewModel: SettingsViewModel,
+    chosen: Profile?,
     onClose: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
@@ -51,9 +53,8 @@ internal fun TvSettingsPanelScreen(
         TvSettingsPanel.LanAddress, TvSettingsPanel.LanToken ->
             TvLanCachePanel(panel = panel, onDone = onClose)
 
-        TvSettingsPanel.Profiles -> TvProfilesPanel(onDone = onClose)
+        TvSettingsPanel.Profiles -> TvProfilesPanel(chosen, onDone = onClose)
         // Closes once a household is joined; the picker's gate asks who is watching again where that left the profile.
         TvSettingsPanel.Join -> TvJoinHousehold(hiltViewModel()) { onClose() }
-        TvSettingsPanel.Households -> TvHouseholdsPanel(hiltViewModel(), hiltViewModel<JoinHouseholdViewModel>()::reread, onDone = onClose, onJoined = onClose)
     }
 }

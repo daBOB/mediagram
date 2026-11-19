@@ -3,7 +3,9 @@ package ui.catalog
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,7 +45,8 @@ import ui.ambient.readingLineCard
  * [progress] and [watched] draw the rule and the tick a collection card
  * never carries — only a film or a set on Continue or Next up does.
  * [held] draws the same "offline" badge `set-badge.js` draws — a title
- * this device holds in full.
+ * this device holds in full. [versions] is a film's "2 versions" tag, as
+ * `set-badge.js`'s `versionsBadge` draws it, ahead of that one.
  */
 @Composable
 internal fun PosterCard(
@@ -56,6 +59,7 @@ internal fun PosterCard(
     progress: Float? = null,
     watched: Boolean = false,
     held: Boolean = false,
+    versions: String? = null,
 ) {
     val source = remember { MutableInteractionSource() }
     Column(
@@ -97,6 +101,11 @@ internal fun PosterCard(
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
-        if (held) OfflineBadge(modifier = Modifier.padding(top = 2.dp))
+        if (versions != null || held) {
+            Row(modifier = Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
+                if (versions != null) CardBadge(versions)
+                if (held) OfflineBadge()
+            }
+        }
     }
 }

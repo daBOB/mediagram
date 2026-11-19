@@ -57,17 +57,18 @@ impl Opt {
     }
 }
 
+/// What an ask offers the mover: its words, the hotel in question and the options.
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Ask {
+pub(crate) struct Choices {
     pub prompt: Phrase,
     /// The hotel in question, for the TV to point at.
     pub hotel: Option<u8>,
     pub opts: Vec<Opt>,
 }
 
-fn ask(prompt: Phrase, opts: Vec<Opt>) -> Ask {
+fn choices(prompt: Phrase, opts: Vec<Opt>) -> Choices {
     let hotel = opts.first().and_then(|o| o.hotel());
-    Ask { prompt, hotel, opts }
+    Choices { prompt, hotel, opts }
 }
 
 impl GrandAlleeGame {
@@ -76,7 +77,7 @@ impl GrandAlleeGame {
     }
 
     /// Before rolling: roll, or first a leisure wing; after a 6 the extra turn may be let go.
-    pub(crate) fn roll_ask(&self) -> Ask {
+    pub(crate) fn roll_ask(&self) -> Choices {
         let mut opts = vec![Opt::Roll];
         let wings = self.t.owned(self.turn).into_iter().filter(|&h| self.t.leisure_cost(h).is_some_and(|c| c <= self.cash()));
         opts.extend(wings.map(Opt::Leisure));
@@ -85,11 +86,11 @@ impl GrandAlleeGame {
             opts.push(Opt::EndTurn);
         }
         let prompt = if extra { Phrase::new("Eine 6: Du darfst nochmal!", "hat eine 6 und darf nochmal!") } else { Phrase::new("Du bist dran", "ist dran") };
-        Ask { prompt, hotel: None, opts }
+        Choices { prompt, hotel: None, opts }
     }
 
     /// What the field the mover stopped on offers that they can pay, if anything.
-    pub(crate) fn field_ask(&self) -> Option<Ask> {
+    pub(crate) fn field_ask(&self) -> Option<Choices> {
         let (s, at, cash) = (self.turn, self.t.seats[self.turn].field, self.cash());
         let t = &self.t;
         let (du, then, mut opts): (&str, &str, Vec<Opt>) = match field(at) {
@@ -114,11 +115,11 @@ impl GrandAlleeGame {
             return None;
         }
         opts.push(Opt::Skip);
-        Some(ask(Phrase::new(du, then), opts))
+        Some(choices(Phrase::new(du, then), opts))
     }
 
     /// Passing the Rathaus: one entrance per own built hotel, each once per pass (`served` had theirs).
-    pub(crate) fn rathaus_ask(&self, served: &[u8]) -> Option<Ask> {
+    pub(crate) fn rathaus_ask(&self, served: &[u8]) -> Option<Choices> {
         let fits = |h: &u8| !served.contains(h) && HOTELS[usize::from(*h)].entrance <= self.cash();
         let mut opts: Vec<Opt> = self.t.entrance_hotels(self.turn).into_iter().filter(fits).map(|hotel| Opt::Hotel { hotel, free: false }).collect();
         if opts.is_empty() {
@@ -126,11 +127,11 @@ impl GrandAlleeGame {
         }
         opts.push(Opt::Done);
         let prompt = Phrase::new("Rathaus: Ein Eingang je Hotel – für welches?", "kommt am Rathaus vorbei: Ein Eingang je Hotel – für welches?");
-        Some(Ask { prompt, hotel: None, opts })
+        Some(Choices { prompt, hotel: None, opts })
     }
 
     /// Freier Eingang: which hotel; a single candidate goes straight to its fields.
-    fn free_entrance_ask(&self) -> Option<Ask> {
+    fn free_entrance_ask(&self) -> Option<Choices> {
         match self.t.entrance_hotels(self.turn).as_slice() {
             [] => None,
             &[hotel] => Some(self.place_ask(hotel, true, Some(Opt::Skip))),
@@ -138,13 +139,13 @@ impl GrandAlleeGame {
                 let mut opts: Vec<Opt> = hotels.iter().map(|&hotel| Opt::Hotel { hotel, free: true }).collect();
                 opts.push(Opt::Skip);
                 let prompt = Phrase::new("Freier Eingang: Für welches Hotel?", "bekommt einen Eingang gratis: Für welches Hotel?");
-                Some(Ask { prompt, hotel: None, opts })
+                Some(Choices { prompt, hotel: None, opts })
             }
         }
     }
 
     /// Where an entrance goes; `out` is the way back, if there is one.
-    pub(crate) fn place_ask(&self, hotel: u8, free: bool, out: Option<Opt>) -> Ask {
+    pub(crate) fn place_ask(&self, hotel: u8, free: bool, out: Option<Opt>) -> Choices {
         let mut opts: Vec<Opt> = self.t.free_frontage(hotel).into_iter().map(|field| Opt::Place { hotel, field, free }).collect();
         opts.extend(out);
         let h = &HOTELS[usize::from(hotel)];
@@ -154,7 +155,7 @@ impl GrandAlleeGame {
             (format!("Eingang für {}", taler(h.entrance)), format!("kauft einen Eingang für {} ({})", h.name, taler(h.entrance)))
         };
         let prompt = Phrase::new(format!("{}: {what} – auf welches Feld?", h.name), format!("{then} – auf welches Feld?"));
-        Ask { prompt, hotel: Some(hotel), opts }
+        Choices { prompt, hotel: Some(hotel), opts }
     }
 
     /// What the mover may put up for a debt auction: all they own but the hotel a doubled permit is being paid for.
@@ -163,10 +164,10 @@ impl GrandAlleeGame {
     }
 
     /// Short of `debt`: which property goes up for auction.
-    pub(crate) fn sell_ask(&self, debt: Debt) -> Ask {
+    pub(crate) fn sell_ask(&self, debt: Debt) -> Choices {
         let opts = self.sellable(debt).into_iter().map(Opt::Sell).collect();
         let short = taler(debt.amount() - self.cash());
         let prompt = Phrase::new(format!("Dir fehlen {short}. Was versteigerst du?"), format!("fehlen {short}. Was wird versteigert?"));
-        Ask { prompt, hotel: None, opts }
+        Choices { prompt, hotel: None, opts }
     }
 }

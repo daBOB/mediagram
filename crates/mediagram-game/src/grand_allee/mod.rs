@@ -8,7 +8,7 @@ mod building;
 pub(crate) mod live;
 mod live_asks;
 mod live_choose;
-mod live_config;
+pub(crate) mod live_config;
 mod live_debts;
 mod live_intro;
 mod live_log;

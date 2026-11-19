@@ -96,7 +96,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
     // to the non-null enum the panel screen takes.
     val openPanel = panel
     if (openPanel != null) {
-        TvSettingsPanelScreen(panel = openPanel, state = state, settingsViewModel = settingsViewModel, onClose = { panel = null })
+        TvSettingsPanelScreen(panel = openPanel, state = state, settingsViewModel = settingsViewModel, chosen = profile, onClose = { panel = null })
     } else {
         val statuses =
             mapOf(

@@ -50,7 +50,10 @@ data class SearchRow(val set: MediaSet, val matched: String, val excerpt: String
  */
 fun searchRowsOf(hits: List<SearchHit>, catalogState: CatalogUiState): List<SearchRow> {
     val heldIds = (catalogState as? CatalogUiState.Ready)?.heldIds.orEmpty()
+    // A hit on any copy of a film held more than once shows the film, once.
+    val seen = HashSet<String>()
     return hits.mapNotNull { hit ->
-        catalogState.mediaSet(hit.setId)?.let { SearchRow(it, hit.matched, hit.excerpt, hit.setId in heldIds) }
+        val set = catalogState.filmOf(hit.setId) ?: catalogState.mediaSet(hit.setId)
+        set?.takeIf { seen.add(it.setId) }?.let { SearchRow(it, hit.matched, hit.excerpt, heldOf(it, heldIds)) }
     }
 }

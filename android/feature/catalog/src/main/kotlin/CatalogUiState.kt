@@ -29,6 +29,8 @@ sealed interface CatalogUiState {
         val refreshing: Boolean = false,
         /** Sets on this device's disk in full — the "offline" badge's own source. */
         val heldIds: Set<String> = emptySet(),
+        /** What each page holds, built from the fields above by [paged] — empty until it has been. */
+        val pages: LibraryPages = LibraryPages.Empty,
     ) : CatalogUiState
 
     data object Empty : CatalogUiState
@@ -96,7 +98,7 @@ fun CatalogUiState.mediaSet(setId: String): MediaSet? =
         ?.flatMap { entry ->
             when (entry) {
                 is Entry.Film -> {
-                    sequenceOf(entry.set)
+                    versionsOf(entry.set).asSequence()
                 }
 
                 is Entry.Collection -> {
@@ -107,6 +109,20 @@ fun CatalogUiState.mediaSet(setId: String): MediaSet? =
                 }
             }
         }?.find { it.setId == setId }
+
+/**
+ * The film [setId] is a copy of, standing for all its copies, or `null` when
+ * it is not a copy of a film held more than once — the web's `filmOf`. A
+ * title page opened on any copy shows the whole film.
+ */
+fun CatalogUiState.filmOf(setId: String): MediaSet? =
+    (this as? CatalogUiState.Ready)
+        ?.shelves
+        ?.asSequence()
+        ?.flatMap { it.entries }
+        ?.filterIsInstance<Entry.Film>()
+        ?.map { it.set }
+        ?.find { film -> film.versions.any { it.setId == setId } }
 
 /**
  * Titles this device holds in full — the Preloads page's own "On this
@@ -120,7 +136,7 @@ fun CatalogUiState.mediaSet(setId: String): MediaSet? =
  */
 fun CatalogUiState.heldFilms(): List<MediaSet> {
     val ready = this as? CatalogUiState.Ready ?: return emptyList()
-    val films = ready.shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set }.filter { it.setId in ready.heldIds }
+    val films = ready.shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Film>().flatMap { versionsOf(it.set) }.filter { it.setId in ready.heldIds }
     val episodes = ready.heldIds.mapNotNull(::mediaSet).filter { it.kind == Kind.EPISODE }.sortedWith(compareBy({ it.show }, { it.season }, { it.episodeFirst }))
     return films.toList() + episodes
 }

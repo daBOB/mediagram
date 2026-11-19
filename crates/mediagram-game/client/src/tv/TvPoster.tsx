@@ -5,7 +5,6 @@ import type { PlayerInfo } from "../protocol/PlayerInfo";
 import type { PosterScene } from "../protocol/PosterScene";
 import { Token } from "../ui/Token";
 import { blockWidth, drawPixelated } from "./pixelate";
-import { TvFinal } from "./TvFinal";
 
 const W = 480;
 const H = 720;
@@ -41,7 +40,7 @@ function Poster({ src, block }: { src: string; block: number }) {
 export function TvPoster({ scene, players, conn }: { scene: PosterScene; players: PlayerInfo[]; conn: Connection }) {
   const now = useServerNow(conn);
   const { stage } = scene;
-  if (stage.stage === "final") return <TvFinal players={players} conn={conn} />;
+  if (stage.stage === "final") return null; // TvApp shows the awards ceremony
 
   const reveal = stage.stage === "reveal" ? stage : null;
   const steps = stage.stage === "showing" ? stage.steps : 8;

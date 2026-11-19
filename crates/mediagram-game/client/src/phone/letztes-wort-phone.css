@@ -1,0 +1,186 @@
+/* Letztes Wort on the phone: the big red buzzer, the stick, the host's desk. */
+
+.lw-phone {
+  justify-content: flex-start;
+  align-items: stretch;
+  text-align: left;
+  gap: 0.6rem;
+}
+
+.lw-center {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.lw-question {
+  margin: 0;
+  font: 800 1rem/1.3 var(--display);
+}
+
+.lw-line {
+  margin: 0;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.lw-line i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--yellow);
+  flex: none;
+}
+
+.lw-wait {
+  color: var(--muted);
+}
+
+.lw-buzz-area {
+  flex: 1;
+  display: grid;
+  place-items: center;
+}
+
+.lw-buzzer {
+  width: min(72vw, 17rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #ff7a70, #e2453c 55%);
+  box-shadow: 0 0.9rem 0 #9e2620, 0 1.2rem 2rem rgb(0 0 0 / 0.35);
+  color: #fff;
+  font: 800 2.5rem var(--display);
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+  transition: transform 60ms, box-shadow 60ms;
+}
+
+.lw-buzzer:active:not(:disabled) {
+  transform: translateY(0.6rem);
+  box-shadow: 0 0.3rem 0 #9e2620, 0 0.5rem 1rem rgb(0 0 0 / 0.35);
+}
+
+.lw-buzzer.lw-locked {
+  background: radial-gradient(circle at 38% 32%, #3b7d68, #1f5b48 60%);
+  box-shadow: 0 0.9rem 0 #0a3a2c;
+  color: #7fb5a1;
+  font-size: 1.4rem;
+  padding: 2rem;
+  text-shadow: none;
+  cursor: default;
+}
+
+/* the stick */
+.lw-holder {
+  position: relative;
+  width: 8.5rem;
+  height: 8.5rem;
+}
+
+.lw-head {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 0.4rem solid var(--yellow);
+  background: var(--felt-deep);
+}
+
+.lw-head img {
+  width: 118%;
+  margin-top: 18%;
+}
+
+.lw-baton {
+  position: absolute;
+  right: -2.8rem;
+  bottom: -0.3rem;
+  width: 7.5rem;
+}
+
+/* the host's desk */
+.lw-desk-floor {
+  background: #e2453c;
+  box-shadow: 0 0.25rem 0 #9e2620;
+  border-radius: 0.9rem;
+  padding: 0.6rem 0.8rem;
+}
+
+.lw-desk-floor b {
+  display: block;
+  font: 800 1.3rem/1.1 var(--display);
+}
+
+.lw-desk-floor span {
+  font-size: 0.8rem;
+}
+
+.lw-hint {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.lw-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.lw-answer {
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 0.65rem;
+  box-shadow: 0 0.2rem 0 var(--card-edge);
+  padding: 0.55rem 0.6rem;
+  font: 800 1rem/1.15 var(--display);
+  text-align: left;
+}
+
+.lw-answer.lw-given {
+  background: var(--felt-deep);
+  box-shadow: none;
+  color: #4f8c78;
+  border: 2px dashed var(--felt-line);
+  text-decoration: line-through;
+}
+
+.lw-answer small {
+  display: block;
+  font: 700 0.7rem var(--body);
+  text-decoration: none;
+  color: #6fa893;
+}
+
+.lw-verdicts {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.lw-verdicts button {
+  border-radius: 0.9rem;
+  padding: 0.9rem 0.5rem;
+  font: 800 1.2rem var(--display);
+  color: var(--ink);
+}
+
+.lw-falsch {
+  background: var(--pink);
+  box-shadow: 0 0.25rem 0 var(--pink-edge);
+}
+
+.lw-also {
+  background: var(--card);
+  box-shadow: 0 0.25rem 0 var(--card-edge);
+}
+
+.lw-verdicts button:disabled {
+  opacity: 0.4;
+}

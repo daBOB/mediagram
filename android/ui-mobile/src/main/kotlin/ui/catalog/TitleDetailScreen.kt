@@ -9,17 +9,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import catalog.Franchise
 import catalog.Shelf
-import catalog.factsLine
-import catalog.filmDetailFacts
-import catalog.filmOverviewFacts
 import catalog.everyFilm
+import catalog.factsLine
+import catalog.filmDetailSections
+import catalog.filmHeaderFacts
+import catalog.filmOverviewFacts
 import catalog.franchisesIn
+import catalog.listedOf
+import catalog.playedOf
+import catalog.positionFor
 import catalog.similarTo
 import data.PortraitRequestLog
 import data.ProgressPoint
@@ -28,7 +34,6 @@ import designsystem.Spacing
 import model.MediaSet
 import model.TitleCredits
 import model.WatchSnapshot
-import model.ageLabel
 import model.clockTime
 import playback.FilmPreloadState
 import ui.common.catalog.TitlePreloadUi
@@ -44,7 +49,10 @@ private val POSTER_WIDTH = 120.dp
  * ([TitleSpread]), the pills that start it, then tabs — Overview, Cast (once
  * credits name somebody), Similar, Details. A Compose port of `film-page.js`.
  * While a watch-together session plays this film, Join stands in for Play.
- * [playOnTv] casts it from where Play or Resume would start.
+ * [playOnTv] casts it from where Play or Resume would start. A film held
+ * more than once has no Play of its own: its Versions list, one row and one
+ * Play per copy ([onPlayVersion]), stands in for it, and its runtime moves
+ * from the header into the rows, where it is what tells copies apart.
  *
  * [info] being null is ordinary rather than a failure — a course has no
  * provider entry, and a library assembled without a TMDB key has no rows at
@@ -72,10 +80,13 @@ fun TitleDetailScreen(
     portraits: PortraitRequestLog = PortraitRequestLog(),
     preload: TitlePreloadUi? = null,
     playOnTv: PlayOnTv? = null,
+    heldIds: Set<String> = emptySet(),
+    onPlayVersion: (MediaSet) -> Unit = {},
 ) {
+    val several = set.versions.isNotEmpty()
     val resumeAt =
-        remember(set.setId, watch) {
-            watch.progress.find { it.setId == set.setId }?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) }
+        remember(set, watch) {
+            positionFor(set, set, watch)?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) }
         }
     val credits = rememberTitleCredits(set.posterKey, titleCredits)
     val join = togetherJoinOf(set.setId)
@@ -96,14 +107,19 @@ fun TitleDetailScreen(
         TitleSpread(
             backdropPath = set.backdropPath ?: set.posterPath,
             title = set.title,
-            facts = factsLine(set.year, set.durationSecs, set.ageLabel(), set.genres),
+            facts = filmHeaderFacts(set),
             overview = info?.overview,
             tagline = info?.tagline,
         ) {
             TitlePills(
-                playLabel = if (join != null) "Join" else resumeAt?.let { "Resume from ${clockTime(it)}" } ?: "Play",
+                playLabel =
+                    when {
+                        several -> null
+                        join != null -> "Join"
+                        else -> resumeAt?.let { "Resume from ${clockTime(it)}" } ?: "Play"
+                    },
                 onPlay = join?.join ?: onPlay,
-                watchlisted = set.setId in watch.watchlist,
+                watchlisted = listedOf(set, watch.watchlist),
                 onToggleWatchlist = onToggleWatchlist,
                 editorsChoicePinned = editorsChoice == set.setId,
                 onToggleEditorsChoice = onToggleEditorsChoice,
@@ -125,6 +141,7 @@ fun TitleDetailScreen(
                 castPill = playOnTv?.let { tv -> { PlayOnTvPill(tv, set.setId, resumeAt ?: 0.0, onPlay) } },
             )
         }
+        if (several) VersionsPanel(set, watch, heldIds, onPlayVersion, Modifier.padding(horizontal = Spacing.large).padding(bottom = Spacing.medium))
         preload?.takeIf { showsPreloadBar(it.state) || it.state is FilmPreloadState.NeedsSpace || it.serverLine != null }?.let { p ->
             Column(
                 modifier = Modifier.padding(horizontal = Spacing.large).padding(bottom = Spacing.small),
@@ -140,7 +157,7 @@ fun TitleDetailScreen(
                 when (tab) {
                     "Cast" -> CastPanel(credits, onOpenPerson, fetchPortrait, portraits)
                     "Similar" -> FilmSimilarTab(set, watch, shelves, onOpenTitle)
-                    "Details" -> FactSheet(factRows(filmDetailFacts(set)))
+                    "Details" -> FilmDetailsTab(set)
                     else -> FilmOverviewTab(set, info, franchise, onOpenGenre, onOpenFranchise)
                 }
             }
@@ -172,7 +189,7 @@ private fun FilmSimilarTab(
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     val similar =
         remember(set.setId, shelves, watchedIds) {
-            similarTo(set, everyFilm(shelves), seen = { it.setId in watchedIds })
+            similarTo(set, everyFilm(shelves), seen = { playedOf(it, watchedIds) })
         }
     PosterRow(
         similar.map { pick ->
@@ -185,4 +202,15 @@ private fun FilmSimilarTab(
             )
         },
     )
+}
+
+/** The file facts, or for a film held more than once each copy's under its label. */
+@Composable
+private fun FilmDetailsTab(set: MediaSet) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+        for ((label, facts) in filmDetailSections(set)) {
+            if (label != null) Text(label, style = MaterialTheme.typography.titleSmall)
+            FactSheet(factRows(facts))
+        }
+    }
 }

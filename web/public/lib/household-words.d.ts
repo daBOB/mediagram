@@ -1,7 +1,6 @@
 export const HOUSEHOLD_WORDS: {
   households: string;
   owner: string;
-  ownerNote: string;
   ownersPin: string;
   thisDevice: string;
   switchHousehold: string;
@@ -12,6 +11,7 @@ export const HOUSEHOLD_WORDS: {
   householdName: string;
   admin: string;
   aNewGrownUp: string;
+  belongsTo: string;
   newGrownUpName: string;
   rename: string;
   changeAdmin: string;
@@ -20,6 +20,12 @@ export const HOUSEHOLD_WORDS: {
   delete: string;
   householdNameTaken: string;
   profileNameTaken: string;
+  whosManaging: string;
+  addSomeone: string;
+  grownUp: string;
+  kid: string;
+  actionsFor: string;
+  addSomeoneTo: string;
 };
 export function householdLine(adminName: string | null, count: number): string;
 export function joinPinTitle(admin: { name: string; owner?: boolean } | null): string;

@@ -6,8 +6,8 @@ import * as THREE from "three";
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
 import { taler } from "../../ui/taler";
-import { HUD_FONT } from "../race/race-hud";
-import { INK, avatar, label, paint, pill, place, drop, type Label } from "./grand-allee-hud-label";
+import { HUD_FONT } from "../table/hud-font";
+import { INK, avatar, label, paint, pill, place, drop, type Label } from "../table/hud-label";
 import type { SeatLook } from "./grand-allee-pieces";
 
 const BAR = { w: 620, h: 10 }, GOLD = "#f4c542", BID = "#86e07a", PASS = "#b9ad9c";

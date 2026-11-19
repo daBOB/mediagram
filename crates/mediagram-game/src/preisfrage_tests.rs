@@ -38,7 +38,7 @@ fn intro_guessing_reveal_for_each_article_then_the_final() {
     assert_eq!((g.index, window(&g)), (1, (73_000.0, 133_000.0)));
     tick(&mut g, &mut ps, 133_000.0);
     tick(&mut g, &mut ps, 140_000.0);
-    assert!(g.is_finished());
+    assert!(g.ranking(&ps).is_some());
 }
 
 #[test]

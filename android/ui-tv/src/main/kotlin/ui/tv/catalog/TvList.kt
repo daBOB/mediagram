@@ -18,6 +18,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import catalog.SetCard
+import catalog.heldOf
 import catalog.spelledCountOf
 import designsystem.Spacing
 import designsystem.TvType
@@ -138,7 +139,7 @@ fun TvList(
                 header = header,
                 plate = { set, modifier, onOpen ->
                     TvPlateWithAction(label = "Remove", onAction = { remove(set.setId) }) {
-                        TvSetPlate(card = SetCard(set, caption = "", progress = null, watched = false, held = set.setId in heldIds), onOpen = onOpen, modifier = modifier)
+                        TvSetPlate(card = SetCard(set, caption = "", progress = null, watched = false, held = heldOf(set, heldIds)), onOpen = onOpen, modifier = modifier)
                     }
                 },
             )

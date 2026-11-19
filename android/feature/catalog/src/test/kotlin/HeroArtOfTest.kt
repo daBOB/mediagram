@@ -8,9 +8,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * [heroArtOf], moved here from `ui.HeroArtOf` (ui-mobile) so the television's
- * own department pages can read the same backdrop the tablet's bar already
- * blends under — its own output is unchanged by the move.
+ * [LibraryPages.heroArtOf]: the backdrop each department page leads with,
+ * which both surfaces' bars blend under.
  */
 class HeroArtOfTest {
     private fun film(setId: String, backdropPath: String? = null, popularity: Double? = null) =
@@ -32,40 +31,43 @@ class HeroArtOfTest {
         )
     }
 
+    private fun heroArtOf(department: Department?, shelves: List<Shelf>) =
+        libraryPagesOf(shelves, WatchSnapshot.Empty, emptySet(), now = 0).heroArtOf(department)
+
     @Test
     fun aDepartmentNotOnTheShelvesAnswersNull() {
         val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f", backdropPath = "bg", popularity = 1.0)))))
-        assertNull(heroArtOf(Department.SERIES, shelves, emptyMap(), WatchSnapshot.Empty))
+        assertNull(heroArtOf(Department.SERIES, shelves))
     }
 
     @Test
     fun aKeptWallOrCollectionsNamesNoDepartmentAtAll() {
         val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f", backdropPath = "bg")))))
-        assertNull(heroArtOf(null, shelves, emptyMap(), WatchSnapshot.Empty))
+        assertNull(heroArtOf(null, shelves))
     }
 
     @Test
     fun moviesReadsTheDepartmentsOwnLeadBackdrop() {
         val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f", backdropPath = "bg", popularity = 1.0)))))
-        assertEquals("bg", heroArtOf(Department.MOVIES, shelves, emptyMap(), WatchSnapshot.Empty))
+        assertEquals("bg", heroArtOf(Department.MOVIES, shelves))
     }
 
     @Test
     fun seriesReadsTheLeadShowsFirstEpisodeBackdrop() {
         val shelves = listOf(Shelf(Department.SERIES, listOf(show("Breaking Bad", backdropPath = "bd-bg"))))
-        assertEquals("bd-bg", heroArtOf(Department.SERIES, shelves, emptyMap(), WatchSnapshot.Empty))
+        assertEquals("bd-bg", heroArtOf(Department.SERIES, shelves))
     }
 
     @Test
     fun tutorialsReadsTheLeadCoursesFirstLessonBackdrop() {
         val shelves = listOf(Shelf(Department.TUTORIALS, listOf(show("Forex", backdropPath = "tut-bg"))))
-        assertEquals("tut-bg", heroArtOf(Department.TUTORIALS, shelves, emptyMap(), WatchSnapshot.Empty))
+        assertEquals("tut-bg", heroArtOf(Department.TUTORIALS, shelves))
     }
 
     @Test
     fun animeReadsItsOwnDepartmentsLeadBackdrop() {
         val shelves = listOf(Shelf(Department.ANIME, listOf(Entry.Film(film("your-name", backdropPath = "anime-bg", popularity = 1.0)))))
-        assertEquals("anime-bg", heroArtOf(Department.ANIME, shelves, emptyMap(), WatchSnapshot.Empty))
+        assertEquals("anime-bg", heroArtOf(Department.ANIME, shelves))
     }
 
     @Test
@@ -76,12 +78,12 @@ class HeroArtOfTest {
             posterPath = null, totalBytes = 0, backdropPath = "doc-bg", addedAt = 1,
         )
         val shelves = listOf(Shelf(Department.DOCUMENTARIES, listOf(Entry.Film(doc))))
-        assertEquals("doc-bg", heroArtOf(Department.DOCUMENTARIES, shelves, emptyMap(), WatchSnapshot.Empty))
+        assertEquals("doc-bg", heroArtOf(Department.DOCUMENTARIES, shelves))
     }
 
     @Test
     fun aDepartmentWithNothingToLeadWithAnswersNull() {
         val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f")))))
-        assertNull(heroArtOf(Department.MOVIES, shelves, emptyMap(), WatchSnapshot.Empty))
+        assertNull(heroArtOf(Department.MOVIES, shelves))
     }
 }

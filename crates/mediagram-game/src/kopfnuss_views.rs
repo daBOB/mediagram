@@ -1,12 +1,11 @@
 //! What the phones and the TV show for each Kopfnuss stage.
 
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::kopfnuss::{KopfnussGame, Stage};
 use crate::kopfnuss_picks::Step;
 use crate::protocol::{
     AnswerColor, ChoiceOption, KopfnussScene, KopfnussStage, PhoneScreen, PlayerId, TrickLoad, TvScene,
 };
-use crate::quiz_views::final_by_order;
 use crate::room_seats::Player;
 
 /// Buttons in the answer colors, repeating them past four.
@@ -52,7 +51,7 @@ impl KopfnussGame {
             },
             Stage::Question => {
                 let Some(quiz) = &self.quiz else { return PhoneScreen::Wait { title: String::new(), text: None } };
-                match quiz.phone_view(view, player) {
+                match quiz.phone_view(player) {
                     PhoneScreen::Choice { prompt, options, opens_at, closes_at, picked, numbered, status, .. } => {
                         PhoneScreen::Choice {
                             prompt,
@@ -65,8 +64,6 @@ impl KopfnussGame {
                             status,
                         }
                     }
-                    // The contained quiz's own final screen is never Kopfnuss's.
-                    PhoneScreen::Final { .. } => PhoneScreen::Wait { title: "Nächste Runde".into(), text: None },
                     other => other,
                 }
             }
@@ -83,7 +80,7 @@ impl KopfnussGame {
                 };
                 PhoneScreen::Wait { title, text: Some(self.fact.clone()) }
             }
-            Stage::Final => final_by_order(&self.order, view, player),
+            Stage::Final => unasked(),
         }
     }
 

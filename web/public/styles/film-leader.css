@@ -1,7 +1,7 @@
 /* The film leader (lib/film-leader.js): the countdown threaded ahead of a reel,
    drawn on a 96-unit square at 96px wherever it shows. Its geometry is in the
    drawing in index.html; its paint and motion are here. In the library it
-   stands 24px above the words (shell.css, .loading-state); on the stage it is
+   stands centred on the screen, 24px above the words (shell.css, .loading-state); on the stage it is
    centred, below.
 
    Still is the default: no sweep, the 3 alone. The animations below only

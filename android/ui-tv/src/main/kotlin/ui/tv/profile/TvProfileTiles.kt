@@ -5,6 +5,13 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import designsystem.Overscan
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,6 +82,7 @@ internal fun TvProfileTile(
     focusRequester: FocusRequester?,
     tag: String,
     width: Dp = TileWidth,
+    line: String? = profile.kidsTag,
 ) {
     TileCard(onClick, focusRequester, tag, width) {
         // The shared, two-letter `initialsOf` poster art already falls back
@@ -83,9 +91,46 @@ internal fun TvProfileTile(
         // covers. The two only ever visibly differ on a two-word name.
         TvProfileAvatar(letters = initialsOf(profile.name))
         Text(profile.name, style = TvType.bodyMedium.copy(fontSize = 14.tvSp), modifier = Modifier.padding(top = Spacing.small))
-        // The web's tile line: a kid's own limit, never a fixed one.
-        profile.kidsTag?.let {
+        // The web's tile line: a kid's own limit, never a fixed one — or Owner, on Who's managing?.
+        line?.let {
             Text(it, style = TvType.bodyMedium.copy(fontSize = 12.tvSp), color = MaterialTheme.colorScheme.tertiary, modifier = Modifier.padding(top = Spacing.extraSmall))
+        }
+    }
+}
+
+/**
+ * [profiles]' tiles in one row the D-pad moves across — Who's watching?'s and
+ * Who's managing?'s alike. A LazyRow, not a plain Row: in a Row, enough
+ * fixed-width tiles to run past the safe width squeeze a later one down to
+ * nothing rather than scroll to it. contentPadding carries the Overscan
+ * margin without clipping a focused edge tile's growth. The tiles narrow to
+ * fit the safe width first, so a household's profiles are all in view at
+ * once, as on the phone; only past the narrowest does the row scroll. Centred:
+ * with few enough tiles that the row does not scroll, they still read as one
+ * group rather than pinned to the left edge. [focused]'s tile takes
+ * [requester]; [state] keeps the row's scroll for whoever outlives the row.
+ */
+@Composable
+internal fun TvProfileTileRow(
+    profiles: List<Profile>,
+    state: LazyListState,
+    focused: String?,
+    requester: FocusRequester,
+    tagOf: (index: Int, profile: Profile) -> String,
+    onChoose: (String) -> Unit,
+    lineOf: (Profile) -> String? = { it.kidsTag },
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(top = Spacing.large)) {
+        val tileWidth = profileTileWidth(profiles.size, maxWidth - Overscan.horizontal * 2, Spacing.medium)
+        LazyRow(
+            state = state,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = Overscan.horizontal),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.medium, Alignment.CenterHorizontally),
+        ) {
+            itemsIndexed(items = profiles, key = { _, profile -> profile.id }) { index, profile ->
+                TvProfileTile(profile, { onChoose(profile.id) }, requester.takeIf { focused == profile.id }, tagOf(index, profile), tileWidth, lineOf(profile))
+            }
         }
     }
 }

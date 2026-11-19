@@ -6,7 +6,11 @@ import catalog.CatalogViewModel
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
 import data.CoreProvider
-import data.LibraryUpdateCoordinator
+import data.DefaultCatalogRepository
+import data.LibraryUpdate
+import data.RefreshLog
+import data.RefreshOutcome
+import data.settings.InMemoryLibrarySettings
 import data.settings.InMemoryTmdbSettings
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -34,6 +38,8 @@ import testing.FakeCoreProvider
 import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import uniffi.mediagram_core.AuthOutcome
+import uniffi.mediagram_core.CoreInterface
+import uniffi.mediagram_core.FetchReport
 import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -91,17 +97,23 @@ class FailureDiagnosticsTest {
             }
         }
 
-    @Test fun consumedRefreshResultKeepsItsOriginalCauseInDiagnostics() =
+    @Test fun aRefusedRefreshKeepsItsOriginalCauseInDiagnostics() =
         runTest {
             val failure = IOException("private-catalog-path")
-            val repository = catalogRepository()
-            coEvery { repository.refresh() } returns Result.failure(failure)
-            val model = catalogModel(repository)
+            val core =
+                object : CoreInterface by FakeCore() {
+                    override suspend fun refreshLibrary(handle: String): ULong = throw failure
+                }
+            val library = InMemoryLibrarySettings().apply { write("a1b2c3") }
+            val model = catalogModel(DefaultCatalogRepository(FakeCoreProvider(core), library, RefreshLog(), Dispatchers.Unconfined))
             try {
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
                 runCurrent()
                 assertEquals(CatalogUiState.Failed("Could not refresh the library"), model.state.value)
-                assertSame(failure, ShadowLog.getLogsForTag("Catalog").single().throwable)
+                val diagnostic = ShadowLog.getLogsForTag("catalog").single()
+                // Under test the coroutine debug mode rethrows a copy across withContext, caused by the original.
+                assertTrue(generateSequence(diagnostic.throwable) { it.cause }.any { it === failure })
+                assertFalse(diagnostic.msg.contains("private"))
             } finally {
                 model.viewModelScope.cancel()
             }
@@ -112,15 +124,15 @@ class FailureDiagnosticsTest {
             for (regroup in listOf(false, true)) {
                 ShadowLog.clear()
                 val repository = catalogRepository()
-                val model = catalogModel(repository)
+                val model = catalogModel(repository, if (regroup) fetchingArtwork() else idleEnrichment())
                 try {
                     val failure = IOException("private-catalog-path")
                     if (!regroup) coEvery { repository.sets() } throws failure
                     val subscription = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
                     runCurrent()
                     if (regroup) {
-                        coEvery { repository.sets() } throws failure
-                        model.showFetched()
+                        failSecondRead(repository, failure)
+                        model.update()
                         runCurrent()
                     }
                     assertEquals(CatalogUiState.Failed("Could not read the library. Try again."), model.state.value)
@@ -136,7 +148,7 @@ class FailureDiagnosticsTest {
         runTest {
             for (operation in listOf("refresh", "read", "regroup")) {
                 val repository = catalogRepository()
-                val model = catalogModel(repository)
+                val model = catalogModel(repository, if (operation == "regroup") fetchingArtwork() else idleEnrichment())
                 try {
                     val cancelled = CancellationException("leaving")
                     // CatalogRepository.refresh throws cancellation rather than returning it as a failure.
@@ -145,8 +157,8 @@ class FailureDiagnosticsTest {
                     val subscription = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
                     runCurrent()
                     if (operation == "regroup") {
-                        coEvery { repository.sets() } throws cancelled
-                        model.showFetched()
+                        failSecondRead(repository, cancelled)
+                        model.update()
                         runCurrent()
                     }
                     assertFalse(model.state.value is CatalogUiState.Failed)
@@ -188,12 +200,33 @@ class FailureDiagnosticsTest {
 
     private fun catalogRepository(): CatalogRepository =
         mockk<CatalogRepository>().also {
-            coEvery { it.refresh() } returns Result.success(0)
+            coEvery { it.publishedAt() } returns null
+            coEvery { it.refresh() } returns RefreshOutcome.AlreadyCurrent
             coEvery { it.sets() } returns emptyList()
         }
 
-    private fun catalogModel(repository: CatalogRepository): CatalogViewModel {
-        val enrichment = CatalogEnrichmentFetcher(mockk(), InMemoryTmdbSettings())
-        return CatalogViewModel(repository, WatchStateFixture().repository, LibraryUpdateCoordinator(repository, enrichment), togetherLive = FakeTogetherLive(), shelving = Dispatchers.Main.immediate)
+    /** The update's own read after its refresh succeeds; the one after the artwork lands fails with [failure]. */
+    private fun failSecondRead(
+        repository: CatalogRepository,
+        failure: Exception,
+    ) {
+        var reads = 0
+        coEvery { repository.sets() } coAnswers { if (++reads == 2) throw failure else emptyList() }
     }
+
+    private fun idleEnrichment() = CatalogEnrichmentFetcher(mockk(), InMemoryTmdbSettings())
+
+    /** A manual update that lays a poster down, so the update reads the library again. */
+    private suspend fun fetchingArtwork() =
+        CatalogEnrichmentFetcher(
+            FakeCoreProvider(FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u))),
+            InMemoryTmdbSettings().apply { write("key") },
+            dispatcher = Dispatchers.Unconfined,
+        )
+
+    private fun catalogModel(
+        repository: CatalogRepository,
+        enrichment: CatalogEnrichmentFetcher = idleEnrichment(),
+    ): CatalogViewModel =
+        CatalogViewModel(repository, WatchStateFixture().repository, LibraryUpdate(repository, enrichment), togetherLive = FakeTogetherLive(), shelving = Dispatchers.Main.immediate)
 }

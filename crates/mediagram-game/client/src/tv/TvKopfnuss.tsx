@@ -10,7 +10,6 @@ import { KopfnussArena } from "./kopfnuss/KopfnussArena";
 import type { ReactNode } from "react";
 import { useKopfnussSound } from "./kopfnuss/kopfnuss-sound";
 import { soundsDue } from "./kopfnuss/kopfnuss-sound-cues";
-import { TvFinal, byFinish } from "./TvFinal";
 import { TvQuiz } from "./TvQuiz";
 import "./kopfnuss/kopfnuss.css";
 
@@ -47,7 +46,7 @@ export function TvKopfnuss({ scene, players, conn }: Props) {
     case "fact":
       return show(<KopfnussFact stage={stage} players={players} />);
     case "final":
-      return <TvFinal players={byFinish(players, stage.order)} conn={conn} ranked />;
+      return null; // TvApp shows the awards ceremony
   }
 }
 

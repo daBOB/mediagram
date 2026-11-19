@@ -13,21 +13,22 @@ import kotlin.test.assertNull
 /** What the owner's part offers and sends, over [HouseholdsOwnerHarness]'s households. */
 class HouseholdsOwnerViewModelTest : HouseholdsOwnerHarness() {
     @Test
-    fun theOwnersPinOpensThePartOncePerVisit() =
+    fun theOwnersPinIsAskedOncePerVisit() =
         runTest(UnconfinedTestDispatcher()) {
             val vm = owning()
-            assertEquals(HouseholdsOwnerUiState.Closed(canOpen = true), vm.state.value)
-            vm.open()
+            assertEquals(HouseholdsOwnerUiState.Closed, vm.state.value)
+            vm.watching("a")
+            vm.rename("barn", "Shed")
             assertEquals(PinPrompt(HouseholdWords.OWNERS_PIN, newPin = false), vm.pin.value)
             vm.enterPin("0000")
             assertEquals("Wrong PIN.", vm.pin.value?.error)
-            assertIs<HouseholdsOwnerUiState.Closed>(vm.state.value)
+            assertEquals("Barn", household("barn")?.name)
             vm.enterPin("1234")
-            vm.part()
-            vm.rename("barn", "Shed")
-            // Held: the change asks nothing more.
-            assertNull(vm.pin.value)
             assertEquals("Shed", household("barn")?.name)
+            vm.rename("barn", "Loft")
+            // Held: the next change asks nothing more.
+            assertNull(vm.pin.value)
+            assertEquals("Loft", household("barn")?.name)
         }
 
     @Test
@@ -108,20 +109,5 @@ class HouseholdsOwnerViewModelTest : HouseholdsOwnerHarness() {
             vm.enterPin("1357")
             assertEquals(HouseholdWords.PROFILE_NAME_TAKEN, vm.part().notice)
             assertEquals(listOf("Barn", "Flat", "Home"), households.view.value.list.map { it.name })
-        }
-
-    @Test
-    fun closeDropsThePin() =
-        runTest(UnconfinedTestDispatcher()) {
-            val vm = opened()
-            vm.close()
-            assertEquals(HouseholdsOwnerUiState.Closed(canOpen = true), vm.state.value)
-            vm.rename("barn", "Shed")
-            assertNull(vm.pin.value)
-            vm.open()
-            assertEquals(PinPrompt(HouseholdWords.OWNERS_PIN, newPin = false), vm.pin.value)
-            vm.enterPin("1234")
-            vm.rename("barn", "Shed")
-            assertEquals("Shed", household("barn")?.name)
         }
 }

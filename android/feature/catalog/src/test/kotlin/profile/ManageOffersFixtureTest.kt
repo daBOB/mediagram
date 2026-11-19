@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import model.HOME_HOUSEHOLD
+import model.Household
 import model.Households
 import model.Profile
 import testing.webFixture
@@ -21,7 +22,9 @@ import kotlin.test.assertTrue
  * panel offers, the core's rule must allow, and the reverse. The derivation
  * of "offered" is the web's `offered()` in `profile-api.test.ts`, line for
  * line — the web decides; a case that only passes after moving [manageable]
- * away from it is a bug here.
+ * away from it is a bug here. Adding is the exception: the web's panel draws
+ * its add forms on the page, so its `offered()` asks the rule, while here
+ * each part ([parts]) says what it adds and for whom, so those are checked.
  */
 class ManageOffersFixtureTest {
     @Test
@@ -51,14 +54,18 @@ private fun offered(
     action: String,
     targetId: String?,
 ): Boolean {
-    // The panel is given the actor's household as this device's, and everyone on the install, as the households are read.
+    // The panel is given the actor's household as this device's, and every household on the install, as the households are read.
     val mine = profiles.find { it.id == actorId }?.household ?: HOME_HOUSEHOLD
-    val install = Households(mine, emptyList(), profiles)
+    val listed = profiles.map { it.household }.distinct().map { id -> Household(id, id, profiles.find { it.household == id && it.admin && !it.kids }?.id) }
+    val install = Households(mine, listed, profiles)
     val panel = manageable(profiles.filter { it.household == mine }, actorId, null, install = install) as? ManageUiState.Managing ?: return false
-    fun List<Profile>.has() = any { it.id == targetId }
+    val parts = panel.parts()
+    fun List<Profile>.has(id: String? = targetId) = any { it.id == id }
+    // A new profile goes where it is named — a household, or the part listing its parent — or, named nowhere, to the maker's own part.
+    val named = targetId?.takeIf { it.isNotEmpty() }
     return when (action) {
-        "create-grown-up" -> panel.canAddGrownUp
-        "create-kid" -> true
+        "create-grown-up" -> (named ?: mine).let { into -> parts.any { it.addsGrownUp && (it.id == into || (it.id == null && into == mine)) } }
+        "create-kid" -> (named ?: actorId).let { parent -> parts.any { part -> part.addsKid && (part.kidParents.has(parent) || (part.id == null && parent == actorId)) } }
         "remove" -> panel.grownUps.has() || panel.kids.has()
         "set-pin" -> targetId == actorId || panel.grownUps.has()
         "set-kids-age" -> panel.kids.has()

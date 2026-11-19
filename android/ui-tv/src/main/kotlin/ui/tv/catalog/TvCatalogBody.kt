@@ -7,11 +7,9 @@ import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.KeptKind
-import catalog.MagazineHome
 import catalog.Shelf
 import catalog.everyFilm
 import catalog.franchisesIn
-import catalog.latestOf
 import model.MediaSet
 import ui.common.RailItem
 import ui.common.catalog.DepartmentScrollStates
@@ -36,7 +34,6 @@ internal fun TvCatalogBody(
     railTarget: (RailItem) -> FocusRequester,
     selectedPillFocus: FocusRequester,
     homeListState: LazyListState,
-    homeMagazine: MagazineHome?,
     deptScroll: DepartmentScrollStates,
     onOpenTitle: (setId: String) -> Unit,
     onPlay: (setId: String) -> Unit,
@@ -57,15 +54,9 @@ internal fun TvCatalogBody(
         ready == null -> TvCenteredMessage("The library is empty.")
         else -> when (tab) {
             CatalogTab.Home -> {
-                // Computed by the caller, not here: the departments bar above
-                // reads the same magazine's own cover to decide whether it has
-                // anything to bleed under in the first place — a second,
-                // independent `magazineHomeOf` call here could read a different
-                // `now` and disagree with it on the rare tie that falls right on
-                // a day boundary.
                 TvHome(
-                    magazine = requireNotNull(homeMagazine) { "Home selected with no magazine computed for it" },
-                    latest = remember(shelves) { latestOf(shelves) },
+                    magazine = ready.pages.home.magazine,
+                    latest = ready.pages.home.latest,
                     watch = ready.watch,
                     listState = homeListState,
                     onPlay = onPlay,
@@ -80,9 +71,9 @@ internal fun TvCatalogBody(
             is CatalogTab.Dept -> shelves.firstOrNull { it.department == tab.department }?.let { shelf ->
                 DepartmentOrShelfWall(
                     shelf = shelf,
+                    pages = ready.pages,
                     watch = ready.watch,
                     heldIds = ready.heldIds,
-                    byId = byId,
                     deptScroll = deptScroll,
                     onOpenTitle = onOpenTitle,
                     onPlay = onPlay,
@@ -107,7 +98,7 @@ internal fun TvCatalogBody(
                 }
                 KeptKind.CONTINUE, KeptKind.WATCHLIST -> TvKeptTab(
                     kind = tab.kind,
-                    shelves = shelves,
+                    pages = ready.pages,
                     watch = ready.watch,
                     onOpenTitle = onOpenTitle,
                     // My List and Continue have no pill of their own

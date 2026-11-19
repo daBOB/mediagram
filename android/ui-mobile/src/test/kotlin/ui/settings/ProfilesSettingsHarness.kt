@@ -4,8 +4,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -17,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import catalog.profile.OwnerPin
 import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
@@ -50,6 +49,7 @@ import ui.common.settings.SettingsSection
 import ui.profile.PinFieldTag
 import ui.profile.ProfileGate
 import ui.profile.householdViewModels
+import ui.profile.tile
 
 /**
  * Settings drawn inside the real [ProfileGate], as the app draws it, over the
@@ -104,7 +104,8 @@ abstract class ProfilesSettingsHarness {
             household = WatchStateFixture(people, chosen.id, FakeCore().apply { roles.pins += pins }.apply(seed))
             homes = DefaultHouseholdsRepository(household.provider, household.repository, scope, Dispatchers.Unconfined)
             val sync = mockk<WatchSync>(relaxed = true)
-            manage = ManageProfilesViewModel(household.repository, homes, sync)
+            val ownerPin = OwnerPin()
+            manage = ManageProfilesViewModel(household.repository, homes, sync, ownerPin)
             // Only the chosen profile matters here; every other model's state is read and left unread.
             val none = MutableStateFlow(null)
             val models =
@@ -118,7 +119,7 @@ abstract class ProfilesSettingsHarness {
                     AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
                     ProfileViewModel::class.java to ProfileViewModel(household.repository, sync),
                     ManageProfilesViewModel::class.java to manage,
-                ) + householdViewModels(household.repository, homes)
+                ) + householdViewModels(household.repository, homes, ownerPin)
             households = models.getValue(HouseholdsOwnerViewModel::class.java) as HouseholdsOwnerViewModel
             val provider =
                 ViewModelProvider(
@@ -152,9 +153,9 @@ abstract class ProfilesSettingsHarness {
         }
     }
 
-    /** Says who you are from the section's own "Who are you?": Bea, by her PIN. */
+    /** Says who you are from the section's own Who's managing?: Bea, by her PIN. */
     fun actAsBea() {
-        compose.onNode(hasText("Bea") and hasClickAction()).performScrollTo().performClick()
+        compose.onNode(tile("Bea")).performScrollTo().performClick()
         compose.onNodeWithTag(PinFieldTag).performTextInput("2468")
         compose.waitForIdle()
     }

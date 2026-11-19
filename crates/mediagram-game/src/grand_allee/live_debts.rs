@@ -7,6 +7,7 @@ use super::live_log::By;
 use super::live_text::Phrase;
 use super::live_turn::Step;
 use super::money::best_bid;
+use crate::ask::Ask;
 use crate::game::{ActionError, GameCtx};
 use crate::protocol::ServerTime;
 
@@ -102,12 +103,13 @@ impl GrandAlleeGame {
         Ok(())
     }
 
-    /// When an auction closes: once no open bidder can still answer, one at the
-    /// table until the clock, an absent one until the table's grace (never past the clock).
+    /// When an auction closes: once no open bidder can still answer. Each sealed bid
+    /// waits like an ask: for one at the table until the clock, for an absent one
+    /// until the table's grace (never past the clock).
     pub(crate) fn auction_close(&self, ctx: &GameCtx, a: &Auction) -> ServerTime {
-        let clock = a.since + self.cfg.auction_ms;
         let open = a.bids.iter().filter(|&&(_, answer)| answer == Bid::Open);
-        let holds = open.map(|&(b, _)| ctx.house_at(self.ids[b], a.since).map_or(clock, |at| at.min(clock)));
+        let bid = |b: usize| Ask::open(self.ids[b], a.since, Some(self.cfg.auction_ms));
+        let holds = open.map(|&(b, _)| bid(b).house_due(ctx).expect("an auction runs on a clock"));
         holds.reduce(f64::max).unwrap_or(ctx.now)
     }
 

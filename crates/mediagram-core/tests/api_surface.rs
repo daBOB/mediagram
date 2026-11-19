@@ -382,8 +382,8 @@ async fn unavailable_state_storage_returns_safe_defaults_and_can_be_retried() {
     let pin = || String::from("1234");
     let id = || String::from("viewer");
     assert_eq!(p().create_first_admin("Viewer".into(), pin()).await, Invalid);
-    assert_eq!(p().create_grown_up(id(), pin(), "Bea".into(), pin()).await, Invalid);
-    assert_eq!(p().create_kid(id(), pin(), "Mia".into(), 6, None).await, Invalid);
+    assert_eq!(p().create_grown_up(id(), pin(), "Bea".into(), pin(), None).await, Invalid);
+    assert_eq!(p().create_kid(id(), pin(), "Mia".into(), 6, None, None).await, Invalid);
     assert_eq!(p().delete_profile(id(), pin(), id()).await, Invalid);
     assert_eq!(p().unlock_profile(id(), pin()).await, Invalid);
     assert_eq!(p().claim_admin(id(), pin()).await, Invalid);
@@ -496,10 +496,10 @@ async fn managing_profiles_answers_one_outcome_per_reason_across_the_boundary() 
     let pin = || String::from("1234");
 
     assert_eq!(p().claim_admin(andre.clone(), "0000".into()).await, NotAllowed);
-    assert_eq!(p().create_kid(andre.clone(), pin(), "Mia".into(), 7, None).await, Invalid);
-    assert_eq!(p().create_kid(andre.clone(), pin(), " andré".into(), 6, None).await, NameTaken);
-    assert_eq!(p().create_kid(andre.clone(), "0000".into(), "Mia".into(), 6, None).await, WrongPin);
-    assert_eq!(p().create_kid(andre.clone(), pin(), "Mia".into(), 6, None).await, Done);
+    assert_eq!(p().create_kid(andre.clone(), pin(), "Mia".into(), 7, None, None).await, Invalid);
+    assert_eq!(p().create_kid(andre.clone(), pin(), " andré".into(), 6, None, None).await, NameTaken);
+    assert_eq!(p().create_kid(andre.clone(), "0000".into(), "Mia".into(), 6, None, None).await, WrongPin);
+    assert_eq!(p().create_kid(andre.clone(), pin(), "Mia".into(), 6, None, None).await, Done);
     assert_eq!(p().delete_profile(andre.clone(), pin(), andre.clone()).await, NotAllowed);
     assert_eq!(p().delete_profile(andre.clone(), pin(), "nobody".into()).await, NotFound);
 
@@ -509,7 +509,7 @@ async fn managing_profiles_answers_one_outcome_per_reason_across_the_boundary() 
         (true, Some(6), Some(andre.as_str()))
     );
     assert!(!mia.admin && !mia.has_pin);
-    assert_eq!(p().create_kid(mia.id.clone(), String::new(), "Ben".into(), 6, None).await, NotAllowed);
+    assert_eq!(p().create_kid(mia.id.clone(), String::new(), "Ben".into(), 6, None, None).await, NotAllowed);
     assert_eq!(p().set_kids_age(andre.clone(), pin(), mia.id.clone(), 12).await, Done);
     assert_eq!(named(&player, "Mia").await.kids_age, Some(12));
     assert_eq!(named(&player, "Mia").await.daily_limit, None);
@@ -521,13 +521,13 @@ async fn managing_profiles_answers_one_outcome_per_reason_across_the_boundary() 
     assert_eq!(p().unlock_profile(mia.id.clone(), String::new()).await, Done);
 
     let bea = ("Bea".to_string(), "1111".to_string());
-    assert_eq!(p().create_grown_up(andre.clone(), pin(), bea.0, bea.1).await, Done);
+    assert_eq!(p().create_grown_up(andre.clone(), pin(), bea.0, bea.1, None).await, Done);
     let bea = named(&player, "Bea").await;
     assert!(bea.has_pin && !bea.admin && !bea.kids);
     assert_eq!(p().set_pin(andre.clone(), pin(), bea.id.clone(), "2222".into()).await, Done);
     assert_eq!(p().unlock_profile(bea.id.clone(), "1111".into()).await, WrongPin);
     assert_eq!(p().unlock_profile(bea.id.clone(), "2222".into()).await, Done);
-    assert_eq!(p().create_kid(bea.id.clone(), "2222".into(), "Leo".into(), 12, None).await, Done);
+    assert_eq!(p().create_kid(bea.id.clone(), "2222".into(), "Leo".into(), 12, None, None).await, Done);
 
     // Hidden sections: a grown-up's by the admin, a kid's by its own, the
     // admin's by nobody; read back sorted, each key once.

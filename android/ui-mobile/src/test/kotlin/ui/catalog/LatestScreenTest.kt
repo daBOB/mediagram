@@ -13,6 +13,7 @@ import catalog.CollectionKind
 import catalog.Department
 import catalog.Entry
 import catalog.Shelf
+import catalog.libraryPagesOf
 import model.WatchSnapshot
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,7 +34,7 @@ class LatestScreenTest : BrowsePageTest() {
         )
 
     private fun render(onOpenTitle: (String) -> Unit = {}, onOpenCollection: (String) -> Unit = {}) =
-        show { LatestScreen(shelves, WatchSnapshot.Empty, emptySet(), columns = 3, onOpenTitle, onOpenCollection) }
+        show { LatestScreen(libraryPagesOf(shelves, WatchSnapshot.Empty, emptySet(), now = 0).latest, WatchSnapshot.Empty, emptySet(), columns = 3, onOpenTitle, onOpenCollection) }
 
     @Test fun eachPartIsHeadedByItsDepartmentsName() {
         render()

@@ -12,11 +12,12 @@
  * and nothing here stops a request for a title in a hidden section.
  */
 
-import { ProfileManager, type Outcome } from "./profiles-manage";
+import { ProfileCreate } from "./profiles-create";
+import type { Outcome } from "./profiles-manage";
 import { writeHiddenSections } from "./profiles-write";
 import { hiddenSectionsOf } from "./roles-record";
 
-export class ProfileAccess extends ProfileManager {
+export class ProfileAccess extends ProfileCreate {
   /** The sections `id` does not see, as a whole list; an empty one hides nothing. */
   setHiddenSections(actorId: string, pin: unknown, id: string, sections: unknown): Outcome {
     const hidden = hiddenSectionsOf(sections);

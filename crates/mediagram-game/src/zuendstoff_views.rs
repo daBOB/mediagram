@@ -1,14 +1,12 @@
-//! What the phones and the TV show in Zündstoff. Only the holder's phone
-//! asks anything; everyone else waits and watches the TV.
+//! What the phones and the TV show in Zündstoff. The holder's phone lists whom
+//! to throw to, the target's shows one big Fangen!; everyone else watches the TV.
 
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::protocol::{
-    AnswerColor, ChoiceOption, ChoiceStatus, PhoneScreen, PlayerId, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat,
-    ZuendstoffStage,
+    AnswerColor, Buzz, ChoiceOption, PhoneScreen, PlayerId, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat, ZuendstoffStage,
 };
-use crate::quiz_views::final_by_order;
 use crate::zuendstoff::ZuendstoffGame;
-use crate::zuendstoff_config::{Stage, Step};
+use crate::zuendstoff_config::{Catch, Stage};
 
 fn buttons(labels: impl IntoIterator<Item = String>) -> Vec<ChoiceOption> {
     labels.into_iter().zip(AnswerColor::ALL.iter().cycle()).map(|(label, &color)| ChoiceOption { label, color }).collect()
@@ -22,24 +20,33 @@ fn lives_text(lives: u8) -> String {
     }
 }
 
-fn choice(prompt: String, options: Vec<ChoiceOption>, opens_at: f64, status: Option<&str>) -> PhoneScreen {
+/// Live from `opens_at` with no clock: the phone gives no hint of the fuse or the catch window.
+fn choice(prompt: String, options: Vec<ChoiceOption>, opens_at: f64, picked: Option<u8>) -> PhoneScreen {
     PhoneScreen::Choice {
         prompt: Some(prompt),
         options,
         opens_at,
         closes_at: None,
-        picked: None,
+        picked,
         tricks: Vec::new(),
         numbered: false,
-        status: status.map(|text| ChoiceStatus { text: text.into(), out: false }),
+        status: None,
     }
 }
 
 impl ZuendstoffGame {
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
         let mine = self.lives_of(player);
+        let watch = |title: String| PhoneScreen::Wait {
+            title,
+            text: Some(if mine > 0 {
+                format!("{} Halte dich bereit!", lives_text(mine))
+            } else {
+                "Du bist raus – schau zu, wer übrig bleibt.".into()
+            }),
+        };
         match self.stage {
-            Stage::Final => final_by_order(&self.order, view, player),
+            Stage::Final => unasked(),
             Stage::Boom { victim, .. } => PhoneScreen::Outcome {
                 title: if victim == player { "BUMM!".into() } else { format!("BUMM bei {}!", name(view.players, victim)) },
                 text: Some(lives_text(mine)),
@@ -48,25 +55,25 @@ impl ZuendstoffGame {
                 keys: Vec::new(),
                 show_score: false,
             },
-            Stage::Lit { holder, .. } if holder != player => PhoneScreen::Wait {
-                title: format!("{} hat die Bombe", name(view.players, holder)),
-                text: Some(if mine > 0 {
-                    format!("{} Halte dich bereit!", lives_text(mine))
-                } else {
-                    "Du bist raus – schau zu, wer übrig bleibt.".into()
-                }),
-            },
-            Stage::Lit { since, step: Step::Throw, .. } => {
-                let names = self.targets(view.players, player).into_iter().map(|id| name(view.players, id).to_string());
-                choice("Richtig! Wirf die Bombe – an wen?".into(), buttons(names), since, None)
+            Stage::Hold { ask, .. } if ask.who() != player => {
+                watch(format!("{} hat die Bombe", name(view.players, ask.who())))
             }
-            Stage::Lit { step: Step::Answer { opens_at, wrong }, .. } => choice(
-                self.question.text.clone(),
-                buttons(self.question.options.iter().cloned()),
-                opens_at,
-                // Still true after the pause, so it must read right with the keys live too.
-                Some(if wrong { "Falsch – hier kommt die nächste!" } else { "Richtig antworten, dann werfen!" }),
+            Stage::Hold { caught: Some(false), ready_at, .. } if view.now < ready_at => {
+                PhoneScreen::Wait { title: "Heb die Bombe auf …".into(), text: Some(lives_text(mine)) }
+            }
+            Stage::Hold { ready_at, .. } => {
+                let names = self.targets(view.players, player).into_iter().map(|id| name(view.players, id).to_string());
+                choice("Wirf die Bombe – an wen?".into(), buttons(names), ready_at, None)
+            }
+            Stage::Flight { from, to, thrown_at, catch, .. } if to == player => choice(
+                format!("{} wirft dir die Bombe zu!", name(view.players, from)),
+                buttons(["Fangen!".to_string()]),
+                thrown_at,
+                (catch != Catch::Pending).then_some(0),
             ),
+            Stage::Flight { from, to, .. } => {
+                watch(format!("{} wirft zu {}", name(view.players, from), name(view.players, to)))
+            }
         }
     }
 
@@ -79,16 +86,33 @@ impl ZuendstoffGame {
             .collect();
         let stage = match self.stage {
             Stage::Final => ZuendstoffStage::Final { order: self.order.clone() },
-            Stage::Boom { victim, .. } => ZuendstoffStage::Boom { victim, out: !self.alive(victim) },
-            Stage::Lit { holder, step: Step::Throw, .. } => ZuendstoffStage::Throw { holder },
-            Stage::Lit { holder, step: Step::Answer { opens_at, wrong }, .. } => ZuendstoffStage::Answer {
-                holder,
-                question: self.question.view(),
-                opens_at,
-                wrong,
-                thrown_by: self.thrown.filter(|&(_, to)| to == holder).map(|(from, _)| from),
+            Stage::Boom { victim, at } => ZuendstoffStage::Boom { victim, out: !self.alive(victim), at },
+            Stage::Hold { ask, ready_at, caught } => {
+                ZuendstoffStage::Hold { holder: ask.who(), since: ask.opened_at(), ready_at, caught }
+            }
+            Stage::Flight { from, to, thrown_at, released_at, lands_at, catch } => ZuendstoffStage::Flight {
+                from,
+                to,
+                thrown_at,
+                released_at,
+                lands_at,
+                caught: match catch {
+                    Catch::Pending => None,
+                    Catch::Caught => Some(true),
+                    Catch::Fumbled => Some(false),
+                },
             },
         };
         TvScene::Zuendstoff { scene: ZuendstoffScene { round: self.round, seats, stage } }
+    }
+
+    pub(crate) fn buzz(&self, player: PlayerId) -> Option<Buzz> {
+        match self.stage {
+            Stage::Boom { victim, .. } if victim == player => Some(Buzz::Wrong),
+            Stage::Hold { ask, .. } if ask.who() == player => Some(Buzz::Turn),
+            // the target's phone buzzes from the throw, before the bomb leaves the hand
+            Stage::Flight { to, .. } if to == player => Some(Buzz::Turn),
+            _ => None,
+        }
     }
 }

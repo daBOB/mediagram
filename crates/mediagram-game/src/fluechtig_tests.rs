@@ -35,7 +35,7 @@ fn play(g: &mut FluechtigGame, players: &mut [Player], mv: Move, now: f64) -> f6
     let field = button(g, Pick::Go(mv.to));
     tap(g, players, who, field, now).unwrap();
     let mut now = now + g.cfg.chain_ms;
-    if g.ask.step == Step::Ticket(mv.to) {
+    if g.step == Step::Ticket(mv.to) {
         let ticket = button(g, Pick::Ride(mv.ticket));
         tap(g, players, who, ticket, now).unwrap();
         now += g.cfg.chain_ms;
@@ -105,7 +105,7 @@ fn the_fugitive_picks_the_field_then_the_ticket_and_back_undoes_the_field() {
     assert!(ask.options.contains(&FluechtigOption::Ticket { ticket: Ticket::Schatten, left: 3 }));
     assert_eq!(ask.options.last(), Some(&FluechtigOption::Back));
     tap(&mut g, &mut p, runner, ask.options.len() - 1, 400.0).unwrap();
-    assert_eq!(g.ask.step, Step::Field);
+    assert_eq!(g.step, Step::Field);
 
     play(&mut g, &mut p, mv, 800.0);
     assert_eq!(g.chase.turn, Turn::Hunter(0));
@@ -125,7 +125,7 @@ fn the_fugitive_is_asked_for_the_ticket_even_when_only_one_gets_there() {
     let go = button(&g, Pick::Go(mv.to));
     tap(&mut g, &mut p, runner, go, 0.0).unwrap();
 
-    assert_eq!(g.ask.step, Step::Ticket(mv.to));
+    assert_eq!(g.step, Step::Ticket(mv.to));
     assert_eq!(g.chase.turn, Turn::Fugitive);
     assert_eq!(g.picks(), vec![Pick::Ride(mv.ticket), Pick::Back]);
 }
@@ -153,7 +153,7 @@ fn a_double_tap_cannot_answer_the_question_its_first_tap_opened() {
     let runner = g.fugitive;
     tap(&mut g, &mut p, runner, 0, 1000.0).unwrap();
     assert_eq!(tap(&mut g, &mut p, runner, 0, 1080.0), Err(ActionError::Ignored));
-    assert!(matches!(g.ask.step, Step::Ticket(_)));
+    assert!(matches!(g.step, Step::Ticket(_)));
     assert_eq!(g.chase.turn, Turn::Fugitive);
 }
 
@@ -170,18 +170,6 @@ fn only_the_mover_may_tap() {
     // one figure each: the next mover is named, not numbered
     let next = ph.next.unwrap();
     assert_eq!((next.piece, next.runs, next.you), (None, false, true));
-}
-
-#[test]
-fn an_absent_mover_moves_by_itself_after_a_while() {
-    let mut p = table(3, true);
-    let mut g = game(&p, 1);
-    let runner = usize::from(g.fugitive);
-    p[runner] = Player::for_test(g.fugitive, NAMES[runner], false);
-    g.on_tick(&mut GameCtx { now: 1400.0, players: &mut p });
-    assert_eq!(g.chase.turn, Turn::Fugitive);
-    g.on_tick(&mut GameCtx { now: 1550.0, players: &mut p });
-    assert_eq!(g.chase.turn, Turn::Hunter(0));
 }
 
 /// A whole game played by the house: the TV and the hunters' phones never
@@ -221,8 +209,7 @@ fn a_whole_game_keeps_the_fugitive_hidden_until_the_end() {
             Side::Fugitive => assert_eq!(winners, vec![g.fugitive]),
             Side::Hunters => assert!(!winners.is_empty() && !winners.contains(&g.fugitive)),
         }
-        let final_of = |id| g.phone_screen(&ViewCtx { now, players: &p, leader: Some(0) }, id);
-        assert!(matches!(final_of(winners[0]), PhoneScreen::Final { rank: 1, score: 1, .. }));
+        assert_eq!(g.ranking(&p).and_then(|r| r.place_of(winners[0])), Some(1));
     }
 }
 

@@ -1,6 +1,7 @@
 package player
 
 import data.CatalogRepository
+import data.RefreshOutcome
 import kotlinx.coroutines.CompletableDeferred
 import model.MediaSet
 import uniffi.mediagram_core.SearchHit
@@ -27,7 +28,7 @@ class FakeCatalogRepository(
     /** While set, [sets] throws, as a core that is not ready or a read that failed would. */
     var failSets = false
 
-    override suspend fun refresh(): Result<Int> = Result.success(byId.size)
+    override suspend fun refresh(): RefreshOutcome = RefreshOutcome.AlreadyCurrent
 
     override suspend fun sets(): List<MediaSet> {
         setsGate?.await()

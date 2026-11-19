@@ -8,7 +8,8 @@ import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.franchiseHref
-import catalog.mediaSet
+import catalog.setsFor
+import ui.common.catalog.VersionAsk
 import model.ListOfSets
 import model.WatchSnapshot
 import ui.common.FrameResolution
@@ -37,6 +38,7 @@ internal fun TvSearchBranch(
     restore: TvRestoreKeys,
     browse: BrowseViewModel,
     field: FocusRequester,
+    ask: VersionAsk,
     leave: () -> Unit,
 ) {
     val here = at.depth
@@ -50,7 +52,7 @@ internal fun TvSearchBranch(
         onQueryChange = at::typeSearch,
         onPlay = { setId ->
             restore.opened(here, setId)
-            at.openPlayer(setId)
+            ask.play(setId)
         },
         onOpenTitle = { setId ->
             restore.opened(here, setId)
@@ -147,23 +149,25 @@ internal fun TvListBranch(
     catalogState: CatalogUiState,
     catalogViewModel: CatalogViewModel,
     restore: TvRestoreKeys,
+    ask: VersionAsk,
     leave: () -> Unit,
 ) {
     val here = at.depth
     TvResolvedBranch(resolved, catalogState, leave) { list ->
-        val sets = list.items.mapNotNull(catalogState::mediaSet)
+        // A copy of a film held more than once shows, and plays, as its film.
+        val sets = catalogState.setsFor(list.items)
         val ids = sets.map { it.setId }
         TvList(
             list = list,
             sets = sets,
             onPlay = { setId ->
                 restore.opened(here, setId)
-                at.openPlayer(setId, ids)
+                ask.play(setId, ids)
             },
             onPlayAll = {
                 ids.firstOrNull()?.let { first ->
                     restore.opened(here, TvPlayAllKey)
-                    at.openPlayer(first, ids)
+                    ask.play(first, ids)
                 }
             },
             onRename = { name -> catalogViewModel.renameList(list.id, name) },

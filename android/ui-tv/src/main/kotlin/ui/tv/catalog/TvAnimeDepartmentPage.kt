@@ -18,7 +18,6 @@ import catalog.Department
 import catalog.Entry
 import catalog.animeLineOf
 import catalog.keyOf
-import catalog.resumeCardsOf
 import model.WatchSnapshot
 
 /**
@@ -42,7 +41,7 @@ internal fun TvAnimeDepartmentPage(
     gridState: LazyGridState = rememberLazyGridState(),
 ) {
     val (positions, watchedIds) = rememberWatchMarks(watch)
-    val resumeCards = remember(dept, watch, heldIds) { resumeCardsOf(dept.continuing, dept.nextUp, watch, heldIds) }
+    val resumeCards = dept.resumeCards
     val rowFocus = remember { FocusRequester() }
     var lastSection by rememberSaveable { mutableStateOf<String?>(null) }
     val target = remember(resumeCards, restoreKey, lastSection) { animeDeptTargetOf(resumeCards, restoreKey, lastSection) }

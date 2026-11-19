@@ -33,11 +33,22 @@ order is not shareable: Durak's actor comes from its stage.
 
 ## Steps
 
-- [ ] Commit 1: ring of 6 for Mau-Mau and Schwimmen (patch bump).
-- [ ] Card table module; the three games hold it; duplicates deleted.
-- [ ] Dealt constructors + shared helper; rewrite setups; delete copied helpers.
-- [ ] `cargo test -p mediagram-game`; client tests unaffected.
-- [ ] Spieltisch patch bump; commit; merge; check.sh.
+- [x] Commit 1: ring of 6 for Mau-Mau and Schwimmen (patch bump).
+- [x] Card table module; the three games hold it; duplicates deleted.
+      `card_table.rs`: seats, the no-clock ask, the ring, `say` (replace) and
+      `say_next` (queue behind the banner on show), `said`, `banner(now, hold)`;
+      `sort_hand` and `button()` moved there. Mau-Mau's `cfg` field went (its
+      only use was `banner_ms`, now the table's). RNG seeding stays in each
+      game: the same one-liner is in ten games, not a card-table concern.
+- [x] Dealt constructors + shared helper; rewrite setups; delete copied helpers.
+      `dealt(..)` per game (seat 0 to move); `card_game_driver.rs` drives any
+      card game. Schwimmen's two-round tests became two dealt games (a seat
+      dealt no cards is already out); Durak's six-attack cap is played out.
+      Every TV scene and phone screen of 228 seeded games (2–8 seats, leaving,
+      returning, random taps, late joiner) recorded before and after: identical
+      byte for byte (279 MB, same sha256); the probe was deleted.
+- [x] `cargo test -p mediagram-game`; client tests unaffected (no protocol change).
+- [x] Spieltisch patch bump; commit; merge; check.sh.
 
 ## Done when
 

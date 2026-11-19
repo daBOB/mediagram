@@ -1,12 +1,11 @@
 //! What the phones and the TV show for each poster stage.
 
-use crate::game::ViewCtx;
+use crate::game::unasked;
 use crate::poster::PosterGame;
 use crate::poster_config::Stage;
 use crate::protocol::{
     AnswerColor, ChoiceOption, PhoneScreen, PlayerId, PosterScene, PosterStage, Tone, TvScene,
 };
-use crate::quiz_views::rank_of;
 use crate::titles::{ImageKind, image_url};
 
 impl PosterGame {
@@ -14,7 +13,7 @@ impl PosterGame {
         image_url(self.round().title, ImageKind::Poster)
     }
 
-    pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+    pub(crate) fn phone_view(&self, player: PlayerId) -> PhoneScreen {
         let round = self.round();
         match self.stage {
             Stage::Showing { .. } if self.locked.contains(&player) => PhoneScreen::Outcome {
@@ -58,15 +57,7 @@ impl PosterGame {
                     show_score: true,
                 },
             },
-            Stage::Final => {
-                let (rank, score) = rank_of(view.players, player);
-                PhoneScreen::Final {
-                    rank,
-                    of: view.players.len() as u8,
-                    score,
-                    can_restart: view.leader == Some(player),
-                }
-            }
+            Stage::Final => unasked(),
         }
     }
 

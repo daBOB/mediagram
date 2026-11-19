@@ -32,6 +32,9 @@ pub struct SetSummary {
     pub quality: Option<String>,
     pub hdr: Option<String>,
     pub duration: Option<u32>,
+    /// A film's cut (`Director's Cut`, …); `None` is the standard cut. Named
+    /// as the web player names it.
+    pub variant: Option<String>,
     pub poster_key: Option<String>,
     /// Where [`poster_key`](Self::poster_key)'s file actually sits. Every
     /// set carries its own answer, but a listing works out any one key's
@@ -135,6 +138,7 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         quality: set.quality.clone(),
         hdr: set.hdr.clone(),
         duration: set.duration,
+        variant: set.variant.clone(),
         poster_key: poster_key_for(
             &set.kind,
             set.tmdb,

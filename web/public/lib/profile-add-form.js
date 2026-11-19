@@ -22,3 +22,19 @@ export function addForm(label, extra, submit) {
   form.append(name, ...extra, add);
   return form;
 }
+
+/** The two limits a kid can have. A new kid starts at the stricter; its parent raises it. */
+export const LIMITS = [6, 12];
+
+/** A native choice between the two limits. */
+export function limitChoice(value, label) {
+  const choice = el("select");
+  choice.setAttribute("aria-label", label);
+  for (const age of LIMITS) {
+    const option = el("option", null, `FSK ${age}`);
+    option.value = String(age);
+    choice.append(option);
+  }
+  choice.value = String(value);
+  return choice;
+}

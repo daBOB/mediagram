@@ -97,6 +97,7 @@ private class DelayedStateCore(
         name: String,
         kidsAge: UByte,
         dailyLimit: UShort?,
+        parentId: String?,
     ): ProfileOutcome {
         write()
         return ProfileOutcome.Done

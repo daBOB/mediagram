@@ -1,6 +1,7 @@
 package games
 
 import data.CatalogRepository
+import data.RefreshOutcome
 import model.Kind
 import model.MediaSet
 import model.Profile
@@ -35,7 +36,7 @@ internal fun film(
 internal class SetsOnly(
     private val sets: List<MediaSet>,
 ) : CatalogRepository {
-    override suspend fun refresh(): Result<Int> = Result.success(sets.size)
+    override suspend fun refresh(): RefreshOutcome = RefreshOutcome.AlreadyCurrent
 
     override suspend fun sets(): List<MediaSet> = sets
 

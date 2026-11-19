@@ -1,6 +1,6 @@
 //! What the phones and the TV show during the race game.
 
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::protocol::{
     AnswerColor, ChoiceOption, PhoneScreen, PlayerId, RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage, TvScene,
 };
@@ -39,17 +39,9 @@ impl RaceGame {
 
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
         let wait = |title: String, text: Option<String>| PhoneScreen::Wait { title, text };
-        let Some(me) = self.seat_of(player) else {
-            return wait("Heimlauf läuft".into(), Some("Du spielst in der nächsten Runde mit.".into()));
-        };
-        if let Stage::Final { winner } = self.stage {
-            let order = standings(&self.seats, winner);
-            return PhoneScreen::Final {
-                rank: order.iter().position(|&s| s == me).map_or(1, |r| r as u8 + 1),
-                of: self.seats.len() as u8,
-                score: self.seats[me].in_goal() as i32,
-                can_restart: view.leader == Some(player),
-            };
+        let Some(me) = self.seat_of(player) else { return unasked() };
+        if matches!(self.stage, Stage::Final { .. }) {
+            return unasked();
         }
         let mover = name(view.players, self.player_at(self.turn));
         if me != self.turn {
@@ -63,10 +55,10 @@ impl RaceGame {
             return wait(format!("{mover} ist dran"), Some(format!("{home} von {PIECES} Figuren im Ziel")));
         }
         match &self.stage {
-            Stage::Roll { since, tries, again } => PhoneScreen::Choice {
+            Stage::Roll { ask, tries, again } => PhoneScreen::Choice {
                 prompt: Some(roll_prompt(self.seats[me].three_tries(), *tries, *again).into()),
                 options: vec![ChoiceOption { label: "Würfeln".into(), color: AnswerColor::Blue }],
-                opens_at: *since,
+                opens_at: ask.opened_at(),
                 closes_at: None,
                 picked: None,
                 tricks: vec![],
@@ -74,7 +66,7 @@ impl RaceGame {
                 status: None,
             },
             Stage::Rolled { at, .. } if view.now < self.lands_at(*at) => wait("Der Würfel rollt …".into(), None),
-            Stage::Rolled { value, at, moves, tries } => match moves.len() {
+            Stage::Rolled { value, moves, tries, ask, .. } => match moves.len() {
                 0 if *tries > 1 && *value != 6 => wait(format!("Eine {value}"), Some("Kein Zug – du darfst nochmal.".into())),
                 0 => wait(format!("Eine {value}"), Some("Kein Zug möglich.".into())),
                 1 => wait(format!("Eine {value}!"), self.labels(view, moves).pop()),
@@ -86,7 +78,7 @@ impl RaceGame {
                         .zip(AnswerColor::ALL)
                         .map(|(label, color)| ChoiceOption { label, color })
                         .collect(),
-                    opens_at: self.lands_at(*at),
+                    opens_at: ask.opened_at(),
                     closes_at: None,
                     picked: None,
                     tricks: vec![],

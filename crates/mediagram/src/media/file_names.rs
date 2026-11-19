@@ -91,35 +91,40 @@ fn has_extension(name: &str, extensions: &[&str]) -> bool {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::split_number_and_title;
-
-    #[test]
-    fn outline_prefix_takes_its_last_segment() {
-        assert_eq!(
-            split_number_and_title("6.10 – Deep stage 1"),
-            (Some(10), Some("Deep stage 1".to_string()))
-        );
-        assert_eq!(
-            split_number_and_title("1.2.3 Intro"),
-            (Some(3), Some("Intro".to_string()))
-        );
-    }
-
-    #[test]
-    fn a_dot_before_a_title_is_not_an_outline() {
-        assert_eq!(
-            split_number_and_title("10. Moving Averages"),
-            (Some(10), Some("Moving Averages".to_string()))
-        );
-        assert_eq!(
-            split_number_and_title("01 Getting Started"),
-            (Some(1), Some("Getting Started".to_string()))
-        );
-        assert_eq!(
-            split_number_and_title("Appendix"),
-            (None, Some("Appendix".to_string()))
-        );
-    }
+/// The cut a film's file name says it is, in the one spelling players group
+/// by: two spellings of one cut would never share a resume position.
+///
+/// Whole tokens only, and only those after the last year, which is where
+/// release names put their tags: before it, `DC.League.of.Super-Pets.2022`
+/// would be a Director's Cut and "The Extended Family" an extended one. A
+/// name with no year is read whole. `Theatrical` and `Kinofassung` are the
+/// standard cut, which is no cut at all.
+pub fn cut_from_file_name(name: &str) -> Option<&'static str> {
+    let tokens: Vec<String> = name
+        .split(['.', '_', '-', ' ', '(', ')', '[', ']', '{', '}'])
+        .filter(|t| !t.is_empty())
+        .map(|t| t.replace(['\'', '\u{2019}'], "").to_lowercase())
+        .collect();
+    let is_year = |t: &String| {
+        t.len() == 4
+            && (t.starts_with("19") || t.starts_with("20"))
+            && t.bytes().all(|b| b.is_ascii_digit())
+    };
+    let tags = &tokens[tokens.iter().rposition(is_year).map_or(0, |i| i + 1)..];
+    tags.iter().enumerate().find_map(|(i, tag)| {
+        let then_cut = tags.get(i + 1).is_some_and(|next| next == "cut");
+        match tag.as_str() {
+            "directors" if then_cut => Some("Director's Cut"),
+            "dc" => Some("Director's Cut"),
+            "final" if then_cut => Some("Final Cut"),
+            "extended" | "langfassung" => Some("Extended"),
+            "uncut" | "ungeschnitten" | "unrated" => Some("Uncut"),
+            "remastered" => Some("Remastered"),
+            _ => None,
+        }
+    })
 }
+
+#[cfg(test)]
+#[path = "file_names_tests.rs"]
+mod tests;

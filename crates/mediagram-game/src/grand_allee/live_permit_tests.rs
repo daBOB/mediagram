@@ -85,12 +85,12 @@ fn a_playing_bot_raises_the_money_when_its_other_properties_cover_it_and_the_hou
     use super::bots::{Bot, Style};
     use super::live::HOUSE;
     let (mut g, _, _) = doubled(true);
-    let Stage::Ask { ask, .. } = g.stage.clone() else { panic!("no ask: {:?}", g.stage) };
+    let Stage::Ask { choices, .. } = g.stage.clone() else { panic!("no ask: {:?}", g.stage) };
     let bot = Bot { style: Style::Bold, house: false };
-    assert_eq!(bot.pick(&g.t, 0, &ask), 0, "Hacienda Sol fetches 500 from the bank, 900 are missing");
+    assert_eq!(bot.pick(&g.t, 0, &choices), 0, "Hacienda Sol fetches 500 from the bank, 900 are missing");
     g.t.seats[0].cash = 1_900;
-    assert_eq!(bot.pick(&g.t, 0, &ask), 1, "500 missing, 500 covered: raise");
-    assert_eq!(HOUSE.pick(&g.t, 0, &ask), 0, "the house auctions the hotel in question");
+    assert_eq!(bot.pick(&g.t, 0, &choices), 1, "500 missing, 500 covered: raise");
+    assert_eq!(HOUSE.pick(&g.t, 0, &choices), 0, "the house auctions the hotel in question");
 }
 
 #[test]
@@ -100,10 +100,10 @@ fn the_sheet_carries_the_clock_to_the_mover_and_the_hotels_as_cards() {
     let (mut g, p) = game(2, &[4]);
     own(&mut g, 0, 0, 2);
     g.t.entrances[4] = Some(0);
-    let Stage::Ask { since, .. } = g.stage else { panic!("no ask") };
-    let view = ViewCtx { now: since, players: &p, leader: None };
+    let Stage::Ask { ask, .. } = g.stage else { panic!("no ask") };
+    let view = ViewCtx { now: ask.opened_at(), players: &p, leader: None };
     let PhoneScreen::Sheet { lines, hotels, closes_at, .. } = g.phone_screen(&view, ANA) else { panic!("not a sheet") };
-    assert_eq!(closes_at, Some(since + g.cfg.ask_ms));
+    assert_eq!(closes_at, Some(ask.opened_at() + g.cfg.ask_ms));
     let lines: Vec<(String, String)> = lines.into_iter().map(|l| (l.label, l.value)).collect();
     assert_eq!(lines[0], ("Taler".into(), "12.000".into()), "cash first");
     let lagune = HotelCard { name: "Lagune".into(), color: "#2aa3a0".into(), built: 2, stages: 3, rate: g.t.rate(0), entrances: 1, value: 3_300 };

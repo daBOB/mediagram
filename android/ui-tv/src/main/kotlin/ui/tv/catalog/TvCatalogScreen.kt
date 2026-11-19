@@ -26,7 +26,6 @@ import androidx.tv.material3.Text
 import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.ChromeCounts
-import catalog.HOME_POSTER_ROW_LIMIT
 import catalog.KeptKind
 import catalog.allSetsById
 import catalog.catalogTabOf
@@ -34,9 +33,9 @@ import catalog.chromeCountsOf
 import catalog.fetchFraction
 import catalog.hasContent
 import catalog.libraryTallyLines
-import catalog.magazineHomeOf
 import catalog.mastheadTabsOf
 import catalog.updateDisabledReason
+import data.LibraryUpdateState
 import designsystem.Spacing
 import designsystem.TvType
 import ui.common.MenuActions
@@ -45,7 +44,6 @@ import ui.common.catalog.rememberDepartmentScrollStates
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvLibraryChrome
 import ui.tv.profile.TvChosenProfile
-import uniffi.mediagram_core.FetchProgress
 
 /**
  * The catalogue on a television: [TvLibraryChrome] — the rail and the
@@ -75,8 +73,8 @@ import uniffi.mediagram_core.FetchProgress
  * calls for its own three rows. [onFinish] is Continue's "Mark finished".
  * [onPlay] plays a set straight away — the cover story's own "Watch now" —
  * rather than opening its title page the way [onOpenTitle] does everywhere
- * else this screen leads. [fetching] is the artwork-and-descriptions run
- * the phone reports beside a channel refresh.
+ * else this screen leads. [update] is the library update's reading and
+ * fetching, which the phone reports beside its shelves too.
  */
 @Composable
 fun TvCatalogScreen(
@@ -87,8 +85,7 @@ fun TvCatalogScreen(
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
     menu: MenuActions = NoopMenuActions,
-    fetching: Boolean = false,
-    fetchProgress: FetchProgress? = null,
+    update: LibraryUpdateState = LibraryUpdateState(),
     restoreKey: String? = null,
     onTabChanged: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
@@ -115,9 +112,7 @@ fun TvCatalogScreen(
     // function the phone's chrome reads. Continue and My List are the
     // rail's own two rows, chosen directly rather than through a pill.
     val mastheadTabs = remember(shelves) { mastheadTabsOf(shelves) }
-    // Every set on any shelf, by id — a Continue/Popular row on a
-    // department front page resolves a progress row to its set before
-    // narrowing to one kind, and a progress row can name a set of any kind.
+    // Every set on any shelf, by id — Collections resolves a list's ids to their sets.
     val byId = remember(shelves) { allSetsById(shelves) }
     // Saved by key, not by position: a refresh can return a library with
     // more or fewer departments than the one on screen when it started,
@@ -178,34 +173,17 @@ fun TvCatalogScreen(
         onPendingRailHandled()
     }
 
-    // Computed once here, not inside `TvCatalogBody`'s own Home branch: the
-    // departments bar below reads this same magazine's own cover to decide
-    // whether it has anything to bleed under, so both need the one instance
-    // rather than two calls that could disagree on the rare tie that falls
-    // right on a day boundary.
-    val homeMagazine =
-        remember(shelves, ready?.watch, ready?.heldIds, selected) {
-            ready?.takeIf { selected == CatalogTab.Home }?.let {
-                magazineHomeOf(
-                    shelves,
-                    it.watch,
-                    editorsChoice = it.watch.editorsChoice,
-                    now = System.currentTimeMillis(),
-                    heldIds = it.heldIds,
-                    recentLimit = HOME_POSTER_ROW_LIMIT,
-                )
-            }
-        }
+    // The bar below and Home's own body read the one magazine the state
+    // carries, so they never disagree about whether there is a cover.
+    val pages = ready?.pages
     val homeListState =
         rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = HomeCacheWindow, behind = HomeCacheWindow) })
     val deptScroll = rememberDepartmentScrollStates()
-    val hasCover = homeMagazine?.editorial?.cover?.isNotEmpty() == true
+    val hasCover = pages?.home?.magazine?.editorial?.cover?.isNotEmpty() == true
     val blend =
         rememberTvCatalogBlend(
             selected = selected,
-            shelves = shelves,
-            byId = byId,
-            watch = ready?.watch,
+            pages = pages,
             homeListState = homeListState,
             homeHasCover = hasCover,
             deptScroll = deptScroll,
@@ -246,7 +224,6 @@ fun TvCatalogScreen(
                             railTarget = remember(nav.chromeFocus) { nav.chromeFocus::railTarget },
                             selectedPillFocus = nav.chromeFocus.selectedPillFocus,
                             homeListState = homeListState,
-                            homeMagazine = homeMagazine,
                             deptScroll = deptScroll,
                             onOpenTitle = onOpenTitle,
                             onPlay = onPlay,
@@ -263,7 +240,7 @@ fun TvCatalogScreen(
                     }
                 }
             }
-            if (ready != null) TvCatalogStatus(ready, fetching, fetchProgress)
+            if (ready != null) TvCatalogStatus(ready, update)
         }
     }
 }
@@ -278,11 +255,10 @@ fun TvCatalogScreen(
 @Composable
 private fun TvCatalogStatus(
     ready: CatalogUiState.Ready,
-    fetching: Boolean,
-    fetchProgress: FetchProgress?,
+    update: LibraryUpdateState,
 ) {
-    val words = updateDisabledReason(ready, fetching, fetchProgress)
-    val fraction = fetchProgress?.takeIf { fetching }?.let(::fetchFraction)
+    val words = updateDisabledReason(update)
+    val fraction = update.progress?.takeIf { update.fetching }?.let(::fetchFraction)
     if (words == null && fraction == null && ready.notice == null) return
     val gutter = LocalTvPagePadding.current
     // A pill, because the page under it can be Home's cover picture.

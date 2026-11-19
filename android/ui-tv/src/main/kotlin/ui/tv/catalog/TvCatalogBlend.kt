@@ -8,12 +8,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import catalog.CatalogTab
 import catalog.Department
-import catalog.Shelf
-import catalog.heroArtOf
+import catalog.LibraryPages
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
-import model.MediaSet
-import model.WatchSnapshot
 import ui.common.catalog.DepartmentScrollStates
 import ui.common.chrome.asHeroListState
 import ui.common.chrome.coverBlend
@@ -33,22 +30,20 @@ import ui.tv.chrome.TvDepartmentsBarHeight
 @Composable
 internal fun rememberTvCatalogBlend(
     selected: CatalogTab,
-    shelves: List<Shelf>,
-    byId: Map<String, MediaSet>,
-    watch: WatchSnapshot?,
+    pages: LibraryPages?,
     homeListState: LazyListState,
     homeHasCover: Boolean,
     deptScroll: DepartmentScrollStates,
 ): Float {
     // The department this tab is (`null` on Home, a kept wall or
-    // Collections) — the one thing [heroArtOf] and [deptScroll] both need to
+    // Collections) — the one thing [LibraryPages.heroArtOf] and [deptScroll] both need to
     // tell whether *this* tab's own hero, not Home's cover, is what the bar
     // should bleed under.
     val department = (selected as? CatalogTab.Dept)?.department
     val soldOut = LocalBackdrop.current == Backdrop.SOLID
     val hasHeroArt =
-        remember(shelves, byId, watch, department, soldOut) {
-            !soldOut && department != null && heroArtOf(department, shelves, byId, watch ?: WatchSnapshot.Empty) != null
+        remember(pages, department, soldOut) {
+            !soldOut && pages?.heroArtOf(department) != null
         }
     val density = LocalDensity.current
     val barHeightPx = remember(density) { with(density) { TvDepartmentsBarHeight.toPx() } }

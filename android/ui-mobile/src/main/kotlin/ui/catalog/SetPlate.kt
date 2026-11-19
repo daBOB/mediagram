@@ -3,6 +3,7 @@ package ui.catalog
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import catalog.SetCard
+import catalog.versionsBadgeOf
 import model.episodeLabel
 
 /**
@@ -27,6 +28,7 @@ internal fun SetPlate(
         progress = card.progress,
         watched = card.watched,
         held = card.held,
+        versions = versionsBadgeOf(set),
         modifier = modifier,
         onClick = onClick,
     )

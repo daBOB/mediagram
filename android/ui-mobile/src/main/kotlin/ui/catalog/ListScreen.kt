@@ -14,7 +14,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,10 +22,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import catalog.heldOf
 import catalog.spelledCountOf
 import designsystem.Spacing
 import model.ListOfSets
 import model.MediaSet
+import ui.chrome.CatalogueTextButton
 import ui.chrome.NoDialogAnimation
 
 /**
@@ -80,7 +81,7 @@ internal fun ListScreen(
             item(key = "empty") { CenteredMessage("Nothing on this list yet. Add titles from the player.") }
         } else {
             items(items = sets, key = MediaSet::setId) { set ->
-                ListedRow(set = set, held = set.setId in heldIds, onPlay = { onPlay(set.setId) }, onRemove = { onRemove(set.setId) })
+                ListedRow(set = set, held = heldOf(set, heldIds), onPlay = { onPlay(set.setId) }, onRemove = { onRemove(set.setId) })
                 HorizontalDivider()
             }
         }

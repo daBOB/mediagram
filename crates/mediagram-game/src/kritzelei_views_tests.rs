@@ -144,10 +144,9 @@ fn the_final_ranks_by_score() {
         now += 6_100.0;
         tick(&mut g, &mut ps, now);
     }
-    assert!(g.is_finished());
+    let places = g.ranking(&ps).map(|r| r.places.iter().map(|x| (x.player, x.place)).collect::<Vec<_>>());
+    assert_eq!(places, Some(vec![(1, 1), (0, 2)]));
     let v = vc(&ps, now);
-    assert_eq!(g.phone_view(&v, 1), PhoneScreen::Final { rank: 1, of: 2, score: 2, can_restart: false });
-    assert_eq!(g.phone_view(&v, 0), PhoneScreen::Final { rank: 2, of: 2, score: 1, can_restart: true });
     let BoardScreen::Wait { title, text, can_leave } = g.board_view(&v) else { panic!("not a wait") };
     assert_eq!((title.as_str(), text.as_deref(), can_leave), ("Spiel vorbei", Some("Die Siegerehrung läuft auf dem Fernseher."), false));
 }

@@ -211,9 +211,8 @@ private fun Progress.toProgressPoint(): ProgressPoint = ProgressPoint(at, durati
 /**
  * [continues] and [nextUp] as the one merged resume strip Home, the Series
  * or Tutorials department page, the Anime department page and Documentaries
- * all draw the same underway titles into — [magazineHomeOf]'s own inline
- * build, lifted here once four call sites (Home, and three department
- * screens on both Android surfaces) had each grown their own copy of it.
+ * all draw the same underway titles into — built by [magazineHomeOf] and each
+ * department's own page function, never by a screen.
  */
 fun resumeCardsOf(
     continues: List<MediaSet>,

@@ -59,12 +59,12 @@ pub fn play(seed: u64, players: usize, rules: Rules) -> Record {
     // when each seat last finished deciding
     let mut last = vec![0.0; players];
     let mut now: ServerTime = 0.0;
-    while !g.is_finished() {
+    while g.ranking(&p).is_none() {
         match &g.stage {
-            Stage::Ask { ask, since, .. } => {
-                let (seat, since) = (g.turn, *since);
-                let index = bots[seat].pick(&g.t, seat, ask);
-                let opt = ask.opts[index];
+            Stage::Ask { choices, ask, .. } => {
+                let (seat, since) = (g.turn, ask.opened_at());
+                let index = bots[seat].pick(&g.t, seat, choices);
+                let opt = choices.opts[index];
                 rec.forced += u32::from(matches!(opt, Opt::Force(_)));
                 rec.rounds = g.round;
                 now = since + if matches!(opt, Opt::Roll | Opt::EndTurn) { THINK.tap } else { THINK.decide };

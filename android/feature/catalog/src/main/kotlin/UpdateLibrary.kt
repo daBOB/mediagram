@@ -1,6 +1,7 @@
 package catalog
 
 import data.CatalogEnrichmentState
+import data.LibraryUpdateState
 import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.FetchStep
@@ -13,14 +14,10 @@ import kotlin.math.ceil
  * and leaves the first worth doing, so the item stays tappable and says
  * what it will skip instead; that is `updateNote`, not this.
  */
-fun updateDisabledReason(
-    state: CatalogUiState,
-    fetching: Boolean,
-    progress: FetchProgress? = null,
-): String? =
+fun updateDisabledReason(update: LibraryUpdateState): String? =
     when {
-        isReadingChannel(state) -> "Reading the channel…"
-        fetching -> progress?.let(::fetchProgressSentence) ?: "Fetching details and artwork…"
+        update.reading -> "Reading the channel…"
+        update.fetching -> update.progress?.let(::fetchProgressSentence) ?: "Fetching details and artwork…"
         else -> null
     }
 
@@ -65,18 +62,6 @@ internal fun fetchTimeLeft(progress: FetchProgress): String? {
 private const val MIN_ITEMS_FOR_ESTIMATE = 5L
 private const val MIN_MS_FOR_ESTIMATE = 3_000L
 private const val MS_PER_MINUTE = 60_000.0
-
-/**
- * Whether the channel is being read right now.
- *
- * The coordinator supplies the refresh flag independently of shelf regrouping.
- * This predicate only controls presentation. A read in flight looks like
- * one of two things:
- * [CatalogUiState.Loading] when there were no shelves to keep, and a
- * [CatalogUiState.Ready] that says it is refreshing when there were.
- */
-fun isReadingChannel(state: CatalogUiState): Boolean =
-    state is CatalogUiState.Loading || (state is CatalogUiState.Ready && state.refreshing)
 
 /** The sentence a finished or failed fetch leaves behind, or `null` while there is nothing to say. */
 fun fetchResultMessage(

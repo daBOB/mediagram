@@ -27,13 +27,13 @@ through to TvQuiz), `blocked()`'s wildcard.
 
 ## Steps
 
-- [ ] Entry type; per-game entries; exhaustive kind → entry.
-- [ ] Factory, `blocked()`, Readiness read the entries.
-- [ ] Lobby-order test; delete the hand-kept test list.
-- [ ] `TvApp` exhaustive scene map.
-- [ ] `cargo test -p mediagram-game`; client `bun test` + typecheck
+- [x] Entry type; per-game entries; exhaustive kind → entry.
+- [x] Factory, `blocked()`, Readiness read the entries.
+- [x] Lobby-order test; delete the hand-kept test list.
+- [x] `TvApp` exhaustive scene map.
+- [x] `cargo test -p mediagram-game`; client `bun test` + typecheck
       (as `scripts/check.sh` runs them).
-- [ ] Spieltisch patch bump; commit; merge; check.sh.
+- [x] Spieltisch patch bump; commit; merge; check.sh.
 
 ## Done when
 

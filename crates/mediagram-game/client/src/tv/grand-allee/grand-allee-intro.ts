@@ -5,8 +5,8 @@
 import * as THREE from "three";
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
 import type { GrandAlleeTurn } from "../../protocol/GrandAlleeTurn";
-import { HUD_FONT } from "../race/race-hud";
-import { INK, drop, label, paint, pill, place, type Label } from "./grand-allee-hud-label";
+import { HUD_FONT } from "../table/hud-font";
+import { INK, drop, label, paint, pill, place, type Label } from "../table/hud-label";
 import { genitive, runs, wrap, type Run } from "./grand-allee-intro-text";
 
 type Intro = Extract<GrandAlleeTurn, { stage: "intro" }>;

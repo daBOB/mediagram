@@ -50,7 +50,8 @@ fun shelvesOf(sets: List<MediaSet>): List<Shelf> {
     val animeLibrary = groupAnime(anime)
 
     return listOfNotNull(
-        Shelf(Department.MOVIES, films.sortedWith(compareBy(NATURAL) { it.title }).map(Entry::Film))
+        // One card per film: copies sharing a poster key group (FilmVersions.kt).
+        Shelf(Department.MOVIES, groupFilms(films.sortedWith(compareBy(NATURAL) { it.title })).map(Entry::Film))
             .takeIf { it.entries.isNotEmpty() },
         Shelf(Department.SERIES, collections(episodes, CollectionKind.SHOW, UNKNOWN_SHOW))
             .takeIf { it.entries.isNotEmpty() },

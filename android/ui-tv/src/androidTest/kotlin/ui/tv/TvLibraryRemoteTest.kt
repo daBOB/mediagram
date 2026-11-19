@@ -25,6 +25,7 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import catalog.CatalogUiState
+import catalog.paged
 import catalog.shelvesOf
 import model.Kind
 import model.MediaSet
@@ -149,9 +150,8 @@ class TvLibraryRemoteTest {
             TvTheme {
                 TvShell {
                     TvCatalogScreen(
-                        state = CatalogUiState.Ready(shelvesOf((0 until 10).map(::film))),
+                        state = CatalogUiState.Ready(shelvesOf((0 until 10).map(::film))).paged(),
                         profile = TvChosenProfile(name = "Ada", onChoose = {}),
-                        fetching = false,
                         restoreKey = restoreKey,
                         onOpenTitle = {},
                         onOpenCollection = {},

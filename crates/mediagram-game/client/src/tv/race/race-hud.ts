@@ -4,10 +4,9 @@
 // texture created mid-game stalled the box GPU for a frame or two.
 
 import * as THREE from "three";
+import { HUD_FONT } from "../table/hud-font";
 import { CORNER_LEFT, CORNER_TOP } from "./race-geometry";
 import { canvasOf } from "./race-world";
-
-export const HUD_FONT = '"Bricolage Grotesque", "Atkinson Hyperlegible", system-ui, sans-serif';
 
 export interface HudPlayer {
   name: string;

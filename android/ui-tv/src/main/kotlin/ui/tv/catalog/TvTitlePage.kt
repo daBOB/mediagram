@@ -17,8 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
-import catalog.factsLine
-import catalog.filmDetailFacts
+import catalog.VersionRow
+import catalog.filmHeaderFacts
 import catalog.franchisesIn
 import data.PortraitRequestLog
 import data.ProgressPoint
@@ -27,7 +27,6 @@ import designsystem.Spacing
 import model.MediaSet
 import model.Progress
 import model.TitleCredits
-import model.ageLabel
 import model.clockTime
 import playback.FilmPreloadState
 import ui.common.catalog.TitlePreloadUi
@@ -68,6 +67,10 @@ import uniffi.mediagram_core.TitleInfo
  * adds it; Similar always, saying so when nothing in the library is like
  * it. [onToggleEditorsChoice] is the ⋯'s one choice, `null` on a kids
  * profile, since a household mark is not a kids profile's to make.
+ *
+ * A film held more than once has no Play of its own: its [versions], one
+ * row and one Play per copy, sit under the header instead, the first row's
+ * Play taking the remote, and the runtime moves from the header to the rows.
  */
 @Composable
 internal fun TvTitlePage(
@@ -90,6 +93,8 @@ internal fun TvTitlePage(
     preload: TitlePreloadUi? = null,
     watchlisted: Boolean = false,
     onToggleWatchlist: () -> Unit = {},
+    versions: List<VersionRow> = emptyList(),
+    onPlayVersion: (MediaSet) -> Unit = {},
 ) {
     val play = remember { FocusRequester() }
     val join = togetherJoinOf(set.setId)
@@ -132,17 +137,19 @@ internal fun TvTitlePage(
             TvTitleSpread(
                 backdropPath = set.backdropPath ?: set.posterPath,
                 title = set.title,
-                facts = factsLine(set.year, set.durationSecs, set.ageLabel(), set.genres),
+                facts = filmHeaderFacts(set),
                 overview = info?.overview,
                 tagline = info?.tagline,
             ) {
                 TvPillRow {
-                    TvSpreadPill(
-                        text = join?.let { "▶ Join" } ?: resumeAt?.let { "▶ Resume from ${clockTime(it)}" } ?: "▶ Play",
-                        onClick = join?.join ?: onPlay,
-                        solid = true,
-                        modifier = Modifier.focusRequester(play),
-                    )
+                    if (versions.isEmpty()) {
+                        TvSpreadPill(
+                            text = join?.let { "▶ Join" } ?: resumeAt?.let { "▶ Resume from ${clockTime(it)}" } ?: "▶ Play",
+                            onClick = join?.join ?: onPlay,
+                            solid = true,
+                            modifier = Modifier.focusRequester(play),
+                        )
+                    }
                     preload?.let { p ->
                         TvPreloadPlate(
                             state = p.state,
@@ -165,6 +172,12 @@ internal fun TvTitlePage(
                     TvPreloadDetailLines(p.state, p.serverLine, p.onOpenStorage, modifier = Modifier.padding(top = Spacing.small))
                 }
             }
+            if (versions.isNotEmpty()) {
+                Column(Modifier.padding(start = page.start, end = page.end, top = TabPanelTop)) {
+                    TvSectionHeading("Versions", style = ShelfSub)
+                    TvVersionRows(versions, onPlayVersion, Modifier.padding(top = Spacing.medium), first = play)
+                }
+            }
             TvSectionTabs(
                 titles = tabs,
                 selected = selected,
@@ -175,7 +188,7 @@ internal fun TvTitlePage(
                 when (tabs[selected]) {
                     "Cast" -> TvCastRow(credits, onOpenPerson, portraits, fetchPortrait, restoreKey)
                     "Similar" -> TvSimilarFilms(similar, onOpenTitle, restoreKey)
-                    "Details" -> TvFactSheet(filmDetailFacts(set))
+                    "Details" -> TvFilmDetails(set)
                     else -> TvFilmOverview(set, info, franchise, onOpenGenre, onOpenFranchise, restoreKey = restoreKey)
                 }
             }

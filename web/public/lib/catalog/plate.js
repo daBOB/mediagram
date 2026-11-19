@@ -8,7 +8,7 @@
  */
 
 import { el } from "../dom.js";
-import { isWatched, progressOf } from "../watch-state.js";
+import { playedOf, positionOf } from "../film-watch.js";
 import { watchedFraction } from "../resume-point.js";
 import { progressRule } from "./set-badge.js";
 
@@ -90,7 +90,7 @@ export function plateOf(set) {
     poster: set.poster ?? null,
     name,
     initials: initialsOf(set.title ?? set.show),
-    progress: watchedFraction(progressOf(set.setId)),
-    watched: isWatched(set.setId),
+    progress: watchedFraction(positionOf(set)),
+    watched: playedOf(set),
   });
 }

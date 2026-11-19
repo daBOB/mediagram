@@ -37,6 +37,10 @@ export interface CatalogSet {
   alang: string | null;
   slang: string | null;
   duration: number | null;
+  /** The film's cut (`Director's Cut`, …); `null` is the standard one. */
+  variant: string | null;
+  /** Every version of a film held more than once, in version order. See `film-versions.js`. */
+  versions?: CatalogSet[];
   total: number;
   partCount: number;
   /** When the uploader added this, in epoch milliseconds. Arrival, not release. */

@@ -37,7 +37,7 @@ fn three_cards_of_ten_seconds_then_seat_0_is_asked_to_roll() {
     }
     assert_eq!(opened, [(0, 0.0), (1, 10_000.0), (2, 20_000.0)]);
     assert_eq!(now, 30_000.0, "the first move begins when the last card closes");
-    assert!(matches!(g.stage, Stage::Ask { since, .. } if since == 30_000.0) && g.turn == 0, "seat 0 rolls: {:?}", g.stage);
+    assert!(matches!(g.stage, Stage::Ask { ask, .. } if ask.opened_at() == 30_000.0) && g.turn == 0, "seat 0 rolls: {:?}", g.stage);
     assert_eq!(options(&g, &p, ANA, now), ["Würfeln"]);
 }
 

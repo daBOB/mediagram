@@ -29,6 +29,7 @@ use super::{ProfileOutcome::*, pin};
 use crate::state::sync;
 
 mod checks;
+mod create;
 mod daily_limit;
 mod hidden_sections;
 
@@ -68,45 +69,6 @@ impl ProfileManager<'_> {
             return Ok(NotSynced);
         }
         let role = NewProfile { pin: Some(new_pin), admin: true, ..Default::default() };
-        self.insert(name, &role)
-    }
-
-    /// A grown-up, with its first PIN, in its maker's household. The admin's to add.
-    pub fn create_grown_up(&mut self, actor_id: &str, pin: &str, name: &str, new_pin: &str) -> Answer {
-        if !pin::valid(new_pin) {
-            return Ok(Invalid);
-        }
-        if let Some(refused) = self.unusable(name)? {
-            return Ok(refused);
-        }
-        if let Some(refused) = self.check(actor_id, pin, Action::CreateGrownUp, None, false)? {
-            return Ok(refused);
-        }
-        let household = self.household_of(actor_id)?;
-        self.insert(name, &NewProfile { pin: Some(new_pin), household, ..Default::default() })
-    }
-
-    /// A kid, belonging to whichever grown-up adds it, with its own limit,
-    /// in that grown-up's household.
-    pub fn create_kid(
-        &mut self,
-        actor_id: &str,
-        pin: &str,
-        name: &str,
-        kids_age: u8,
-        daily_limit: Option<u16>,
-    ) -> Answer {
-        if !valid_age(kids_age) || !daily_limit.is_none_or(daily_limit::valid_minutes) {
-            return Ok(Invalid);
-        }
-        if let Some(refused) = self.unusable(name)? {
-            return Ok(refused);
-        }
-        if let Some(refused) = self.check(actor_id, pin, Action::CreateKid, None, false)? {
-            return Ok(refused);
-        }
-        let (parent_id, household) = (Some(actor_id), self.household_of(actor_id)?);
-        let role = NewProfile { kids: true, kids_age: Some(kids_age), daily_limit, parent_id, household, ..Default::default() };
         self.insert(name, &role)
     }
 

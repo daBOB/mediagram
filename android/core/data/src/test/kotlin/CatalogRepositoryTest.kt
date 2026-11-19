@@ -19,7 +19,7 @@ class CatalogRepositoryTest {
     fun refreshBeforeALibraryIsChosenFails() =
         runTest {
             val repo = DefaultCatalogRepository(FakeCoreProvider(FakeCore()), InMemoryLibrarySettings(), RefreshLog())
-            assertTrue(repo.refresh().isFailure)
+            assertTrue(repo.refresh() is RefreshOutcome.Refused)
         }
 
     /**
@@ -30,10 +30,10 @@ class CatalogRepositoryTest {
     @Test
     fun refreshReadsTheLibraryThisDeviceChose() =
         runTest {
-            val core = FakeCore(refreshResult = 12L)
+            val core = FakeCore()
             val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary("chosen"), RefreshLog())
 
-            assertEquals(12, repo.refresh().getOrThrow())
+            assertEquals(RefreshOutcome.AlreadyCurrent, repo.refresh())
             assertEquals("chosen", core.refreshedHandle)
         }
 

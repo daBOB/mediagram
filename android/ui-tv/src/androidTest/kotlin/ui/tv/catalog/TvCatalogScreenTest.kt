@@ -14,6 +14,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import catalog.CatalogUiState
+import catalog.paged
 import catalog.shelvesOf
 import model.Kind
 import model.MediaSet
@@ -139,7 +140,7 @@ class TvCatalogScreenTest {
         compose.setContent {
             TvTheme {
                 TvCatalogScreen(
-                    state = CatalogUiState.Ready(shelvesOf(sets)),
+                    state = CatalogUiState.Ready(shelvesOf(sets)).paged(),
                     profile = TvChosenProfile(name = profileName, onChoose = {}),
                     onOpenTitle = {},
                     onOpenCollection = {},

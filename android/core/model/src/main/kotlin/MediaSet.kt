@@ -114,6 +114,15 @@ data class MediaSet(
      * Rust side. `null` for anything that is not an episode.
      */
     val seasonPosterPath: String? = null,
+    /** A film's cut (`Director's Cut`, `Extended`, …), as the uploader stored it; null is the standard cut. */
+    val variant: String? = null,
+    /**
+     * Every copy of a film held more than once, in version order, carried by
+     * the copy that stands for the film on the shelves; empty on everything
+     * else, a film held once included. Grouped on read by the catalog's
+     * `groupFilms` — the index and the watch state stay one row per file.
+     */
+    val versions: List<MediaSet> = emptyList(),
 )
 
 enum class Kind {

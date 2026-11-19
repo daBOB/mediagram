@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import catalog.Department
 import catalog.Entry
+import catalog.LibraryPages
 import catalog.Shelf
 import catalog.allSetsById
 import catalog.moviesDepartmentOf
@@ -115,9 +116,9 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         show {
             DepartmentOrShelfWall(
                 shelf = Shelf(Department.DOCUMENTARIES, emptyList()),
+                pages = LibraryPages.Empty,
                 watch = WatchSnapshot.Empty,
                 heldIds = emptySet(),
-                byId = emptyMap(),
                 deptScroll = rememberDepartmentScrollStates(),
                 onOpenTitle = {},
                 onPlay = {},

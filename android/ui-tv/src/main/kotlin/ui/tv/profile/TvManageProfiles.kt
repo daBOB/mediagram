@@ -5,28 +5,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import catalog.profile.ADD_A_GROWN_UP
-import catalog.profile.ADD_A_KID
-import catalog.profile.CHANGE_YOUR_PIN
 import catalog.profile.DONE
 import catalog.profile.MANAGE_PROFILES
 import catalog.profile.ManageUiState
-import catalog.profile.WHO_ARE_YOU
-import catalog.profile.YOUR_PIN
+import catalog.profile.PinPrompt
 import catalog.profile.managingAs
 import catalog.profile.parts
 import designsystem.Overscan
@@ -34,13 +31,13 @@ import designsystem.Spacing
 import model.Profile
 import ui.common.profile.ManageActions
 import ui.tv.TvTextRow
-import ui.tv.player.TvSettingsHeading
 
-/** What covers or replaces the list while it is open. */
-private sealed interface TvManageStep {
+/** What covers or replaces Manage's rows while it is open. */
+internal sealed interface TvManageStep {
     data object List : TvManageStep
 
-    data class Adding(val kid: Boolean) : TvManageStep
+    /** The manager's own row: their PIN. */
+    data class You(val you: Profile) : TvManageStep
 
     data class KidActions(val kid: Profile) : TvManageStep
 
@@ -54,40 +51,38 @@ private sealed interface TvManageStep {
 
 /**
  * Manage profiles on television — the web's panel (`profile-manage.js`) as
- * one column the remote walks: who you are; then, for the admin, the other
- * grown-ups; every grown-up's own kids; for the owner, every household's,
- * each under its name ([TvManagePart]); its own PIN; Done.
- * A row opens its few choices in a dialog rather than laying the web's
- * buttons along it, so Down always means the next person; the sections it is
- * shown are one of them, in a dialog of switches of its own. Adding asks the
- * name on a screen of its own, in place, as every TV text question does.
- * Back is Done.
+ * one column the remote walks: Who's managing? ([TvWhoIsManaging]) until a
+ * grown-up has said who they are with their PIN; then calm rows
+ * ([TvManagePart]) — themselves, the grown-ups and kids they manage — and one
+ * Add someone, then Done. The owner's view of every household is drawn by
+ * [TvOwnerView] instead. A row opens its few choices in a dialog rather than
+ * laying the web's controls under it, so Down always means the next person;
+ * the sections it is shown are one of them, in a dialog of switches of its
+ * own. Adding asks on screens of its own, in place, as every TV text
+ * question does, and as the owner's view does ([TvManageAdds]). The PIN asked
+ * — a tile's, or one a change asks — takes the screen ([prompt]). Done is
+ * [ManageActions.onClose]; Back is [onBack], and on Who's managing? Done.
+ * [spot] keeps the tile chosen there.
  */
 @Composable
 internal fun TvManageProfiles(
     state: ManageUiState,
     actions: ManageActions,
+    onBack: () -> Unit = actions.onClose,
+    spot: TvWhoSpot = remember { TvWhoSpot() },
+    prompt: PinPrompt? = null,
+    onPin: (String) -> Unit = {},
+    onCancelPin: () -> Unit = {},
 ) {
-    BackHandler(onBack = actions.onClose)
     when (state) {
         ManageUiState.Closed -> Unit
-        is ManageUiState.ChoosingActor -> TvWhoAreYou(state, actions)
-        is ManageUiState.Managing -> TvManaging(state, actions)
-    }
-}
-
-@Composable
-private fun TvWhoAreYou(
-    state: ManageUiState.ChoosingActor,
-    actions: ManageActions,
-) {
-    val first = remember { FocusRequester() }
-    LaunchedEffect(state.grownUps.isEmpty()) { first.requestFocus() }
-    TvManagePage(WHO_ARE_YOU, state.notice) {
-        state.grownUps.forEachIndexed { index, profile ->
-            key(profile.id) { TvTextRow(profile.name, onClick = { actions.onActAs(profile.id) }, focusRequester = first.takeIf { index == 0 }) }
+        is ManageUiState.ChoosingActor ->
+            prompt?.let { TvPinPrompt(it, onPin = onPin, onCancel = onCancelPin) } ?: TvWhoIsManaging(state, spot, actions.onActAs, actions.onClose)
+        is ManageUiState.Managing -> {
+            // First, so the add's and the pad's own Backs, composed after it, take Back while they are open.
+            BackHandler(onBack = onBack)
+            TvManaging(state, actions, prompt, onPin, onCancelPin)
         }
-        TvTextRow(DONE, onClick = actions.onClose, focusRequester = first.takeIf { state.grownUps.isEmpty() }, modifier = Modifier.padding(top = Spacing.medium))
     }
 }
 
@@ -95,73 +90,34 @@ private fun TvWhoAreYou(
 private fun TvManaging(
     state: ManageUiState.Managing,
     actions: ManageActions,
+    prompt: PinPrompt?,
+    onPin: (String) -> Unit,
+    onCancelPin: () -> Unit,
 ) {
     var step by remember { mutableStateOf<TvManageStep>(TvManageStep.List) }
-    (step as? TvManageStep.Adding)?.let { adding ->
-        TvAddProfileFlow(
-            heading = if (adding.kid) ADD_A_KID else ADD_A_GROWN_UP,
-            askLimit = adding.kid,
-            onAdd = { name, age, dailyLimit ->
-                step = TvManageStep.List
-                if (age != null) actions.onAddKid(name, age, dailyLimit) else actions.onAddGrownUp(name)
-            },
-            onCancel = { step = TvManageStep.List },
-        )
-        return
-    }
-    val first = remember { FocusRequester() }
-    // Again whenever someone leaves the list: the row the remote was on may be the one that went.
-    LaunchedEffect(state.grownUps.size, state.kids.size) { first.requestFocus() }
-    TvManagePage(managingAs(state.actor.name), state.notice) {
-        state.parts().forEachIndexed { index, part ->
-            key(part.id) {
-                TvManagePart(
-                    part,
-                    first.takeIf { index == 0 },
-                    onGrownUp = { step = TvManageStep.GrownUpActions(it) },
-                    onKid = { step = TvManageStep.KidActions(it) },
-                    onAdd = { step = TvManageStep.Adding(kid = it) },
-                )
-            }
+    val part = state.parts().first()
+    TvManageAdds(state, actions, prompt, onPin, onCancelPin) { adds, notice ->
+        val people = remember { mutableMapOf<String, FocusRequester>() }
+        val add = remember { FocusRequester() }
+        // Again whenever someone leaves the list — the row the remote was on may be the one that went —
+        // back from an add on Add someone, and back from a PIN pad on the person it was asked from.
+        LaunchedEffect(state.grownUps.size, state.kids.size) {
+            val held = adds.holding?.first?.takeIf { id -> part.people.any { it.profile.id == id } }
+            (if (adds.backTo != null) add else people.getValue(held ?: state.actor.id)).requestFocus()
+            adds.backTo = null
         }
-        TvSettingsHeading(YOUR_PIN)
-        TvTextRow(CHANGE_YOUR_PIN, onClick = { actions.onChangePin(state.actor.id) })
-        TvTextRow(DONE, onClick = actions.onClose, modifier = Modifier.padding(top = Spacing.medium))
-    }
-    val back = { step = TvManageStep.List }
-    when (val current = step) {
-        is TvManageStep.KidActions ->
-            TvKidActions(
-                current.kid,
-                onAge = { actions.onSetKidsAge(current.kid.id, it) },
-                onDailyLimit = { step = TvManageStep.DailyLimit(current.kid) },
-                onSections = { step = TvManageStep.Sections(current.kid.id) },
-                onRemove = { actions.onRemove(current.kid.id) },
-                onDismiss = back,
-            )
-        is TvManageStep.DailyLimit -> TvDailyLimitChoices(current.kid, onChoose = { actions.onSetDailyLimit(current.kid.id, it) }, onDismiss = back)
-        is TvManageStep.GrownUpActions ->
-            TvGrownUpActions(
-                current.grownUp,
-                onResetPin = {
-                    back()
-                    actions.onChangePin(current.grownUp.id)
-                },
-                onSections = { step = TvManageStep.Sections(current.grownUp.id) },
-                onRemove = { actions.onRemove(current.grownUp.id) },
-                onDismiss = back,
-            )
-        is TvManageStep.Sections ->
-            state.sectionRows.find { it.id == current.id }?.let { profile ->
-                TvSectionSwitches(profile, state.notice, state.answers, onSet = { actions.onSetHiddenSections(profile.id, it) }, onDismiss = back)
-            }
-        else -> Unit
+        val holds = { id: String? -> Modifier.onFocusChanged { if (it.isFocused) adds.holding = id?.let { one -> one to part.form } } }
+        TvManagePage(managingAs(state.actor.name), notice) {
+            TvManagePart(part, onOpen = { step = it }, onAdd = { adds.adding = part.form }, requesters = people, holds = holds, addRequester = add)
+            TvTextRow(DONE, onClick = actions.onClose, modifier = Modifier.fillMaxWidth().padding(top = Spacing.medium))
+        }
+        TvManageDialog(step, state, actions) { step = it }
     }
 }
 
 /** The page both steps share: Manage's heading, who it is for, and why the last change did not take. */
 @Composable
-private fun TvManagePage(
+internal fun TvManagePage(
     subheading: String,
     notice: String?,
     content: @Composable ColumnScope.() -> Unit,

@@ -33,11 +33,12 @@ pub use crate::protocol_dreifelder::{DreifelderScene, DreifelderStage, FieldPick
 pub use crate::protocol_choice::{AnswerColor, BidRange, ChoiceOption, ChoiceStatus, HotelCard, OutcomeKey, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_zuendstoff::{ZuendstoffScene, ZuendstoffSeat, ZuendstoffStage};
+pub use crate::protocol_letztes_wort::{HostAnswer, LetztesWortPhone, LetztesWortScene, LetztesWortStage};
 pub use crate::protocol_preisfrage::{ArticleView, PreisfrageScene, PreisfrageStage, PriceKeypad, PriceRow, PriceStanding};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
 pub use crate::protocol_settings::{GameKind, GameLength, GameSpeed, LobbySettings, QuizMode};
-pub use crate::protocol_tv::{TvScene, TvView};
+pub use crate::protocol_tv::{Placed, Ranking, TvScene, TvView};
 
 pub type PlayerId = u8;
 pub type ServerTime = f64;
@@ -171,6 +172,10 @@ pub enum PhoneScreen {
     /// Preisfrage's keypad: type a price in euros, send it once.
     Price {
         keypad: PriceKeypad,
+    },
+    /// Letztes Wort: a player's buzzer, the stick, or the round host's desk.
+    LetztesWort {
+        phone: LetztesWortPhone,
     },
     Final {
         rank: u8,

@@ -16,16 +16,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import catalog.CatalogTab
 import catalog.CatalogUiState
-import catalog.HOME_POSTER_ROW_LIMIT
 import catalog.KeptKind
 import catalog.allSetsById
-import catalog.continueWall
 import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.hasContent
-import catalog.latestOf
-import catalog.magazineHomeOf
-import catalog.watchlistWall
 import designsystem.Spacing
 import ui.chrome.LocalTopChrome
 import ui.chrome.pageTurn
@@ -59,7 +54,6 @@ internal fun Shelves(
     onToggleWatchlist: (setId: String, listed: Boolean) -> Unit,
     homeListState: LazyListState,
     deptScroll: DepartmentScrollStates,
-    now: Long,
     titleInfo: suspend (String) -> TitleInfo?,
 ) {
     val shelves = state.shelves
@@ -97,13 +91,8 @@ internal fun Shelves(
             Box(Modifier.pageTurn()) {
             when (chosenTab) {
                 CatalogTab.Home -> HomeScreen(
-                    magazine = remember(shelves, state.watch, state.heldIds, now) {
-                        magazineHomeOf(
-                            shelves, state.watch, editorsChoice = state.watch.editorsChoice, now = now, heldIds = state.heldIds,
-                            recentLimit = HOME_POSTER_ROW_LIMIT,
-                        )
-                    },
-                    latest = remember(shelves) { latestOf(shelves) },
+                    magazine = state.pages.home.magazine,
+                    latest = state.pages.home.latest,
                     watch = state.watch,
                     listState = homeListState,
                     onPlay = { id -> onPlayRun(id, emptyList()) },
@@ -114,8 +103,8 @@ internal fun Shelves(
                 )
 
                 is CatalogTab.Kept -> when (chosenTab.kind) {
-                    KeptKind.CONTINUE -> KeptWall(KeptKind.CONTINUE, continueWall(shelves, state.watch), state.watch, columns, onOpenTitle, state.heldIds, onFinish)
-                    KeptKind.WATCHLIST -> KeptWall(KeptKind.WATCHLIST, watchlistWall(shelves, state.watch), state.watch, columns, onOpenTitle, state.heldIds)
+                    KeptKind.CONTINUE -> KeptWall(KeptKind.CONTINUE, state.pages.continueWall, state.watch, columns, shelfViewChoice(), onOpenTitle, state.heldIds, onFinish)
+                    KeptKind.WATCHLIST -> KeptWall(KeptKind.WATCHLIST, state.pages.watchlistWall, state.watch, columns, shelfViewChoice(), onOpenTitle, state.heldIds)
                     KeptKind.COLLECTIONS -> {
                         val movies = remember(shelves) { everyFilm(shelves) }
                         CollectionsScreen(

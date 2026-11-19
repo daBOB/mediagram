@@ -73,6 +73,7 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val fetchViewModel: FetchViewModel = hiltViewModel()
     val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
+    val updateState by catalogViewModel.updateState.collectAsStateWithLifecycle()
     val titlePreloadViewModel: TitlePreloadViewModel = hiltViewModel()
     val rawQueueRows by titlePreloadViewModel.queueRows.collectAsStateWithLifecycle(initialValue = emptyList())
     // The rail renders in every frame, root and pushed, so its dot is worked out here, once.
@@ -100,12 +101,12 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
         onUpdate = {
             at.toCatalog()
             // The refresh, then the fetch for what it brought home, runs as
-            // one update in the catalog's own coordinator.
+            // one library update.
             catalogViewModel.update()
         },
         onTmdbKey = { at.openMenu(MenuScreen.TmdbKey) },
         onStartOver = onStartOver,
-        updateDisabledReason = updateDisabledReason(catalogState, fetchState.running, fetchState.progress),
+        updateDisabledReason = updateDisabledReason(updateState),
         updateNote = updateNote(fetchState),
         onPreloads = if (catalogState.showsPreloads(queueCount)) at::openPreloads else null,
         preloadCount = queueCount,
@@ -127,7 +128,7 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
                 CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
                     // Ambient's glow lies under every page here, pushed frames included; the player paints its own.
                     AmbientLibrary(drawn = barCanShow) {
-                        LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+                        LibraryBranches(at, catalogState, catalogViewModel, updateState, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
                     }
                 }
             }
@@ -147,8 +148,8 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     // somebody to read it.
     if (at.setId == null) {
         FetchResultDialog(
-            message = fetchResultMessage(fetchState.report, fetchState.error),
-            onDismiss = fetchViewModel::dismissResult,
+            message = fetchResultMessage(updateState.report, updateState.error),
+            onDismiss = catalogViewModel::dismissUpdateResult,
         )
     }
 }

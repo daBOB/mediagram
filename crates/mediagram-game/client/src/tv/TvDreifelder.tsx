@@ -4,7 +4,6 @@ import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { ANSWER_COLORS, ANSWER_MARKS } from "../ui/answers";
 import { Token } from "../ui/Token";
 import { placePicks } from "./dreifelder/dreifelder-fields";
-import { TvFinal, byFinish } from "./TvFinal";
 import "./dreifelder/dreifelder.css";
 
 type Props = { scene: DreifelderScene; players: PlayerInfo[]; conn: Connection };
@@ -17,7 +16,7 @@ type Props = { scene: DreifelderScene; players: PlayerInfo[]; conn: Connection }
 export function TvDreifelder({ scene, players, conn }: Props) {
   const now = useServerNow(conn);
   const { stage } = scene;
-  if (stage.stage === "final") return <TvFinal players={byFinish(players, stage.order)} conn={conn} ranked />;
+  if (stage.stage === "final") return null; // TvApp shows the awards ceremony
 
   const byId = new Map(players.map((p) => [p.id, p]));
   const token = (id: number, size: "sm" | "md" | "lg", className = "") => {

@@ -31,10 +31,12 @@ pub enum GameKind {
     Kritzelei,
     /// Grenzfall: name the country from its outline on the TV.
     Grenzfall,
-    /// Zündstoff: answer to throw the bomb on before its hidden fuse runs out.
+    /// Zündstoff: throw the bomb round the circle and catch it before its hidden fuse runs out.
     Zuendstoff,
     /// Spruchreif: finish the proverb on the TV, German and English by turns.
     Spruchreif,
+    /// Letztes Wort: buzz, answer out loud, the host judges; the stick's holder at the hidden end wins.
+    LetztesWort,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

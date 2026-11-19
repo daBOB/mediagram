@@ -34,11 +34,11 @@ sound classes have no tests; `bun test` with no DOM.
 
 ## Steps
 
-- [ ] Shell controller + tests; React shell; three wrappers become thin.
-- [ ] Shared stage host from Grand Allee's skeleton; per-game world/HUD/camera.
-- [ ] Shared sound engine; Cards cues on it; `race/` no longer imported by
+- [x] Shell controller + tests; React shell; three wrappers become thin.
+- [x] Shared stage host from Grand Allee's skeleton; per-game world/HUD/camera.
+- [x] Shared sound engine; Cards cues on it; `race/` no longer imported by
       Grand Allee for shared parts.
-- [ ] Commit (refactor, patch bump); merge; check.sh.
+- [x] Commit (refactor, patch bump); merge; check.sh.
 - [ ] Commit: Race/Cards adopt compileAsync + disposeScene; fps check on
       funstation (FrameLog/stats; no settings changed); patch bump; merge.
 

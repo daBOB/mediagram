@@ -67,7 +67,7 @@ export function setShelfMode(mode) {
 }
 
 /**
- * List or plates, for the two shelves that have artwork worth showing.
+ * List or plates, for the shelves whose artwork is worth showing: Movies, Continue and My List.
  *
  * Two buttons rather than a select: there are two states, and a menu that
  * opens to offer a choice of two is a menu that should have been the choice.

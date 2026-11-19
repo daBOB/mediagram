@@ -139,7 +139,7 @@ abstract class CoreContract : HouseholdContract() {
         runBlocking {
             val core = core()
             val admin = core.freshProfile("Ada")
-            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, null))
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, null, null))
             val kid = core.profiles().single { it.name == "Kim" }
             assertEquals(Profile(kid.id, "Kim", kids = true, kidsAge = 6u, parentId = admin.id), kid)
             assertEquals(ProfileOutcome.Done, core.unlockProfile(kid.id, ""))
@@ -153,8 +153,8 @@ abstract class CoreContract : HouseholdContract() {
         runBlocking {
             val core = core()
             val admin = core.freshProfile("Ada")
-            assertEquals(ProfileOutcome.Invalid, core.createKid(admin.id, PIN, "Zed", 6u, 0u))
-            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, 45u))
+            assertEquals(ProfileOutcome.Invalid, core.createKid(admin.id, PIN, "Zed", 6u, 0u, null))
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, 45u, null))
             val kid = core.profiles().single { it.name == "Kim" }
             assertEquals(45u, kid.dailyLimit)
             assertEquals(ProfileOutcome.Done, core.setDailyLimit(admin.id, PIN, kid.id, 90u))
@@ -172,7 +172,7 @@ abstract class CoreContract : HouseholdContract() {
         runBlocking {
             val core = core()
             val admin = core.freshProfile("Ada")
-            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, null))
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, null, null))
             val kid = core.profiles().single { it.name == "Kim" }
             assertEquals(emptyList(), kid.hiddenSections)
             assertEquals(ProfileOutcome.Done, core.setHiddenSections(admin.id, PIN, kid.id, listOf("series", "anime", "series", "later")))
@@ -191,10 +191,10 @@ abstract class CoreContract : HouseholdContract() {
         runBlocking {
             val core = core()
             val admin = core.freshProfile("Ada")
-            assertEquals(ProfileOutcome.Invalid, core.createKid(admin.id, PIN, "Kim", 7u, null))
-            assertEquals(ProfileOutcome.NameTaken, core.createKid("nobody", PIN, " ADA ", 6u, null))
-            assertEquals(ProfileOutcome.NotFound, core.createKid("nobody", PIN, "Kim", 6u, null))
-            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "12a4", "Kim", 6u, null))
+            assertEquals(ProfileOutcome.Invalid, core.createKid(admin.id, PIN, "Kim", 7u, null, null))
+            assertEquals(ProfileOutcome.NameTaken, core.createKid("nobody", PIN, " ADA ", 6u, null, null))
+            assertEquals(ProfileOutcome.NotFound, core.createKid("nobody", PIN, "Kim", 6u, null, null))
+            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "12a4", "Kim", 6u, null, null))
             assertEquals(ProfileOutcome.NotAllowed, core.deleteProfile(admin.id, PIN, admin.id))
         }
     }
@@ -218,8 +218,8 @@ abstract class CoreContract : HouseholdContract() {
             val core = core()
             val admin = core.freshProfile("Ada")
             val parent = core.freshProfile("Bo")
-            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u, null))
-            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Lou", 12u, null))
+            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u, null, null))
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Lou", 12u, null, null))
 
             assertEquals(ProfileOutcome.Done, core.deleteProfile(admin.id, PIN, parent.id))
 
@@ -244,7 +244,7 @@ abstract class CoreContract : HouseholdContract() {
             val core = core()
             val admin = core.freshProfile("Ada")
             assertEquals(ProfileOutcome.WrongPin, core.unlockProfile(admin.id, "12a4"))
-            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "", "Kim", 6u, null))
+            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "", "Kim", 6u, null, null))
             assertEquals(ProfileOutcome.Done, core.unlockProfile(admin.id, PIN))
         }
     }
@@ -272,11 +272,11 @@ abstract class CoreContract : HouseholdContract() {
             val core = core()
             val admin = core.freshProfile("Ada")
             val parent = core.freshProfile("Bo")
-            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u, null))
+            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u, null, null))
             val kid = core.profiles().single { it.name == "Kim" }
             assertEquals(ProfileOutcome.NotAllowed, core.setKidsAge(admin.id, PIN, kid.id, 6u))
             assertEquals(ProfileOutcome.NotAllowed, core.deleteProfile(admin.id, PIN, kid.id))
-            assertEquals(ProfileOutcome.NotAllowed, core.createKid(kid.id, "", "Lou", 6u, null))
+            assertEquals(ProfileOutcome.NotAllowed, core.createKid(kid.id, "", "Lou", 6u, null, null))
             assertEquals(ProfileOutcome.Done, core.setKidsAge(parent.id, PIN, kid.id, 6u))
             assertEquals(ProfileOutcome.Done, core.deleteProfile(parent.id, PIN, kid.id))
             assertEquals(listOf("Ada", "Bo"), core.profiles().map { it.name })
@@ -293,7 +293,7 @@ abstract class CoreContract : HouseholdContract() {
             assertEquals(ProfileOutcome.NotAllowed, core.claimAdmin(other.id, PIN))
             assertEquals(ProfileOutcome.NotFound, core.claimAdmin("nobody", PIN))
             assertEquals(ProfileOutcome.NotFound, core.unlockProfile("nobody", PIN))
-            assertEquals(ProfileOutcome.NameTaken, core.createGrownUp(other.id, PIN, "bo", PIN))
+            assertEquals(ProfileOutcome.NameTaken, core.createGrownUp(other.id, PIN, "bo", PIN, null))
             assertEquals(listOf("Ada"), core.profiles().filter { it.admin }.map { it.name })
         }
     }
@@ -339,7 +339,7 @@ abstract class CoreContract : HouseholdContract() {
      */
     private suspend fun CoreInterface.freshProfile(name: String): Profile {
         val admin = profiles().firstOrNull { it.admin }
-        val made = if (admin == null) createFirstAdmin(name, PIN) else createGrownUp(admin.id, PIN, name, PIN)
+        val made = if (admin == null) createFirstAdmin(name, PIN) else createGrownUp(admin.id, PIN, name, PIN, null)
         assertEquals(ProfileOutcome.Done, made, "a local profile must be creatable offline")
         return profiles().single { it.name == name }
     }
