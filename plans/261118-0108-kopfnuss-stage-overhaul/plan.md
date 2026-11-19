@@ -4,7 +4,7 @@ User, 2026-11-18: "overhaul our 3d stages for kopfnuss. everything looks too che
 use blender addons, nice shading effects" (with the blender-director skill).
 
 Status: built, baked, wired into the TV. **Look approved by the user 2026-11-18** ("yes looks right").
-Committed on `fix/kopfnuss-full-game` as Spieltisch 0.195.0 (not pushed, not released). Not measured on the
+Merged into `main` as Spieltisch 0.195.0 on 2026-11-19 (not pushed, not released). Not measured on the
 funstation.
 
 ## Why it looked cheap
