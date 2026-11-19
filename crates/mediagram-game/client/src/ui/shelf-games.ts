@@ -31,7 +31,7 @@ const PLAYABLE: Record<GameKind, { blurb: string; group: ShelfGroup }> = {
   spruchreif: { group: "mini", blurb: "Der Fernseher zeigt den Anfang eines Sprichworts, abwechselnd deutsch und englisch. Wie geht es weiter? Vier Enden stehen zur Wahl – je schneller richtig, desto mehr Punkte." },
   zuendstoff: { group: "mini", blurb: "Alle stehen im Kreis, eine Bombe mit verstecktem Zünder fliegt herum. Tipp an, wem du sie zuwirfst – und fang sie mit Fangen!, wenn sie bei dir landet. Fallen lassen kostet Zeit. Wer sie beim Knall hält, verliert ein Leben." },
   letztes_wort: { group: "mini", blurb: "Eine Frage, viele richtige Antworten und eine versteckte Uhr. Wer buzzert, sagt seine Antwort laut, die Moderation entscheidet. Richtig holt dir den Stab, falsch bist du raus – wer ihn hält, wenn die Zeit um ist, hat das letzte Wort." },
-  kopfnuss: { group: "mini", blurb: "Kategorie wählen, den anderen Streiche aufs Handy schicken, Fragen beantworten – und am Ende der Gipfelsturm um den Sieg." },
+  kopfnuss: { group: "full", blurb: "Kategorie wählen, den anderen Streiche aufs Handy schicken, Fragen beantworten – und am Ende der Gipfelsturm um den Sieg." },
   dreifelder: { group: "mini", blurb: "Eine Frage, drei Felder. Wer falsch steht, fliegt raus – wer als Letzter übrig bleibt, gewinnt." },
   preisfrage: { group: "mini", blurb: "Seltsame Produkte aus dem Netz: Wer schätzt den Preis am genauesten? Je näher dran, desto mehr Punkte." },
   kritzelei: { group: "mini", blurb: "Einer zeichnet mit dem Finger auf dem iPad, der Fernseher zeigt jeden Strich live. Alle raten laut – wer's zuerst hat, punktet." },

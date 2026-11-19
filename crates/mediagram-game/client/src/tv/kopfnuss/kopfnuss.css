@@ -53,6 +53,13 @@
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 1.6rem;
+  box-sizing: border-box;
+  padding: 1.3rem 1.8rem 1.6rem;
+  overflow: hidden;
+  border: 3px solid rgb(255 250 243 / 0.55);
+  border-radius: 2rem;
+  background: #91ddcf;
+  color: #39204e;
 }
 
 .kn-mountain {
@@ -69,6 +76,12 @@
   aspect-ratio: 16 / 9;
 }
 
+.kn-climb .tv-cat,
+.kn-climb .tv-round {
+  color: #39204e;
+  opacity: 1;
+}
+
 .kn-mountain-art {
   position: absolute;
   inset: 0;
@@ -77,62 +90,103 @@
   overflow: visible;
 }
 
+.kn-pyramid-sky { fill: #91ddcf; }
 
-.kn-range { fill: var(--felt-deep); }
-.kn-rock { fill: var(--card-edge); }
-.kn-shade { fill: rgb(12 42 34 / 0.14); }
-.kn-snow { fill: var(--card); }
-.kn-ground { fill: var(--felt-deep); }
-
-.kn-trail {
+.kn-rainbow {
   fill: none;
-  stroke: rgb(12 42 34 / 0.38);
-  stroke-width: 7;
+  stroke-width: 68;
+  opacity: 0.72;
+}
+
+.kn-cloud { fill: #fff8f0; opacity: 0.94; }
+.kn-cloud-dim { opacity: 0.56; }
+
+.kn-tier-top { fill: #fff8f0; opacity: 0.2; }
+
+.kn-tier-face {
+  stroke: rgb(255 248 240 / 0.34);
+  stroke-width: 2;
+}
+
+.kn-tier-side { fill: #39204e; opacity: 0.1; }
+
+.kn-tier-pattern {
+  fill: none;
+  stroke: #fff8f0;
+  stroke-width: 5;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 16 12;
+  opacity: 0.58;
 }
 
-.kn-station circle {
-  fill: var(--card);
-  stroke: rgb(12 42 34 / 0.45);
-  stroke-width: 3;
+.kn-summit-halo { fill: #fff4b8; opacity: 0.24; }
+
+.kn-summit-star {
+  fill: #fff2a8;
+  stroke: #d89c2f;
+  stroke-width: 7;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 18px rgb(255 244 184 / 0.9));
+  transform-origin: 800px 118px;
+  animation: kn-star-pulse 2.8s ease-in-out infinite;
 }
 
-.kn-station text {
-  fill: var(--ink);
+@keyframes kn-star-pulse {
+  50% { transform: scale(1.045); }
+}
+
+.kn-station-disc {
+  fill: #fff8df;
+  stroke: #d89c2f;
+  stroke-width: 4;
+}
+
+.kn-station-no {
+  fill: #39204e;
   font-family: var(--display);
-  font-weight: 800;
-  font-size: 20px;
-  text-anchor: middle;
+  font-size: 18px;
+  font-weight: 900;
 }
 
-.kn-pole {
-  stroke: var(--ink);
-  stroke-width: 6;
-  stroke-linecap: round;
-}
-
-.kn-flag { fill: var(--yellow); }
-
-/* A climber stands on its spot: the avatar above, the name on the trail. */
+/* Each full figure stands on a tier; lower steps naturally draw in front. */
 .kn-climber {
   position: absolute;
   display: grid;
   justify-items: center;
-  gap: 0.15rem;
-  translate: -50% calc(-100% + 0.9rem);
+  gap: 0;
+  translate: -50% calc(-100% + 0.45rem);
   transition: left 500ms ease-out, top 500ms ease-out;
 }
 
+.kn-climber-figure {
+  display: block;
+  width: auto;
+  height: clamp(4.2rem, 13vh, 8.6rem);
+  max-width: none;
+  object-fit: contain;
+  filter: drop-shadow(0 0.35rem 0.2rem rgb(57 32 78 / 0.28));
+}
+
+.kn-climber > .token {
+  width: 4.2rem;
+  height: 4.2rem;
+  margin-bottom: 0.25rem;
+  font-size: 1.7rem;
+}
+
 .kn-climber-name {
-  padding: 0 0.5rem;
-  border-radius: 999px;
-  background: var(--ink);
-  color: var(--card);
-  font-size: 0.95rem;
-  font-weight: 700;
+  max-width: 9rem;
+  padding: 0.16em 0.55em;
+  overflow: hidden;
+  border: 2px solid var(--player, #fff8df);
+  border-radius: 0.45em;
+  background: #39204e;
+  color: #fff8f0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  box-shadow: 0 0.15rem 0.35rem rgb(57 32 78 / 0.25);
 }
 
 /* ------------------------------------------------------------ Fact */
@@ -162,4 +216,195 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
+}
+
+/* Blender arena: readable HTML above the 3D set, old screens only as fallback. */
+.kn-show {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  background: #03030d;
+}
+
+.kn-arena-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.kn-show-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.kn-show.is-3d .tv-quiz,
+.kn-show.is-3d .kn-climb,
+.kn-show.is-3d .kn-fact,
+.kn-show.is-3d .kn-vote {
+  background: transparent;
+}
+
+.kn-show.is-3d .tv-cat,
+.kn-show.is-3d .tv-quiz-head,
+.kn-show.is-3d .kn-climb .tv-round {
+  color: #fff8f0;
+  text-shadow: 0 2px 5px #03030d;
+}
+
+/* The Gipfelsturm plays under an open pastel sky: dark ink reads there, cream does not. */
+.kn-show.is-3d .kn-climb .tv-cat,
+.kn-show.is-3d .kn-climb .tv-round {
+  color: #2b1a4f;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.55);
+}
+
+.kn-show.is-3d .kn-climb {
+  display: block;
+}
+
+.kn-show.is-3d .kn-mountain {
+  display: none;
+}
+
+.kn-show.is-3d .kn-fact-title {
+  position: absolute;
+  top: 7vh;
+  color: #fff8f0;
+  text-shadow: 0 3px 14px #03030d;
+}
+
+.kn-show.is-3d .kn-fact {
+  place-content: end center;
+  gap: 0.7rem;
+  padding: 0 4vw 3vh;
+}
+
+.kn-show.is-3d .kn-fact .qcard {
+  max-width: 48rem;
+}
+
+/* The winner stands on the podium in 3D; their head token would only cover them. */
+.kn-show.is-3d .kn-fact .token {
+  display: none;
+}
+
+.kn-show .kn-fact-kicker {
+  color: #39204e;
+  opacity: 0.72;
+}
+
+/* Category choice: labels above the reference doors, not answer cards over them. */
+.kn-category-show.is-3d .kn-vote {
+  position: relative;
+  display: block;
+  height: 100%;
+}
+
+.kn-category-show.is-3d .tv-quiz-head {
+  position: absolute;
+  top: 2.5vh;
+  right: 4vw;
+  left: 4vw;
+  color: #39204e;
+  text-shadow: none;
+}
+
+.kn-category-show.is-3d .tv-cat,
+.kn-category-show.is-3d .tv-round {
+  color: #39204e;
+  text-shadow: none;
+}
+
+.kn-category-show.is-3d .tv-answers {
+  position: absolute;
+  top: 10.5vh;
+  right: 4vw;
+  left: 4vw;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.2vw;
+}
+
+.kn-category-show.is-3d .tv-answer {
+  display: flex;
+  min-height: 0;
+  justify-content: center;
+  padding: 0.35rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #39204e;
+  font-size: clamp(1rem, 1.65vw, 2rem);
+  text-align: center;
+  text-shadow: 0 1px 0 #fff8f0;
+}
+
+.kn-category-show.is-3d .key-mark {
+  display: none;
+}
+
+.kn-category-show.is-3d .tv-answer.is-wrong {
+  opacity: 0.55;
+}
+
+.kn-category-show.is-3d .tv-answer.is-correct .tv-answer-label {
+  text-decoration: underline 0.16em #b7892e;
+  text-underline-offset: 0.2em;
+}
+
+.kn-category-show.is-3d .kn-votes {
+  margin-left: 0.5rem;
+  font-size: 1.05rem;
+}
+
+.kn-category-show.is-3d .qcard {
+  position: absolute;
+  bottom: 5.5vh;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  max-width: 70vw;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0.7rem 1.2rem;
+  transform: translateX(-50%);
+  box-shadow: 0 0.25rem 1.2rem rgb(57 32 78 / 0.18);
+}
+
+.kn-category-show.is-3d .qtext,
+.kn-category-show.is-3d .qcard-foot {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.kn-category-show.is-3d .kn-hits {
+  font-size: 1rem;
+}
+
+.kn-category-show.is-3d .tv-table {
+  position: absolute;
+  right: 2vw;
+  bottom: 0.8vh;
+  left: 2vw;
+  gap: 0.4rem;
+}
+
+.kn-category-show.is-3d .tv-seat {
+  gap: 0.3rem;
+  color: #39204e;
+  font-size: 0.95rem;
+}
+
+.kn-category-show.is-3d .tv-seat-name,
+.kn-category-show.is-3d .tv-seat-score {
+  color: #39204e;
+}
+
+.kn-category-show.is-3d .tv-seat .token {
+  display: none;
 }

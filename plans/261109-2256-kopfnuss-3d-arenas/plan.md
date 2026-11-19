@@ -6,7 +6,40 @@ Studio clips): a dark stage, light rings and light columns in the four answer
 colours, the players' avatars standing on pads. The text stays HTML on top (question card, answers, clock), as in the
 mockups; the 3D is behind it.
 
+**Deprecated (user, 2026-11-15): 3D on the TV box.** "mark the 3d on tv box as deprecated. maybe we drop it. if we want to play we have to use the funstation." 3D games are played on the funstation (the TV PC, Spieltisch in WayDroid); the Skyworth box may be dropped altogether, not decided. Phase 1's spike and every measure below that names the box now runs on the funstation; the box
+numbers stay as history.
+
+User, 2026-11-15: "Kopfnuss is … a main game. This is our quiz game like a TV show with 3D stages and a NPC
+Showmaster." So Kopfnuss is a full game on the shelf (0.192.7), and the arena gets a computer-run showmaster on
+the stage. Mockup (2026-11-15, `reports/showmaster-mockup-nutcracker-and-walnut.jpg`, source
+`reports/mockup-source/showmaster.js`, `?host=nut|walnut`, `&hostcam=1` for the close-up): **A** an Erzgebirge
+nutcracker in lacquered wood with a microphone, its hinged jaw the talking mouth, a gold walnut on the shako;
+**B** a floating walnut head whose lower shell is the jaw. Both are turned primitives, no skinning. **Chosen: B, the
+walnut** (user, 2026-11-15: "lets use walnut"). In every stage: `reports/showmaster-walnut-all-stages.jpg` — it floats
+beside the signs while players pick, top left while tricks fly and during the Gipfelsturm, on a lit spot behind the
+players for the question and reveal, beside the winner on the fact card. Shader effects in motion, walnut floating and talking:
+`reports/walnut-shader-effects-all-stages.mp4`. **Voice: Puck** (user, 2026-11-15), Gemini TTS `gemini-3.8-flash-tts`,
+"cheerful and quick" (`reports/walnut-voice-Puck.mp3`; the other candidates beside it). Lines are voiced ahead of
+time and shipped, never generated on the TV PC (no internet or key needed at game night); every question in the
+packs can be voiced the same way, player names cannot (the walnut talks around them). Generator:
+`reports/mockup-source/make-walnut-voice.py`. Talking with sound, the jaw driven by the voice's loudness
+(`make-jaw-track.py`): `reports/walnut-talking-puck.mp4`. No phase covers the showmaster yet.
+
 Branch: `feat/dreifelder-on-games` (has Kopfnuss, Dreifelder and the games line's catalogue).
+
+## Avatar detail prototype (2026-11-16)
+
+User: "make the avatars more details like the original", with screenshots of Knowledge Is Power. The arena keeps its
+own look (genre-inspired, see the top); what was taken is only the question of detail. All avatar copies share one
+52k-triangle mesh; the detail lost today is in the light and the maps: the ceremony copies drop the roughness map and
+are drawn in flat matcap light. PROTOTYPE `reports/mockup-source/` (`bun …/serve-arena-prototype.mjs`, then
+`?variant=` or the floating bar): **A** today; **B** the 2K game copies (colour, normal, roughness) under real light —
+environment fill, a warm key spot with soft shadows, pink and blue rims; **C** B with the camera close and low and the
+players in a tighter arc. Sheets: `reports/avatar-detail-variants.jpg`, `reports/avatar-detail-closeup.jpg`. Not
+chosen yet; not measured on the funstation. More detail than the 52k mesh needs new models (Meshy, credits).
+"reduce the glossy effect" (user, 2026-11-16): in B and C the avatars carry no metal and their roughness is lifted to
+at least 0.8 (`?gloss=`, default 0.2), the environment fill is lower and the walnut's lacquer duller
+(`reports/avatar-gloss-before-after.jpg`). Accepted: "thats better" (user, 2026-11-16) — matte, gloss 0.2.
 
 ## Stages → arena
 

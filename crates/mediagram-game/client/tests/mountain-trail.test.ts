@@ -14,6 +14,14 @@ test("every step along the trail is higher than the one before", () => {
   for (let i = 1; i <= 10; i++) expect(pointAt(i / 10).y).toBeLessThan(pointAt((i - 1) / 10).y);
 });
 
+test("every tier top lies inside its pyramid face", () => {
+  for (let step = 1; step <= 10; step++) {
+    const halfWidth = (1320 - (step - 1) * 112) / 2;
+    expect(TRAIL[step].x).toBeGreaterThanOrEqual(800 - halfWidth);
+    expect(TRAIL[step].x).toBeLessThanOrEqual(800 + halfWidth);
+  }
+});
+
 test("climbers on different steps stand where their step is", () => {
   const at = spots([{ player: 1, step: 0 }, { player: 2, step: 10 }], 10);
   expect(at.get(1)).toEqual(pointAt(0));

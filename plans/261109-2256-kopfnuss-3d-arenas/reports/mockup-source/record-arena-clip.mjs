@@ -1,12 +1,12 @@
 // Records one arena stage with effects as frames (setT steps the shader clock and the avatars), then an MP4.
 // usage: bun record-arena-clip.mjs <out.mp4> <theme> <stage> [seconds=3] [fps=12]
-const [out, theme, stage, secs = "3", fps = "12"] = process.argv.slice(2);
+const [out, theme, stage, secs = "3", fps = "12", host = "", voice = ""] = process.argv.slice(2);
 const B = `${process.env.HOME}/.claude/skills/gstack/browse/dist/browse`;
 const dir = `${out}.frames`;
-const run = (...a) => (Bun.spawnSync([B, ...a], { cwd: "/home/andre/Workspace/spieltisch/wt-dreifelder-merge" }).stdout.toString().trim());
+const run = (...a) => (Bun.spawnSync([B, ...a], { cwd: import.meta.dir }).stdout.toString().trim());
 Bun.spawnSync(["mkdir", "-p", dir]);
 run("viewport", "1920x1080");
-run("goto", `http://127.0.0.1:8741/index.html?theme=${theme}&stage=${stage}&fx=1&n=${Date.now()}`);
+run("goto", `http://127.0.0.1:8741/index.html?theme=${theme}&stage=${stage}&fx=1${host ? `&host=${host}` : ""}${voice ? `&voice=${voice}` : ""}&n=${Date.now()}`);
 for (let i = 0; i < 120 && !run("js", "document.title").includes("ready"); i++) await Bun.sleep(250);
 const n = Number(secs) * Number(fps);
 for (let i = 0; i < n; i++) {
