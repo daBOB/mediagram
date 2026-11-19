@@ -5,12 +5,139 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## Spieltisch 0.192.8 — Every 3D avatar in KTX2 UASTC
+## Spieltisch 0.195.1 — Every 3D avatar in KTX2 UASTC
 
 **Changed**
 
 - The awards ceremony's 22 avatars carry KTX2 UASTC textures instead of WebP (colour 2048, normal 1024), the format every 3D avatar copy now uses: the ceremony, the Kopfnuss arena, Zündstoff 3D and later games. UASTC stays compressed in GPU memory on any GPU, so the same memory holds a sharper map. The ceremony reads them with a KTX2Loader (`/basis/`, as Grand Allee); `make-ceremony-avatars.mjs` writes only UASTC and defaults to Spieltisch's assets folder. The 22 files grow from 40 MB to 82 MB, and the APK with them. Side by side they look the same (`plans/261115-2330-avatars-uastc/reports/avatars-webp-vs-uastc.jpg`).
 
+## Spieltisch 0.195.0 — Kopfnuss plays on 3D stages
+
+**Added**
+
+- Kopfnuss's TV stages are 3D sets behind the game's text, with the players' avatars standing in them and the walnut showmaster floating beside: a hall of four glitter-gold doors for the category vote and the tricks, a quiz studio with a gloss floor, light rings and a marquee arch for question and reveal, a candy pyramid on an island above the clouds for the Gipfelsturm (climbers stand on its ten treads), and a velvet-curtain stage with a gold podium for the fact. The final keeps the shared awards ceremony. Without WebGL the earlier HTML screens show.
+- The sets are built and lit in Blender Cycles from Poly Haven scans (marble, walnut veneer, velvet, a studio HDRI, all CC0) and procedural gold, glitter, lacquer and candy, then baked into one picture per set that the TV draws unlit: soft shadows, bounce light, glow and floor reflections at the cost of one texture lookup (`tools/kopfnuss-arena`, `public/kopfnuss/kopfnuss-arena.glb`, 4.5 MB). Small shaders add the moving light on top: chasing ring and marquee lights, spot beams, sparkle on the doors, a halo round the summit star, confetti for the winner (`tv/kopfnuss/arena-fx.ts`). They stand still under reduced motion.
+- Not measured on the funstation yet. Plan: `plans/261118-0108-kopfnuss-stage-overhaul/`.
+
+**Changed**
+
+- Kopfnuss sits in the shelf's **Spiele** half, not under **Minispiele**: it is the quiz played as a TV show, seven rounds and the Gipfelsturm (`ui/shelf-games.ts`).
+
+## Spieltisch 0.194.1 — Zündstoff's TV is told the timing instead of guessing it
+
+**Changed**
+
+- The host sends Zündstoff's TV when the bomb leaves the hand, when and how a holder came by it (caught, dropped, or the round's start) and when it went off. The TV no longer keeps copies of the host's throw and pick-up times or works out from them whether a bomb was caught, so retuning those times on the host cannot silently break the animation. A TV joining just after a catch now shows the catcher's leap.
+- Zündstoff's TV frees its avatars' decoded textures when the game ends, with the scene clean-up Grand Allee already used, and uploads the avatars' normal maps before play like their colours, so the first frame no longer stalls on them.
+- The HUD label helpers moved from Grand Allee to the shared table code, since Zündstoff draws with them too.
+
+## 0.187.1 — New titles get their posters on a device that slept through them
+
+**Fixed** (Android)
+
+- **A device catches up on the artwork of an index it installed bare.** Funstation showed no posters for the 125 titles added on 2026-11-18: the three indexes published that day arrived while its app was not listening, and opening it installed the newest one without fetching. Funstation also ran 0.180.4, a hand-installed build from before the fix that fetches when an opening installs a newer index, and that fix alone would not have caught up an index already installed. The app now remembers which index it last finished fetching artwork for; a start that reaches the channel and finds the installed index not yet fetched for fetches it once, quietly. A start that cannot reach the channel does not try, and a fetch that could not run leaves the index for the next start.
+
+## 0.187.0 — Season posters on every show page
+
+**Changed** (web, tablet and phone)
+
+- **A show's seasons are a row of season posters**, as the television has had since the user chose season cards: the web's season select and the tablet's season drop-down are gone. Each card is the season's own cover where the library holds one (22,660 of 22,931 episodes do), else the show's poster with the season's number over it; the watched share is the poster's rule, and under it the season, its episode count and how many are watched. The season showing has a rule under it, as the showing tab does; a press shows that season's episodes below, through the URL on the web as before. On the tablet the row opens on the season showing.
+
+## 0.186.0 — Continue and My List as a list on the tablet
+
+**Added** (tablet and phone)
+
+- **Continue and My List offer List · Grid**, as the web's did in 0.185.0 and the tablet's Movies page already did: one choice per device, the same one Movies reads. List draws a row per title with its show, episode, year and runtime, the resume time under them, and *Mark finished* on Continue's rows. Grid is still the tablet's default.
+
+## 0.185.0 — Continue and My List as posters
+
+**Added** (web)
+
+- **Continue and My List offer List · Grid**, beside their count, as Movies does. One choice per device, shared by all three pages. Grid draws the posters six to a row, as the tablet draws these two pages, with the progress bar, the resume time and *Mark finished* under each poster on Continue. List stays the default.
+
+## 0.184.0 — Ambient on the web
+
+**Added** (web)
+
+- **Ambient in Settings → Appearance → Artwork**, as on the tablet: rounded cards, and four soft blobs drifting slowly behind the page like a lava lamp's, merging as they pass, faint. The glow takes a poster's strongest colour (its most vivid family of hue, from a few dozen pixels, lifted so dark posters still glow; a black-and-white poster glows grey), by the same pick the Android app makes. A title's or a show's page glows in its own picture's colour; Home and the shelves glow in the colour of the row scrolled to (its first poster on screen, about a third of the way down the window), easing to the next as you scroll. The glow never shows over a page's backdrop art and fades back in over 96px around it. With reduced motion the glow stays still. Drawn as one fixed layer of CSS, so it never redraws the page.
+
+## 0.183.2 — A tidy Profiles page and a centred countdown
+
+**Changed** (web)
+
+- **Settings → Profiles reads as one list.** You is now a row like the people under Manage profiles — the initial, the name, who they are (Owner · Admin, or Kid · FSK 6), Switch profile at its end — with Subtitles on a row of the same columns. A household's name sits over its *Admin X · N profiles* line, its ⋯ at the end of both. *As X* under Manage profiles shows only when the one managing is not the one watching. The System and playback status link is gone from the page: the rail's System link goes to the same place.
+- **The loading countdown stands in the middle of the screen**, its words under it, instead of low on the left of an empty page.
+
+## 0.183.1 — Settings opens before the profiles are read
+
+**Fixed**
+
+- The web Profiles tab no longer breaks Settings when no owner has been read yet and the chosen profile has no id: the two missing ids no longer count as "the owner is managing". 0.183.0's Android release (channel message 51879) is unchanged.
+
+## 0.183.0 — Who's managing? and the calm Profiles page on the tablet and the TV
+
+**Added**
+
+- The Android tablet/phone and TV Profiles pages match the web's: picker → Manage profiles asks *Who's managing?* with the picker's own avatar tiles (the owner first, labelled Owner, asking the owner's PIN; an Owner tile at the end on a device showing another household). The owner's view lists every household with its actions (⋯ on the tablet, the household line's OK on the TV), one row per person that opens that person's controls, one *Add someone* per household (Grown-up or Kid, *Belongs to* only with more than one grown-up), *Create a household*, and *This device* as one line. Anyone else managing gets the same rows for what they may manage.
+- On the TV, Back from the owner view returns to the tiles with the chosen tile focused; after an add or a PIN the remote returns to the row it came from. A refused add keeps what was typed on every surface.
+- Which rows a manager sees and what each opens is decided once, in the shared Android state, for both the tablet and the TV.
+
+**Removed**
+
+- The households-only Owner button and its panel, the *Everyone here* list and the *Who are you?* pills on Android, as on the web.
+
+Not released to devices yet: Android reaches the tablet and the TV with the next release.
+
+## 0.182.1 — The calm Profiles page closes its forms and menus the way keys expect
+
+**Fixed**
+
+- The Grown-up / Kid choice in *Add someone* shows one selection: keyboard focus rings the whole choice and follows the option picked.
+- Rename, Change admin and Move a grown-up here, opened from a household's ⋯, have a Cancel and close on Escape, back to that ⋯. The ⋯ list closes when Tab leaves it.
+- Each *Add someone* is announced with its household ("Add someone to Home"). After Reset PIN or Change your PIN focus returns to that person's row; after a household is deleted, to the next household or *Create a household*.
+
+## 0.182.0 — The owner manages every household from one calm page
+
+**Added**
+
+- The owner can add a grown-up straight into any household and a kid for any grown-up. `POST /api/profiles` takes an optional `household` (grown-up) or `parentId` (kid); a household with no admin makes the new grown-up its admin. The rule is the same in the web server, the Rust core and Android, held to `profile-rules.json`; clients that send neither field behave as before.
+- Watching as the owner, Settings → Profiles shows every household on one page: its name, *Admin X · N profiles* and a ⋯ menu with the actions the rule allows (Rename, Change admin, Move a grown-up here, Use on this device, Delete); one row per person (name, role line) that opens that person's controls on a tap; one *Add someone* per household (Grown-up or Kid, *Belongs to* only with more than one grown-up, defaulting to the admin); *Create a household*; *This device* as one line. The owner's PIN is asked once, at the first change, and dropped when the page is left or on a wrong PIN.
+- Picker → Manage profiles asks *Who's managing?* with the same avatar tiles as *Who's watching?*: the owner first and labelled Owner, an Owner tile at the end on a device showing another household. The Everyone here list, the Who are you? pills and the separate Owner button are gone. A grown-up who is not the owner sees the same tiles in Settings, with This device below them, and then the same calm rows for what they may manage.
+- Android (tablet/phone and TV) has the owner view and add-anywhere in its first, denser form; Who's managing? and the calm rows follow there. Not released to devices.
+
+Spec `docs/superpowers/specs/2026-11-16-owner-profiles-view-design.md` and `2026-11-17-who-is-managing-and-calm-owner-view-design.md`, plan `plans/261116-2016-owner-profiles-view/`.
+
+## Spieltisch 0.194.0 — Zündstoff is a bomb thrown round a circle in 3D
+
+**Changed**
+
+- Zündstoff asks no questions any more. The TV shows the players' avatars standing in a circle round a felt table, seen from high above; whoever holds the bomb taps a name on the phone to throw it, and it flies about a second. The target's phone shows one key, "Fangen!": a tap as the bomb lands catches it, a tap too early fumbles it, no tap misses. A caught bomb can be thrown on a moment later, so a second tap on Fangen! throws nothing; a missed one drops at the target's feet and can be thrown on two seconds later, once it is picked up. Throwing straight back is allowed.
+- The fuse is hidden (18–40 s, stretched by Tempo); nothing on the TV or the phones hints at it. Whoever holds the bomb when it goes off loses one of three lives (Dauer: 2, 3 or 5); a bomb still in the throwing hand hits the thrower, one in the air its target; the last one with lives left wins, and the victim starts the next round. The house throws for an away holder; an away target never catches.
+- With no questions left, kids play Zündstoff like everyone else.
+- The TV's avatar copies carry five more clips (throw, leaping catch, catch and fall, bend-over pick-up, the fall at the blast), rigged and animated on Meshy for all 22 avatars; the copies grow from 41 to 43 MB. Zündstoff's TV is built for the funstation. Spec `docs/superpowers/specs/2026-11-15-zuendstoff-3d-design.md`, plan `plans/261115-2340-zuendstoff-3d/`.
+
+## 0.181.0 — A film held more than once is one entry
+
+**Added**
+
+- A film uploaded twice, at another quality or in another cut, is one card with a "2 versions" badge, on the web player, the phone and tablet, and the TV. Its page lists each copy (`Standard · 4K HDR · 3h 5m · 13 GB`, with codecs and audio languages) with its own Play, in place of the one Play button. Copies are grouped by their TMDB id when the catalogue is read; the index, the watch state and the sync record are unchanged.
+- A card that plays straight away (Continue, My List, a list, search) asks which copy to play: a dialog on the web, a bottom sheet on the phone. Escape, Back or Cancel plays nothing. A Join, a scene and the hand-over to the next title on a list play their copy without asking.
+- A position carries between copies of one cut (stop the 1080p copy, resume in 4K) but never into another cut. A film counts as watched when any copy is; Continue lists it once.
+- The uploader guesses a film's cut from its file name (Director's Cut, Extended, Uncut, Final Cut, Remastered; only the tags after the year) and asks to confirm it at a terminal. When the film is already held it says which copies are, and it refuses an exact duplicate (same quality, HDR, cut and audio languages) unless someone at the terminal says yes.
+
+## Spieltisch 0.193.7 — The final screen counts the players who played
+
+**Changed**
+
+- "Platz 2 von 4" on the phone's final screen counts the players who were in the game when it ended, a player whose phone had gone away included. Someone who joined only to wait for the next game is no longer counted: in Dreifelder and Zündstoff a player who joined during the game no longer raises the number, and in every game someone who joins after the end no longer raises it for everyone else.
+- Whoever joins after a game has ended sees "… läuft – Du spielst in der nächsten Runde mit." instead of a last place of their own, and the award ceremony on the TV no longer lists them. Flüchtig's ceremony lists the fugitive and the hunters only, not players who joined during the chase.
+- Joining a running Dreifelder or Zündstoff now says what every other game says, "Du spielst in der nächsten Runde mit.": Dreifelder said "Beim nächsten Spiel bist du dabei.", and Zündstoff showed the newcomer as already out of the game.
+
+## Spieltisch 0.193.0 — Letztes Wort, the last right answer keeps the stick
+
+**Added**
+
+- Letztes Wort, a minigame for three to eight. Each round is one question with five to ten right answers ("Nenne einen Planeten unseres Sonnensystems") and a hidden clock of 15–35 s. Players buzz on the phone (a buzzer sound on the phone and the TV) and say their answer out loud; the round's host, a different player each round in seat order, judges it on a desk that lists the answers: a right one takes the winning stick, a wrong one (or one already given) is out for the round, "Auch richtig" accepts an answer the list lacks. Whoever holds the stick when the time runs out wins the round; it ends early when nobody else could take the stick. The TV never shows an answer or a clock. 68 bundled questions; Tempo stretches the hidden clock, Dauer gives one, two or three laps round the table; a host who leaves hands the round to the next player with a new question. Spec `docs/superpowers/specs/2026-11-15-letztes-wort-design.md`, plan `plans/261115-1559-letztes-wort/`.
 ## Spieltisch 0.192.6 — Kids mode asks no general questions
 
 **Fixed**

@@ -4,8 +4,7 @@
 
 import type { Card } from "../../protocol/Card";
 import { RANKS, RANK_LABEL, SUITS, SUIT_SYMBOL, isRed } from "../../ui/card-face";
-
-export const HUD_FONT = '"Bricolage Grotesque", "Atkinson Hyperlegible", system-ui, sans-serif';
+import { HUD_FONT } from "../table/hud-font";
 const SYMBOL_FONT = '"Atkinson Hyperlegible", "DejaVu Sans", system-ui, sans-serif';
 
 export const COLS = 8;

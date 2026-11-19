@@ -63,8 +63,15 @@ export function ownerOf(profiles: RoleView[], kid: RoleView): string | null {
 export function allowed(profiles: RoleView[], actorId: string, action: Action, targetId: string): boolean {
   const actor = profiles.find((one) => one.id === actorId);
   if (actor === undefined || actor.kids) return false;
-  if (action === "create-grown-up") return actor.admin;
-  if (action === "create-kid") return true;
+  // create-grown-up names a household (not a profile); create-kid names the parent. "" means the maker's own.
+  if (action === "create-grown-up") {
+    return actor.admin && (targetId === "" || targetId === householdOf(actor) || actor.owner === true);
+  }
+  if (action === "create-kid") {
+    if (targetId === "" || targetId === actor.id) return true;
+    const parent = profiles.find((one) => one.id === targetId);
+    return actor.owner === true && parent !== undefined && !parent.kids;
+  }
 
   const target = profiles.find((one) => one.id === targetId);
   if (target === undefined) return false;

@@ -23,8 +23,8 @@ impl Game for Idle {
             board: false,
         }
     }
-    fn is_finished(&self) -> bool {
-        false
+    fn ranking(&self, _: &[crate::room_seats::Player]) -> Option<crate::protocol::Ranking> {
+        None
     }
 }
 
@@ -183,4 +183,91 @@ fn a_tv_hello_on_a_seated_socket_frees_the_seat() {
     hello_again(&mut r, 1, "tv", "");
     assert!(!r.players()[0].connected());
     assert_eq!(r.leader(), None);
+}
+
+/// Seats Ana and Ben, or the whole room when `seats` is `None`; a tap ends it, Ben first with 7 points, the rest by score.
+struct Duel {
+    seats: Option<Vec<PlayerId>>,
+    over: bool,
+}
+impl Game for Duel {
+    fn on_action(&mut self, ctx: &mut GameCtx, _: PlayerId, _: &Action) -> Result<(), ActionError> {
+        ctx.players[1].score = 7;
+        self.over = true;
+        Ok(())
+    }
+    fn on_tick(&mut self, _: &mut GameCtx) {}
+    fn phone_screen(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+        Idle.phone_screen(view, player)
+    }
+    fn tv_scene(&self, view: &ViewCtx) -> TvScene {
+        Idle.tv_scene(view)
+    }
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        self.seats.clone()
+    }
+    fn ranking(&self, players: &[crate::room_seats::Player]) -> Option<crate::protocol::Ranking> {
+        let seated = players.iter().filter(|p| self.seats.as_ref().is_none_or(|s| s.contains(&p.id)));
+        self.over.then(|| crate::protocol::Ranking::by_score(seated))
+    }
+}
+
+/// Ana (phone 1) and Ben (phone 2) start a Duel from the TV (9), picked as Heimlauf; returns Ben's token.
+fn duel(seats: Option<Vec<PlayerId>>) -> (Room, String) {
+    let mut r = Room::new(cfg(8), Box::new(move |_, _| Box::new(Duel { seats: seats.clone(), over: false })));
+    hello(&mut r, 1, "Ana", None);
+    let ServerMsg::Welcome { token: Some(ben), .. } = hello(&mut r, 2, "Ben", None) else { panic!("Ben is not seated") };
+    super::sketch::tv_hello(&mut r, 9);
+    let race = Action::Configure {
+        game: crate::protocol::GameKind::Race,
+        quiz_mode: crate::protocol::QuizMode::Mixed,
+        speed: Default::default(),
+        length: Default::default(),
+        kids_only: false,
+    };
+    assert!(action(&mut r, 9, race).is_empty());
+    assert!(action(&mut r, 9, Action::StartGame).is_empty());
+    (r, ben)
+}
+
+fn phone(r: &Room, conn: ConnId) -> PhoneScreen {
+    let Some(ServerMsg::Phone { view }) = r.view_for(conn, 0.0) else { panic!("no phone view") };
+    view.screen
+}
+
+fn tv_ranking(r: &Room) -> Option<Vec<(PlayerId, u8)>> {
+    let Some(ServerMsg::Tv { view }) = r.view_for(9, 0.0) else { panic!("no TV view") };
+    view.ranking.map(|k| k.places.iter().map(|p| (p.player, p.place)).collect())
+}
+
+#[test]
+fn the_room_ends_a_game_with_its_ranking_and_keeps_late_joiners_waiting() {
+    let (mut r, ben) = duel(Some(vec![0, 1]));
+    hello(&mut r, 3, "Cem", None);
+    let wait = PhoneScreen::Wait { title: "Heimlauf läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
+    assert_eq!(phone(&r, 3), wait, "a late joiner waits for the next game");
+    assert_eq!(phone(&r, 1), PhoneScreen::Wait { title: "idle".into(), text: None }, "the game's own screen while it runs");
+    assert_eq!(tv_ranking(&r), None);
+
+    r.disconnect(2, 5.0);
+    action(&mut r, 1, Action::Choose { index: 0, at: 0.0 });
+    assert_eq!(tv_ranking(&r), Some(vec![(1, 1), (0, 2)]), "the TV gets the game's ranking");
+    assert_eq!(phone(&r, 1), PhoneScreen::Final { rank: 2, of: 2, score: 0, can_restart: true });
+    assert_eq!(phone(&r, 3), wait, "a late joiner is not placed");
+    hello(&mut r, 4, "Ben", Some(&ben));
+    assert_eq!(phone(&r, 4), PhoneScreen::Final { rank: 1, of: 2, score: 7, can_restart: false }, "absent at the end, placed all the same");
+}
+
+#[test]
+fn a_game_the_whole_room_plays_counts_who_was_there_at_the_end() {
+    let (mut r, _) = duel(None);
+    hello(&mut r, 3, "Cem", None);
+    assert_eq!(phone(&r, 3), PhoneScreen::Wait { title: "idle".into(), text: None }, "a late joiner plays along");
+    action(&mut r, 1, Action::Choose { index: 0, at: 0.0 });
+    assert_eq!(phone(&r, 3), PhoneScreen::Final { rank: 2, of: 3, score: 0, can_restart: false }, "Ana and Cem tie");
+    hello(&mut r, 4, "Dan", None);
+    let wait = PhoneScreen::Wait { title: "Heimlauf läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
+    assert_eq!(phone(&r, 4), wait, "joined after the end");
+    assert_eq!(phone(&r, 1), PhoneScreen::Final { rank: 2, of: 3, score: 0, can_restart: true }, "the newcomer is not counted");
+    assert_eq!(tv_ranking(&r), Some(vec![(1, 1), (0, 2), (2, 2)]));
 }

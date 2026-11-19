@@ -86,7 +86,8 @@ fun allSetsById(shelves: List<Shelf>): Map<String, MediaSet> {
     for (shelf in shelves) {
         for (entry in shelf.entries) {
             when (entry) {
-                is Entry.Film -> byId[entry.set.setId] = entry.set
+                // Every copy of a film held more than once, each as itself: a progress row or a list names a copy.
+                is Entry.Film -> for (version in versionsOf(entry.set)) byId[version.setId] = version
 
                 is Entry.Collection -> for (division in entry.divisions.asSequence().flatMap { it.walk() }) {
                     for (set in division.items) byId[set.setId] = set

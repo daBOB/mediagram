@@ -1,41 +1,19 @@
 package ui.catalog
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import ui.chrome.CatalogueMenu
-import ui.chrome.CatalogueMenuItem
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import catalog.Division
 import catalog.Entry
 import catalog.rowsOf
-import catalog.seasonOptionOf
-import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
 import ui.common.catalog.TitlePreloadUi
 
 /**
- * The Episodes tab on a show's own page: a season picker over a readable
- * list of that season's episodes — a Compose port of `series-page.js`'s own
- * `episodes()`, replacing the season-poster wall that used to be this
- * screen's own front door. No picker at all for a single-season show, the
- * same "nothing to pick from" gate the old wall followed.
+ * The Episodes tab on a show's own page: a row of season cards
+ * ([SeasonCards]) over a readable list of that season's episodes — a Compose
+ * port of `series-page.js`'s own `episodes()`. No row at all for a
+ * single-season show: there is nothing to pick from.
  *
  * A [LazyListScope] extension rather than its own scrollable composable: a
  * show's episode list can run to a few hundred rows, and nesting a second
@@ -63,45 +41,11 @@ internal fun LazyListScope.seriesEpisodes(
     preloadOf: (@Composable (MediaSet) -> TitlePreloadUi?)? = null,
 ) {
     val shown = collection.divisions.find { it.title == season } ?: collection.divisions.firstOrNull() ?: return
-    if (collection.divisions.size > 1) {
-        item(key = "season-picker") { Box(modifier) { SeasonPicker(collection.divisions, shown, onSelectSeason) } }
-    }
-    val rows = rowsOf(listOf(shown))
     val positions = watch.progress.associateBy { it.setId }
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
-    items(rows, positions, watchedIds, heldIds, onPlay, modifier, preloadOf)
-}
-
-@Composable
-private fun SeasonPicker(
-    divisions: List<Division>,
-    shown: Division,
-    onSelect: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Column(modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small)) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(role = Role.Button) { expanded = true }
-                    .semantics { contentDescription = "Season: ${shown.title}" }
-                    .padding(vertical = Spacing.small),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(text = seasonOptionOf(shown), style = MaterialTheme.typography.titleMedium)
-            Text(text = "▾", style = MaterialTheme.typography.titleMedium)
-        }
-        CatalogueMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            for (division in divisions) {
-                CatalogueMenuItem(
-                    text = { Text(seasonOptionOf(division)) },
-                    onClick = {
-                        expanded = false
-                        onSelect(division.title)
-                    },
-                )
-            }
-        }
+    if (collection.divisions.size > 1) {
+        item(key = "season-picker") { SeasonCards(collection.divisions, shown, collection.posterPath, watchedIds, onSelectSeason, modifier) }
     }
+    val rows = rowsOf(listOf(shown))
+    items(rows, positions, watchedIds, heldIds, onPlay, modifier, preloadOf)
 }

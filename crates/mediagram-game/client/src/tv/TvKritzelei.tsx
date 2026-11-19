@@ -3,7 +3,6 @@ import type { InkLog } from "../ink/ink-log";
 import type { KritzeleiScene } from "../protocol/KritzeleiScene";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { Token } from "../ui/Token";
-import { TvFinal } from "./TvFinal";
 import { InkCanvas } from "./kritzelei/InkCanvas";
 import "./kritzelei/kritzelei.css";
 
@@ -13,7 +12,7 @@ type Props = { scene: KritzeleiScene; players: PlayerInfo[]; conn: Connection; i
 export function TvKritzelei({ scene, players, conn, ink }: Props) {
   const now = useServerNow(conn);
   const { stage } = scene;
-  if (stage.stage === "final") return <TvFinal players={players} conn={conn} />;
+  if (stage.stage === "final") return null; // TvApp shows the awards ceremony
 
   const drawer = players.find((p) => p.id === scene.drawer);
   const name = drawer?.name ?? "?";

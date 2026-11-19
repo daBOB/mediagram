@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -12,20 +11,74 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.tv.material3.Button
 import androidx.tv.material3.Text
+import catalog.profile.CHANGE_YOUR_PIN
+import catalog.profile.ManageUiState
 import catalog.profile.REMOVE
 import catalog.profile.RESET_PIN
 import catalog.profile.removeQuestion
 import designsystem.Spacing
 import designsystem.TvType
-import model.DAILY_LIMIT_CHOICES
 import model.DailyLimitWords
 import model.KIDS_LIMITS
 import model.Profile
 import model.dailyLimitChoiceFor
+import ui.common.profile.ManageActions
 import ui.tv.TvTextRow
 import ui.tv.player.TvChoiceRow
 import ui.tv.setup.TvConfirmDialog
 import ui.tv.setup.TvDialog
+
+/**
+ * The dialog [step] opens over Manage's rows, if it is one — a person's
+ * choices, a kid's daily limit, someone's sections — wherever those rows are
+ * drawn. [onStep] moves to the next; List closes it.
+ */
+@Composable
+internal fun TvManageDialog(
+    step: TvManageStep,
+    state: ManageUiState.Managing,
+    actions: ManageActions,
+    onStep: (TvManageStep) -> Unit,
+) {
+    val back = { onStep(TvManageStep.List) }
+    when (step) {
+        is TvManageStep.KidActions ->
+            TvKidActions(
+                step.kid,
+                onAge = { actions.onSetKidsAge(step.kid.id, it) },
+                onDailyLimit = { onStep(TvManageStep.DailyLimit(step.kid)) },
+                onSections = { onStep(TvManageStep.Sections(step.kid.id)) },
+                onRemove = { actions.onRemove(step.kid.id) },
+                onDismiss = back,
+            )
+        is TvManageStep.DailyLimit -> TvDailyLimitChoices(step.kid, onChoose = { actions.onSetDailyLimit(step.kid.id, it) }, onDismiss = back)
+        is TvManageStep.GrownUpActions ->
+            TvGrownUpActions(
+                step.grownUp,
+                onResetPin = {
+                    back()
+                    actions.onChangePin(step.grownUp.id)
+                },
+                onSections = { onStep(TvManageStep.Sections(step.grownUp.id)) },
+                onRemove = { actions.onRemove(step.grownUp.id) },
+                onDismiss = back,
+            )
+        is TvManageStep.You ->
+            TvYouActions(
+                step.you,
+                onChangePin = {
+                    back()
+                    actions.onChangePin(step.you.id)
+                },
+                onDismiss = back,
+            )
+        is TvManageStep.Sections ->
+            state.sectionRows.find { it.id == step.id }?.let { profile ->
+                TvSectionSwitches(profile, state.notice, state.answers, onSet = { actions.onSetHiddenSections(profile.id, it) }, onDismiss = back)
+            }
+        else -> Unit
+    }
+}
 
 /**
  * A kid's choices for its grown-up: its limit — the web's select, the
@@ -60,40 +113,6 @@ internal fun TvKidActions(
     }
 }
 
-/** A kid's daily limit: the web's select as one dialog, the current choice marked and holding the remote. */
-@Composable
-internal fun TvDailyLimitChoices(
-    kid: Profile,
-    onChoose: (Int?) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val current = remember { FocusRequester() }
-    val shown = dailyLimitChoiceFor(kid.dailyLimit)
-    TvDialog(
-        title = "${DailyLimitWords.LABEL} · ${kid.name}",
-        body = "",
-        onDismissRequest = onDismiss,
-        initialFocus = current,
-        content = {
-            Column(Modifier.padding(top = Spacing.medium)) {
-                (DAILY_LIMIT_CHOICES + shown).distinct().forEach { choice ->
-                    key(choice.minutes) {
-                        TvChoiceRow(
-                            label = choice.label,
-                            selected = shown == choice,
-                            onClick = {
-                                if (choice != shown) onChoose(choice.minutes)
-                                onDismiss()
-                            },
-                            focusRequester = current.takeIf { shown == choice },
-                        )
-                    }
-                }
-            }
-        },
-    ) { Button(onClick = onDismiss) { Text("Cancel", style = TvType.labelLarge) } }
-}
-
 /** Another grown-up, for the admin: a new PIN for them, their sections, or removal with their kids. */
 @Composable
 internal fun TvGrownUpActions(
@@ -108,6 +127,23 @@ internal fun TvGrownUpActions(
         TvTextRow(RESET_PIN, onClick = onResetPin, focusRequester = first)
         TvTextRow(sectionsLine(grownUp), onClick = onSections)
     }
+}
+
+/** The manager's own row: the one thing on it to change, said as what it does. */
+@Composable
+private fun TvYouActions(
+    you: Profile,
+    onChangePin: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val first = remember { FocusRequester() }
+    TvDialog(
+        title = you.name,
+        body = "",
+        onDismissRequest = onDismiss,
+        initialFocus = first,
+        content = { TvTextRow(CHANGE_YOUR_PIN, onClick = onChangePin, focusRequester = first, modifier = Modifier.padding(top = Spacing.medium)) },
+    ) { Button(onClick = onDismiss) { Text("Cancel", style = TvType.labelLarge) } }
 }
 
 /**

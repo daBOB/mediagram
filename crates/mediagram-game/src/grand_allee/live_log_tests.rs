@@ -29,7 +29,7 @@ fn a_short_game_logs_its_start_every_answer_with_who_gave_it_and_its_end() {
     let buy = options(&g, &p, ANA, now).into_iter().find(|l| l.starts_with("Lagune")).expect("field 4 borders the Lagune");
     let now = pick(&mut g, &mut p, ANA, &buy, now);
     // Ben lets his roll's clock run out; the house goes on for him, and for Cem
-    let now = until(&mut g, &mut p, now, |g| g.is_finished());
+    let now = until(&mut g, &mut p, now, |g| g.stage == Stage::Final);
     let lines = g.take_log();
     assert_eq!(lines[0], json!({"ev": "start", "players": 3, "rounds": 1}));
     assert_eq!(

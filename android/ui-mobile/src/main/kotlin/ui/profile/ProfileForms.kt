@@ -2,18 +2,14 @@ package ui.profile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -22,14 +18,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.unit.dp
-import designsystem.LocalCatalogueTones
 import designsystem.Spacing
 import model.DAILY_LIMIT_CHOICES
 import model.KIDS_LIMITS
@@ -41,19 +34,15 @@ import ui.settings.SettingsChip
 internal const val MAX_NAME = 120
 
 /**
- * A name, whatever [extra] asks beside it, and the pill that adds — the web's
- * `addForm`, which the picker's first profile and Manage's two add forms all
- * are. The field empties once its name is handed over, as the web's redrawn
- * form does; a blank name hands over nothing.
+ * A name and the pill that adds — the web's `addForm`, which the picker's
+ * first profile is. The field empties once its name is handed over, as the
+ * web's redrawn form does; a blank name hands over nothing.
  */
 @Composable
 internal fun NameForm(
     label: String,
     onSubmit: (String) -> Unit,
     modifier: Modifier = Modifier,
-    /** Choices that need a line of their own, between the field and the pill. */
-    more: @Composable ColumnScope.() -> Unit = {},
-    extra: @Composable RowScope.() -> Unit = {},
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     val submit = {
@@ -72,17 +61,7 @@ internal fun NameForm(
             keyboardActions = KeyboardActions(onDone = { submit() }),
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = "$label: name" },
         )
-        more()
-        // Below the field rather than beside it: a field's own minimum width
-        // leaves no room for a choice and a pill on a 400dp phone.
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = Spacing.small),
-        ) {
-            extra()
-            LinePill(label, onClick = submit, enabled = name.isNotBlank())
-        }
+        LinePill(label, onClick = submit, enabled = name.isNotBlank(), modifier = Modifier.padding(top = Spacing.small))
     }
 }
 
@@ -127,23 +106,4 @@ internal fun DailyLimitChips(
             SettingsChip(choice.label, selected = shown == choice, onClick = { if (choice != shown) onChoose(choice.minutes) })
         }
     }
-}
-
-/** A name and its controls on one line, a soft rule beneath — the web's `manage-row`, which Settings' Profiles list shares. */
-@Composable
-internal fun ProfileRow(
-    name: String,
-    below: @Composable () -> Unit = {},
-    controls: @Composable RowScope.() -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(vertical = Spacing.extraSmall),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-    ) {
-        Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        controls()
-    }
-    below()
-    HorizontalDivider(thickness = 0.5.dp, color = LocalCatalogueTones.current.ruleSoft)
 }

@@ -186,7 +186,7 @@ fn phones_never_see_the_image() {
     let (mut g, mut players) = game_started_at(0.0);
     let mut seen = String::new();
     let mut now = 0.0;
-    while !g.is_finished() && now < 120_000.0 {
+    while g.ranking(&players).is_none() && now < 120_000.0 {
         if now == 1000.0 {
             let r = right(&g);
             tap(&mut g, &mut players, now, ANA, r, now);
@@ -198,7 +198,7 @@ fn phones_never_see_the_image() {
         }
         now += 50.0;
     }
-    assert!(g.is_finished());
+    assert!(g.ranking(&players).is_some());
     assert!(!seen.is_empty() && !seen.contains("/img/") && !seen.contains(".jpg"));
     let TvScene::Poster { .. } = g.tv_scene(&ViewCtx { now, players: &players, leader: None }) else {
         panic!("poster scene")

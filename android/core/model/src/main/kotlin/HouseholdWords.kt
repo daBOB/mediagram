@@ -4,7 +4,6 @@ package model
 object HouseholdWords {
     const val HOUSEHOLDS = "Households"
     const val OWNER = "Owner"
-    const val OWNER_NOTE = "Households are the owner’s to set up."
     const val OWNERS_PIN = "The owner’s PIN"
     const val THIS_DEVICE = "This device"
     const val SWITCH_HOUSEHOLD = "Switch household"
@@ -15,6 +14,7 @@ object HouseholdWords {
     const val HOUSEHOLD_NAME = "Household name"
     const val ADMIN = "Admin"
     const val A_NEW_GROWN_UP = "A new grown-up"
+    const val BELONGS_TO = "Belongs to"
     const val NEW_GROWN_UP_NAME = "The new grown-up’s name"
     const val RENAME = "Rename"
     const val CHANGE_ADMIN = "Change admin"
@@ -23,6 +23,12 @@ object HouseholdWords {
     const val DELETE = "Delete"
     const val HOUSEHOLD_NAME_TAKEN = "A household with that name already exists."
     const val PROFILE_NAME_TAKEN = "That name is already used on this install."
+    const val WHOS_MANAGING = "Who’s managing?"
+    const val ADD_SOMEONE = "Add someone"
+    const val GROWN_UP = "Grown-up"
+    const val KID = "Kid"
+    const val ACTIONS_FOR = "Actions for"
+    const val ADD_SOMEONE_TO = "Add someone to"
 }
 
 /** [HouseholdWords] keyed as the web's object, so the fixture compares them whole. */
@@ -31,7 +37,6 @@ val HOUSEHOLD_WORDS: Map<String, String> =
         mapOf(
             "households" to HOUSEHOLDS,
             "owner" to OWNER,
-            "ownerNote" to OWNER_NOTE,
             "ownersPin" to OWNERS_PIN,
             "thisDevice" to THIS_DEVICE,
             "switchHousehold" to SWITCH_HOUSEHOLD,
@@ -42,6 +47,7 @@ val HOUSEHOLD_WORDS: Map<String, String> =
             "householdName" to HOUSEHOLD_NAME,
             "admin" to ADMIN,
             "aNewGrownUp" to A_NEW_GROWN_UP,
+            "belongsTo" to BELONGS_TO,
             "newGrownUpName" to NEW_GROWN_UP_NAME,
             "rename" to RENAME,
             "changeAdmin" to CHANGE_ADMIN,
@@ -50,6 +56,12 @@ val HOUSEHOLD_WORDS: Map<String, String> =
             "delete" to DELETE,
             "householdNameTaken" to HOUSEHOLD_NAME_TAKEN,
             "profileNameTaken" to PROFILE_NAME_TAKEN,
+            "whosManaging" to WHOS_MANAGING,
+            "addSomeone" to ADD_SOMEONE,
+            "grownUp" to GROWN_UP,
+            "kid" to KID,
+            "actionsFor" to ACTIONS_FOR,
+            "addSomeoneTo" to ADD_SOMEONE_TO,
         )
     }
 

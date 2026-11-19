@@ -33,6 +33,9 @@ export function sectionSwitches(entry, onSet, keep = (_key, button) => button) {
     });
     return keep(key, button);
   });
-  group.append(title, ...switches);
+  // The switches wrap together beside the title, as a line of Manage's open part sits beside its label.
+  const list = el("div", "section-switches-list");
+  list.append(...switches);
+  group.append(title, list);
   return group;
 }

@@ -33,16 +33,16 @@ async fn wrong_pins_given_to_different_calls_add_up_to_one_wait() {
     let admin = household(&core).await;
     let made = core
         .clone()
-        .create_kid(admin.clone(), PIN.into(), "Mia".into(), 6, None)
+        .create_kid(admin.clone(), PIN.into(), "Mia".into(), 6, None, None)
         .await;
     assert_eq!(made, Done);
     let mia = named(&core, "Mia").await.id;
     let (p, a, wrong) = (|| core.clone(), || admin.clone(), || String::from("0000"));
 
     let answers = [
-        p().create_grown_up(a(), wrong(), "Bea".into(), "1111".into())
+        p().create_grown_up(a(), wrong(), "Bea".into(), "1111".into(), None)
             .await,
-        p().create_kid(a(), wrong(), "Leo".into(), 12, None).await,
+        p().create_kid(a(), wrong(), "Leo".into(), 12, None, None).await,
         p().set_pin(a(), wrong(), a(), "2222".into()).await,
         p().set_kids_age(a(), wrong(), mia.clone(), 12).await,
         p().delete_profile(a(), wrong(), mia).await,
@@ -111,7 +111,7 @@ async fn removing_the_chosen_profile_forgets_the_choice() {
     let admin = household(&core).await;
     let made = core
         .clone()
-        .create_grown_up(admin.clone(), PIN.into(), "Bea".into(), "1111".into())
+        .create_grown_up(admin.clone(), PIN.into(), "Bea".into(), "1111".into(), None)
         .await;
     assert_eq!(made, Done);
     let bea = named(&core, "Bea").await.id;

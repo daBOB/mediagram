@@ -1,58 +1,17 @@
 use super::*;
-use crate::protocol::{ButtonNeeds, CardDesk, CardsEventKind, CardsScene};
+use crate::card_game_driver::{ANA, BEN, CEM, act, c, desk, leave, players, scene, tick};
+use crate::protocol::{ButtonNeeds, CardsEventKind};
 use Rank::*;
 use Suit::*;
 
-const ANA: PlayerId = 0;
-const BEN: PlayerId = 1;
-const CEM: PlayerId = 2;
-
-fn c(suit: Suit, rank: Rank) -> Card {
-    Card::new(suit, rank)
-}
-
-fn players(n: usize) -> Vec<Player> {
-    ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay", "Gus", "Hal"][..n]
-        .iter()
-        .enumerate()
-        .map(|(i, name)| Player::for_test(i as PlayerId, name, true))
-        .collect()
+fn cfg() -> MauMauConfig {
+    MauMauConfig { seed: Some(1), ..MauMauConfig::default() }
 }
 
 /// A game with the given hands, `top` face up and `deck` to draw from (last card first).
 fn rig(hands: Vec<Vec<Card>>, top: Card, deck: Vec<Card>) -> (MauMauGame, Vec<Player>) {
     let p = players(hands.len());
-    let mut g = MauMauGame::new(MauMauConfig { seed: Some(1), ..MauMauConfig::default() }, &p, 0.0);
-    g.hands = hands;
-    g.discard = vec![top];
-    g.deck = deck;
-    g.suit = Some(top.suit);
-    g.owed = 0;
-    g.turn = 0;
-    g.stage = Stage::Turn { since: 0.0 };
-    (g, p)
-}
-
-fn act(g: &mut MauMauGame, p: &mut [Player], who: PlayerId, button: &str, hand: &[u8], now: f64) -> Result<(), ActionError> {
-    g.on_action(&mut GameCtx { now, players: p }, who, &Action::Cards { button: button.into(), hand: hand.to_vec(), table: None })
-}
-
-fn tick(g: &mut MauMauGame, p: &mut [Player], now: f64) {
-    g.on_tick(&mut GameCtx { now, players: p });
-}
-
-fn desk(g: &MauMauGame, p: &[Player], who: PlayerId, now: f64) -> CardDesk {
-    match g.phone_screen(&ViewCtx { now, players: p, leader: Some(ANA) }, who) {
-        PhoneScreen::Cards { desk } => desk,
-        other => panic!("expected a desk, got {other:?}"),
-    }
-}
-
-fn scene(g: &MauMauGame, p: &[Player], now: f64) -> CardsScene {
-    match g.tv_scene(&ViewCtx { now, players: p, leader: Some(ANA) }) {
-        TvScene::Cards { scene } => scene,
-        other => panic!("expected a card scene, got {other:?}"),
-    }
+    (MauMauGame::dealt(cfg(), &p, hands, vec![top], deck, 0), p)
 }
 
 #[test]
@@ -82,12 +41,12 @@ fn a_starting_seven_hits_the_first_player_an_eight_skips_them_and_a_jack_allows_
 #[test]
 fn only_a_fitting_card_can_be_played_and_only_on_your_turn() {
     let (mut g, mut p) = rig(vec![vec![c(Clubs, Nine), c(Hearts, Ace), c(Hearts, King)], vec![c(Clubs, Ace)], vec![c(Clubs, Ten)]], c(Hearts, Nine), vec![]);
-    assert!(matches!(act(&mut g, &mut p, ANA, "play", &[0], 1.0), Ok(())), "the nine matches by rank");
+    assert!(matches!(act(&mut g, &mut p, ANA, "play", &[0], None, 1.0), Ok(())), "the nine matches by rank");
     assert_eq!(g.turn, 1);
-    assert_eq!(act(&mut g, &mut p, ANA, "play", &[0], 2.0), Err(ActionError::Ignored));
-    assert_eq!(act(&mut g, &mut p, BEN, "play", &[0], 2.0), Ok(()), "the ace matches the clubs nine");
+    assert_eq!(act(&mut g, &mut p, ANA, "play", &[0], None, 2.0), Err(ActionError::Ignored));
+    assert_eq!(act(&mut g, &mut p, BEN, "play", &[0], None, 2.0), Ok(()), "the ace matches the clubs nine");
     let (mut g, mut p) = rig(vec![vec![c(Spades, Ace), c(Hearts, King)], vec![c(Clubs, Ace)]], c(Hearts, Nine), vec![]);
-    assert_eq!(act(&mut g, &mut p, ANA, "play", &[0], 1.0), Err(ActionError::NotAllowed("Diese Karte passt nicht.")));
+    assert_eq!(act(&mut g, &mut p, ANA, "play", &[0], None, 1.0), Err(ActionError::NotAllowed("Diese Karte passt nicht.")));
 }
 
 #[test]
@@ -97,27 +56,27 @@ fn sevens_stack_and_the_one_who_cannot_answer_draws_them_all() {
         c(Hearts, Nine),
         vec![c(Diamonds, Two), c(Diamonds, Three), c(Diamonds, Four), c(Diamonds, Five), c(Diamonds, Six)],
     );
-    act(&mut g, &mut p, ANA, "play", &[0], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "play", &[0], None, 1.0).unwrap();
     assert_eq!(g.owed, 2);
     let d = desk(&g, &p, BEN, 1.0);
     assert_eq!(d.hand.iter().map(|h| h.enabled).collect::<Vec<_>>(), vec![true, false], "only the seven can answer");
     assert!(d.buttons.iter().any(|b| b.id == "draw" && b.label == "2 Karten ziehen"));
-    act(&mut g, &mut p, BEN, "play", &[0], 2.0).unwrap();
+    act(&mut g, &mut p, BEN, "play", &[0], None, 2.0).unwrap();
     assert_eq!(g.owed, 4);
     assert_eq!(scene(&g, &p, 2.0).note.as_deref(), Some("Zieh 4"));
-    assert!(act(&mut g, &mut p, CEM, "play", &[0], 3.0).is_err(), "a nine is not a seven");
-    act(&mut g, &mut p, CEM, "draw", &[], 3.0).unwrap();
+    assert!(act(&mut g, &mut p, CEM, "play", &[0], None, 3.0).is_err(), "a nine is not a seven");
+    act(&mut g, &mut p, CEM, "draw", &[], None, 3.0).unwrap();
     assert_eq!((g.hands[2].len(), g.owed, g.turn), (6, 0, 0));
 }
 
 #[test]
 fn an_eight_skips_the_next_player_and_in_a_pair_plays_again() {
     let (mut g, mut p) = rig(vec![vec![c(Hearts, Eight), c(Clubs, Ace), c(Clubs, Two)], vec![c(Clubs, Ten)], vec![c(Clubs, Nine)]], c(Hearts, Nine), vec![]);
-    act(&mut g, &mut p, ANA, "play", &[0], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "play", &[0], None, 1.0).unwrap();
     assert_eq!(g.turn, 2);
     assert_eq!(scene(&g, &p, 1.0).banner.unwrap().text, " setzt aus");
     let (mut g, mut p) = rig(vec![vec![c(Hearts, Eight), c(Clubs, Ace)], vec![c(Clubs, Ten)]], c(Hearts, Nine), vec![]);
-    act(&mut g, &mut p, ANA, "mau", &[0], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "mau", &[0], None, 1.0).unwrap();
     assert_eq!(g.turn, 0);
 }
 
@@ -128,17 +87,17 @@ fn a_jack_wishes_a_suit_that_the_next_card_must_follow() {
         c(Hearts, Nine),
         vec![],
     );
-    act(&mut g, &mut p, ANA, "play", &[0], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "play", &[0], None, 1.0).unwrap();
     assert_eq!(g.turn, 0, "the wish comes first");
     let d = desk(&g, &p, ANA, 1.0);
     assert_eq!(d.buttons.len(), 4);
     assert!(d.buttons.iter().all(|b| b.needs == ButtonNeeds::Nothing && b.suit.is_some()));
-    act(&mut g, &mut p, BEN, "wish_diamonds", &[], 2.0).expect_err("only the jack's player wishes");
-    act(&mut g, &mut p, ANA, "wish_diamonds", &[], 2.0).unwrap();
+    act(&mut g, &mut p, BEN, "wish_diamonds", &[], None, 2.0).expect_err("only the jack's player wishes");
+    act(&mut g, &mut p, ANA, "wish_diamonds", &[], None, 2.0).unwrap();
     assert_eq!((g.turn, g.wish), (1, Some(Diamonds)));
     assert_eq!(scene(&g, &p, 2.0).wish, Some(Diamonds));
-    act(&mut g, &mut p, BEN, "play", &[0], 3.0).expect_err("spades does not fit the wish");
-    act(&mut g, &mut p, BEN, "play", &[1], 3.0).unwrap();
+    act(&mut g, &mut p, BEN, "play", &[0], None, 3.0).expect_err("spades does not fit the wish");
+    act(&mut g, &mut p, BEN, "play", &[1], None, 3.0).unwrap();
     assert_eq!(scene(&g, &p, 3.0).wish, None);
 }
 
@@ -146,12 +105,12 @@ fn a_jack_wishes_a_suit_that_the_next_card_must_follow() {
 fn forgetting_mau_costs_a_card_and_saying_it_does_not() {
     let hands = || vec![vec![c(Hearts, Ace), c(Hearts, King)], vec![c(Clubs, Ace), c(Clubs, King)]];
     let (mut g, mut p) = rig(hands(), c(Hearts, Nine), vec![c(Diamonds, Two)]);
-    act(&mut g, &mut p, ANA, "play", &[0], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "play", &[0], None, 1.0).unwrap();
     assert_eq!(g.hands[0].len(), 2, "one card back");
     assert_eq!(scene(&g, &p, 1.0).banner.unwrap().text, " vergisst Mau – Strafkarte!");
-    assert!(matches!(g.events.last().unwrap().kind, CardsEventKind::Draw { count: 1 }));
+    assert!(matches!(g.table.events().last().unwrap().kind, CardsEventKind::Draw { count: 1 }));
     let (mut g, mut p) = rig(hands(), c(Hearts, Nine), vec![c(Diamonds, Two)]);
-    act(&mut g, &mut p, ANA, "mau", &[0], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "mau", &[0], None, 1.0).unwrap();
     assert_eq!(g.hands[0].len(), 1);
     let s = scene(&g, &p, 1.0);
     assert_eq!(s.banner.unwrap().text, " ruft Mau!");
@@ -171,26 +130,26 @@ fn mau_is_offered_with_two_cards_only() {
 #[test]
 fn a_drawn_card_that_fits_may_be_played_or_kept() {
     let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King), c(Clubs, Two)], vec![c(Clubs, Ten)]], c(Hearts, Nine), vec![c(Spades, Two), c(Hearts, Six)]);
-    act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
     assert!(matches!(g.stage, Stage::Drawn { card, .. } if card == c(Hearts, Six)));
     let d = desk(&g, &p, ANA, 1.0);
     assert_eq!(d.hand.iter().filter(|h| h.enabled).count(), 1);
-    assert_eq!(act(&mut g, &mut p, ANA, "play", &[0], 1.5), Err(ActionError::NotAllowed("Spiele die gezogene Karte oder behalte sie.")));
-    act(&mut g, &mut p, ANA, "keep", &[], 2.0).unwrap();
+    assert_eq!(act(&mut g, &mut p, ANA, "play", &[0], None, 1.5), Err(ActionError::NotAllowed("Spiele die gezogene Karte oder behalte sie.")));
+    act(&mut g, &mut p, ANA, "keep", &[], None, 2.0).unwrap();
     assert_eq!((g.turn, g.hands[0].len()), (1, 4));
 }
 
 #[test]
 fn a_drawn_card_that_does_not_fit_still_pauses_the_turn_and_can_only_be_kept() {
     let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King), c(Clubs, Two)], vec![c(Clubs, Ten)]], c(Hearts, Nine), vec![c(Spades, Two)]);
-    act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
     assert_eq!((g.turn, g.hands[0].len()), (0, 4), "the turn stays on the player");
     let d = desk(&g, &p, ANA, 1.0);
     assert!(d.hand.iter().all(|h| !h.enabled), "nothing to play");
     let ids: Vec<_> = d.buttons.iter().map(|b| b.id.as_str()).collect();
     assert_eq!(ids, ["play", "keep"]);
-    assert_eq!(act(&mut g, &mut p, ANA, "play", &[3], 1.5), Err(ActionError::NotAllowed("Diese Karte passt nicht.")));
-    act(&mut g, &mut p, ANA, "keep", &[], 2.0).unwrap();
+    assert_eq!(act(&mut g, &mut p, ANA, "play", &[3], None, 1.5), Err(ActionError::NotAllowed("Diese Karte passt nicht.")));
+    act(&mut g, &mut p, ANA, "keep", &[], None, 2.0).unwrap();
     assert_eq!(g.turn, 1);
 }
 
@@ -198,7 +157,7 @@ fn a_drawn_card_that_does_not_fit_still_pauses_the_turn_and_can_only_be_kept() {
 fn the_tv_and_other_phones_cannot_tell_whether_the_drawn_card_fits() {
     let look = |drawn: Card| {
         let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King), c(Clubs, Two)], vec![c(Clubs, Ten)]], c(Hearts, Nine), vec![drawn]);
-        act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
+        act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
         let mine = desk(&g, &p, ANA, 1.0);
         (scene(&g, &p, 1.0), desk(&g, &p, BEN, 1.0), mine.buttons)
     };
@@ -213,9 +172,8 @@ fn the_tv_and_other_phones_cannot_tell_whether_the_drawn_card_fits() {
 fn an_absent_player_plays_a_drawn_card_that_fits_and_keeps_one_that_does_not() {
     for (drawn, plays) in [(c(Hearts, Six), true), (c(Spades, Six), false)] {
         let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King), c(Clubs, Two)], vec![c(Clubs, Ten)]], c(Hearts, Nine), vec![drawn]);
-        act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
-        p[0].conn = None;
-        p[0].left_at = Some(1.0);
+        act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
+        leave(&mut p[0], 1.0);
         tick(&mut g, &mut p, 2000.0);
         assert_eq!((g.turn, g.hands[0].len()), (1, if plays { 3 } else { 4 }));
     }
@@ -223,19 +181,20 @@ fn an_absent_player_plays_a_drawn_card_that_fits_and_keeps_one_that_does_not() {
 
 #[test]
 fn an_empty_draw_pile_is_refilled_from_the_discards_under_the_top_card() {
-    let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King), c(Clubs, Two)], vec![c(Clubs, Ten)]], c(Hearts, Nine), vec![]);
-    g.discard = vec![c(Spades, Three), c(Spades, Four), c(Spades, Five), c(Hearts, Nine)];
-    act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
+    let mut p = players(2);
+    let discard = vec![c(Spades, Three), c(Spades, Four), c(Spades, Five), c(Hearts, Nine)];
+    let mut g = MauMauGame::dealt(cfg(), &p, vec![vec![c(Clubs, Ace), c(Clubs, King), c(Clubs, Two)], vec![c(Clubs, Ten)]], discard, vec![], 0);
+    act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
     assert_eq!(g.hands[0].len(), 4);
     assert_eq!(g.discard, vec![c(Hearts, Nine)]);
     assert_eq!(g.deck.len(), 2);
-    assert!(g.events.iter().any(|e| e.kind == CardsEventKind::Reshuffle));
+    assert!(g.table.events().iter().any(|e| e.kind == CardsEventKind::Reshuffle));
 }
 
 #[test]
 fn drawing_from_nothing_just_passes_the_turn() {
     let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King)], vec![c(Clubs, Ten)]], c(Hearts, Nine), vec![]);
-    act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
     assert_eq!((g.turn, g.hands[0].len()), (1, 2));
 }
 
@@ -246,15 +205,13 @@ fn the_first_empty_hand_wins_and_the_rest_rank_by_cards_left() {
         c(Hearts, Nine),
         vec![],
     );
-    act(&mut g, &mut p, ANA, "play", &[0], 1.0).unwrap();
-    assert!(g.is_finished());
+    act(&mut g, &mut p, ANA, "play", &[0], None, 1.0).unwrap();
+    assert_eq!(g.ranking(&p).and_then(|r| r.place_of(CEM)), Some(2));
     let s = scene(&g, &p, 1.0);
     assert_eq!(s.ranking, Some(vec![ANA, CEM, BEN]));
     assert_eq!(s.turn, None);
     assert_eq!(p.iter().map(|x| x.score).collect::<Vec<_>>(), [2, 0, 1]);
-    let view = ViewCtx { now: 1.0, players: &p, leader: Some(ANA) };
-    assert!(matches!(g.phone_screen(&view, CEM), PhoneScreen::Final { rank: 2, of: 3, score: 1, can_restart: false }));
-    assert_eq!(act(&mut g, &mut p, BEN, "draw", &[], 2.0), Err(ActionError::Ignored));
+    assert_eq!(act(&mut g, &mut p, BEN, "draw", &[], None, 2.0), Err(ActionError::Ignored));
 }
 
 #[test]
@@ -264,14 +221,12 @@ fn an_absent_player_plays_a_plain_card_says_mau_and_wishes_their_longest_suit() 
         c(Hearts, Nine),
         vec![],
     );
-    p[0].conn = None;
-    p[0].left_at = Some(100.0);
+    leave(&mut p[0], 100.0);
     tick(&mut g, &mut p, 1000.0);
     assert_eq!(g.turn, 0, "waits the grace after leaving");
     tick(&mut g, &mut p, 1700.0);
     assert_eq!((g.turn, g.hands[0].len()), (1, 1), "the king, not the eight, with Mau");
-    p[1].conn = None;
-    p[1].left_at = Some(1700.0);
+    leave(&mut p[1], 1700.0);
     tick(&mut g, &mut p, 3300.0);
     assert!(matches!(g.stage, Stage::Wish { .. }), "the jack is the only card that fits");
     tick(&mut g, &mut p, 4900.0);
@@ -281,18 +236,19 @@ fn an_absent_player_plays_a_plain_card_says_mau_and_wishes_their_longest_suit() 
 #[test]
 fn the_banners_count_the_cards_really_drawn_when_the_piles_run_dry() {
     // a stacked seven with one card left anywhere
-    let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King)], vec![c(Clubs, Ten)]], c(Hearts, Seven), vec![c(Spades, Two)]);
-    g.owed = 4;
-    act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
+    let owing_four = |deck: Vec<Card>| {
+        let p = players(2);
+        (MauMauGame::dealt(cfg(), &p, vec![vec![c(Clubs, Ace), c(Clubs, King)], vec![c(Clubs, Ten)]], vec![c(Hearts, Seven)], deck, 4), p)
+    };
+    let (mut g, mut p) = owing_four(vec![c(Spades, Two)]);
+    act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
     assert_eq!(g.hands[0].len(), 3);
     assert_eq!(scene(&g, &p, 1.0).banner.unwrap().text, " zieht eine Karte");
-    let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King)], vec![c(Clubs, Ten)]], c(Hearts, Seven), vec![]);
-    g.owed = 4;
-    act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
+    let (mut g, mut p) = owing_four(vec![]);
+    act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
     assert_eq!(scene(&g, &p, 1.0).banner.unwrap().text, " zieht keine Karte");
-    let (mut g, mut p) = rig(vec![vec![c(Clubs, Ace), c(Clubs, King)], vec![c(Clubs, Ten)]], c(Hearts, Seven), vec![c(Spades, Two), c(Spades, Three), c(Spades, Four)]);
-    g.owed = 4;
-    act(&mut g, &mut p, ANA, "draw", &[], 1.0).unwrap();
+    let (mut g, mut p) = owing_four(vec![c(Spades, Two), c(Spades, Three), c(Spades, Four)]);
+    act(&mut g, &mut p, ANA, "draw", &[], None, 1.0).unwrap();
     assert_eq!(scene(&g, &p, 1.0).banner.unwrap().text, " zieht 3 Karten");
 }
 
@@ -300,19 +256,19 @@ fn the_banners_count_the_cards_really_drawn_when_the_piles_run_dry() {
 fn a_forgotten_mau_stays_on_the_banner_until_the_jack_wish_follows_it() {
     let hands = || vec![vec![c(Hearts, Jack), c(Hearts, King)], vec![c(Clubs, Ace), c(Clubs, King)]];
     let (mut g, mut p) = rig(hands(), c(Hearts, Nine), vec![c(Diamonds, Two)]);
-    act(&mut g, &mut p, ANA, "play", &[0], 1.0).unwrap();
-    act(&mut g, &mut p, ANA, "wish_spades", &[], 1.5).unwrap();
+    act(&mut g, &mut p, ANA, "play", &[0], None, 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "wish_spades", &[], None, 1.5).unwrap();
     assert_eq!(scene(&g, &p, 1.6).banner.unwrap().text, " vergisst Mau – Strafkarte!");
-    assert_eq!(scene(&g, &p, 2.0 + g.cfg.banner_ms).banner.unwrap().text, " wünscht Pik");
-    assert_eq!(scene(&g, &p, 1.0 + 2.0 * g.cfg.banner_ms).banner.unwrap().text, " ist dran");
+    assert_eq!(scene(&g, &p, 2.0 + cfg().banner_ms).banner.unwrap().text, " wünscht Pik");
+    assert_eq!(scene(&g, &p, 1.0 + 2.0 * cfg().banner_ms).banner.unwrap().text, " ist dran");
     // saying Mau is read out in full too
     let (mut g, mut p) = rig(hands(), c(Hearts, Nine), vec![]);
-    act(&mut g, &mut p, ANA, "mau", &[0], 1.0).unwrap();
-    act(&mut g, &mut p, ANA, "wish_spades", &[], 1.5).unwrap();
+    act(&mut g, &mut p, ANA, "mau", &[0], None, 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "wish_spades", &[], None, 1.5).unwrap();
     assert_eq!(scene(&g, &p, 1.6).banner.unwrap().text, " ruft Mau!");
     // a wish with no penalty before it shows at once
     let (mut g, mut p) = rig(vec![vec![c(Hearts, Jack), c(Hearts, King), c(Clubs, Two)], vec![c(Clubs, Ace)]], c(Hearts, Nine), vec![]);
-    act(&mut g, &mut p, ANA, "play", &[0], 1.0).unwrap();
-    act(&mut g, &mut p, ANA, "wish_spades", &[], 1.5).unwrap();
+    act(&mut g, &mut p, ANA, "play", &[0], None, 1.0).unwrap();
+    act(&mut g, &mut p, ANA, "wish_spades", &[], None, 1.5).unwrap();
     assert_eq!(scene(&g, &p, 1.6).banner.unwrap().text, " wünscht Pik");
 }

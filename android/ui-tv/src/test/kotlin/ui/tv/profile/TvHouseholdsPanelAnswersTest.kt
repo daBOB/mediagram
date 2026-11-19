@@ -37,7 +37,7 @@ class TvHouseholdsPanelAnswersTest : TvHouseholdsPanelHarness() {
     /** Cy has no PIN, so running Flat asks one; Back on it is back on the choice, not a change made. */
     @Test
     fun backOnANewAdminsPinStaysOnTheChoices() {
-        opened()
+        panel()
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
@@ -51,7 +51,7 @@ class TvHouseholdsPanelAnswersTest : TvHouseholdsPanelHarness() {
 
     @Test
     fun backOnANewGrownUpsPinKeepsTheNames() {
-        opened()
+        panel()
         repeat(2) { press(Key.DirectionDown) }
         press(Key.DirectionCenter)
         name("Barn")

@@ -1,7 +1,7 @@
 // Run with `bun test` in crates/mediagram-game/client.
 import { expect, test } from "bun:test";
 import { grandAlleeCues } from "../src/tv/grand-allee/grand-allee-sound-cues";
-import { clatterAt } from "../src/tv/race/race-sound-cues";
+import { clatterAt } from "../src/tv/table/board-sounds";
 import { sceneOf } from "./grand-allee-fixture";
 
 // a 4 from field 38 whose landing field (2) is taken: on to 3, five hops, passing the Bank on the second

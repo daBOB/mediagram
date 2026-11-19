@@ -58,8 +58,8 @@ fun moviesDepartmentOf(films: List<MediaSet>, watched: (String) -> Boolean): Mov
 data class DocumentariesDepartment(
     val itemCount: Int,
     val lead: MediaSet?,
-    /** Already-started documentaries, newest touch first — no "next up": a documentary has no next episode. */
-    val continuing: List<MediaSet>,
+    /** Already-started documentaries, newest touch first, as cards — no "next up": a documentary has no next episode. */
+    val resumeCards: List<SetCard>,
     val recentlyAdded: List<MediaSet>,
     /** One row per hand-set category, collections before singles, "Other" last — [categoryRowsOf] over [Entry]. */
     val categories: List<CategoryRow<Entry>>,
@@ -78,6 +78,7 @@ fun documentariesDepartmentOf(
     library: DocumentaryLibrary,
     byId: Map<String, MediaSet>,
     watch: WatchSnapshot,
+    heldIds: Set<String> = emptySet(),
 ): DocumentariesDepartment? {
     val items = library.singles + library.collections.flatMap { playOrder(it.divisions) }
     if (items.isEmpty()) return null
@@ -89,7 +90,7 @@ fun documentariesDepartmentOf(
     return DocumentariesDepartment(
         itemCount = items.size,
         lead = byRecent.firstOrNull { it.backdropPath != null },
-        continuing = continuing,
+        resumeCards = resumeCardsOf(continuing, emptyList(), watch, heldIds),
         recentlyAdded = byRecent.take(DEPARTMENT_ROW),
         categories = categoryRowsOf(categoryUnits, ::categoryOf),
         collections = library.collections.map { DocumentaryGroupRow(it, playOrder(it.divisions).take(DEPARTMENT_ROW)) },
@@ -111,7 +112,8 @@ data class ShowsDepartment(
     val showCount: Int,
     val itemCount: Int,
     val lead: Entry.Collection?,
-    val underway: Underway,
+    /** What is underway among these shows, Continue then Next up, as the one resume strip. */
+    val resumeCards: List<SetCard>,
     /** One row per hand-set category, "Other" last — empty for Series by construction: only a course ever carries one. */
     val categories: List<CategoryRow<Entry.Collection>>,
     val popular: List<Entry.Collection>,
@@ -124,6 +126,7 @@ fun showsDepartmentOf(
     shows: List<Entry.Collection>,
     byId: Map<String, MediaSet>,
     watch: WatchSnapshot,
+    heldIds: Set<String> = emptySet(),
 ): ShowsDepartment? {
     if (shows.isEmpty()) return null
     val lead = shows.filter { firstItemOf(it.divisions)?.backdropPath != null }
@@ -145,7 +148,7 @@ fun showsDepartmentOf(
         showCount = shows.size,
         itemCount = shows.sumOf { it.count },
         lead = lead,
-        underway = underway,
+        resumeCards = resumeCardsOf(underway.continues, underway.nextUp, watch, heldIds),
         categories = categoryRowsOf(shows, ::categoryOf),
         popular = popular,
         newEpisodes = newEpisodes,

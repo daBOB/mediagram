@@ -33,6 +33,8 @@ pub struct Room {
     pub(crate) settings: LobbySettings,
     pub(crate) next_player_id: PlayerId,
     pub(crate) board: Option<crate::room_board::BoardSeat>,
+    /// The game's ranking as it stood when the first player joined after its end.
+    pub(crate) ended: Option<crate::protocol::Ranking>,
 }
 
 impl Room {
@@ -46,6 +48,7 @@ impl Room {
             factory,
             next_player_id: 0,
             board: None,
+            ended: None,
         }
     }
 

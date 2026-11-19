@@ -1,7 +1,7 @@
 //! Flüchtig's question on the mover's phone: its buttons, and what a tap on
 //! one does, up to the move played and, once the chase ends, the scores.
 
-use crate::fluechtig::{Ask, FluechtigGame, Pick, Step};
+use crate::fluechtig::{FluechtigGame, Pick, Step};
 use crate::fluechtig_map::Field;
 use crate::fluechtig_rules::{Move, Turn};
 use crate::protocol::{FluechtigSide as Side, FluechtigTicket as Ticket, ServerTime};
@@ -12,7 +12,7 @@ const TICKETS: [Ticket; 4] = [Ticket::Taxi, Ticket::Bus, Ticket::Ubahn, Ticket::
 impl FluechtigGame {
     /// The buttons of the open question, in order.
     pub(crate) fn picks(&self) -> Vec<Pick> {
-        match self.ask.step {
+        match self.step {
             Step::Field => {
                 let mut to: Vec<Field> = self.chase.moves().iter().map(|m| m.to).collect();
                 to.sort_unstable();
@@ -35,34 +35,33 @@ impl FluechtigGame {
 
     pub(crate) fn take(&mut self, players: &mut [Player], now: ServerTime, pick: Pick) {
         let later = now + self.cfg.chain_ms;
-        let next = |step| Ask { opens_at: later, step };
         let ride = match pick {
             // a hunter with one ticket to the field moves at once; the fugitive is
             // always asked, or one tap or two would tell the table which line they ride
             Pick::Go(to) => match self.ways(to)[..] {
                 [ticket] if self.chase.turn != Turn::Fugitive => Move { to, ticket },
                 _ => {
-                    self.ask = next(Step::Ticket(to));
+                    self.ask_mover(later, Step::Ticket(to));
                     return;
                 }
             },
             Pick::Ride(ticket) => {
-                let Step::Ticket(to) = self.ask.step else { return };
+                let Step::Ticket(to) = self.step else { return };
                 Move { to, ticket }
             }
             Pick::Back => {
-                self.ask = next(Step::Field);
+                self.ask_mover(later, Step::Field);
                 return;
             }
             Pick::Double => {
                 if self.chase.announce_double().is_ok() {
-                    self.ask = next(Step::Field);
+                    self.ask_mover(later, Step::Field);
                 }
                 return;
             }
         };
         if self.chase.play(ride).is_ok() {
-            self.ask = next(Step::Field);
+            self.ask_mover(later, Step::Field);
             self.score(players);
         }
     }

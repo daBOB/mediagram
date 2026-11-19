@@ -139,7 +139,8 @@ fn the_tv_shows_the_round_the_fields_and_who_is_out() {
     assert_eq!(picks[2], FieldPick { player: 2, choice: None });
     next(&mut g, &mut ps, close);
     assert!(matches!(tv(&g, &ps).stage, DreifelderStage::Final { order } if order == vec![0, 1, 2]));
-    assert!(matches!(phone(&g, &ps, 1), PhoneScreen::Final { rank: 2, of: 3, score: 100, .. }));
+    assert_eq!(g.ranking(&ps).and_then(|r| r.place_of(1)), Some(2));
+    assert_eq!(ps[1].score, 100);
 }
 
 #[test]

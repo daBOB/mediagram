@@ -10,7 +10,7 @@ use super::live_asks::Opt;
 use super::live_turn::Step;
 use super::rules::Permit;
 use super::live_text::{grouped, taler};
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use super::live_debts::BID_STEP;
 use crate::protocol::{AnswerColor, BidRange, ChoiceOption, HotelCard, PhoneScreen, PlayerId, ServerTime, SheetLine};
 
@@ -127,13 +127,9 @@ impl GrandAlleeGame {
     }
 
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-        let Some(me) = self.ids.iter().position(|&id| id == player) else {
-            return PhoneScreen::Wait { title: "Grand Allee läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
-        };
+        let Some(me) = self.ids.iter().position(|&id| id == player) else { return unasked() };
         if self.stage == Stage::Final {
-            let order = self.standings();
-            let rank = order.iter().position(|&s| s == me).map_or(1, |r| r as u8 + 1);
-            return PhoneScreen::Final { rank, of: order.len() as u8, score: self.t.net_worth(me), can_restart: view.leader == Some(player) };
+            return unasked();
         }
         let (lines, hotels) = (self.lines(me), self.hotel_cards(me));
         let sheet = |prompt: String, options, opens_at, closes_at: Option<ServerTime>, bid| PhoneScreen::Sheet {
@@ -153,9 +149,9 @@ impl GrandAlleeGame {
                 let (prompt, skip) = self.intro_phone(view, player, *card);
                 sheet(prompt, buttons(skip), 0.0, None, None)
             }
-            Stage::Ask { ask, since, step } if me == self.turn => {
-                let options = buttons(ask.opts.iter().map(|&o| self.label(view, o, step)));
-                sheet(ask.prompt.du.clone(), options, *since, Some(since + self.cfg.ask_ms), None)
+            Stage::Ask { choices, ask, step } if me == self.turn => {
+                let options = buttons(choices.opts.iter().map(|&o| self.label(view, o, step)));
+                sheet(choices.prompt.du.clone(), options, ask.opened_at(), ask.closes_at(), None)
             }
             Stage::Auction(a) => match a.bids.iter().find(|(b, _)| *b == me) {
                 Some(&(_, answer)) => {

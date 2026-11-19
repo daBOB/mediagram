@@ -4,13 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import catalog.Department
 import catalog.Entry
-import catalog.Shelf
+import catalog.Latest
 import catalog.keyOf
-import catalog.latestOf
 import model.WatchSnapshot
-
-/** How many of each kind — films, shows, courses — the Latest page holds, matching the web's own `renderLatest`. */
-private const val LatestLimit = 48
 
 /**
  * Films, shows and courses, newest arrival first — the television twin of
@@ -34,7 +30,7 @@ private const val LatestLimit = 48
  */
 @Composable
 internal fun TvLatestPage(
-    shelves: List<Shelf>,
+    latest: Latest,
     watch: WatchSnapshot,
     heldIds: Set<String>,
     onOpenTitle: (setId: String) -> Unit,
@@ -43,8 +39,7 @@ internal fun TvLatestPage(
 ) {
     val (positions, watchedIds) = rememberWatchMarks(watch)
     val sections =
-        remember(shelves) {
-            val latest = latestOf(shelves, posterLimit = LatestLimit, limit = LatestLimit)
+        remember(latest) {
             listOf<Pair<Department, List<Entry>>>(
                 Department.MOVIES to latest.movies,
                 Department.SERIES to latest.series,

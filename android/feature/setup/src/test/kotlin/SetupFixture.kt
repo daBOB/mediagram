@@ -1,8 +1,12 @@
 package setup
 
+import data.CatalogEnrichmentFetcher
 import data.CoreStorage
+import data.DefaultCatalogRepository
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
+import data.LibraryUpdate
+import data.RefreshLog
 import data.StoredCoreProvider
 import data.settings.InMemoryLibrarySettings
 import data.settings.InMemoryTelegramSettings
@@ -42,12 +46,17 @@ internal class SetupFixture(
     val dispatcher: CoroutineDispatcher = UnconfinedTestDispatcher()
     val provider = StoredCoreProvider(telegram, dispatcher) { build() }
     val watchState = DefaultWatchStateRepository(provider, dispatcher)
+    val libraryUpdate =
+        LibraryUpdate(
+            DefaultCatalogRepository(provider, library, RefreshLog(), dispatcher),
+            CatalogEnrichmentFetcher(provider, tmdb, dispatcher = dispatcher),
+        )
 
     fun viewModel(): SetupViewModel =
-        SetupViewModel(provider, Libraries(provider, library), tmdb, storage, dispatcher, watchState)
+        SetupViewModel(provider, Libraries(provider, library), tmdb, storage, dispatcher, watchState, libraryUpdate)
 
     fun settingsViewModel(): SettingsViewModel =
-        SettingsViewModel(provider, Libraries(provider, library), storage, telegram, dispatcher, watchState)
+        SettingsViewModel(provider, Libraries(provider, library), storage, telegram, dispatcher, watchState, libraryUpdate)
 
     /** A device that has answered everything up to the library question. */
     suspend fun signedIn(): SetupFixture =

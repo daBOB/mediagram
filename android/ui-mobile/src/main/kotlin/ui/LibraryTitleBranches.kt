@@ -68,6 +68,9 @@ internal fun TitleFrame(
             // editor's-choice pin above, since it is not a household mark.
             preload = if (title.kind == Kind.MOVIE) rememberFilmPreloadUi(title, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
             playOnTv = rememberPlayOnTv(),
+            heldIds = catalogState.heldIdsOrEmpty(),
+            // A copy picked on the film's own page plays at once: it is already chosen.
+            onPlayVersion = { copy -> at.openPlayer(copy.setId) },
         )
     }
 }

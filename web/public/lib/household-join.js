@@ -9,7 +9,7 @@ import * as state from "./watch-state.js";
 import { join } from "./household-api.js";
 import { thisHousehold } from "./household.js";
 import { HOUSEHOLD_WORDS, joinPinTitle } from "./household-words.js";
-import { pill } from "./profile-manage.js";
+import { pill } from "./profile-manage-households.js";
 import { askPin } from "./pin-prompt.js";
 
 /**

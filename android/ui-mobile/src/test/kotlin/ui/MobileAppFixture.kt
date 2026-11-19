@@ -74,9 +74,8 @@ internal class MobileAppFixture :
             2L
         }
         val watchState = DefaultWatchStateRepository(provider, dispatcher)
-        val settings = SettingsViewModel(provider, libraries, storage, telegram, dispatcher, watchState)
-        flow = LibraryFlowFixture(settingsModel = settings)
-        setup = SetupViewModel(provider, libraries, InMemoryTmdbSettings(), storage, dispatcher, watchState)
+        flow = LibraryFlowFixture(settingsModel = { update -> SettingsViewModel(provider, libraries, storage, telegram, dispatcher, watchState, update) })
+        setup = SetupViewModel(provider, libraries, InMemoryTmdbSettings(), storage, dispatcher, watchState, flow.libraryUpdate)
         login = LoginViewModel(provider, dispatcher)
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(

@@ -1,47 +1,24 @@
 use super::*;
-use crate::cards::Suit;
-use crate::protocol::{ButtonNeeds, CardDesk, CardsScene, DeskCard};
+use crate::card_game_driver::{act, c, desk, leave, players, scene, tick};
+use crate::cards::Suit::*;
+use crate::protocol::{ButtonNeeds, CardDesk, DeskCard};
 use Rank::*;
-use Suit::*;
-
-fn c(suit: Suit, rank: Rank) -> Card {
-    Card::new(suit, rank)
-}
-
-fn players(n: usize) -> Vec<Player> {
-    ["Ana", "Ben", "Cem", "Dana", "Eli", "Fay"][..n].iter().enumerate().map(|(i, name)| Player::for_test(i as PlayerId, name, true)).collect()
-}
 
 /// Hearts are trump. `deck` is drawn from its end, its first card is the trump card.
 fn rig(hands: Vec<Vec<Card>>, deck: Vec<Card>) -> (DurakGame, Vec<Player>) {
     let p = players(hands.len());
-    let mut g = DurakGame::new(DurakConfig { seed: Some(1), ..DurakConfig::default() }, &p, 0.0);
-    g.hands = hands;
-    g.hands.iter_mut().for_each(|h| h.sort());
-    g.deck = deck;
-    g.trump = c(Hearts, Six);
-    g.attacker = 0;
-    g.stage = Stage::Attack { since: 0.0 };
-    (g, p)
+    (DurakGame::dealt(DurakConfig::default(), &p, hands, deck, c(Hearts, Six)), p)
 }
 
 fn index(g: &DurakGame, who: usize, card: Card) -> u8 {
     g.hands[who].iter().position(|&h| h == card).expect("the card is in hand") as u8
 }
 
+/// `who` taps `button` with the cards themselves, not their places on the desk.
 fn press(g: &mut DurakGame, p: &mut [Player], who: usize, button: &str, hand: &[Card], table: Option<Card>) -> Result<(), ActionError> {
-    let hand = hand.iter().map(|&card| index(g, who, card)).collect();
+    let hand: Vec<u8> = hand.iter().map(|&card| index(g, who, card)).collect();
     let table = table.map(|t| g.table().iter().position(|&x| x == t).expect("the card is on the table") as u8);
-    g.on_action(&mut GameCtx { now: 1.0, players: p }, who as PlayerId, &Action::Cards { button: button.into(), hand, table })
-}
-
-fn leave(player: &mut Player, at: f64) {
-    player.conn = None;
-    player.left_at = Some(at);
-}
-
-fn tick(g: &mut DurakGame, p: &mut [Player], now: f64) {
-    g.on_tick(&mut GameCtx { now, players: p });
+    act(g, p, who as PlayerId, button, &hand, table, 1.0)
 }
 
 /// Lets a finished bout's table time pass so the cards move on.
@@ -55,20 +32,6 @@ fn done_all(g: &mut DurakGame, p: &mut [Player]) {
     while matches!(g.stage, Stage::Throw { .. }) {
         let who = g.actor().expect("a thrower is on");
         press(g, p, who, "done", &[], None).unwrap();
-    }
-}
-
-fn desk(g: &DurakGame, p: &[Player], who: PlayerId) -> CardDesk {
-    match g.phone_screen(&ViewCtx { now: 1.0, players: p, leader: Some(0) }, who) {
-        PhoneScreen::Cards { desk } => desk,
-        other => panic!("expected a desk, got {other:?}"),
-    }
-}
-
-fn scene(g: &DurakGame, p: &[Player], now: f64) -> CardsScene {
-    match g.tv_scene(&ViewCtx { now, players: p, leader: Some(0) }) {
-        TvScene::Cards { scene } => scene,
-        other => panic!("expected a card scene, got {other:?}"),
     }
 }
 
@@ -233,8 +196,8 @@ fn the_throw_in_looks_the_same_to_everyone_whether_a_card_fits_or_not() {
         press(&mut g, &mut p, 0, "done", &[], None).unwrap();
         assert_eq!(g.actor(), Some(asked));
         let tv = scene(&g, &p, 1.0);
-        let others: Vec<_> = [0, 1].map(|w| desk(&g, &p, w).prompt).to_vec();
-        let mine = desk(&g, &p, 2);
+        let others: Vec<_> = [0, 1].map(|w| desk(&g, &p, w, 1.0).prompt).to_vec();
+        let mine = desk(&g, &p, 2, 1.0);
         (tv, others, mine)
     };
     let (tv_fit, others_fit, mine_fit) = look(hands, 2);
@@ -271,12 +234,19 @@ fn while_taking_the_others_add_cards_that_are_not_defended() {
 
 #[test]
 fn at_most_six_attacks_per_bout() {
-    let defence = vec![c(Clubs, Eight), c(Clubs, Nine), c(Diamonds, Eight), c(Diamonds, Nine), c(Spades, Eight), c(Spades, Nine), c(Spades, Ten)];
-    let (mut g, mut p) = rig(vec![vec![c(Clubs, Seven), c(Spades, Seven)], defence, vec![c(Diamonds, Ace)]], vec![]);
-    // five attacks already beaten, so the sixth is the last one allowed
-    g.bout = [Seven, Eight, Nine, Ten, Jack].map(|r| (c(Diamonds, r), Some(c(Hearts, r)))).to_vec();
-    g.limit = 6;
-    g.stage = Stage::Throw { since: 0.0, taking: false };
+    let attacks = vec![c(Diamonds, Seven), c(Diamonds, Eight), c(Diamonds, Nine), c(Diamonds, Ten), c(Diamonds, Jack), c(Clubs, Seven), c(Spades, Seven)];
+    let trumps = [Eight, Nine, Ten, Jack, Queen].map(|r| c(Hearts, r));
+    let defence = [trumps.to_vec(), vec![c(Clubs, Eight), c(Spades, Ace)]].concat();
+    let (mut g, mut p) = rig(vec![attacks, defence, vec![c(Diamonds, Ace)]], vec![]);
+    press(&mut g, &mut p, 0, "play", &[c(Diamonds, Seven)], None).unwrap();
+    assert_eq!(g.limit, 6, "the defender holds seven");
+    // each trump beats a diamond and brings its own rank to the table for the next diamond
+    for (rank, trump) in [Seven, Eight, Nine, Ten, Jack].into_iter().zip(trumps) {
+        if rank != Seven {
+            press(&mut g, &mut p, 0, "play", &[c(Diamonds, rank)], None).unwrap();
+        }
+        press(&mut g, &mut p, 1, "beat", &[trump], Some(c(Diamonds, rank))).unwrap();
+    }
     press(&mut g, &mut p, 0, "play", &[c(Clubs, Seven)], None).unwrap();
     press(&mut g, &mut p, 1, "beat", &[c(Clubs, Eight)], Some(c(Clubs, Seven))).unwrap();
     assert_eq!(g.bout.len(), 6);
@@ -341,7 +311,7 @@ fn a_player_out_of_cards_with_an_empty_deck_is_safe_and_the_last_holder_is_the_d
     assert_eq!(g.out, vec![0, 1]);
     let Stage::Final { ranking, durak } = g.stage.clone() else { panic!("expected the end, got {:?}", g.stage) };
     assert_eq!((ranking, durak), (vec![0, 1, 2], Some(2)));
-    assert!(g.is_finished());
+    assert_eq!(g.ranking(&p).map(|r| r.places.iter().map(|x| x.player).collect::<Vec<_>>()), Some(vec![0, 1, 2]));
     assert_eq!(p.iter().map(|x| x.score).collect::<Vec<_>>(), vec![2, 1, 0]);
     let s = scene(&g, &p, 10_000.0);
     assert_eq!(s.ranking, Some(vec![0, 1, 2]));
@@ -418,12 +388,12 @@ fn an_absent_thrower_adds_nothing() {
 #[test]
 fn the_defenders_desk_offers_beating_and_taking() {
     let (g, p) = open(vec![c(Spades, Seven), c(Clubs, Ten)], vec![c(Spades, Eight), c(Clubs, Nine)], vec![c(Diamonds, Ace)], vec![]);
-    let d = desk(&g, &p, 1);
+    let d = desk(&g, &p, 1, 1.0);
     assert_eq!(d.buttons.iter().map(|b| (b.id.as_str(), b.needs)).collect::<Vec<_>>(), vec![("beat", ButtonNeeds::HandAndTable), ("take", ButtonNeeds::Nothing)]);
     assert_eq!(d.table, vec![DeskCard { card: c(Spades, Seven), enabled: true }]);
     assert_eq!(d.hand.iter().map(|h| (h.card, h.enabled)).collect::<Vec<_>>(), vec![(c(Clubs, Nine), false), (c(Spades, Eight), true)]);
     assert!(d.info.unwrap().starts_with("Trumpf ♥ Herz"));
-    assert!(desk(&g, &p, 2).buttons.is_empty());
+    assert!(desk(&g, &p, 2, 1.0).buttons.is_empty());
 }
 
 #[test]

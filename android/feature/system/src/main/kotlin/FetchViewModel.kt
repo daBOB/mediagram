@@ -7,7 +7,7 @@ import data.CatalogEnrichmentFetcher
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** TMDB credential editing and fetch feedback; library update sequencing lives in core:data. */
+/** TMDB credential editing; fetching is the library update's, in core:data. */
 @HiltViewModel
 class FetchViewModel
     @Inject
@@ -28,8 +28,4 @@ class FetchViewModel
         fun saveKey(key: String) {
             viewModelScope.launch { enrichment.saveKey(key) }
         }
-
-        fun fetch(quiet: Boolean = false) = viewModelScope.launch { enrichment.fetch(quiet) }
-
-        fun dismissResult() = enrichment.dismissResult()
     }

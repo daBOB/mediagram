@@ -5,7 +5,11 @@
 
 mod article_photos;
 mod articles;
+mod ask;
 pub mod avatars;
+#[cfg(test)]
+mod card_game_driver;
+mod card_table;
 mod cards;
 mod catalogue;
 mod dreifelder;
@@ -112,6 +116,11 @@ mod titles;
 mod zuendstoff;
 mod zuendstoff_config;
 mod zuendstoff_views;
+mod letztes_wort;
+mod letztes_wort_config;
+mod letztes_wort_rules;
+mod letztes_wort_views;
+mod protocol_letztes_wort;
 
 pub use game::{ActionError, Game, GameCtx, GameFactory, ViewCtx};
 pub use host::{Host, HostConfig, start_game_night};

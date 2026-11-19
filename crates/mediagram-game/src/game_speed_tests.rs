@@ -10,6 +10,7 @@ use crate::protocol::GameKind;
 use crate::quiz_config::QuizConfig;
 use crate::spruchreif::spruchreif_config;
 use crate::zuendstoff_config::ZuendstoffConfig;
+use crate::letztes_wort_config::LetztesWortConfig;
 
 /// Each timed game's thinking clocks at `speed`, in a fixed order.
 fn clocks(speed: GameSpeed) -> Vec<f64> {
@@ -32,6 +33,8 @@ fn clocks(speed: GameSpeed) -> Vec<f64> {
         allee.ask_ms,
         allee.auction_ms,
         spruchreif_config().at(speed).answer_ms,
+        LetztesWortConfig::default().at(speed).time_min_ms,
+        LetztesWortConfig::default().at(speed).time_max_ms,
     ]
 }
 
@@ -40,7 +43,22 @@ fn untouched(speed: GameSpeed) -> Vec<f64> {
     let quiz = QuizConfig::default().at(speed);
     let poster = PosterConfig::default().at(speed);
     let allee = GrandAlleeConfig::default().at(speed);
-    vec![quiz.intro_ms, quiz.reveal_ms, quiz.max_claim_lag_ms, quiz.early_tolerance_ms, poster.grace_ms, poster.reveal_ms, allee.hop_ms, allee.early_ms]
+    let zuendstoff = ZuendstoffConfig::default().at(speed);
+    vec![
+        quiz.intro_ms,
+        quiz.reveal_ms,
+        quiz.max_claim_lag_ms,
+        quiz.early_tolerance_ms,
+        poster.grace_ms,
+        poster.reveal_ms,
+        allee.hop_ms,
+        allee.early_ms,
+        zuendstoff.throw_lead_ms,
+        zuendstoff.flight_ms,
+        zuendstoff.catch_before_ms,
+        zuendstoff.catch_after_ms,
+        zuendstoff.pickup_ms,
+    ]
 }
 
 #[test]

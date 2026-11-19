@@ -15,11 +15,10 @@ import androidx.compose.ui.test.performScrollToNode
 import catalog.CatalogUiState
 import catalog.CategoryRow
 import catalog.CollectionKind
-import catalog.Department
 import catalog.DocumentariesDepartment
 import catalog.DocumentaryGroupRow
 import catalog.Entry
-import catalog.Shelf
+import catalog.resumeCardsOf
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -73,7 +72,7 @@ class DocumentariesDepartmentScreenTest {
     private val department = DocumentariesDepartment(
         itemCount = 24,
         lead = docSet("lead", backdrop = "lead-bg", tagline = "A quotable line."),
-        continuing = listOf(docSet("resuming")),
+        resumeCards = resumeCardsOf(listOf(docSet("resuming")), emptyList(), WatchSnapshot.Empty),
         recentlyAdded = listOf(docSet("recent")),
         categories = emptyList(),
         collections = listOf(group),
@@ -93,7 +92,6 @@ class DocumentariesDepartmentScreenTest {
                     DocumentariesDepartmentScreen(
                         department = department,
                         watch = WatchSnapshot.Empty,
-                        heldIds = emptySet(),
                         onOpenCollection = { openedCollection = it },
                         onPlay = { played = it },
                     )
@@ -168,7 +166,6 @@ class DocumentariesDepartmentScreenTest {
                     DocumentariesDepartmentScreen(
                         department = categorised,
                         watch = WatchSnapshot.Empty,
-                        heldIds = emptySet(),
                         onOpenCollection = { openedCollection = it },
                         onPlay = { played = it },
                     )
@@ -203,7 +200,6 @@ class DocumentariesDepartmentScreenTest {
             controller.get().setContent {
                 MaterialTheme {
                     DocumentariesDepartmentTab(
-                        shelf = Shelf(Department.DOCUMENTARIES, emptyList()),
                         state = CatalogUiState.Ready(emptyList()),
                         onOpenCollection = {},
                         onPlay = {},

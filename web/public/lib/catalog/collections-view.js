@@ -11,6 +11,7 @@ import { countOf, humanDuration } from "../format.js";
 import { offlineBadge } from "./set-badge.js";
 import { plateOf } from "./plate.js";
 import * as state from "../watch-state.js";
+import { versionsOf } from "../film-versions.js";
 import { addTitles } from "./collection-add.js";
 import { crumbs, heading } from "./shelf-view.js";
 
@@ -117,7 +118,8 @@ export function listView(list, sets, onPlay) {
 
     const remove = el("button", "quiet", "Remove");
     remove.addEventListener("click", () => {
-      state.setInCollection(list.id, set.setId, false);
+      // The list may hold any copy of a film; removing the film removes whichever it holds.
+      for (const copy of versionsOf(set)) if (list.items.includes(copy.setId)) state.setInCollection(list.id, copy.setId, false);
     });
     row.append(remove);
     block.append(row);

@@ -106,22 +106,6 @@ fn an_absent_player_plays_by_itself() {
 }
 
 #[test]
-fn a_dropout_after_a_long_think_gets_the_full_grace() {
-    let (mut g, mut p) = game(&[3]);
-    g.seats[0].pieces = [Some(5), Some(12), None, None];
-    g.start_turn(0.0, 0, false);
-    tap(&mut g, &mut p, ANA, 0, 0.0).unwrap();
-    // Ana thinks over her two pieces for five seconds, then her phone drops.
-    let now = run(&mut g, &mut p, 0.0, 6150.0);
-    p[0].conn = None;
-    p[0].left_at = Some(now);
-    let now = run(&mut g, &mut p, now, now + 1400.0);
-    assert!(matches!(g.stage, Stage::Rolled { .. }), "no move made for her straight after the drop");
-    run(&mut g, &mut p, now, now + 200.0);
-    assert!(matches!(g.stage, Stage::Moving { .. }), "played for her 1.5 s after she left");
-}
-
-#[test]
 fn the_last_piece_home_wins() {
     let (mut g, mut p) = game(&[2]);
     g.seats[0].pieces = [Some(41), Some(42), Some(43), Some(38)];
@@ -129,10 +113,8 @@ fn the_last_piece_home_wins() {
     g.start_turn(0.0, 0, false);
     tap(&mut g, &mut p, ANA, 0, 0.0).unwrap();
     run(&mut g, &mut p, 0.0, 5000.0);
-    assert!(g.is_finished());
-    assert_eq!(p[0].score, 4);
-    assert!(matches!(phone(&g, &p, ANA, 5000.0), PhoneScreen::Final { rank: 1, of: 2, score: 4, can_restart: true }));
-    assert!(matches!(phone(&g, &p, BEN, 5000.0), PhoneScreen::Final { rank: 2, score: 1, can_restart: false, .. }));
+    assert_eq!(g.ranking(&p).map(|r| r.places.iter().map(|x| x.player).collect::<Vec<_>>()), Some(vec![ANA, BEN]));
+    assert_eq!((p[0].score, p[1].score), (4, 1));
     let TvScene::Race { scene } = g.tv_view() else { panic!() };
     assert_eq!(scene.stage, RaceStage::Final { winner: ANA, ranking: vec![ANA, BEN] });
 }

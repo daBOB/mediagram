@@ -1,6 +1,7 @@
 package catalog
 
 import data.CatalogRepository
+import data.RefreshOutcome
 import kotlinx.coroutines.CompletableDeferred
 import model.Kind
 import model.MediaSet
@@ -44,14 +45,18 @@ class FakeCatalogRepository(
     var refreshes: Int = 0
         private set
 
-    override suspend fun refresh(): Result<Int> {
+    /** What a refresh that reached the channel says it did; a test that needs a newer index says [RefreshOutcome.Updated]. */
+    var refreshOutcome: RefreshOutcome = RefreshOutcome.AlreadyCurrent
+
+    /** The installed index's push time; `null`, the default, is a repository that cannot tell. */
+    var publishedAt: Long? = null
+
+    override suspend fun publishedAt(): Long? = publishedAt
+
+    override suspend fun refresh(): RefreshOutcome {
         refreshes += 1
         refreshGate?.await()
-        return if (refreshFails) {
-            Result.failure(IllegalStateException("refresh failed"))
-        } else {
-            Result.success(allSets.size)
-        }
+        return if (refreshFails) RefreshOutcome.Refused("Could not refresh the library") else refreshOutcome
     }
 
     override suspend fun sets(): List<MediaSet> {

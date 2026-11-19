@@ -7,7 +7,6 @@ import catalog.GenreIndexEntry
 import catalog.MoviesDepartment
 import catalog.SetCard
 import catalog.ShowsDepartment
-import catalog.Underway
 import model.Kind
 import model.MediaSet
 import org.junit.Test
@@ -145,7 +144,7 @@ class TvDepartmentTargetsTest {
         showCount = popular.size,
         itemCount = popular.size,
         lead = null,
-        underway = Underway(continues = emptyList(), nextUp = emptyList(), continuesTotal = 0, nextUpTotal = 0),
+        resumeCards = emptyList(),
         categories = categories,
         popular = popular,
         newEpisodes = emptyList(),

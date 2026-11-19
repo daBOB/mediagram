@@ -7,9 +7,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performFirstLinkClick
@@ -182,12 +185,24 @@ class SeriesPageTest {
         compose.onNodeWithText("Created by Vince Gilligan").assertIsDisplayed()
     }
 
-    @Test fun theSeasonPickerSwitchesWhichEpisodesShow() {
+    @Test fun aSeasonCardSwitchesWhichEpisodesShow() {
         renderCollection(twoSeasonShow())
         compose.onNodeWithText("Ep 1.1", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Season 1 · one episode").performClick()
-        compose.onNodeWithText("Season 2 · one episode").performClick()
+        compose.onNode(hasText("Season 2") and hasClickAction()).performClick()
         compose.onNodeWithText("Ep 2.1", substring = true).assertIsDisplayed()
+    }
+
+    /** A season with its own cover shows it bare; one standing on the show's poster carries its number over it. */
+    @Test fun aSeasonCardShowsItsOwnCoverElseTheShowsPosterWithItsNumber() {
+        val show = twoSeasonShow()
+        renderCollection(
+            show.copy(
+                posterPath = "/cache/show.jpg",
+                divisions = listOf(show.divisions[0], show.divisions[1].copy(items = listOf(ep(2, 1).copy(seasonPosterPath = "/cache/show-s2.jpg")))),
+            ),
+        )
+        compose.onNode(hasText("Season 1") and hasClickAction()).assert(hasText("1"))
+        compose.onNode(hasText("Season 2") and hasClickAction()).assert(!hasText("2"))
     }
 
     /**

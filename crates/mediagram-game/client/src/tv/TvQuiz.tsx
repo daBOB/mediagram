@@ -4,7 +4,6 @@ import type { PlayerInfo } from "../protocol/PlayerInfo";
 import type { QuizScene } from "../protocol/QuizScene";
 import { ANSWER_COLORS, ANSWER_MARKS } from "../ui/answers";
 import { Token } from "../ui/Token";
-import { TvFinal } from "./TvFinal";
 
 /**
  * The buzzer quiz on the TV: question card, the four answers and the table.
@@ -27,7 +26,7 @@ export function TvQuiz({
   const now = useServerNow(conn);
   const { stage } = scene;
 
-  if (stage.stage === "final") return <TvFinal players={players} conn={conn} />;
+  if (stage.stage === "final") return null; // TvApp shows the awards ceremony
 
   const q = stage.question;
   const reveal = stage.stage === "reveal" ? stage : null;

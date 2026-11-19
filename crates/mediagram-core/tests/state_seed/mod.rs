@@ -25,11 +25,11 @@ pub async fn household(player: &Arc<Core>, dir: &Path, grown_ups: &[&str], kids:
             None => player.clone().create_first_admin(name.clone(), PIN.into()).await,
             Some(admin) if kid => {
                 let admin = admin.id.clone();
-                player.clone().create_kid(admin, PIN.into(), name.clone(), 12, None).await
+                player.clone().create_kid(admin, PIN.into(), name.clone(), 12, None, None).await
             }
             Some(admin) => {
                 let admin = admin.id.clone();
-                player.clone().create_grown_up(admin, PIN.into(), name.clone(), PIN.into()).await
+                player.clone().create_grown_up(admin, PIN.into(), name.clone(), PIN.into(), None).await
             }
         };
         assert_eq!(outcome, ProfileOutcome::Done, "{name}");

@@ -151,3 +151,12 @@ and went: "its not needed use the avatar head on the board".
 Rule: a board shown for a look decision is drawn as the finished thing (ground, blocks, water,
 pieces as the players' avatars), in two or three directions. Anything on the TV that needs a
 caption to be understood is a candidate for putting the fact on the board itself.
+
+## 2026-11-15 — Take a game's rules as the user states them; don't add to them
+
+The user described Letztes Wort in two sentences (one question with 5–10 correct answers; a correct
+answer takes the stick; whoever holds it when the hidden time is up wins). I played it back with the TV
+listing every given answer and a multi-option question about used answers. The user: "NO the TV is not
+showing the correct answers", then "AGAIN. We have ONE Question …".
+Rule: build the stated rules literally. Anything I add (what the TV shows, tie rules, edge cases) goes
+in as a one-line proposal marked as mine, never as a menu that reopens the rule.

@@ -153,10 +153,10 @@ fn first<'c>(name: &'c str, new_pin: &'c str) -> Call<'c> {
     Box::new(move |m| m.create_first(name, new_pin))
 }
 fn grown_up<'c>(actor: &'c str, pin: &'c str, name: &'c str, new_pin: &'c str) -> Call<'c> {
-    Box::new(move |m| m.create_grown_up(actor, pin, name, new_pin))
+    Box::new(move |m| m.create_grown_up(actor, pin, name, new_pin, None))
 }
 fn kid<'c>(actor: &'c str, pin: &'c str, name: &'c str, age: u8) -> Call<'c> {
-    Box::new(move |m| m.create_kid(actor, pin, name, age, None))
+    Box::new(move |m| m.create_kid(actor, pin, name, age, None, None))
 }
 fn remove<'c>(actor: &'c str, pin: &'c str, id: &'c str) -> Call<'c> {
     Box::new(move |m| m.remove(actor, pin, id))

@@ -2,7 +2,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } fr
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { answerPin, applicationEnvironment, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
+import { answerPin, applicationEnvironment, buttonNamed, byClass, descendants, textOf, tileNamed } from "./support/browser-application";
+import { tap } from "./support/households-part";
 import { deferred, settle, type Node } from "./support/player-environment";
 
 let bundleDir: string;
@@ -295,10 +296,10 @@ test("collection rename and deletion redraw without view-owned invalidation call
   expect(env.node("n-collections").textContent).toBe("0");
 });
 
-test("series page shows one season's episodes and picks another through the URL", async () => {
+test("series page shows one season's episodes and picks another from its season cards, through the URL", async () => {
   catalog = JSON.stringify([
-    { ...film("Episode one"), kind: "ep", show: "A/B", season: 1, episode: 1, showKey: "show-key" },
-    { ...film("Episode two"), kind: "ep", show: "A/B", season: 2, episode: 1, showKey: "show-key" },
+    { ...film("Episode one"), kind: "ep", show: "A/B", season: 1, episode: 1, showKey: "show-key", poster: "show-key" },
+    { ...film("Episode two"), kind: "ep", show: "A/B", season: 2, episode: 1, showKey: "show-key", poster: "show-key", seasonPoster: "show-key-s2" },
   ]);
   intercept = (url) => url === "/api/shows/show-key" ? Promise.resolve(Response.json({ overview: "Series description" })) : null;
   await start();
@@ -307,9 +308,16 @@ test("series page shows one season's episodes and picks another through the URL"
   expect(page()).toContain("Play S1 E1");
   expect(page()).toContain("Episode one");
   expect(page()).not.toContain("Episode two");
-  const pick = descendants(env.node("main")).find((node) => node.tagName === "SELECT")! as unknown as { value: string; fire: (type: string) => void };
-  pick.value = "Season 2";
-  pick.fire("change");
+  const row = descendants(env.node("main")).find((node) => node.className === "grid plates strip season-cards")!;
+  const cards = descendants(row).filter((node) => node.tagName === "BUTTON");
+  // Season 2 has its own cover; Season 1 stands on the show's poster, its number over it.
+  expect(cards.map(textOf)).toEqual(["1Season 1one episode", "Season 2one episode"]);
+  const covers = cards.map((card) => (descendants(card).find((node) => node.tagName === "IMG") as unknown as { src: string }).src);
+  expect(covers[0]).toContain("show-key");
+  expect(covers[1]).toContain("show-key-s2");
+  expect(cards[0]!.getAttribute("aria-current")).toBe("true");
+  expect(cards[1]!.getAttribute("aria-current")).toBeNull();
+  cards[1]!.fire("click");
   expect(env.location.hash).toBe("#/series/A%2FB/Season%202");
   await env.navigate(env.location.hash);
   expect(page()).toContain("Episode two");
@@ -847,7 +855,7 @@ describe("kids profiles", () => {
     await start();
     await env.navigate("#/settings");
     descendants(env.node("main")).find((node) => node.className.split(" ").includes("tab") && textOf(node) === "Profiles")!.fire("click");
-    expect(page()).toContain("Viewer · Kids · FSK 6");
+    expect(page()).toContain("ViewerKid · FSK 6");
   });
 
   test("a kids profile is offered no way to change the household's editor's choice", async () => {
@@ -892,9 +900,9 @@ describe("kids profiles", () => {
     env.node("who").fire("click");
     await settle();
     buttonNamed(env.document.body, "Manage profiles").fire("click");
-    buttonNamed(byClass(env.document.body, "who-manage"), "Adult").fire("click");
+    tileNamed(byClass(env.document.body, "who-manage"), "Adult").fire("click");
     await answerPin(env.document.body, "1234");
-    const limit = descendants(env.document.body).find((node) => node.tagName === "SELECT" && node.getAttribute("aria-label") === "Age limit for Viewer")!;
+    const limit = descendants(tap(env.document.body, "Viewer")).find((node) => node.tagName === "SELECT" && node.getAttribute("aria-label") === "Age limit for Viewer")!;
     limit.value = "6";
     limit.fire("change");
     await settle();

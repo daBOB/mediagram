@@ -20,6 +20,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import catalog.listedOf
 import designsystem.LocalTvStyle
 import designsystem.TvStyle
 import kotlinx.coroutines.delay
@@ -124,7 +125,7 @@ internal fun TvHomeCover(
         }
         TvCoverActions(
             title = current.title,
-            watchlisted = current.setId in watchlist,
+            watchlisted = listedOf(current, watchlist),
             dotCount = films.size,
             current = films.indexOfFirst { it.setId == current.setId }.coerceAtLeast(0),
             onPlay = { onPlay(current) },

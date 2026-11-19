@@ -15,6 +15,7 @@ import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.KeptKind
+import catalog.LibraryPages
 import catalog.catalogTabOf
 import catalog.chromeCountsOf
 import catalog.fetchFraction
@@ -22,7 +23,9 @@ import catalog.libraryTallyLines
 import catalog.mastheadTabsOf
 import catalog.mediaSet
 import catalog.runFor
+import catalog.setsFor
 import data.CatalogEnrichmentState
+import data.LibraryUpdateState
 import model.WatchSnapshot
 import system.FetchViewModel
 import ui.catalog.CastAskHost
@@ -30,6 +33,7 @@ import ui.catalog.CatalogScreen
 import ui.catalog.GenreBranch
 import ui.catalog.ListScreen
 import ui.catalog.SearchBranch
+import ui.catalog.VersionAskSheet
 import ui.catalog.posterColumnsFor
 import ui.chrome.BrowseActions
 import ui.chrome.LibraryHome
@@ -40,7 +44,11 @@ import ui.common.FrameKind
 import ui.common.LibraryPositions
 import ui.common.MenuActions
 import ui.common.catalog.DepartmentScrollStates
+import ui.common.catalog.LocalWatchedAt
+import ui.common.catalog.cutPositionOf
 import ui.common.catalog.rememberDepartmentScrollStates
+import ui.common.catalog.rememberVersionAsk
+import ui.common.catalog.watchedAtOf
 import ui.common.resolve
 import ui.player.CastRemoteScreen
 import ui.player.PlayerScreen
@@ -58,6 +66,7 @@ internal fun LibraryBranches(
     at: LibraryPositions,
     catalogState: CatalogUiState,
     catalogViewModel: CatalogViewModel,
+    updateState: LibraryUpdateState,
     fetchState: CatalogEnrichmentState,
     fetchViewModel: FetchViewModel,
     menuActions: MenuActions,
@@ -119,12 +128,12 @@ internal fun LibraryBranches(
     // reason: switching tabs and back must not lose where a viewer scrolled
     // to, and the bar needs the active one's own position, not Home's.
     val deptScroll = rememberDepartmentScrollStates()
-    // Shared with the same call CatalogScreen makes so the two can never
-    // pick different editorial sets from two different moments — see
-    // CatalogScreen's own note on `now`.
-    val now = remember { System.currentTimeMillis() }
-    val heldIds = catalogState.heldIdsOrEmpty()
-    val heroState = rememberActiveHeroState(shelves, watch, heldIds, now, chosenTab, homeListState, deptScroll)
+    // The same pages Home and the departments draw, so the bar and the page never disagree about a cover.
+    val pages = (catalogState as? CatalogUiState.Ready)?.pages ?: LibraryPages.Empty
+    val heroState = rememberActiveHeroState(pages, chosenTab, homeListState, deptScroll)
+    // A card that plays straight away asks which copy of a film held more than once; see [VersionAskSheet].
+    val ask = rememberVersionAsk(catalogState, at::openPlayer)
+    val watchedAt = remember(watch) { watchedAtOf(watch) }
 
     // Tabs are not a back stack: on the shelves, Back on any tab but Home
     // goes Home, and only Home's own Back leaves the app. The web's Back
@@ -133,7 +142,7 @@ internal fun LibraryBranches(
     // is the one that answers while it is open.
     BackHandler(enabled = at.top == null && chosenTab != CatalogTab.Home) { chooseTab(CatalogTab.Home) }
 
-    CompositionLocalProvider(LocalRailData provides railData) {
+    CompositionLocalProvider(LocalRailData provides railData, LocalWatchedAt provides watchedAt) {
     frameState.keyedFrame(at.frameKey, at::holdsFrameKey) {
     when (at.top) {
         // The player gets the whole window; a film is the one thing here
@@ -154,6 +163,7 @@ internal fun LibraryBranches(
             PlayerScreen(
                 setId = setId, run = run, fsk = set?.fsk, handPicked = at.run != null,
                 onBack = at::pop, onSwitch = at::replacePlayer, onCast = at::replaceWithRemote,
+                cutPosition = cutPositionOf(catalogState, setId),
             )
         }
 
@@ -168,7 +178,7 @@ internal fun LibraryBranches(
                     catalogState = catalogState,
                     watch = resolved.watch,
                     onQueryChange = { at.typeSearch(it) },
-                    onPlay = at::openPlayer,
+                    onPlay = { setId -> ask.play(setId) },
                     onOpenTitle = at::openTitle,
                     onOpenCollection = at::openCollection,
                     onOpenPerson = { id -> at.openPerson(id) },
@@ -198,7 +208,8 @@ internal fun LibraryBranches(
         // the collection branch above rather than something under it: a
         // list is never reached through the catalog shelves.
         FrameKind.LIST -> ResolvedBranch(resolved.list, catalogState, Destination.List(LOADING), menuActions, profileBar, browse, at, { Destination.List(it.name) }) { list ->
-            val sets = list.items.mapNotNull(catalogState::mediaSet)
+            // A copy of a film held more than once shows, and plays, as its film.
+            val sets = catalogState.setsFor(list.items)
             val ids = sets.map { it.setId }
             // Every row plays into the list, not just from where it was
             // tapped onward — the same run either way, `nextInQueue` walks
@@ -206,8 +217,8 @@ internal fun LibraryBranches(
             ListScreen(
                 list = list,
                 sets = sets,
-                onPlay = { setId -> at.openPlayer(setId, ids) },
-                onPlayAll = sets.firstOrNull()?.let { first -> { at.openPlayer(first.setId, ids) } },
+                onPlay = { setId -> ask.play(setId, ids) },
+                onPlayAll = sets.firstOrNull()?.let { first -> { ask.play(first.setId, ids) } },
                 onRename = { name -> catalogViewModel.renameList(list.id, name) },
                 onDelete = { catalogViewModel.deleteList(list.id); at.pop() },
                 onRemove = { removedId -> catalogViewModel.setInList(list.id, removedId, false) },
@@ -219,7 +230,7 @@ internal fun LibraryBranches(
         FrameKind.FRANCHISE -> FranchiseFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.GENRES -> GenresFrame(at, catalogState, menuActions, profileBar, browse)
         FrameKind.LATEST -> LatestFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
-        FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse)
+        FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse, ask::play)
         FrameKind.PRELOADS -> PreloadsFrame(at, catalogState, menuActions, profileBar, browse)
         FrameKind.STATS -> StatsFrame(at, menuActions, profileBar, browse)
 
@@ -243,8 +254,8 @@ internal fun LibraryBranches(
         ) {
             shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
                 state = catalogState,
-                fetching = fetchState.running,
-                fetchFraction = fetchState.progress?.let(::fetchFraction),
+                fetching = updateState.fetching,
+                fetchFraction = updateState.progress?.let(::fetchFraction),
                 chosenTab = chosenTab,
                 onTabChange = chooseTab,
                 onOpenTitle = at::openTitle,
@@ -256,12 +267,11 @@ internal fun LibraryBranches(
                 onOpenLatest = at::openLatest,
                 onOpenMoviesPage = at::openMoviesPage,
                 onOpenFranchise = { id -> at.openFranchise(id) },
-                onPlayRun = at::openPlayer,
+                onPlayRun = { setId, run -> ask.play(setId, run) },
                 onFinish = { catalogViewModel.markFinished(it) },
                 onToggleWatchlist = catalogViewModel::setWatchlisted,
                 homeListState = homeListState,
                 deptScroll = deptScroll,
-                now = now,
                 titleInfo = catalogViewModel::titleInfo,
             ) }
         }
@@ -270,6 +280,7 @@ internal fun LibraryBranches(
     }
     // Play on TV's answer from a title page; the player hears its own, to stop before the remote takes its place.
     if (at.top != FrameKind.PLAYER) CastAskHost(onOn = at::openRemote)
+    VersionAskSheet(ask, watch, catalogState.heldIdsOrEmpty())
 }
 
 private const val SHELVES_KEY = "shelves"

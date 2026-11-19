@@ -2,6 +2,9 @@
 
 **Priority:** first; nothing else starts before its numbers. **Status:** pending.
 
+> **Deprecated (user, 2026-11-15): 3D on the TV box.** "mark the 3d on tv box as deprecated. maybe we drop it. if we want to play we have to use the funstation." 3D games are played on the funstation (the TV PC, Spieltisch in WayDroid); the Skyworth box may be dropped altogether, not decided. This phase runs on the funstation (`ssh mediagram@192.168.0.42`), not the box at 192.168.0.37;
+> the go/no-go numbers stay the same.
+
 ## Goal
 
 Know whether the TV box draws the Studio arena with eight avatars smoothly, and with which avatar copy, before any

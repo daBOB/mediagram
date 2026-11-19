@@ -19,7 +19,7 @@ afterEach(async () => {
 /** Renders Settings and switches to the Profiles tab, where the row lives. */
 function subtitleSelect(profile: { name: string; kids?: boolean } | null) {
   const main = env.node("main");
-  renderSettings(main, { profile, switchProfile: () => {}, systemVisible: false, admin: null });
+  renderSettings(main, { profile, switchProfile: () => {}, admin: null });
   descendants(main).find((node) => node.tagName === "BUTTON" && node.textContent === "Profiles")!.fire("click");
   return descendants(main).find((node) => node.tagName === "SELECT");
 }

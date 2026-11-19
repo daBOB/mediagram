@@ -5,14 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CatalogRepository
+import data.InstalledLibrary
 import data.LibraryEvents
-import data.LibraryUpdateCoordinator
+import data.LibraryUpdate
 import data.LibraryUpdateKind
+import data.LibraryUpdateState
 import data.TogetherLive
 import data.WatchStateRepository
 import data.coreSentence
 import data.orDefault
-import data.refreshSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -39,14 +40,14 @@ import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TitleInfo
 import javax.inject.Inject
 
-/** Keeps shelf presentation separate from the awaited refresh and artwork operation. */
+/** Shapes the library update's reads into shelves; the update itself is [LibraryUpdate]'s. */
 @HiltViewModel
 class CatalogViewModel
     @Inject
     constructor(
         private val repository: CatalogRepository,
         private val watchState: WatchStateRepository,
-        private val updates: LibraryUpdateCoordinator,
+        private val updates: LibraryUpdate,
         libraryEvents: LibraryEvents = LibraryEvents.None,
         private val heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
         seriesPreloader: SeriesPreloading = SeriesPreloading.Noop,
@@ -58,8 +59,15 @@ class CatalogViewModel
         private val shelving: CoroutineDispatcher = Dispatchers.Default,
     ) : ViewModel() {
         private val catalog = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
+        private val reading = MutableStateFlow(false)
         private var lastReady: CatalogUiState.Ready? = null
         private var manualUpdate: Job? = null
+
+        /** The read of the installed sets behind [catalog], so each is shelved once. */
+        private var shownLibrary: InstalledLibrary? = null
+
+        /** Reading, fetching and the last fetch's result, for the Update item and the progress lines. */
+        val updateState: StateFlow<LibraryUpdateState> = updates.state
 
         /** The sets behind the last Ready state, before any profile's filter; the projection reads them on [shelving]. */
         @Volatile private var lastSets: List<MediaSet> = emptyList()
@@ -94,16 +102,22 @@ class CatalogViewModel
             setId: String,
             listed: Boolean,
         ) {
+            // A film held more than once is on the list while any copy is, so taking it off takes off every copy listed.
+            val ids = if (listed) listOf(setId) else copiesOf(setId).filter { it in watchState.snapshot.value.watchlist }.ifEmpty { listOf(setId) }
             writeState("Could not confirm the Watchlist update. Check it and try again.") {
-                watchState.setWatchlisted(setId, listed)
+                ids.forEach { watchState.setWatchlisted(it, listed) }
                 true
             }
         }
 
         /** A title page's "My List" button: which way it goes is read from the snapshot at the tap. */
         fun toggleWatchlist(setId: String) {
-            setWatchlisted(setId, setId !in watchState.snapshot.value.watchlist)
+            val listed = watchState.snapshot.value.watchlist
+            setWatchlisted(setId, copiesOf(setId).none { it in listed })
         }
+
+        /** [setId] and every other copy of the film it belongs to. */
+        private fun copiesOf(setId: String): List<String> = state.value.filmOf(setId)?.let(::versionsOf)?.map(MediaSet::setId) ?: listOf(setId)
 
         /**
          * A title page's editor's-choice button, pinning [setId] or taking
@@ -128,11 +142,22 @@ class CatalogViewModel
          */
         val unfiltered: StateFlow<CatalogUiState> =
             channelFlow {
-                launch { refresh(LibraryUpdateKind.Read) }
+                launch { updates.update(LibraryUpdateKind.Read) }
                 launch {
                     libraryEvents.events().collect { event ->
-                        if (event == LibraryEvent.INDEX) refresh(LibraryUpdateKind.Published)
+                        if (event == LibraryEvent.INDEX) updates.update(LibraryUpdateKind.Published)
                     }
+                }
+                launch {
+                    combine(updates.library, updates.state.map { it.reading }.distinctUntilChanged()) { _, _ -> }
+                        .collect {
+                            // Both as they stand now, not as paired: the shelves and their progress line change as one.
+                            updates.library.value?.takeIf { it !== shownLibrary }?.let {
+                                showRead(it)
+                                shownLibrary = it
+                            }
+                            reading.value = updates.state.value.reading
+                        }
                 }
                 // A preload that finishes a title is folded into the shelves
                 // already up, so its "offline" badge shows without a rescan.
@@ -143,7 +168,7 @@ class CatalogViewModel
                 // nothing else in the app ever un-holds a title once it is on
                 // disk.
                 launch { filmPreloader.unheldEvents.collect(::heldEventRemoved) }
-                combine(catalog, updates.refreshing, watchState.snapshot) { shown, refreshing, watch ->
+                combine(catalog, reading, watchState.snapshot) { shown, refreshing, watch ->
                     when {
                         shown is CatalogUiState.Ready -> shown.copy(refreshing = refreshing, watch = watch)
                         refreshing -> CatalogUiState.Loading
@@ -174,7 +199,7 @@ class CatalogViewModel
                     get() = listOf(value)
 
                 override suspend fun collect(collector: FlowCollector<CatalogUiState>): Nothing {
-                    // A kids or hidden-section profile's projection builds shelves too.
+                    // A kids or hidden-section profile's projection builds shelves too, and every state its pages.
                     combine(unfiltered, kidsFilter) { shown, view -> project(shown, view) }
                         .distinctUntilChanged()
                         .flowOn(shelving)
@@ -186,7 +211,25 @@ class CatalogViewModel
         private fun project(
             shown: CatalogUiState,
             view: ProfileView,
-        ): CatalogUiState = projected(shown, view, lastSets)
+        ): CatalogUiState =
+            when (val visible = projected(shown, view, lastSets)) {
+                is CatalogUiState.Ready -> paged(visible)
+                else -> visible
+            }
+
+        /** The last state given its pages; see [paged]. */
+        @Volatile private var lastPaged: CatalogUiState.Ready? = null
+
+        /**
+         * [ready] with its pages — the last ones while its shelves, watch and
+         * held ids are those they were built from, so a refresh's progress
+         * line or a notice coming and going rebuilds nothing. The time is read
+         * only when they are built: no surface recomputes a page at midnight.
+         */
+        private fun paged(ready: CatalogUiState.Ready): CatalogUiState.Ready {
+            val same = lastPaged?.takeIf { it.shelves == ready.shelves && it.watch == ready.watch && it.heldIds == ready.heldIds }
+            return (same?.let { ready.copy(pages = it.pages) } ?: ready.paged()).also { lastPaged = it }
+        }
 
         /**
          * Watch together's Join for Home and the title pages, and the cast bar ([togetherOffers]); collected only while
@@ -201,54 +244,24 @@ class CatalogViewModel
 
         /** Settings changed the library; its first read is separate from enrichment requests. */
         fun reload() {
-            viewModelScope.launch { refresh(LibraryUpdateKind.Read) }
+            viewModelScope.launch { updates.update(LibraryUpdateKind.Read) }
         }
 
         fun update() {
             if (manualUpdate?.isActive == true) return
-            manualUpdate = viewModelScope.launch { refresh(LibraryUpdateKind.Manual) }
+            manualUpdate = viewModelScope.launch { updates.update(LibraryUpdateKind.Manual) }
         }
 
-        /** Rebuilds local presentation without changing the independently owned refresh flag. */
-        fun showFetched() {
-            viewModelScope.launch { regrouped() }
-        }
+        /** The viewer has read what the last fetch said. */
+        fun dismissUpdateResult() = updates.dismissResult()
 
-        private suspend fun refresh(kind: LibraryUpdateKind) {
-            val coldStart = kind == LibraryUpdateKind.Read && lastReady == null
-            updates.update(kind, ::readCatalog, ::regrouped, showInstalled = if (coldStart) ::showInstalled else null)
-        }
-
-        /**
-         * The catalog already on this device, shown while a cold start's refresh
-         * is still out. Quiet when there is none or it cannot be read: the read
-         * after the refresh is the one that reports.
-         */
-        private suspend fun showInstalled() {
-            try {
-                val sets = repository.sets()
-                val shelves = withContext(shelving) { shelvesOf(sets) }
-                if (!shelves.hasContent()) return
-                val ready = CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves))
-                lastSets = sets
-                show(ready)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (
-                @Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception,
-            ) {
-                return
-            }
-        }
-
-        private suspend fun readCatalog(refreshed: Result<Int>) {
+        private suspend fun showRead(library: InstalledLibrary) {
             val answer =
                 try {
-                    val failure = refreshed.exceptionOrNull()
-                    failure?.let { Log.w("Catalog", "could not refresh the library", it) }
-                    val sets = repository.sets()
+                    val refusal = library.refusal
+                    val sets = library.sets.getOrThrow()
                     val kept = lastReady
-                    if (failure == null && kept != null && sets == lastSets) {
+                    if (refusal == null && kept != null && sets == lastSets) {
                         // Nothing new — the usual refresh, now that an unchanged index is
                         // not downloaded again: the shelves up stand, rather than being
                         // regrouped on the main thread under a viewer's thumb. What the
@@ -258,8 +271,8 @@ class CatalogViewModel
                         val shelves = withContext(shelving) { shelvesOf(sets) }
                         val answer =
                             when {
-                                shelves.hasContent() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
-                                failure != null -> CatalogUiState.Failed(failure.refreshSentence())
+                                shelves.hasContent() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = refusal)
+                                refusal != null -> CatalogUiState.Failed(refusal)
                                 else -> CatalogUiState.Empty
                             }
                         // Only once nothing above can still fail: an unchanged later read
@@ -277,27 +290,6 @@ class CatalogViewModel
                     lastReady?.copy(notice = notice) ?: CatalogUiState.Failed(notice)
                 }
             show(answer)
-        }
-
-        private suspend fun regrouped() {
-            try {
-                val sets = repository.sets()
-                val shelves = withContext(shelving) { shelvesOf(sets) }
-                val kept = lastReady ?: return
-                if (shelves.hasContent()) {
-                    val regrouped = kept.copy(shelves = shelves, heldIds = heldIdsOf(shelves))
-                    lastSets = sets
-                    show(regrouped)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (
-                @Suppress("TooGenericExceptionCaught") e: Exception,
-            ) {
-                Log.w("Catalog", "could not reread the library after enrichment", e)
-                val notice = e.coreSentence() ?: "Could not read the library. Try again."
-                show(lastReady?.copy(notice = notice) ?: CatalogUiState.Failed(notice))
-            }
         }
 
         /** Which of these sets this device holds in full, asked of the cache alone. */
@@ -357,7 +349,10 @@ class CatalogViewModel
             setId: String,
             included: Boolean,
         ) {
-            writeCollection("update") { watchState.setInList(id, setId, included) }
+            // A list may hold any copy of a film; taking the film out takes out whichever it holds.
+            val held = watchState.snapshot.value.collections.find { it.id == id }?.items.orEmpty()
+            val ids = if (included) listOf(setId) else copiesOf(setId).filter { it in held }.ifEmpty { listOf(setId) }
+            writeCollection("update") { ids.all { watchState.setInList(id, it, included) } }
         }
 
         /** Continue's "Mark finished": the wall redraws from the snapshot, so the title simply leaves it. */

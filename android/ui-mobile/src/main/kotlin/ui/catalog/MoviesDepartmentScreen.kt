@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import ui.chrome.CatalogueTextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,12 +25,16 @@ import catalog.GenreIndexEntry
 import catalog.MoviesDepartment
 import catalog.Shelf
 import catalog.factsLine
+import catalog.filmsWatched
 import catalog.moviesLineOf
 import catalog.pickFeatured
+import catalog.playedOf
 import catalog.spelledCountOf
+import catalog.versionsBadgeOf
 import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
+import ui.chrome.CatalogueTextButton
 import ui.common.catalog.GENRE_ROW_TILE_ASPECT
 import ui.common.catalog.rememberRowState
 import uniffi.mediagram_core.TitleInfo
@@ -68,7 +71,7 @@ internal fun MoviesDepartmentScreen(
     titleInfo: suspend (String) -> TitleInfo?,
     state: LazyListState = rememberLazyListState(),
 ) {
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val watchedIds = remember(watch, films) { filmsWatched(watch.watched.mapTo(HashSet()) { it.setId }, films) }
     var reel by remember { mutableStateOf<List<MediaSet>?>(null) }
     val featured = remember(films, watchedIds) { pickFeatured(films, watchedIds, Random, 1) }
     // Figures, not spelled — the web builds this label from the length itself.
@@ -144,7 +147,8 @@ private fun FilmRow(films: List<MediaSet>, watchedIds: Set<String>, onOpenTitle:
                 posterPath = set.posterPath,
                 title = set.title,
                 caption = factsLine(set.year, set.durationSecs),
-                watched = set.setId in watchedIds,
+                watched = playedOf(set, watchedIds),
+                versions = versionsBadgeOf(set),
                 modifier = Modifier.width(DEPT_CARD_WIDTH),
                 onClick = { onOpenTitle(set.setId) },
             )

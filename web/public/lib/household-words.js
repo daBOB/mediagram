@@ -7,7 +7,6 @@
 export const HOUSEHOLD_WORDS = {
   households: "Households",
   owner: "Owner",
-  ownerNote: "Households are the owner’s to set up.",
   ownersPin: "The owner’s PIN",
   thisDevice: "This device",
   switchHousehold: "Switch household",
@@ -18,6 +17,7 @@ export const HOUSEHOLD_WORDS = {
   householdName: "Household name",
   admin: "Admin",
   aNewGrownUp: "A new grown-up",
+  belongsTo: "Belongs to",
   newGrownUpName: "The new grown-up’s name",
   rename: "Rename",
   changeAdmin: "Change admin",
@@ -26,6 +26,12 @@ export const HOUSEHOLD_WORDS = {
   delete: "Delete",
   householdNameTaken: "A household with that name already exists.",
   profileNameTaken: "That name is already used on this install.",
+  whosManaging: "Who’s managing?",
+  addSomeone: "Add someone",
+  grownUp: "Grown-up",
+  kid: "Kid",
+  actionsFor: "Actions for",
+  addSomeoneTo: "Add someone to",
 };
 
 /** A household's line in the owner's list: who runs it, and how many profiles are in it. */

@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import catalog.listedOf
 import designsystem.LocalReducedMotion
 import kotlinx.coroutines.delay
 import model.MediaSet
@@ -171,7 +172,7 @@ internal fun HomeCover(
                     columnWidth = columnWidth,
                     compact = compact,
                     minHeight = coverMinHeight,
-                    watchlisted = set.setId in watchlist,
+                    watchlisted = listedOf(set, watchlist),
                     turning = turning,
                     arrived = if (fromArrival) arrived else null,
                     onPlay = { onPlay(set) },

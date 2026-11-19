@@ -64,6 +64,7 @@ fun SetSummary.toMediaSet(): MediaSet {
         showStatus = showStatus,
         anime = anime,
         category = category,
+        variant = variant,
     )
 }
 

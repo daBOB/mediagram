@@ -1,26 +1,18 @@
-//! Where everyone sits in Durak: seats, the table, whose move it is, and the
-//! events and banner the views read.
+//! Whose move it is in Durak: the attacker, the defender, the thrower, and the
+//! cards on the table between them.
 
+use crate::ask::Ask;
 use crate::cards::{Card, Suit};
 use crate::durak::{DurakGame, Stage};
-use crate::protocol::{CardsBanner, CardsEvent, CardsEventKind, PlayerId, ServerTime};
 
 impl DurakGame {
     pub(crate) fn trump_suit(&self) -> Suit {
         self.trump.suit
     }
 
-    pub(crate) fn player_at(&self, seat: usize) -> PlayerId {
-        self.ids[seat]
-    }
-
-    pub(crate) fn seat_of(&self, player: PlayerId) -> Option<usize> {
-        self.ids.iter().position(|&p| p == player)
-    }
-
     /// The first seat after `from` that is still in the game.
     pub(crate) fn next_active(&self, from: usize) -> usize {
-        let n = self.ids.len();
+        let n = self.table.players().len();
         (1..=n).map(|k| (from + k) % n).find(|s| !self.out.contains(s)).expect("two players are still in")
     }
 
@@ -29,7 +21,7 @@ impl DurakGame {
     }
 
     pub(crate) fn thrower_seat(&self) -> usize {
-        (self.attacker + self.thrower) % self.ids.len()
+        (self.attacker + self.thrower) % self.table.players().len()
     }
 
     /// Every card lying on the table, attack and defence.
@@ -47,22 +39,11 @@ impl DurakGame {
         }
     }
 
-    pub(crate) fn since(&self) -> Option<ServerTime> {
+    /// What the seat that has to act is being asked; nothing while the table settles or once the game is over.
+    pub(crate) fn open_ask(&self) -> Option<Ask> {
         match self.stage {
-            Stage::Attack { since } | Stage::Defend { since } | Stage::Throw { since, .. } | Stage::Settle { since, .. } => Some(since),
-            Stage::Final { .. } => None,
+            Stage::Attack { ask } | Stage::Defend { ask } | Stage::Throw { ask, .. } => Some(ask),
+            Stage::Settle { .. } | Stage::Final { .. } => None,
         }
-    }
-
-    pub(crate) fn event(&mut self, now: ServerTime, player: PlayerId, kind: CardsEventKind) {
-        self.events.push(CardsEvent { id: self.next_event, at: now, player, kind });
-        self.next_event += 1;
-        if self.events.len() > 6 {
-            self.events.remove(0);
-        }
-    }
-
-    pub(crate) fn say(&mut self, now: ServerTime, player: PlayerId, text: impl Into<String>) {
-        self.banner = Some((CardsBanner { player, text: text.into() }, now));
     }
 }

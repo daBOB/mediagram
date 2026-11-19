@@ -9,6 +9,7 @@ import { ChoiceScreen } from "./ChoiceScreen";
 import { OutcomeScreen } from "./OutcomeScreen";
 import { PhoneFluechtig } from "./PhoneFluechtig";
 import { PhoneLobby } from "./PhoneLobby";
+import { PhoneLetztesWort } from "./PhoneLetztesWort";
 import { PhonePriceKeypad } from "./PhonePriceKeypad";
 import { PhoneSheet } from "./PhoneSheet";
 import { buzz, memory as store } from "./app-bridge";
@@ -166,6 +167,8 @@ function Screen({ view, conn, onBecomeBoard }: { view: PhoneView; conn: Connecti
     case "price":
       // keyed by the article, so the next one starts with an empty keypad
       return <PhonePriceKeypad key={screen.keypad.opens_at} keypad={screen.keypad} conn={conn} />;
+    case "letztes_wort":
+      return <PhoneLetztesWort phone={screen.phone} conn={conn} />;
     case "outcome":
       return <OutcomeScreen screen={screen} score={me.score} />;
     case "final":

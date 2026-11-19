@@ -39,18 +39,18 @@ impl GrandAlleeGame {
         let (t, player) = (&self.t, self.ids[self.turn]);
         match &self.stage {
             Stage::Intro { card, at } => self.intro_turn(view, *card, *at),
-            Stage::Ask { ask, since, .. } => {
-                let marks = ask.opts.iter().zip(AnswerColor::ALL.iter().cycle()).filter_map(|(o, &color)| match *o {
+            Stage::Ask { choices, ask, .. } => {
+                let marks = choices.opts.iter().zip(AnswerColor::ALL.iter().cycle()).filter_map(|(o, &color)| match *o {
                     Opt::Place { field, .. } => Some(GrandAlleeMark { field, color }),
                     _ => None,
                 });
                 GrandAlleeTurn::Ask {
                     player,
-                    prompt: ask.prompt.about(who),
-                    hotel: ask.hotel,
+                    prompt: choices.prompt.about(who),
+                    hotel: choices.hotel,
                     marks: marks.collect(),
-                    opened_at: *since,
-                    closes_at: since + self.cfg.ask_ms,
+                    opened_at: ask.opened_at(),
+                    closes_at: ask.closes_at().expect("every Grand Allee ask runs on a clock"),
                 }
             }
             Stage::Rolled { value, at } => GrandAlleeTurn::Rolled { player, value: *value, rolled_at: *at, lands_at: self.lands_at(*at) },

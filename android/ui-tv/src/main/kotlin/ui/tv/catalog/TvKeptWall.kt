@@ -17,12 +17,16 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.text.style.TextAlign
 import catalog.KeptKind
 import catalog.SetCard
+import catalog.cardPosition
+import catalog.heldOf
+import catalog.playedOf
 import catalog.resumeLine
 import catalog.watchedFractionOf
 import designsystem.TvType
 import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
+import ui.common.catalog.LocalWatchedAt
 import ui.tv.chrome.LocalTvPagePadding
 
 /**
@@ -72,7 +76,7 @@ internal fun TvKeptWall(
         onOpen = { set -> onOpenTitle(set.setId) },
         header = { TvCountedHeading(kind.label, sets.size) },
         plate = { set, modifier, onOpen ->
-            val plate = @Composable { KeptSetPlate(set, positions, watchedIds, set.setId in heldIds, onOpen, modifier) }
+            val plate = @Composable { KeptSetPlate(set, positions, watchedIds, heldOf(set, heldIds), onOpen, modifier) }
             if (onFinish == null) {
                 plate()
             } else {
@@ -97,13 +101,15 @@ private fun KeptSetPlate(
     onOpen: () -> Unit,
     modifier: Modifier,
 ) {
+    // My List shows a film held more than once as the film: its newest place in any copy, played when any copy is.
+    val position = cardPosition(set, positions, LocalWatchedAt.current)
     TvSetPlate(
         card =
             SetCard(
                 set = set,
-                caption = resumeLine(positions[set.setId]),
-                progress = watchedFractionOf(positions[set.setId]),
-                watched = set.setId in watchedIds,
+                caption = resumeLine(position),
+                progress = watchedFractionOf(position),
+                watched = playedOf(set, watchedIds),
                 held = held,
             ),
         onOpen = onOpen,

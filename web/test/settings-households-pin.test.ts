@@ -1,4 +1,4 @@
-/** The owner's PIN on the Households part once it stops being the owner's: changed elsewhere while it was held. */
+/** The owner's PIN in the owner's view once it stops being the owner's: changed elsewhere while it was held. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { HOUSEHOLD_WORDS as W } from "../public/lib/household-words.js";

@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::protocol::{PlayerId, QuizQuestionView, ServerTime};
+use crate::protocol::{PlayerId, ServerTime};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -27,20 +27,24 @@ pub struct ZuendstoffSeat {
 #[serde(tag = "stage", rename_all = "snake_case")]
 #[ts(export)]
 pub enum ZuendstoffStage {
-    /// `holder` answers `question`; its keys go live at `opens_at`.
-    Answer {
-        holder: PlayerId,
-        question: QuizQuestionView,
-        opens_at: ServerTime,
-        /// The holder's last answer was wrong.
-        wrong: bool,
-        /// Who threw the bomb to the holder; none at a round's start.
-        thrown_by: Option<PlayerId>,
+    /// `holder` has had the bomb since `since` and may throw it from `ready_at`.
+    /// `caught`: whether it landed in their hands at `since`, None at a round's
+    /// start; a dropped one lies at their feet until `ready_at`.
+    Hold { holder: PlayerId, since: ServerTime, ready_at: ServerTime, caught: Option<bool> },
+    /// `from` threw at `thrown_at` (the throw clip starts); the bomb leaves the
+    /// hand at `released_at` and lands by `to` at `lands_at`.
+    Flight {
+        from: PlayerId,
+        to: PlayerId,
+        thrown_at: ServerTime,
+        released_at: ServerTime,
+        lands_at: ServerTime,
+        /// Whether `to` caught it; None until they tap. Without a tap the flight
+        /// ends as a drop once the catch window closes, after `lands_at`.
+        caught: Option<bool>,
     },
-    /// `holder` answered right and picks who catches.
-    Throw { holder: PlayerId },
-    /// The bomb went off on `victim`, who is `out` if that was their last life.
-    Boom { victim: PlayerId, out: bool },
+    /// The bomb went off on `victim` at `at`; they are `out` if that was their last life.
+    Boom { victim: PlayerId, out: bool, at: ServerTime },
     /// Players in finishing order, winner first.
     Final { order: Vec<PlayerId> },
 }

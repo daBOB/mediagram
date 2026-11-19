@@ -5,6 +5,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
+import catalog.paged
 import catalog.shelvesOf
 import model.WatchSnapshot
 import org.junit.Test
@@ -34,9 +35,8 @@ class TvCatalogScreenPlayStateTest : TvScreenStateTest() {
         var played: String? = null
         show {
             TvCatalogScreen(
-                state = CatalogUiState.Ready(shelvesOf(featured), watch = WatchSnapshot.Empty),
+                state = CatalogUiState.Ready(shelvesOf(featured), watch = WatchSnapshot.Empty).paged(),
                 profile = TvChosenProfile(name = "Ada", onChoose = {}),
-                fetching = false,
                 restoreKey = null,
                 onOpenTitle = { opened = it },
                 onOpenCollection = {},

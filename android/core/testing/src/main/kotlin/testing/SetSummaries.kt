@@ -43,6 +43,7 @@ fun setSummary(
     seriesType: String? = null,
     anime: Boolean = false,
     category: String? = null,
+    variant: String? = null,
 ): SetSummary = SetSummary(
     setId = setId,
     kind = kind,
@@ -60,6 +61,7 @@ fun setSummary(
     quality = quality,
     hdr = hdr,
     duration = duration?.toUInt(),
+    variant = variant,
     posterKey = posterKey,
     posterPath = posterPath,
     total = total.toULong(),

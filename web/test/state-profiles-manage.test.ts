@@ -514,3 +514,67 @@ describe("wrong PINs", () => {
     expect(manage.remove(maja, "0000", andre)).toEqual({ reason: "wrong-pin" });
   });
 });
+
+/** The owner André, plus a household "flat" that nobody runs and "loft" that Lena (PIN 3333) runs. */
+function households() {
+  const base = household();
+  sql(base.state, "INSERT INTO households(id, name, admin_id, admin_updated_at) VALUES ('flat', 'Flat', NULL, 1)");
+  const loft = base.manage.createHousehold(base.andre, "1111", "Loft", { name: "Lena", newPin: "3333" });
+  if ("reason" in loft) throw new Error(`refused: ${loft.reason}`);
+  const lena = base.state.profiles().find((one) => one.name === "Lena")!.id;
+  return { ...base, loft: loft.id, lena };
+}
+
+describe("adding into another household", () => {
+  test("the owner adds a grown-up straight into another household", () => {
+    const { state, manage, andre, loft } = households();
+    const paul = made(manage.createGrownUp(andre, "1111", "Paul", "4444", loft));
+    expect(profile(state, paul)).toMatchObject({ household: loft, admin: false, kids: false, hasPin: true });
+    expect(manage.unlock(paul, "4444")).toBeNull();
+  });
+
+  test("a grown-up added to a household with no admin becomes its admin", () => {
+    const { state, manage, andre } = households();
+    const paul = made(manage.createGrownUp(andre, "1111", "Paul", "4444", "flat"));
+    expect(profile(state, paul)).toMatchObject({ household: "flat", admin: true });
+    expect(state.households().find((one) => one.id === "flat")!.adminId).toBe(paul);
+  });
+
+  test("a household's admin cannot add a grown-up to another household", () => {
+    const { state, manage, lena } = households();
+    const before = state.profiles().length;
+    expect(manage.createGrownUp(lena, "3333", "Paul", "4444", "home")).toEqual({ reason: "not-allowed" });
+    expect(state.profiles()).toHaveLength(before);
+  });
+
+  test("a household that does not exist is not found", () => {
+    const { state, manage, andre } = households();
+    const before = state.profiles().length;
+    expect(manage.createGrownUp(andre, "1111", "Paul", "4444", "nowhere")).toEqual({ reason: "not-found" });
+    expect(manage.createGrownUp(andre, "1111", "Paul", "4444", 7)).toEqual({ reason: "not-found" });
+    expect(state.profiles()).toHaveLength(before);
+  });
+
+  test("the owner adds a kid for a grown-up in another household", () => {
+    const { state, manage, andre, lena, loft } = households();
+    const kid = made(manage.createKid(andre, "1111", "Nia", 6, null, lena));
+    expect(profile(state, kid)).toMatchObject({ kids: true, parentId: lena, household: loft });
+    expect(manage.createKid(andre, "1111", "Ola", 6, null, "nobody")).toEqual({ reason: "not-found" });
+    expect(manage.createKid(andre, "1111", "Ola", 6, null, 5)).toEqual({ reason: "not-found" });
+  });
+
+  test("a grown-up cannot add a kid for somebody else", () => {
+    const { manage, maja, andre } = household();
+    expect(manage.createKid(maja, "2222", "Nia", 6, null, andre)).toEqual({ reason: "not-allowed" });
+  });
+
+  test("naming nobody keeps today's behaviour", () => {
+    const { state, manage, andre, lena } = households();
+    const paul = made(manage.createGrownUp(lena, "3333", "Paul", "4444"));
+    const kid = made(manage.createKid(lena, "3333", "Nia", 6));
+    expect(profile(state, paul)).toMatchObject({ household: profile(state, lena)!.household });
+    expect(profile(state, kid)).toMatchObject({ parentId: lena, household: profile(state, lena)!.household });
+    const home = made(manage.createGrownUp(andre, "1111", "Hanna", "5555"));
+    expect(profile(state, home)!.household).toBe(profile(state, andre)!.household);
+  });
+});

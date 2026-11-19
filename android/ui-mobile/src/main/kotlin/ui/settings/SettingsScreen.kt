@@ -87,8 +87,8 @@ internal fun SettingsScreen(
     LaunchedEffect(settingsState.completedActionId) {
         if (settingsState.completedActionId > openedBeforeAction) panel = null
     }
-    // A kid's page has no Manage, so a kid's visit asks nobody who they are.
-    ProfilesVisit(open = section == SettingsSection.PROFILES && profile?.kids != true)
+    // A kid's page has no Manage, so a kid's visit asks nobody who they are; the owner's opens their view.
+    ProfilesVisit(open = section == SettingsSection.PROFILES && profile?.kids != true, chosen = profile)
 
     when (panel) {
         SettingsPanel.Library -> {

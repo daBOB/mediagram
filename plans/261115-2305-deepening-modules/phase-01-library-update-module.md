@@ -42,20 +42,20 @@ one refresh, a typed outcome, posters fetched after every new list.
 
 ## Steps
 
-- [ ] `refresh()` returns the outcome (plus the count, if anything reads it).
-- [ ] New module in `android/core/data` replacing `LibraryUpdateCoordinator`.
-- [ ] `CatalogViewModel` collects; callbacks gone; menus read one state.
-- [ ] Tests through the module's interface replace `LibraryUpdateCoordinatorTest`
+- [x] `refresh()` returns the outcome (plus the count, if anything reads it).
+- [x] New module in `android/core/data` replacing `LibraryUpdateCoordinator`.
+- [x] `CatalogViewModel` collects; callbacks gone; menus read one state.
+- [x] Tests through the module's interface replace `LibraryUpdateCoordinatorTest`
       (same behaviours: read without update, read with update, manual on
       failure, published failure, artwork re-read only when posters/backdrops
       came, backdrop-only, cancellation in refresh and fetch, serialized updates,
       installed shown before download). Delete tests of removed members.
-- [ ] Fixtures construct the module with the repository's own log path.
-- [ ] Gradle: `:core:data`, `:feature:catalog`, `:feature:system`, `:ui-tv`,
+- [x] Fixtures construct the module with the repository's own log path.
+- [x] Gradle: `:core:data`, `:feature:catalog`, `:feature:system`, `:ui-tv`,
       `:ui-mobile` unit tests, `:app:hiltJavaCompileDebug`, detekt/spotless as
       `scripts/check.sh` runs them.
-- [ ] Replace learning l-bfdf000e (`trail note --replaces`) if its file paths move.
-- [ ] Media patch bump; commit.
+- [x] Replace learning l-bfdf000e (`trail note --replaces`) if its file paths move.
+- [x] Media patch bump; commit.
 
 ## Done when
 

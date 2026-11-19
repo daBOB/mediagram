@@ -40,8 +40,8 @@ impl Game for Sketch {
             board: false,
         }
     }
-    fn is_finished(&self) -> bool {
-        false
+    fn ranking(&self, _: &[crate::room_seats::Player]) -> Option<crate::protocol::Ranking> {
+        None
     }
     fn on_board(&mut self, _: &mut GameCtx, act: &BoardAct) -> Result<(), ActionError> {
         self.log.lock().unwrap().acts.push(act.clone());

@@ -30,12 +30,12 @@ impl SchwimmenGame {
         let left = self.alive();
         if let [winner] = left[..] {
             let ranking = std::iter::once(winner).chain(self.out_order.iter().rev().copied()).collect();
-            self.say(now, self.player_at(winner), " gewinnt!");
+            self.table.say(now, self.table.player_at(winner), " gewinnt!");
             self.stage = Stage::Final { ranking };
             return;
         }
         match losers[..] {
-            [] => self.say(now, self.player_at(self.turn), " und alle anderen sind gleichauf"),
+            [] => self.table.say(now, self.table.player_at(self.turn), " und alle anderen sind gleichauf"),
             [only] => {
                 let text = if self.out[only] {
                     " scheidet aus"
@@ -44,9 +44,9 @@ impl SchwimmenGame {
                 } else {
                     " verliert ein Leben"
                 };
-                self.say(now, self.player_at(only), text);
+                self.table.say(now, self.table.player_at(only), text);
             }
-            [first, ..] => self.say(now, self.player_at(first), " und alle mit gleichem Blatt verlieren"),
+            [first, ..] => self.table.say(now, self.table.player_at(first), " und alle mit gleichem Blatt verlieren"),
         }
         self.stage = Stage::Reveal { since: now };
     }
@@ -58,7 +58,7 @@ impl SchwimmenGame {
             return;
         }
         for (place, &seat) in ranking.iter().enumerate() {
-            if let Some(p) = ctx.players.iter_mut().find(|p| p.id == self.ids[seat]) {
+            if let Some(p) = ctx.players.iter_mut().find(|p| p.id == self.table.player_at(seat)) {
                 p.score = (ranking.len() - 1 - place) as i32;
             }
         }

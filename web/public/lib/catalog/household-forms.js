@@ -1,17 +1,17 @@
 /**
- * The owner's inline forms on the Households part: a household's new name,
- * a choice of grown-up — a new admin, someone to move in — and a new
- * household with its admin. Each only gathers what was typed or chosen; the
- * part asks the PINs and sends it.
+ * The owner's inline forms on each household: a household's new name, a
+ * choice of grown-up — a new admin, someone to move in, a new kid's parent —
+ * and a new household with its admin. Each only gathers what was typed or
+ * chosen; the owner's view asks the PINs and sends it.
  */
 
 import { el } from "../dom.js";
 import { nameField } from "../profile-add-form.js";
 import { HOUSEHOLD_WORDS } from "../household-words.js";
 
-/** `fields`, and the button `label` that sends them, drawn as Manage's add forms are. */
-function inline(label, fields, submit) {
-  const form = el("form", "who-new");
+/** `fields`, the button `label` that sends them and, given `cancel`, a quiet Cancel, on one line of the tray a form opens in. */
+function inline(label, fields, submit, cancel = null) {
+  const form = el("form", "who-new tray-form");
   const send = el("button", "who-create", label);
   send.type = "submit";
   form.addEventListener("submit", (event) => {
@@ -19,6 +19,12 @@ function inline(label, fields, submit) {
     void submit();
   });
   form.append(...fields, send);
+  if (cancel) {
+    const back = el("button", "quiet", "Cancel");
+    back.type = "button";
+    back.addEventListener("click", cancel);
+    form.append(back);
+  }
   return form;
 }
 
@@ -30,7 +36,7 @@ function householdName(current = "") {
 }
 
 /** A native choice of `people`, by name, the first one chosen. */
-function personChoice(label, people) {
+export function personChoice(label, people) {
   const choice = el("select");
   choice.setAttribute("aria-label", label);
   for (const one of people) {
@@ -42,16 +48,16 @@ function personChoice(label, people) {
   return choice;
 }
 
-/** A new name for the household now called `current`. */
-export function renameForm(current, submit) {
+/** A new name for the household now called `current`; `cancel` closes it unsent. */
+export function renameForm(current, submit, cancel) {
   const name = householdName(current);
-  return inline(HOUSEHOLD_WORDS.rename, [name], () => name.value.trim() && submit(name.value.trim()));
+  return inline(HOUSEHOLD_WORDS.rename, [name], () => name.value.trim() && submit(name.value.trim()), cancel);
 }
 
-/** One of `people`, chosen under `label`, which is also what sends them. */
-export function personForm(label, people, submit) {
+/** One of `people`, chosen under `label`, which is also what sends them; `cancel` closes it unsent. */
+export function personForm(label, people, submit, cancel) {
   const choice = personChoice(label, people);
-  return inline(label, [choice], () => submit(people.find((one) => one.id === choice.value)));
+  return inline(label, [choice], () => submit(people.find((one) => one.id === choice.value)), cancel);
 }
 
 /**

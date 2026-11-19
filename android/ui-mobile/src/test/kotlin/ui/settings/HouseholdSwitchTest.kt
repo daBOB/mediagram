@@ -40,7 +40,7 @@ class HouseholdSwitchTest : ProfilesSettingsHarness() {
     @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
     fun theProfilesPageSaysThisDevicesHouseholdOnlyWithTwo() {
         open(chosen = bea, initial = SettingsSection.PROFILES)
-        compose.onNodeWithText("Manage profiles").assertExists()
+        compose.onNodeWithText(HouseholdWords.WHOS_MANAGING).assertExists()
         compose.onNodeWithText(HouseholdWords.THIS_DEVICE).assertDoesNotExist()
 
         // A second household, made on another device.
@@ -51,7 +51,7 @@ class HouseholdSwitchTest : ProfilesSettingsHarness() {
         compose.onNodeWithText(HouseholdWords.THIS_DEVICE).assertExists()
         compose.onNodeWithText("Home").assertExists()
         compose.onNodeWithText(HouseholdWords.SWITCH_HOUSEHOLD).assertExists()
-        assertTrue(top("Manage profiles") < top(HouseholdWords.THIS_DEVICE), "expected This device below Manage")
+        assertTrue(top(HouseholdWords.WHOS_MANAGING) < top(HouseholdWords.THIS_DEVICE), "expected This device below Manage")
     }
 
     // Default window: a PIN dialog in a taller one can relayout forever under Robolectric.

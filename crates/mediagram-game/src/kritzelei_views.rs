@@ -1,12 +1,11 @@
 //! What the phones, the TV and the drawing board show for each Kritzelei stage.
 //! The word reaches only the board until the reveal.
 
-use crate::game::ViewCtx;
+use crate::game::{ViewCtx, unasked};
 use crate::kritzelei::{KritzeleiGame, Stage};
 use crate::protocol::{
     BoardPlayer, BoardScreen, Buzz, KritzeleiScene, KritzeleiStage, PhoneScreen, PlayerId, Tone, TvScene,
 };
-use crate::quiz_views::rank_of;
 use crate::room_seats::Player;
 
 fn board_player(p: &Player) -> BoardPlayer {
@@ -57,12 +56,7 @@ impl KritzeleiGame {
                 };
                 PhoneScreen::Outcome { title: word, text: Some(line), tone, points, keys: vec![], show_score: true }
             }
-            Stage::Final => PhoneScreen::Final {
-                rank: rank_of(view.players, player).0,
-                of: view.players.len() as u8,
-                score: rank_of(view.players, player).1,
-                can_restart: view.leader == Some(player),
-            },
+            Stage::Final => unasked(),
         }
     }
 

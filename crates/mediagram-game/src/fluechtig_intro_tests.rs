@@ -5,7 +5,8 @@ use crate::fluechtig::tests::{phone, scene_with, table, tap, NAMES};
 use crate::fluechtig::{FluechtigConfig, FluechtigGame, Step};
 use crate::fluechtig_intro::Intro;
 use crate::fluechtig_rules::Turn;
-use crate::game::{ActionError, Game, GameCtx, HOUSE_GRACE_MS};
+use crate::ask::HOUSE_GRACE_MS;
+use crate::game::{ActionError, Game, GameCtx};
 use crate::protocol::FluechtigIntro;
 use crate::room_seats::Player;
 
@@ -37,7 +38,7 @@ fn three_cards_of_ten_seconds_then_the_fugitive_is_asked() {
     }
     assert_eq!(opened, [(0, 0.0), (1, 10_000.0), (2, 20_000.0)]);
     assert_eq!(now, 30_000.0, "the chase begins when the last card closes");
-    assert_eq!((g.ask.opens_at, g.ask.step, g.chase.turn), (30_000.0, Step::Field, Turn::Fugitive));
+    assert_eq!((g.ask.opened_at(), g.step, g.chase.turn), (30_000.0, Step::Field, Turn::Fugitive));
 }
 
 #[test]
@@ -45,10 +46,10 @@ fn the_leaders_tap_skips_and_a_double_tap_does_not_move() {
     let (mut g, mut p) = cards();
     assert_eq!(tap(&mut g, &mut p, 0, 0, 3_000.0), Ok(()));
     assert_eq!(g.intro, None);
-    assert_eq!(g.ask.opens_at, 3_400.0, "the first question opens a moment after the skip");
+    assert_eq!(g.ask.opened_at(), 3_400.0, "the first question opens a moment after the skip");
     let runner = g.fugitive;
     assert_eq!(tap(&mut g, &mut p, runner, 0, 3_080.0), Err(ActionError::Ignored));
-    assert_eq!(g.ask.step, Step::Field);
+    assert_eq!(g.step, Step::Field);
     assert!(g.chase.log.is_empty());
 }
 

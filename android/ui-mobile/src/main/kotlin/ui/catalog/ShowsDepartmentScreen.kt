@@ -23,7 +23,6 @@ import catalog.Entry
 import catalog.ShowsDepartment
 import catalog.extentOf
 import catalog.firstItemOf
-import catalog.resumeCardsOf
 import catalog.showsLineOf
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -58,9 +57,7 @@ internal fun ShowsDepartmentScreen(
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-    val resumeCards = remember(department.underway, watch, heldIds) {
-        resumeCardsOf(department.underway.continues, department.underway.nextUp, watch, heldIds)
-    }
+    val resumeCards = department.resumeCards
     val leadTitle = department.lead?.let { firstItemOf(it.divisions) }
     val leadKey = department.lead?.key
     val series = dept == Department.SERIES

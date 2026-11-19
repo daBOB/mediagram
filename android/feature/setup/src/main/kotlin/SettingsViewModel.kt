@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
 import data.CoreStorage
+import data.LibraryUpdate
 import data.WatchStateRepository
 import data.coreSentence
 import data.orDefault
@@ -45,6 +46,7 @@ class SettingsViewModel
         private val telegramSettings: TelegramSettings,
         private val dispatcher: CoroutineDispatcher,
         private val watchState: WatchStateRepository,
+        private val libraryUpdate: LibraryUpdate,
     ) : ViewModel() {
         private val _state = MutableStateFlow(SettingsUiState())
         val state: StateFlow<SettingsUiState> = _state.asStateFlow()
@@ -245,6 +247,7 @@ class SettingsViewModel
                 coreProvider.resetAccount(coreStorage)
                 libraries.forget()
                 watchState.invalidate()
+                libraryUpdate.forget()
                 completeApplicationChangeAfterReload = false
                 _state.update { it.copy(profileReloadNeeded = false) }
                 completed(SettingsEvent.SignedOut)

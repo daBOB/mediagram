@@ -6,9 +6,9 @@
     <key>CFBundleDisplayName</key>
     <string>Spieltisch</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.192.8</string>
+    <string>0.195.1</string>
     <key>CFBundleVersion</key>
-    <string>190000</string>
+    <string>195001</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>Spieltisch sucht den Fernseher im WLAN.</string>
     <key>NSBonjourServices</key>

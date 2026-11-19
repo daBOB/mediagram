@@ -9,7 +9,6 @@ import catalog.Department
 import catalog.GenreIndexEntry
 import catalog.MoviesDepartment
 import catalog.ShowsDepartment
-import catalog.Underway
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import model.WatchSnapshot
@@ -63,7 +62,7 @@ class DepartmentRowRevealTest : BrowsePageTest() {
     fun aGridSectionRisesOnceAndItsLaterCellsAreAlreadyIn() {
         val shows = (1..20).map { collection("Show %02d".format(it), CollectionKind.SHOW) }
         val department = ShowsDepartment(
-            showCount = 20, itemCount = 20, lead = null, underway = Underway(emptyList(), emptyList(), 0, 0),
+            showCount = 20, itemCount = 20, lead = null, resumeCards = emptyList(),
             categories = emptyList(), popular = emptyList(), newEpisodes = emptyList(), all = shows,
         )
         val grid = LazyGridState()

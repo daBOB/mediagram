@@ -6,7 +6,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::live::{Auction, Bid, GrandAlleeGame};
-use super::live_asks::{Ask, Opt};
+use super::live_asks::{Choices, Opt};
+use crate::ask::Ask;
 use crate::game::GameCtx;
 use crate::protocol::ServerTime;
 
@@ -60,8 +61,8 @@ impl GrandAlleeGame {
     }
 
     /// Who answered for a silent mover: the house when it came before the clock, else the clock.
-    pub(crate) fn silent_by(&self, ctx: &GameCtx, since: ServerTime) -> By {
-        if self.house_at(ctx, since) < since + self.cfg.ask_ms { By::House } else { By::Clock }
+    pub(crate) fn silent_by(&self, ctx: &GameCtx, ask: &Ask) -> By {
+        if ask.closes_at().is_some_and(|clock| self.house_at(ctx, ask) < clock) { By::House } else { By::Clock }
     }
 
     pub(crate) fn log_bid(&mut self, seat: usize, since: ServerTime, now: ServerTime, by: By, pass: bool) {
@@ -71,7 +72,7 @@ impl GrandAlleeGame {
     /// A bidder still silent at the close passed: the house's doing when they were away, else the clock's.
     pub(crate) fn log_silent_bidders(&mut self, ctx: &GameCtx, a: &Auction) {
         for &(seat, _) in a.bids.iter().filter(|&&(_, answer)| answer == Bid::Open) {
-            let by = if ctx.house_at(self.ids[seat], a.since).is_some() { By::House } else { By::Clock };
+            let by = if ctx.absent_since(self.ids[seat]).is_some() { By::House } else { By::Clock };
             self.log_bid(seat, a.since, ctx.now, by, true);
         }
     }
@@ -84,7 +85,7 @@ impl GrandAlleeGame {
     }
 }
 
-impl Ask {
+impl Choices {
     /// What the question asks, told by what it offers, so think times can be compared per kind.
     pub(crate) fn kind(&self) -> &'static str {
         let offers = |f: fn(&Opt) -> bool| self.opts.iter().any(f);

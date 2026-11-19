@@ -158,6 +158,44 @@ a shared link all land on it. The library is already whole in the page:
 router matches `page` before any collection name. Series and Tutorials shelves
 are short enough not to page, and the Android catalog does not page yet.
 
+## Films held more than once
+
+A film uploaded twice (another quality, or another cut such as a Director's
+Cut) is one card. Copies are grouped on read by the poster key the catalog
+already carries (`tmdb-movie-<id>`); the index, the watch state and the sync
+record are unchanged, and a film held once renders exactly as before.
+
+- **Rules** — `public/lib/film-versions.js`: version order (standard cut
+  first, other cuts by name; then 4K, 1080p, 720p, 480p; HDR before SDR; then
+  set id), the representative (the first copy draws the card and the page),
+  labels (`Standard · 4K HDR · 3h 1m · 13 GB`), played (any copy finished),
+  and where a copy resumes (the newest position among copies of its cut,
+  unless a copy of that cut was finished after it; never across cuts).
+  `groupDepartments` applies the grouping to Movies and Anime films, after the
+  profile's kids filter, so a film shows when any copy is allowed.
+- **Where it applies** — `public/lib/film-session.js` follows the profile's
+  catalog: Continue lists a film once, My List, lists and search show a stored
+  copy as its whole film, picks and badges count a film watched when any copy
+  is, and a copy starts from its cut's position.
+- **The choice** — the film page replaces Play with a Versions list
+  (`public/lib/catalog/film-versions-view.js`), one row and one Play per copy,
+  runtime and file facts moving from the header into the rows. A card that
+  plays straight away (Continue, My List, a list) opens the same rows in a
+  dialog; Escape, a click outside or Cancel plays nothing. It is not asked
+  when the copy is already known: a Join plays the copy the others watch, a
+  scene its own copy, and the player's hand-over to the next title on a list
+  plays the first copy, since a dialog behind a fullscreen player would never
+  be seen.
+- **Cards** — a `N versions` badge; offline when any copy is held in full;
+  the needs-transcode note sits on each copy's row, not on the card, since one
+  copy may play as it is while another must be converted.
+- **Fixtures** — `test/fixtures/film-versions/grouping.json` and
+  `watch-state.json` pin the rules; the Android catalog reads the same files.
+
+The uploader guesses a film's cut from its filename (only the tags after the
+year) and says when the film is already held, refusing an exact duplicate
+(same quality, HDR and cut) unless someone at the terminal confirms.
+
 ## The Featured reel
 
 The Movies heading's Featured button opens `<dialog id="featured">`, drawn by
@@ -360,7 +398,7 @@ so it fails if this table and `address.js` ever disagree.
 | `#/latest` | Latest added |
 | `#/person/<id>` | Person page (cast/crew filmography) |
 | `#/search/<query>` | Search results (grouped by type) |
-| `#/settings` | Settings (Appearance / Profiles: who is watching, everyone here, Manage profiles with each managed profile's Sections, This device (Switch household, with more than one), Households (the owner's: create, rename, change admin, move, delete) / admin Library & Telegram); the picker's Manage profiles opens the same Profiles page, and asks "Join a household" first on a browser that has none |
+| `#/settings` | Settings (Appearance / Profiles: who is watching; for the owner, every household on one page — its name, *Admin X · N profiles* and a ⋯ with the household's actions, one row per person that opens their controls on a tap, one *Add someone* per household, *Create a household*, then *This device* as one line; for another grown-up, *Who's managing?* tiles, then the same rows for what they may manage, with This device below / admin Library & Telegram); the picker's Manage profiles asks *Who's managing?* with the picker's tiles (owner first, labelled Owner), and asks "Join a household" first on a browser that has none |
 | `#/stats` | Stats: minutes watched, the last 30 days, achievements |
 | `#/system` | Player status, own-network viewers only |
 | `#/continue` | Continue |

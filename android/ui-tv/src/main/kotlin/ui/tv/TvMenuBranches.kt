@@ -10,6 +10,7 @@ import catalog.MenuScreen
 import catalog.updateDisabledReason
 import catalog.updateNote
 import data.CatalogEnrichmentState
+import data.LibraryUpdateState
 import system.FetchViewModel
 import ui.common.LibraryPositions
 import ui.common.MenuActions
@@ -33,6 +34,7 @@ internal fun tvMenuActions(
     depth: Int,
     catalogState: CatalogUiState,
     catalogViewModel: CatalogViewModel,
+    updateState: LibraryUpdateState,
     fetchState: CatalogEnrichmentState,
     onLeavePage: () -> Unit,
     onStartOver: () -> Unit,
@@ -53,7 +55,7 @@ internal fun tvMenuActions(
         },
         onTmdbKey = { open(MenuScreen.TmdbKey) },
         onStartOver = onStartOver,
-        updateDisabledReason = updateDisabledReason(catalogState, fetchState.running, fetchState.progress),
+        updateDisabledReason = updateDisabledReason(updateState),
         updateNote = updateNote(fetchState),
         onPreloads =
             if (catalogState.showsPreloads(preloadCount)) {

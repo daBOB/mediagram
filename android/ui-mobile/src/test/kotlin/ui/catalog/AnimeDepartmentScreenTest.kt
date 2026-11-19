@@ -13,11 +13,10 @@ import androidx.compose.ui.test.performScrollToNode
 import catalog.AnimeDepartment
 import catalog.CatalogUiState
 import catalog.CollectionKind
-import catalog.Department
 import catalog.Division
 import catalog.Entry
 import catalog.NextUpEntry
-import catalog.Shelf
+import catalog.resumeCardsOf
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -63,8 +62,7 @@ class AnimeDepartmentScreenTest {
         showCount = 1,
         filmCount = 2,
         lead = film("your-name", backdrop = "lead-bg"),
-        continuing = listOf(film("resuming")),
-        nextUp = listOf(NextUpEntry(film("next"), resume = false, touchedAt = 1)),
+        resumeCards = resumeCardsOf(listOf(film("resuming")), listOf(NextUpEntry(film("next"), resume = false, touchedAt = 1)), WatchSnapshot.Empty),
         shows = listOf(show),
         films = listOf(film("your-name"), film("weathering-with-you")),
     )
@@ -134,7 +132,7 @@ class AnimeDepartmentScreenTest {
         assertEquals(null, openedCollection)
     }
 
-    /** [AnimeDepartmentTab] never runs on an empty shelf — Anime is omitted from `shelvesOf` at zero, unlike Documentaries. */
+    /** [AnimeDepartmentTab] never draws without a page — Anime is omitted from `shelvesOf` at zero, unlike Documentaries. */
     @Test
     fun anEmptyShelfDrawsNothing() {
         var composed = false
@@ -144,7 +142,6 @@ class AnimeDepartmentScreenTest {
                 MaterialTheme {
                     composed = true
                     AnimeDepartmentTab(
-                        shelf = Shelf(Department.ANIME, emptyList()),
                         state = CatalogUiState.Ready(emptyList()),
                         columns = 3,
                         onOpenTitle = {},
@@ -155,6 +152,6 @@ class AnimeDepartmentScreenTest {
             }
         }
         compose.waitForIdle()
-        assertEquals(true, composed, "the wrapper itself still composes; it is animeDepartmentOf that answers null")
+        assertEquals(true, composed, "the wrapper itself still composes; it is the pages that hold no Anime page")
     }
 }

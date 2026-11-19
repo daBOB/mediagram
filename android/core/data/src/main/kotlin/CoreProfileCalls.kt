@@ -23,9 +23,9 @@ internal suspend fun ProfileRequest.sendTo(core: CoreInterface): ProfileOutcome 
         is ProfileRequest.CreateFirstAdmin -> core.createFirstAdmin(name, newPin)
         is ProfileRequest.Unlock -> core.unlockProfile(id, pin)
         is ProfileRequest.ClaimAdmin -> core.claimAdmin(id, pin)
-        is ProfileRequest.CreateGrownUp -> core.createGrownUp(actorId, pin, name, newPin)
+        is ProfileRequest.CreateGrownUp -> core.createGrownUp(actorId, pin, name, newPin, household)
         is ProfileRequest.CreateKid ->
-            ageOrNull(age)?.let { a -> limitOrNull(dailyLimit)?.let { core.createKid(actorId, pin, name, a, it.value) } } ?: CoreOutcome.Invalid
+            ageOrNull(age)?.let { a -> limitOrNull(dailyLimit)?.let { core.createKid(actorId, pin, name, a, it.value, parentId) } } ?: CoreOutcome.Invalid
         is ProfileRequest.Remove -> core.deleteProfile(actorId, pin, id)
         is ProfileRequest.SetPin -> core.setPin(actorId, pin, id, newPin)
         is ProfileRequest.SetKidsAge -> ageOrNull(age)?.let { core.setKidsAge(actorId, pin, id, it) } ?: CoreOutcome.Invalid

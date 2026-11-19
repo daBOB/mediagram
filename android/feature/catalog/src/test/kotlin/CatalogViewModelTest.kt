@@ -4,7 +4,7 @@ import app.cash.turbine.test
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
 import data.LibraryEvents
-import data.LibraryUpdateCoordinator
+import data.LibraryUpdate
 import data.WatchStateRepository
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CancellationException
@@ -61,7 +61,7 @@ private fun catalogViewModel(
     CatalogViewModel(
         repository,
         watchState,
-        LibraryUpdateCoordinator(repository, enrichment),
+        LibraryUpdate(repository, enrichment),
         events,
         filmPreloader = filmPreloader,
         heldSets = heldSets,
@@ -162,27 +162,6 @@ class CatalogViewModelTest {
             vm.state.test {
                 awaitItem()
                 assertEquals(CatalogUiState.Failed("Could not read the library. Try again."), awaitItem())
-            }
-        }
-
-    @Test
-    fun artworkRegroupingDoesNotFinishAnActiveRefresh() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository = FakeCatalogRepository(movies = 1)
-            val vm = catalogViewModel(repository, WatchStateFixture().repository)
-            vm.state.test {
-                awaitItem()
-                awaitItem()
-                val gate = CompletableDeferred<Unit>()
-                repository.refreshGate = gate
-                vm.reload()
-                assertTrue((awaitItem() as CatalogUiState.Ready).refreshing)
-                repository.postersArrived = true
-                vm.showFetched()
-                assertTrue((awaitItem() as CatalogUiState.Ready).refreshing)
-                gate.complete(Unit)
-                assertFalse((awaitItem() as CatalogUiState.Ready).refreshing)
             }
         }
 
@@ -676,23 +655,35 @@ class CatalogViewModelTest {
      * channel again, and must not flag the library as refreshing.
      */
     @Test
-    fun artworkAFetchLaidDownIsShownWithoutAskingTheChannel() =
+    fun artworkAFetchLaidDownIsShownWithoutAskingTheChannelAgain() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(movies = 1)
-            val vm = catalogViewModel(repository, WatchStateFixture().repository)
+            val core =
+                object : CoreInterface by FakeCore() {
+                    override suspend fun fetchMissing(
+                        tmdbKey: String,
+                        language: String,
+                        backdropWidth: UInt,
+                    ): FetchReport {
+                        repository.postersArrived = true
+                        return FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
+                    }
+                }
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") }, dispatcher = Dispatchers.Unconfined)
+            val vm = catalogViewModel(repository, WatchStateFixture().repository, enrichment)
             vm.state.test {
                 awaitItem()
                 val before = awaitItem() as CatalogUiState.Ready
                 assertEquals(listOf(null), before.shelves.flatMap { it.entries }.map { (it as Entry.Film).set.posterPath })
 
-                repository.postersArrived = true
-                vm.showFetched()
+                vm.update()
+                advanceUntilIdle()
 
-                val after = awaitItem() as CatalogUiState.Ready
+                val after = expectMostRecentItem() as CatalogUiState.Ready
                 assertFalse(after.refreshing)
                 assertEquals(listOf("/artwork/movie-0.jpg"), after.shelves.flatMap { it.entries }.map { (it as Entry.Film).set.posterPath })
-                assertEquals(1, repository.refreshes, "showing artwork is not a read of the channel")
+                assertEquals(2, repository.refreshes, "the update's own refresh, and none to show its artwork")
             }
         }
 
@@ -718,6 +709,40 @@ class CatalogViewModelTest {
                 val after = awaitItem() as CatalogUiState.Ready
                 assertEquals(listOf("movie-0" to 30.0), after.watch.progress.map { it.setId to it.at })
                 assertEquals(1, repository.refreshes, "a changed snapshot is not a reason to read the channel again")
+            }
+        }
+
+    /** The pages come with the state they belong to: a position saved elsewhere reaches Continue's wall without a reread. */
+    @Test
+    fun theReadyStateCarriesItsPagesAndRebuildsThemWhenTheWatchStateMoves() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val watchState = WatchStateFixture()
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watchState.repository)
+            vm.state.test {
+                awaitItem()
+                val before = awaitItem() as CatalogUiState.Ready
+                assertEquals(1, before.pages.movies?.filmCount)
+                assertTrue(before.pages.continueWall.isEmpty())
+
+                watchState.repository.setProgress("movie-0", 600.0, 3_600.0)
+
+                assertEquals(listOf("movie-0"), (awaitItem() as CatalogUiState.Ready).pages.continueWall.map(MediaSet::setId))
+            }
+        }
+
+    /** A refresh that brings nothing new rebuilds no page: its progress line coming and going is not a library change. */
+    @Test
+    fun aRefreshThatBringsNothingNewKeepsThePagesAlreadyBuilt() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val gate = CompletableDeferred<Unit>()
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1).apply { refreshGate = gate }, WatchStateFixture().repository)
+            vm.state.test {
+                awaitItem()
+                val during = awaitItem() as CatalogUiState.Ready
+                gate.complete(Unit)
+                assertSame(during.pages, (awaitItem() as CatalogUiState.Ready).pages)
             }
         }
 

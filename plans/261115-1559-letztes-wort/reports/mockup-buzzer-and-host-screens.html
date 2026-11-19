@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;800&display=block" rel="stylesheet">
+<style>
+:root{--felt:#0f5a43;--felt-deep:#0a4433;--felt-line:#1c7258;--ink:#0c2a22;--card:#fbf8f1;--card-edge:#ddd3bd;--muted:#a9cdbf;
+--blue:#2c6bed;--orange:#f2862e;--yellow:#f6c731;--yellow-edge:#b98f0d;--pink:#e5487f;--pink-edge:#a92d5a;--red:#e2453c;--red-edge:#9e2620;
+--display:"Bricolage Grotesque",sans-serif;--body:"Atkinson Hyperlegible",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#222;font-family:var(--body);color:var(--card);padding:16px;width:1980px}
+.row{display:flex;gap:16px;margin-bottom:16px;align-items:flex-start}
+.label{font:600 15px var(--display);color:#bbb;margin:0 0 6px}
+/* TV */
+.tv{width:960px;height:540px;background:var(--felt);padding:22px 26px;display:flex;flex-direction:column}
+.top{display:flex;justify-content:space-between;font:800 13px var(--display)}
+.top span:last-child{color:var(--muted)}
+.stage{flex:1;display:flex;align-items:center;gap:30px;padding:0 6px}
+.qcard{flex:1;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:0 6px 0 var(--card-edge);padding:30px 34px}
+.qcard h1{font:800 40px/1.12 var(--display);margin:0}
+.qcard .mod{display:flex;align-items:center;gap:8px;margin-top:18px;font:700 15px var(--body);color:#5d7a70}
+.qcard .mod img{width:28px;height:28px;border-radius:50%}
+.side{width:280px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px}
+.floor{background:var(--red);box-shadow:0 6px 0 var(--red-edge);border-radius:18px;padding:12px 18px;display:flex;align-items:center;gap:12px;width:100%}
+.floor img{width:56px;height:56px;border-radius:50%;border:3px solid #fff}
+.floor b{font:800 28px var(--display);display:block;text-align:left;line-height:1}
+.floor span{font:700 13px var(--body);display:block;text-align:left;opacity:.9}
+.headwrap{position:relative;width:132px;height:132px}
+.head{width:132px;height:132px;border-radius:50%;overflow:hidden;border:6px solid var(--yellow);display:grid;place-items:center}
+.head img{width:118%;margin-top:18%}
+.baton{position:absolute;right:-44px;bottom:-6px;width:112px}
+.side .who{font:800 24px/1.15 var(--display)}
+.players{border-top:2px solid var(--felt-line);padding-top:14px;display:flex;gap:12px;align-items:center}
+.chip{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;font:800 15px var(--display)}
+.chip img{width:34px;height:34px;border-radius:50%}
+.chip .pts{color:var(--yellow)}
+.chip.has{background:var(--yellow);color:var(--ink)}.chip.has .pts{color:var(--ink)}
+.chip.out{opacity:.4}.chip.out .nm{text-decoration:line-through}
+.chip.host{border:2px dashed var(--felt-line)}
+.chip .tag{font:700 12px var(--body);color:var(--muted)}
+.bg-fox{background:#e45b4b}.bg-ghost{background:#3fbf8f}.bg-granny{background:#7a8fd6}.bg-panda{background:#d9d0bf}.bg-frog{background:#9bd16a}
+.zeit{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.zeit .big{font:800 96px/1 var(--display);color:var(--yellow)}
+.zeit .who{font:800 34px var(--display);margin-top:18px}
+.zeit .sub{color:var(--muted);font-size:18px;margin-top:6px}
+/* phone */
+.phone{width:340px;height:700px;background:var(--felt);padding:16px 14px;display:flex;flex-direction:column}
+.phone .q{font:800 15px/1.3 var(--display);margin-bottom:6px}
+.phone .status{font:700 13px var(--body);display:flex;gap:6px;align-items:center}
+.phone .status i{width:8px;height:8px;border-radius:50%;background:var(--yellow);display:inline-block}
+.bz{flex:1;display:flex;align-items:center;justify-content:center}
+.buzzer{width:250px;height:250px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#ff7a70,var(--red) 55%);box-shadow:0 14px 0 var(--red-edge),0 18px 30px rgba(0,0,0,.35);display:grid;place-items:center;font:800 40px var(--display);color:#fff;letter-spacing:.02em;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.buzzer.locked{background:radial-gradient(circle at 38% 32%,#3b7d68,#1f5b48 60%);box-shadow:0 14px 0 #0a3a2c;color:#7fb5a1;font-size:22px;text-align:center;line-height:1.15;padding:30px}
+.soundnote{text-align:center;color:var(--muted);font-size:13px;margin-top:4px}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 10px}
+.center .big{font:800 32px/1.1 var(--display);margin-top:16px}
+.center .small{color:var(--muted);font-size:16px;margin-top:10px;line-height:1.4}
+/* host desk */
+.desk-floor{background:var(--red);box-shadow:0 4px 0 var(--red-edge);border-radius:14px;padding:9px 12px;display:flex;align-items:center;gap:10px;margin:8px 0 10px}
+.desk-floor img{width:40px;height:40px;border-radius:50%;border:2px solid #fff}
+.desk-floor b{font:800 20px var(--display);display:block;line-height:1}
+.desk-floor span{font-size:12px}
+.hint{font:700 12px var(--body);color:var(--muted);margin-bottom:6px}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ans{background:var(--card);color:var(--ink);border-radius:10px;box-shadow:0 3px 0 var(--card-edge);padding:9px 10px;font:800 16px var(--display)}
+.ans.given{background:var(--felt-deep);box-shadow:none;color:#4f8c78;border:2px dashed var(--felt-line);text-decoration:line-through}
+.ans.given small{display:block;font:700 11px var(--body);text-decoration:none;color:#6fa893}
+.verdicts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto}
+.v{border-radius:14px;padding:14px 8px;text-align:center;font:800 19px var(--display)}
+.v.no{background:var(--pink);box-shadow:0 4px 0 var(--pink-edge);color:var(--ink)}
+.v.also{background:var(--card);box-shadow:0 4px 0 var(--card-edge);color:var(--ink)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs><symbol id="baton" viewBox="0 0 120 60"><g transform="rotate(-28 60 30)">
+<rect x="8" y="20" width="104" height="22" rx="11" fill="#f6c731" stroke="#b98f0d" stroke-width="3"/>
+<rect x="30" y="20" width="9" height="22" fill="#e5487f"/><rect x="81" y="20" width="9" height="22" fill="#e5487f"/>
+<rect x="16" y="24" width="88" height="5" rx="2.5" fill="#fff" opacity=".45"/></g></symbol></defs></svg>
+
+<div class="row">
+  <div>
+    <p class="label">TV · Ada hat gebuzzert, Bo hält den Stab, Cy moderiert, Dee ist raus</p>
+    <div class="tv">
+      <div class="top"><span>Letztes Wort</span><span>Runde 3 von 10</span></div>
+      <div class="stage">
+        <div class="qcard">
+          <h1>Nenne einen Planeten unseres Sonnensystems.</h1>
+          <div class="mod"><img class="bg-granny" src="granny-head.webp">Cy moderiert</div>
+        </div>
+        <div class="side">
+          <div class="floor"><img class="bg-fox" src="fox-head.webp"><div><b>Ada!</b><span>hat gebuzzert – sag's laut</span></div></div>
+          <div class="headwrap"><div class="head bg-ghost"><img src="ghost-head.webp"></div><svg class="baton" viewBox="0 0 120 60"><use href="#baton"/></svg></div>
+          <div class="who">Bo hat den Stab</div>
+        </div>
+      </div>
+      <div class="players">
+        <div class="chip"><img class="bg-fox" src="fox-head.webp"><span class="nm">Ada</span> <span class="pts">★ 1</span></div>
+        <div class="chip has"><img class="bg-ghost" src="ghost-head.webp"><span class="nm">Bo</span> <span class="pts">★ 1</span></div>
+        <div class="chip host"><img class="bg-granny" src="granny-head.webp"><span class="nm">Cy</span> <span class="tag">moderiert</span></div>
+        <div class="chip out"><img class="bg-panda" src="panda-head.webp"><span class="nm">Dee</span> <span class="tag">raus</span></div>
+        <div class="chip"><img class="bg-frog" src="frog-head.webp"><span class="nm">Eli</span> <span class="pts">★ 0</span></div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="label">TV · Zeit um (keine Antworten gezeigt)</p>
+    <div class="tv">
+      <div class="top"><span>Letztes Wort</span><span>Runde 3 von 10</span></div>
+      <div class="zeit">
+        <div class="big">Zeit!</div>
+        <div class="headwrap" style="margin-top:24px"><div class="head bg-ghost"><img src="ghost-head.webp"></div><svg class="baton" viewBox="0 0 120 60"><use href="#baton"/></svg></div>
+        <div class="who">Bo hatte das letzte Wort</div>
+        <div class="sub">+1 Stern · nächste Runde moderiert Dee</div>
+      </div>
+      <div class="players">
+        <div class="chip"><img class="bg-fox" src="fox-head.webp"><span class="nm">Ada</span> <span class="pts">★ 1</span></div>
+        <div class="chip has"><img class="bg-ghost" src="ghost-head.webp"><span class="nm">Bo</span> <span class="pts">★ 2</span></div>
+        <div class="chip"><img class="bg-granny" src="granny-head.webp"><span class="nm">Cy</span> <span class="pts">★ 0</span></div>
+        <div class="chip"><img class="bg-panda" src="panda-head.webp"><span class="nm">Dee</span> <span class="pts">★ 0</span></div>
+        <div class="chip"><img class="bg-frog" src="frog-head.webp"><span class="nm">Eli</span> <span class="pts">★ 0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div>
+    <p class="label">Spieler · Buzzer frei</p>
+    <div class="phone">
+      <div class="q">Nenne einen Planeten unseres Sonnensystems.</div>
+      <div class="status"><i></i>Bo hat den Stab – hol ihn dir!</div>
+      <div class="bz"><div class="buzzer">BUZZ!</div></div>
+      <div class="soundnote">🔊 tippen = Buzzer-Ton</div>
+    </div>
+  </div>
+  <div>
+    <p class="label">Spieler · jemand anderes ist dran</p>
+    <div class="phone">
+      <div class="q">Nenne einen Planeten unseres Sonnensystems.</div>
+      <div class="status"><i></i>Ada hat gebuzzert – Cy entscheidet</div>
+      <div class="bz"><div class="buzzer locked">Ada ist dran</div></div>
+    </div>
+  </div>
+  <div>
+    <p class="label">Spieler · ich halte den Stab</p>
+    <div class="phone">
+      <div class="center">
+        <div class="headwrap"><div class="head bg-ghost"><img src="ghost-head.webp"></div><svg class="baton" viewBox="0 0 120 60"><use href="#baton"/></svg></div>
+        <div class="big">Du hast den Stab!</div>
+        <div class="small">Halt ihn, bis die Zeit um ist.<br>Wer jetzt richtig antwortet, nimmt ihn dir weg.</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="label">Spieler · falsch = raus</p>
+    <div class="phone">
+      <div class="center">
+        <div class="big">Falsch –<br>du bist raus</div>
+        <div class="small">Bei der nächsten Frage bist du wieder dabei.</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="label">Moderator (Cy) · Ada hat gebuzzert</p>
+    <div class="phone">
+      <div class="q">Nenne einen Planeten unseres Sonnensystems.</div>
+      <div class="desk-floor"><img class="bg-fox" src="fox-head.webp"><div><b>Ada ist dran</b><span>Tipp die genannte Antwort an</span></div></div>
+      <div class="hint">8 richtige Antworten · 2 schon gesagt</div>
+      <div class="answers">
+        <div class="ans">Merkur</div><div class="ans">Venus</div>
+        <div class="ans given">Erde<small>Ada</small></div><div class="ans given">Mars<small>Bo</small></div>
+        <div class="ans">Jupiter</div><div class="ans">Saturn</div>
+        <div class="ans">Uranus</div><div class="ans">Neptun</div>
+      </div>
+      <div class="verdicts"><div class="v no">Falsch</div><div class="v also">Auch richtig</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
