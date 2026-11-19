@@ -82,13 +82,15 @@ fn start(_night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Stage {
-    /// `ask` asks the holder whom to throw to, from `ready_at`; while `dropped`
-    /// the bomb lies at their feet until then.
-    Hold { ask: Ask, ready_at: ServerTime, dropped: bool },
-    /// Thrown by `from` at `thrown_at`; lands by `to` at `lands_at`.
-    Flight { from: PlayerId, to: PlayerId, thrown_at: ServerTime, lands_at: ServerTime, catch: Catch },
-    /// The fuse ran out on `victim`.
-    Boom { victim: PlayerId, ends_at: ServerTime },
+    /// `ask` asks the holder whom to throw to, from `ready_at`. `caught`: how
+    /// the bomb came to them at `ask`'s opening, None at a round's start; a
+    /// dropped one lies at their feet until `ready_at`.
+    Hold { ask: Ask, ready_at: ServerTime, caught: Option<bool> },
+    /// Thrown by `from` at `thrown_at`; leaves the hand at `released_at` and
+    /// lands by `to` at `lands_at`.
+    Flight { from: PlayerId, to: PlayerId, thrown_at: ServerTime, released_at: ServerTime, lands_at: ServerTime, catch: Catch },
+    /// The fuse ran out on `victim` at `at`.
+    Boom { victim: PlayerId, at: ServerTime },
     Final,
 }
 

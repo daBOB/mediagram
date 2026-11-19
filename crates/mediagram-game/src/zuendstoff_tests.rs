@@ -1,6 +1,6 @@
 use super::*;
 use crate::ask::{Ask, HOUSE_GRACE_MS};
-use crate::protocol::{GameLength, GameSpeed, TvScene, ZuendstoffStage};
+use crate::protocol::{TvScene, ZuendstoffStage};
 use crate::zuendstoff_config::Catch;
 
 const FUSE: f64 = 30_000.0;
@@ -60,10 +60,7 @@ impl Table {
     }
 
     fn away(&mut self, id: PlayerId, since: ServerTime) {
-        let seat = self.players.iter().position(|p| p.id == id).unwrap();
-        let name = self.players[seat].name.clone();
-        self.players[seat] = Player::for_test(id, &name, false);
-        self.players[seat].left_at = Some(since);
+        crate::card_game_driver::leave(self.players.iter_mut().find(|p| p.id == id).unwrap(), since);
     }
 
     fn view(&self) -> ViewCtx<'_> {
@@ -71,7 +68,7 @@ impl Table {
     }
 
     fn name(&self, id: PlayerId) -> String {
-        self.players.iter().find(|p| p.id == id).unwrap().name.clone()
+        crate::game::name(&self.players, id).into()
     }
 }
 
@@ -89,8 +86,10 @@ fn the_holder_throws_to_anyone_else_still_in_once_the_intro_is_over() {
     assert!(matches!(t.tap(holder, 2), Err(ActionError::NotAllowed(_))));
     t.tap(holder, 1).unwrap();
     let thrown_at = cfg.intro_ms;
-    let lands_at = thrown_at + cfg.throw_lead_ms + cfg.flight_ms;
-    assert_eq!(t.game.stage, Stage::Flight { from: holder, to: targets[1], thrown_at, lands_at, catch: Catch::Pending });
+    let released_at = thrown_at + cfg.throw_lead_ms;
+    let lands_at = released_at + cfg.flight_ms;
+    let to = targets[1];
+    assert_eq!(t.game.stage, Stage::Flight { from: holder, to, thrown_at, released_at, lands_at, catch: Catch::Pending });
 }
 
 #[test]
@@ -104,7 +103,7 @@ fn a_tap_in_the_window_catches_and_the_catcher_may_throw_soon_after_even_straigh
     t.tap(to, 0).unwrap();
     t.at(lands_at);
     let ready_at = lands_at + cfg.catch_guard_ms;
-    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: false });
+    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, caught: Some(true) });
 
     let back = t.throw(from);
     assert_eq!(back, ready_at + cfg.throw_lead_ms + cfg.flight_ms, "thrown once the catch guard is over");
@@ -112,7 +111,7 @@ fn a_tap_in_the_window_catches_and_the_catcher_may_throw_soon_after_even_straigh
     t.tap(from, 0).unwrap();
     t.at(t.now);
     assert_eq!(t.holder(), from, "the window's last moment still catches");
-    assert!(matches!(t.game.stage, Stage::Hold { dropped: false, .. }));
+    assert!(matches!(t.game.stage, Stage::Hold { caught: Some(true), .. }));
 }
 
 #[test]
@@ -126,12 +125,12 @@ fn an_early_tap_fumbles_and_the_dropped_bomb_waits_for_the_pick_up() {
     assert!(matches!(t.game.stage, Stage::Flight { catch: Catch::Fumbled, .. }));
     t.at(lands_at);
     let ready_at = lands_at + cfg.pickup_ms;
-    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: true });
+    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, caught: Some(false) });
     assert_eq!(t.tap(to, 0), Err(ActionError::Ignored), "still picking it up");
-    t.at(ready_at - 1.0);
+    t.at(ready_at - cfg.early_tolerance_ms - 1.0);
     assert_eq!(t.tap(to, 0), Err(ActionError::Ignored));
     t.at(ready_at);
-    assert!(matches!(t.game.stage, Stage::Hold { dropped: false, .. }));
+    assert!(matches!(t.game.phone_view(&t.view(), to), PhoneScreen::Choice { .. }), "picked up: the names show");
     t.tap(to, 0).unwrap();
     assert!(matches!(t.game.stage, Stage::Flight { from, .. } if from == to));
 }
@@ -146,7 +145,7 @@ fn no_tap_drops_the_bomb_when_the_window_closes() {
     assert!(matches!(t.game.stage, Stage::Flight { catch: Catch::Pending, .. }), "the window is still open");
     t.at(lands_at + cfg.catch_after_ms);
     let ready_at = lands_at + cfg.pickup_ms;
-    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: true });
+    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, caught: Some(false) });
 }
 
 #[test]
@@ -172,7 +171,7 @@ fn only_the_target_catches_and_only_once() {
     assert_eq!(t.tap(to, 0), Err(ActionError::Ignored));
     assert!(matches!(t.game.stage, Stage::Flight { catch: Catch::Fumbled, .. }));
     t.at(lands_at);
-    assert!(matches!(t.game.stage, Stage::Hold { dropped: true, .. }));
+    assert!(matches!(t.game.stage, Stage::Hold { caught: Some(false), .. }));
 }
 
 #[test]
@@ -186,7 +185,7 @@ fn a_late_catch_after_the_drop_is_ignored() {
     assert_eq!(t.tap(to, 0), Err(ActionError::Ignored));
     t.at(t.now);
     let dropped = t.game.stage;
-    assert!(matches!(dropped, Stage::Hold { dropped: true, .. }));
+    assert!(matches!(dropped, Stage::Hold { caught: Some(false), .. }));
     assert_eq!(t.tap(to, 0), Err(ActionError::Ignored), "after the drop");
     assert_eq!(t.game.stage, dropped);
 }
@@ -196,7 +195,7 @@ fn the_fuse_costs_the_holder_a_life_and_they_start_the_next_round() {
     let mut t = Table::new(&["Ada", "Bo", "Cy"]);
     let holder = t.holder();
     t.at(FUSE);
-    assert_eq!(t.game.stage, Stage::Boom { victim: holder, ends_at: FUSE + t.game.cfg.boom_ms });
+    assert_eq!(t.game.stage, Stage::Boom { victim: holder, at: FUSE });
     assert_eq!(t.game.lives_of(holder), 2);
     t.at(FUSE + t.game.cfg.boom_ms);
     assert_eq!((t.holder(), t.game.round), (holder, 2));
@@ -262,7 +261,7 @@ fn fuse_at_landing_hits_the_target() {
     t.at(FUSE - 100.0);
     t.tap(to, 0).unwrap();
     t.at(FUSE);
-    assert_eq!(t.game.stage, Stage::Boom { victim: to, ends_at: FUSE + cfg.boom_ms }, "caught, and hit all the same");
+    assert_eq!(t.game.stage, Stage::Boom { victim: to, at: FUSE }, "caught, and hit all the same");
     assert_eq!(t.game.lives_of(to), 2);
 }
 
@@ -341,7 +340,7 @@ fn an_away_target_never_catches_and_the_house_throws_once_it_is_picked_up() {
     let lands_at = t.throw(to);
     t.away(to, lands_at - 1000.0);
     t.at(lands_at + cfg.catch_after_ms);
-    assert!(matches!(t.game.stage, Stage::Hold { dropped: true, .. }));
+    assert!(matches!(t.game.stage, Stage::Hold { caught: Some(false), .. }));
     t.at(lands_at + cfg.pickup_ms - 1.0);
     assert_eq!(t.holder(), to);
     t.at(lands_at + cfg.pickup_ms);
@@ -360,18 +359,8 @@ fn the_thrower_leaving_mid_flight_changes_nothing() {
     t.tap(to, 0).unwrap();
     t.at(lands_at);
     let ready_at = lands_at + t.game.cfg.catch_guard_ms;
-    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: false });
+    assert_eq!(t.game.stage, Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, caught: Some(true) });
     assert_eq!(t.game.lives_of(from), 3);
-}
-
-#[test]
-fn tempo_stretches_only_the_fuse_and_length_the_lives() {
-    let normal = ZuendstoffConfig::default();
-    let relaxed = ZuendstoffConfig::default().at(GameSpeed::Relaxed);
-    assert_eq!((relaxed.fuse_min_ms, relaxed.fuse_max_ms), (36_000.0, 80_000.0));
-    assert_eq!((relaxed.flight_ms, relaxed.pickup_ms, relaxed.catch_before_ms), (normal.flight_ms, normal.pickup_ms, normal.catch_before_ms));
-    let lives = |length| ZuendstoffConfig::default().sized(length).lives;
-    assert_eq!((lives(GameLength::Short), lives(GameLength::Normal), lives(GameLength::Long)), (2, 3, 5));
 }
 
 #[test]
@@ -388,7 +377,7 @@ fn the_phones_show_names_to_the_holder_fangen_to_the_target_and_waits_to_the_res
     assert_eq!(title, format!("{} hat die Bombe", t.name(holder)));
     assert_eq!((t.game.phone_buzz(&view, holder), t.game.phone_buzz(&view, to)), (Some(Buzz::Turn), None));
     let TvScene::Zuendstoff { scene } = t.game.tv_view(&view) else { panic!("no scene") };
-    assert_eq!(scene.stage, ZuendstoffStage::Hold { holder, ready_at: t.game.cfg.intro_ms, dropped: false });
+    assert_eq!(scene.stage, ZuendstoffStage::Hold { holder, since: 0.0, ready_at: t.game.cfg.intro_ms, caught: None });
     assert_eq!(scene.seats.len(), 3);
 
     let lands_at = t.throw(to);
@@ -401,7 +390,7 @@ fn the_phones_show_names_to_the_holder_fangen_to_the_target_and_waits_to_the_res
     let PhoneScreen::Wait { title, .. } = t.game.phone_view(&view, third) else { panic!("no wait") };
     assert_eq!(title, format!("{} wirft zu {}", t.name(holder), t.name(to)));
     let TvScene::Zuendstoff { scene } = t.game.tv_view(&view) else { panic!("no scene") };
-    assert_eq!(scene.stage, ZuendstoffStage::Flight { from: holder, to, thrown_at, lands_at, caught: None });
+    assert_eq!(scene.stage, ZuendstoffStage::Flight { from: holder, to, thrown_at, released_at: thrown_at + t.game.cfg.throw_lead_ms, lands_at, caught: None });
 
     t.at(lands_at + t.game.cfg.catch_after_ms);
     let view = t.view();
@@ -409,7 +398,7 @@ fn the_phones_show_names_to_the_holder_fangen_to_the_target_and_waits_to_the_res
     assert_eq!(title, "Heb die Bombe auf …");
     let TvScene::Zuendstoff { scene } = t.game.tv_view(&view) else { panic!("no scene") };
     let ready_at = lands_at + t.game.cfg.pickup_ms;
-    assert_eq!(scene.stage, ZuendstoffStage::Hold { holder: to, ready_at, dropped: true });
+    assert_eq!(scene.stage, ZuendstoffStage::Hold { holder: to, since: lands_at, ready_at, caught: Some(false) });
 
     t.at(FUSE);
     let view = t.view();

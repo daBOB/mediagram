@@ -8,11 +8,7 @@ import type { BoardSound } from "../table/board-sounds";
 import type { Plan } from "../table/tv-sound";
 
 export type Flight = Extract<ZuendstoffStage, { stage: "flight" }>;
-type Hold = Extract<ZuendstoffStage, { stage: "hold" }>;
 
-/** The host's throw lead-in (tap to release) and pick-up after a drop (ZuendstoffConfig); the wire carries neither. */
-export const THROW_LEAD_MS = 600;
-export const PICKUP_MS = 2000;
 /** Crossfade between two clips, s. */
 export const FADE_S = 0.25;
 
@@ -44,9 +40,10 @@ const MISS_FOR_S = 0.8;
 const PICK_FROM_S = 1.0;
 const PICK_S = 1.5;
 const PICK_TO_S = 2.8;
-const PICK_RATE = (PICK_TO_S - PICK_FROM_S) / (PICKUP_MS / 1000 - MISS_FOR_S);
-/** From the landing of a missed bomb until the hand closes on it. */
-export const PICK_DELAY_MS = (MISS_FOR_S + (PICK_S - PICK_FROM_S) / PICK_RATE) * 1000;
+/** The pick-up's speed, to stand again `pickMs` after the landing. */
+const pickRate = (pickMs: number) => (PICK_TO_S - PICK_FROM_S) / (pickMs / 1000 - MISS_FOR_S);
+/** From the landing of a missed bomb, picked up `pickMs` after it, until the hand closes on it. */
+export const pickDelayMs = (pickMs: number) => (MISS_FOR_S + (PICK_S - PICK_FROM_S) / pickRate(pickMs)) * 1000;
 /** A dropped bomb hits the felt this long after the landing (the drop's thunk). */
 export const FALL_MS = 450;
 
@@ -74,11 +71,11 @@ const idle = (aim: Pose["aim"] = null): Pose => ({ clip: CLIP.idle, at: null, ra
 const once = (clip: Clip, at: number, rate = 1, aim: Pose["aim"] = null): Pose => ({ clip, at, rate, aim });
 const smooth = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
-/** The thrower of `f` (`to` its target's seat): winds up, lets go at the lead-in's end, follows through, turns back. */
+/** The thrower of `f` (`to` its target's seat): winds up, lets go at `released_at`, follows through, turns back. */
 function thrower(f: Flight, to: number, now: number): Pose | null {
-  const release = f.thrown_at + THROW_LEAD_MS, end = release + (THROW_END_S - THROW_RELEASE_S) * 1000;
+  const release = f.released_at, end = release + (THROW_END_S - THROW_RELEASE_S) * 1000;
   if (now < f.thrown_at) return null;
-  if (now < end) return once(CLIP.throw, THROW_RELEASE_S + (now - release) / 1000, 1, { to, k: smooth((now - f.thrown_at) / THROW_LEAD_MS) });
+  if (now < end) return once(CLIP.throw, THROW_RELEASE_S + (now - release) / 1000, 1, { to, k: smooth((now - f.thrown_at) / (release - f.thrown_at)) });
   // turns back as the clip fades into the idle, the two turns cancelling
   const back = 1 - (now - end) / (FADE_S * 1000);
   return back > 0 ? idle({ to, k: back }) : null;
@@ -86,32 +83,21 @@ function thrower(f: Flight, to: number, now: number): Pose | null {
 
 /**
  * The target of a bomb landing at `lands`: leaps for it while it is caught or not known yet; on a miss jumps, grabs at
- * nothing as it lands, falls, and picks it up again by the time they may throw.
+ * nothing as it lands, falls, and picks it up again by `readyAt`, when they may throw (null while the host has not said).
  */
-function target(lands: number, caught: boolean | null, now: number): Pose | null {
+function target(lands: number, caught: boolean | null, readyAt: number | null, now: number): Pose | null {
   const t = (now - lands) / 1000;
   if (caught !== false) {
     const at = CATCH_S + t;
     return at >= 0 && at < CATCH_END_S ? once(CLIP.catch, at) : null;
   }
-  if (t < MISS_FOR_S) return GRAB_S + t >= 0 ? once(CLIP.miss, GRAB_S + t) : null;
-  const at = PICK_FROM_S + (t - MISS_FOR_S) * PICK_RATE;
-  return at < PICK_TO_S ? once(CLIP.pickup, at, PICK_RATE) : null;
+  if (t < MISS_FOR_S || readyAt === null) return GRAB_S + t >= 0 ? once(CLIP.miss, GRAB_S + t) : null;
+  const rate = pickRate(readyAt - lands), at = PICK_FROM_S + (t - MISS_FOR_S) * rate;
+  return at < PICK_TO_S ? once(CLIP.pickup, at, rate) : null;
 }
 
-/** How the bomb came to `h`'s holder, if the hold follows a throw: from the drop flag, or from the last throw seen. */
-function landed(h: Hold, last: Flight | null): { lands: number; caught: boolean } | null {
-  if (h.dropped) return { lands: h.ready_at - PICKUP_MS, caught: false };
-  if (!last || last.to !== h.holder) return null;
-  // A catch makes the bomb ready within a second of the landing, a drop only after the pick-up.
-  const after = h.ready_at - last.lands_at;
-  if (after >= 0 && after < PICKUP_MS - 1) return { lands: last.lands_at, caught: true };
-  if (Math.abs(after - PICKUP_MS) < 1) return { lands: last.lands_at, caught: false };
-  return null;
-}
-
-/** `last`: the latest throw seen (its stage may be over); `boomAt`: when the TV first saw the blast, host ms. */
-export function frameAt(scene: ZuendstoffScene, last: Flight | null, boomAt: number, now: number): Frame {
+/** `last`: the latest throw seen (its stage may be over). */
+export function frameAt(scene: ZuendstoffScene, last: Flight | null, now: number): Frame {
   const seat = (id: number) => scene.seats.findIndex((s) => s.player === id);
   const poses = scene.seats.map(() => idle());
   const set = (id: number, p: Pose | null) => {
@@ -124,12 +110,12 @@ export function frameAt(scene: ZuendstoffScene, last: Flight | null, boomAt: num
       set(st.order[0], { ...idle(), clip: CLIP.win });
       return { poses, bomb: { kind: "none" } };
     case "boom":
-      set(st.victim, once(CLIP.fall, Math.max(0, (now - boomAt) / 1000)));
-      return { poses, bomb: { kind: "blast", seat: seat(st.victim), ms: now - boomAt } };
+      set(st.victim, once(CLIP.fall, Math.max(0, (now - st.at) / 1000)));
+      return { poses, bomb: { kind: "blast", seat: seat(st.victim), ms: now - st.at } };
     case "flight": {
-      const from = seat(st.from), to = seat(st.to), release = st.thrown_at + THROW_LEAD_MS;
+      const from = seat(st.from), to = seat(st.to), release = st.released_at;
       set(st.from, thrower(st, to, now));
-      set(st.to, target(st.lands_at, st.caught, now));
+      set(st.to, target(st.lands_at, st.caught, null, now));
       const bomb: BombAt =
         now < release ? { kind: "hand", seat: from }
         : now < st.lands_at ? { kind: "flight", from, to, k: (now - release) / (st.lands_at - release) }
@@ -138,27 +124,26 @@ export function frameAt(scene: ZuendstoffScene, last: Flight | null, boomAt: num
       return { poses, bomb };
     }
     case "hold": {
-      const how = landed(st, last), holder = seat(st.holder);
+      const holder = seat(st.holder);
       if (last) set(last.from, thrower(last, seat(last.to), now));
-      if (how) set(st.holder, target(how.lands, how.caught, now));
-      const loose = how && !how.caught && now < how.lands + PICK_DELAY_MS;
-      return { poses, bomb: loose ? { kind: "loose", seat: holder, ms: now - how.lands } : { kind: "hand", seat: holder } };
+      if (st.caught !== null) set(st.holder, target(st.since, st.caught, st.ready_at, now));
+      const loose = st.caught === false && now < st.since + pickDelayMs(st.ready_at - st.since);
+      return { poses, bomb: loose ? { kind: "loose", seat: holder, ms: now - st.since } : { kind: "hand", seat: holder } };
     }
   }
 }
 
 /** The stage's sounds: a knock for a catch, a thunk as a dropped bomb hits the felt, the blast, the winner's jingle. */
-export function zuendstoffCues(scene: ZuendstoffScene, boomAt: number, now: number): Plan<BoardSound> | null {
+export function zuendstoffCues(scene: ZuendstoffScene, now: number): Plan<BoardSound> | null {
   const st = scene.stage;
   // one key per landing, whether the flight or the drop that follows it says so first
   if (st.stage === "flight" && st.caught !== null) {
     return { key: `land ${st.lands_at}`, cues: [st.caught ? { sound: "knock", at: st.lands_at } : { sound: "thunk", at: st.lands_at + FALL_MS }] };
   }
-  if (st.stage === "hold" && st.dropped) {
-    const lands = st.ready_at - PICKUP_MS;
-    return { key: `land ${lands}`, cues: [{ sound: "thunk", at: lands + FALL_MS }] };
+  if (st.stage === "hold" && st.caught === false && now < st.ready_at) {
+    return { key: `land ${st.since}`, cues: [{ sound: "thunk", at: st.since + FALL_MS }] };
   }
-  if (st.stage === "boom") return { key: `boom ${scene.round}`, cues: [{ sound: "thunk", at: boomAt }, { sound: "scream", at: boomAt + 120 }] };
+  if (st.stage === "boom") return { key: `boom ${scene.round}`, cues: [{ sound: "thunk", at: st.at }, { sound: "scream", at: st.at + 120 }] };
   if (st.stage === "final") return { key: "final", cues: [{ sound: "winnerJingle", at: now }] };
   return null;
 }

@@ -59,7 +59,7 @@ impl ZuendstoffGame {
     pub(crate) fn bearer(&self, now: ServerTime) -> Option<PlayerId> {
         match self.stage {
             Stage::Hold { ask, .. } => Some(ask.who()),
-            Stage::Flight { from, to, thrown_at, .. } => Some(if now < thrown_at + self.cfg.throw_lead_ms { from } else { to }),
+            Stage::Flight { from, to, released_at, .. } => Some(if now < released_at { from } else { to }),
             Stage::Boom { .. } | Stage::Final => None,
         }
     }
@@ -67,12 +67,13 @@ impl ZuendstoffGame {
     fn start_round(&mut self, holder: PlayerId, now: ServerTime) {
         self.round += 1;
         self.fuse_at = now + self.rng.random_range(self.cfg.fuse_min_ms..=self.cfg.fuse_max_ms);
-        self.stage = Stage::Hold { ask: Ask::open(holder, now, None), ready_at: now + self.cfg.intro_ms, dropped: false };
+        self.stage = Stage::Hold { ask: Ask::open(holder, now, None), ready_at: now + self.cfg.intro_ms, caught: None };
     }
 
     fn throw(&mut self, from: PlayerId, to: PlayerId, now: ServerTime) {
-        let lands_at = now + self.cfg.throw_lead_ms + self.cfg.flight_ms;
-        self.stage = Stage::Flight { from, to, thrown_at: now, lands_at, catch: Catch::Pending };
+        let released_at = now + self.cfg.throw_lead_ms;
+        let lands_at = released_at + self.cfg.flight_ms;
+        self.stage = Stage::Flight { from, to, thrown_at: now, released_at, lands_at, catch: Catch::Pending };
     }
 
     /// The target's tap at `now`: in the window a catch, before it a fumble, after it nothing.
@@ -89,7 +90,7 @@ impl ZuendstoffGame {
     /// The bomb lands by `to`, seen at `now`: in their hands if `caught`, else at their feet.
     fn land(&mut self, to: PlayerId, lands_at: ServerTime, caught: bool, now: ServerTime) {
         let ready_at = if caught { now + self.cfg.catch_guard_ms } else { lands_at + self.cfg.pickup_ms };
-        self.stage = Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, dropped: !caught };
+        self.stage = Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, caught: Some(caught) };
     }
 
     fn explode(&mut self, victim: PlayerId, now: ServerTime) {
@@ -99,7 +100,7 @@ impl ZuendstoffGame {
                 self.out.push(victim);
             }
         }
-        self.stage = Stage::Boom { victim, ends_at: now + self.cfg.boom_ms };
+        self.stage = Stage::Boom { victim, at: now };
     }
 
     fn finish(&mut self, players: &mut [Player], alive: Vec<PlayerId>) {
@@ -117,19 +118,24 @@ impl Game for ZuendstoffGame {
     fn on_action(&mut self, ctx: &mut GameCtx, player: PlayerId, action: &Action) -> Result<(), ActionError> {
         let Action::Choose { index, .. } = *action else { return Err(ActionError::Ignored) };
         let now = ctx.now;
+        // Once the fuse has run out nothing counts; the next tick sets it off.
+        if now >= self.fuse_at {
+            return Err(ActionError::Ignored);
+        }
         match self.stage {
-            Stage::Hold { ask, ready_at, dropped: false }
-                if player == ask.who() && now >= ready_at - self.cfg.early_tolerance_ms && now < self.fuse_at =>
-            {
+            // A dropped bomb's names only reach the phone at `ready_at`, so the early tolerance never lets a pick-up be cut short.
+            Stage::Hold { ask, ready_at, .. } if player == ask.who() && now >= ready_at - self.cfg.early_tolerance_ms => {
                 let Some(&to) = self.targets(ctx.players, player).get(usize::from(index)) else {
                     return Err(ActionError::NotAllowed("Diesen Mitspieler gibt es nicht."));
                 };
                 self.throw(player, to, now);
             }
             // Only the first tap counts, so mashing fumbles.
-            Stage::Flight { from, to, thrown_at, lands_at, catch: Catch::Pending } if player == to => {
-                let catch = self.tap_counts_as(lands_at, now).ok_or(ActionError::Ignored)?;
-                self.stage = Stage::Flight { from, to, thrown_at, lands_at, catch };
+            Stage::Flight { to, lands_at, catch: Catch::Pending, .. } if player == to => {
+                let caught = self.tap_counts_as(lands_at, now).ok_or(ActionError::Ignored)?;
+                if let Stage::Flight { catch, .. } = &mut self.stage {
+                    *catch = caught;
+                }
             }
             _ => return Err(ActionError::Ignored),
         }
@@ -145,12 +151,9 @@ impl Game for ZuendstoffGame {
             return self.explode(victim, now);
         }
         match self.stage {
-            Stage::Hold { ask, ready_at, .. } if now >= ready_at => {
-                self.stage = Stage::Hold { ask, ready_at, dropped: false };
-                // A holder who is away has the house throw for them.
-                if ask.house_decides(ctx)
-                    && let Some(&to) = self.targets(ctx.players, ask.who()).choose(&mut self.rng)
-                {
+            // A holder who is away has the house throw for them.
+            Stage::Hold { ask, ready_at, .. } if now >= ready_at && ask.house_decides(ctx) => {
+                if let Some(&to) = self.targets(ctx.players, ask.who()).choose(&mut self.rng) {
                     self.throw(ask.who(), to, now);
                 }
             }
@@ -160,7 +163,7 @@ impl Game for ZuendstoffGame {
             {
                 self.land(to, lands_at, catch == Catch::Caught, now);
             }
-            Stage::Boom { victim, ends_at } if now >= ends_at => {
+            Stage::Boom { victim, at } if now >= at + self.cfg.boom_ms => {
                 let alive: Vec<PlayerId> = ctx.players.iter().map(|p| p.id).filter(|&id| self.alive(id)).collect();
                 if alive.len() <= 1 {
                     self.finish(ctx.players, alive);

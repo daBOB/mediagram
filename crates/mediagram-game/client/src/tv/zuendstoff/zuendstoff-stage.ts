@@ -8,7 +8,7 @@ import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.j
 import type { ZuendstoffScene } from "../../protocol/ZuendstoffScene";
 import { loadAvatar } from "../ceremony/ceremony-avatar";
 import { BOARD_SOUNDS } from "../table/board-sounds";
-import { startStage, type Live, type StageHandle } from "../table/stage-host";
+import { disposeScene, startStage, type Live, type StageHandle } from "../table/stage-host";
 import { Bomb } from "./zuendstoff-bomb";
 import { AVATAR_H, CIRCLE_R, buildCircle, disposeCircle, poseCircle, setOut, type Avatar } from "./zuendstoff-circle";
 import { ZuendstoffHud } from "./zuendstoff-hud";
@@ -52,18 +52,6 @@ function loadAvatars(live: Live<ZuendstoffScene>): Promise<(Avatar | null)[]> {
   }));
 }
 
-// frees geometries, materials and textures (the avatars' too) outside the GL context
-function disposeScene(scene: THREE.Scene) {
-  scene.traverse((o) => {
-    const mesh = o as THREE.Mesh;
-    if (!(o as THREE.Sprite).isSprite) mesh.geometry?.dispose();
-    for (const material of [mesh.material ?? []].flat()) {
-      for (const value of Object.values(material)) if (value instanceof THREE.Texture) value.dispose();
-      material.dispose();
-    }
-  });
-}
-
 /** Draws the table into a canvas of its own inside `container`; `live()` returns the latest scene and players, `now()` the server clock. */
 export function startZuendstoff(container: HTMLElement, live: Live<ZuendstoffScene>, now: () => number): Promise<StageHandle> {
   return startStage(container, live, now, {
@@ -84,8 +72,8 @@ export function startZuendstoff(container: HTMLElement, live: Live<ZuendstoffSce
       buildTable(scene);
       const seats = buildCircle(scene, looks, assets), bomb = new Bomb(scene);
       const hud = new ZuendstoffHud(r, seats, looks.map((l) => l.name));
-      // the last throw seen (its follow-through outlasts its stage) and when this TV first saw the round's blast
-      let last: Flight | null = null, boomAt = 0, boomRound = -1, prev = 0;
+      // the last throw seen: its follow-through outlasts its stage
+      let last: Flight | null = null, prev = 0;
       return {
         scene,
         camera,
@@ -100,20 +88,15 @@ export function startZuendstoff(container: HTMLElement, live: Live<ZuendstoffSce
           const t = ms / 1000, dt = prev ? Math.min(0.1, Math.max(0, t - prev)) : 0, sc = live().scene, st = sc.stage;
           prev = t;
           if (st.stage === "flight") last = st;
-          if (st.stage === "boom" && boomRound !== sc.round) {
-            boomRound = sc.round;
-            boomAt = host;
-            last = null;
-          }
-          const frame = frameAt(sc, last, boomAt, host);
+          const frame = frameAt(sc, last, host);
           sc.seats.forEach((s, i) => seats[i] && setOut(seats[i], s.lives === 0));
           poseCircle(seats, frame.poses, dt);
-          scene.updateMatrixWorld();
+          // the bomb reads the hands' world positions, which update their own bone chains
           bomb.update(frame.bomb, seats, t);
         },
         cue(sound, host) {
           const sc = live().scene;
-          sound.tick(zuendstoffCues(sc, boomAt, host), sc.stage.stage === "final", host);
+          sound.tick(zuendstoffCues(sc, host), sc.stage.stage === "final", host);
         },
         paint: (_ms, host) => hud.update(live().scene, host),
         overlay: () => hud.render(),

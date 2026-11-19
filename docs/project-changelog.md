@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.194.1 — Zündstoff's TV is told the timing instead of guessing it
+
+**Changed**
+
+- The host sends Zündstoff's TV when the bomb leaves the hand, when and how a holder came by it (caught, dropped, or the round's start) and when it went off. The TV no longer keeps copies of the host's throw and pick-up times or works out from them whether a bomb was caught, so retuning those times on the host cannot silently break the animation. A TV joining just after a catch now shows the catcher's leap.
+- Zündstoff's TV frees its avatars' decoded textures when the game ends, with the scene clean-up Grand Allee already used, and uploads the avatars' normal maps before play like their colours, so the first frame no longer stalls on them.
+- The HUD label helpers moved from Grand Allee to the shared table code, since Zündstoff draws with them too.
+
 ## Spieltisch 0.194.0 — Zündstoff is a bomb thrown round a circle in 3D
 
 **Changed**

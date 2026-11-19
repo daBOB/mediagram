@@ -62,6 +62,24 @@ export interface StageGame<S, N extends string, A> {
   build(ctx: { renderer: THREE.WebGLRenderer; scene: S; looks: Look[]; assets: A }): Board<N> | Promise<Board<N>>;
 }
 
+/** Frees what a board holds outside the GL context too: geometries, materials, textures and their decoded images (an
+ * ImageBitmap keeps its pixels until closed). Sprites share three's one sprite geometry, which stays. */
+export function disposeScene(scene: THREE.Scene) {
+  scene.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!(o as THREE.Sprite).isSprite) mesh.geometry?.dispose();
+    if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose();
+    for (const material of [mesh.material ?? []].flat()) {
+      for (const value of Object.values(material)) {
+        if (!(value instanceof THREE.Texture)) continue;
+        value.dispose();
+        (value.image as { close?: () => void } | null)?.close?.();
+      }
+      material.dispose();
+    }
+  });
+}
+
 /** An image, or null if it does not load: a missing avatar picture falls back to the pawn or the initial. */
 const imageOrNull = (url: string) =>
   new Promise<HTMLImageElement | null>((ok) => {
@@ -129,9 +147,8 @@ export async function startStage<S extends { seats: { player: number }[] }, N ex
     if (game.uploadTextures) {
       // and upload every texture, which stalls the box the same way at first sight
       b.scene.traverse((o) => {
-        for (const m of [(o as THREE.Mesh).material].flat()) {
-          const map = (m as THREE.MeshBasicMaterial | undefined)?.map;
-          if (map) r.initTexture(map);
+        for (const m of [(o as THREE.Mesh).material].flat() as (THREE.MeshStandardMaterial | undefined)[]) {
+          for (const map of [m?.map, m?.normalMap]) if (map) r.initTexture(map);
         }
       });
       await r.compileAsync(b.scene, b.camera);

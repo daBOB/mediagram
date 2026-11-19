@@ -32,6 +32,8 @@ export class Bomb {
   private readonly flash: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
   private readonly puffs: THREE.Mesh<THREE.SphereGeometry, THREE.MeshLambertMaterial>[] = [];
   private readonly blast = new THREE.PointLight("#ffa040", 0, 16);
+  /** What reveal shows and hides. */
+  private readonly parts: THREE.Object3D[];
   private kind: BombAt["kind"] = "none";
   /** Where the bomb was last frame, and where its flight or drop began. */
   private readonly at = new THREE.Vector3();
@@ -51,8 +53,9 @@ export class Bomb {
     this.spark = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 8), new THREE.MeshBasicMaterial({ color: "#ffd84a" }));
     this.spark.position.set(0.4, 0.53, 0);
     this.body.add(ball, cap, fuse, this.spark);
+    const dot = new THREE.SphereGeometry(0.05, 8, 6), puff = new THREE.SphereGeometry(1, 16, 12);
     for (let i = 0; i < TRAIL; i++) {
-      this.trail.push(new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshBasicMaterial({ color: "#f6c731", transparent: true, depthWrite: false })));
+      this.trail.push(new THREE.Mesh(dot, new THREE.MeshBasicMaterial({ color: "#f6c731", transparent: true, depthWrite: false })));
     }
     this.flash = new THREE.Mesh(
       new THREE.SphereGeometry(1, 24, 16),
@@ -60,15 +63,16 @@ export class Bomb {
     );
     for (let i = 0; i < PUFFS; i++) {
       // lit, so each puff reads as a ball of smoke rather than a flat disc
-      this.puffs.push(new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshLambertMaterial({ color: "#6f6a63", transparent: true, depthWrite: false })));
+      this.puffs.push(new THREE.Mesh(puff, new THREE.MeshLambertMaterial({ color: "#6f6a63", transparent: true, depthWrite: false })));
     }
     scene.add(this.body, this.glow, this.flash, this.blast, ...this.trail, ...this.puffs);
+    this.parts = [this.body, this.flash, ...this.trail, ...this.puffs];
     this.reveal(false);
   }
 
   /** Shows every part at once (for the up-front compile), or hides them until play shows them. */
   reveal(on: boolean) {
-    for (const o of [this.body, this.flash, ...this.trail, ...this.puffs]) o.visible = on;
+    for (const o of this.parts) o.visible = on;
   }
 
   /** `t`: the frame clock, s (the spark's flicker). */
