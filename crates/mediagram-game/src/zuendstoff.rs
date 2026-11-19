@@ -70,29 +70,6 @@ impl ZuendstoffGame {
         self.stage = Stage::Hold { ask: Ask::open(holder, now, None), ready_at: now + self.cfg.intro_ms, caught: None };
     }
 
-    fn throw(&mut self, from: PlayerId, to: PlayerId, now: ServerTime) {
-        let released_at = now + self.cfg.throw_lead_ms;
-        let lands_at = released_at + self.cfg.flight_ms;
-        self.stage = Stage::Flight { from, to, thrown_at: now, released_at, lands_at, catch: Catch::Pending };
-    }
-
-    /// The target's tap at `now`: in the window a catch, before it a fumble, after it nothing.
-    fn tap_counts_as(&self, lands_at: ServerTime, now: ServerTime) -> Option<Catch> {
-        if now < lands_at - self.cfg.catch_before_ms - self.cfg.early_tolerance_ms {
-            Some(Catch::Fumbled)
-        } else if now <= lands_at + self.cfg.catch_after_ms {
-            Some(Catch::Caught)
-        } else {
-            None
-        }
-    }
-
-    /// The bomb lands by `to`, seen at `now`: in their hands if `caught`, else at their feet.
-    fn land(&mut self, to: PlayerId, lands_at: ServerTime, caught: bool, now: ServerTime) {
-        let ready_at = if caught { now + self.cfg.catch_guard_ms } else { lands_at + self.cfg.pickup_ms };
-        self.stage = Stage::Hold { ask: Ask::open(to, lands_at, None), ready_at, caught: Some(caught) };
-    }
-
     fn explode(&mut self, victim: PlayerId, now: ServerTime) {
         if let Some(lives) = self.lives.get_mut(&victim) {
             *lives = lives.saturating_sub(1);

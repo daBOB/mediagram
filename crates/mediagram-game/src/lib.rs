@@ -116,6 +116,7 @@ mod server;
 mod titles;
 mod zuendstoff;
 mod zuendstoff_config;
+mod zuendstoff_flight;
 mod zuendstoff_views;
 mod letztes_wort;
 mod letztes_wort_config;
