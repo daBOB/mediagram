@@ -65,7 +65,7 @@ makes the board larger.
   drives each car, bones bent into a seated pose with hands at the wheel; the HUD cards show the avatar heads. Prototype
   copies: 4 avatars at 6k triangles, 512 px textures, no clips, base64 in `lebensweg-avatars.js` (file:// cannot fetch a
   .glb); the game loads `/game-avatars/<id>.glb`. The driver no longer ages in looks (an avatar has no hair to grey);
-  the age shows on the card, partner and children still age.
+  the age shows on the card, partner and children still age. No age cue on the avatar (user: "no forget the ageing").
 - New university (user: "very ugly"): neoclassical hall, six-column portico on three steps, pediment with a clock, two
   wings under slate hip roofs, framed windows, drum with patina dome and gilt lantern, two lamps (Blender asset QA: pass).
 
