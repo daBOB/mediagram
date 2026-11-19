@@ -571,7 +571,7 @@ function drawRoute() {
 
   if (address.page === "home") return viewHome();
   if (address.page === "film") return viewFilm(address.setId);
-  const openers = { openFilm, openShow };
+  const openers = { openFilm, openShow, play: (set) => play(set) };
   if (address.page === "genre") return renderGenre(main, library, address.name, openers);
   if (address.page === "genres") return renderGenres(main, library);
   if (address.page === "latest") return renderLatest(main, library, byId, openers);

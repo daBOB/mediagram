@@ -15,6 +15,7 @@ import catalog.personPageOf
 import model.MediaSet
 import model.WatchSnapshot
 import ui.common.LibraryPositions
+import ui.common.catalog.VersionAsk
 import ui.common.catalog.rememberFranchiseOverviews
 import ui.common.catalog.rememberPersonLookup
 import ui.common.catalog.rememberPortrait
@@ -141,6 +142,7 @@ internal fun TvLatestFrame(
     restore: TvRestoreKeys,
     here: Int,
     leave: () -> Unit,
+    ask: VersionAsk,
 ) {
     BackHandler(onBack = leave)
     TvLatestPage(
@@ -156,6 +158,10 @@ internal fun TvLatestFrame(
             at.openCollection(key)
         },
         restoreKey = restore.of(here),
+        onPlay = { setId ->
+            restore.opened(here, setId)
+            ask.play(setId)
+        },
     )
 }
 

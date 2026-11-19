@@ -6,7 +6,7 @@ import ui.tv.catalog.firstStopOf
 import ui.tv.catalog.restoreTargetOf
 
 /** Which band of the magazine layout a stop belongs to, in the order they draw down the page. */
-internal enum class TvHomeSection { COVER, TOGETHER, FEATURES, CONTINUE, RECENT, SERIES, COURSES }
+internal enum class TvHomeSection { COVER, TOGETHER, FEATURES, CONTINUE, RECENT, SERIES, DOCUMENTARIES, COURSES }
 
 /**
  * Where Home's arrival focus — on first appearing, and on every restore key

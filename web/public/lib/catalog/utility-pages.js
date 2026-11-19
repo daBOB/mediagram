@@ -19,20 +19,48 @@ import { artworkUrl } from "./plate.js";
 
 const LATEST_LIMIT = 48;
 
-/** @typedef {{ openFilm: (set: any) => void, openShow: (section: string, name: string) => void }} Openers */
+/** @typedef {{ openFilm: (set: any) => void, openShow: (section: string, name: string) => void, play?: (set: any) => void }} Openers */
 
-/** Films, shows and courses, newest arrival first. @param {Openers} on */
-export function renderLatest(main, library, byId, { openFilm, openShow }) {
+/**
+ * Films, shows, documentaries and courses, newest arrival first, each under
+ * its department's name, with a line of those names under the heading that
+ * jumps to each: the page runs to four walls. A documentary plays from its
+ * plate, as on the Documentaries page; it has no page of its own.
+ * @param {Openers} on
+ */
+export function renderLatest(main, library, byId, { openFilm, openShow, play }) {
   const rows = homeShelves({ library, byId, posterLimit: LATEST_LIMIT, limit: LATEST_LIMIT });
   heading(main, "Latest", "Newest arrivals first");
-  const part = (title, node) => main.append(el("h2", "shelf-sub", title), node);
+  const parts = [];
+  const part = (title, node) => parts.push({ head: el("h2", "shelf-sub", title), node });
   if (rows.latestMovies.length > 0) part(SECTIONS.movies.label, movieGrid(rows.latestMovies, openFilm, { mode: GRID }));
   if (rows.latestSeries.length > 0) {
     part(SECTIONS.series.label, collectionGrid("series", rows.latestSeries, (name) => openShow("series", name), { mode: GRID }));
   }
+  if (rows.latestDocumentaries.length > 0 && play) part(SECTIONS.documentaries.label, movieGrid(rows.latestDocumentaries, play, { mode: GRID }));
   if (rows.latestCourses.length > 0) {
     part(SECTIONS.tutorials.label, collectionGrid("tutorials", rows.latestCourses, (name) => openShow("tutorials", name), { mode: LIST }));
   }
+  if (parts.length > 1) main.append(jumpNav(parts.map((one) => one.head)));
+  for (const { head, node } of parts) main.append(head, node);
+}
+
+/** A button per heading that scrolls to it and hands it focus, so a keyboard carries on from there. */
+function jumpNav(heads) {
+  const nav = el("nav", "jump-nav");
+  nav.setAttribute("aria-label", "Jump to");
+  for (const head of heads) {
+    const button = el("button", "pill pill-line", head.textContent);
+    button.type = "button";
+    button.addEventListener("click", () => {
+      const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      head.tabIndex = -1;
+      head.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
+      head.focus({ preventScroll: true });
+    });
+    nav.append(button);
+  }
+  return nav;
 }
 
 /**

@@ -95,9 +95,10 @@ internal fun TvRecentBand(
  * own scrollable-ancestor relocation brings it into view. Its posters are
  * [stripPlateWidth] of the band's own column, as the web's strip measures
  * its columns against the band column it sits in (`home-view.js:94`).
+ * Latest documentaries is the same row, each poster playing its title.
  */
 @Composable
-private fun TvRecentPosterRow(
+internal fun TvRecentPosterRow(
     films: List<MediaSet>,
     onOpenTitle: (String) -> Unit,
     focusAt: Int?,

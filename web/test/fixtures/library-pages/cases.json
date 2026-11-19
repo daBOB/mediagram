@@ -22,8 +22,8 @@
       { "setId": "gamma-2", "kind": "ep", "title": "Gamma 2", "show": "Gamma", "season": 1, "episode": 2, "addedAt": 1761868800000, "anime": true },
       { "setId": "gamma-film", "kind": "movie", "title": "Gamma Film", "addedAt": 1761868800000, "anime": true },
       { "setId": "delta-1", "kind": "docu", "title": "Delta 1", "show": "Delta", "episode": 1, "addedAt": 1762128000000 },
-      { "setId": "delta-2", "kind": "docu", "title": "Delta 2", "show": "Delta", "episode": 2, "addedAt": 1762128000000 },
-      { "setId": "doc-single", "kind": "docu", "title": "Lone Documentary", "addedAt": 1762128000000 },
+      { "setId": "delta-2", "kind": "docu", "title": "Delta 2", "show": "Delta", "episode": 2, "addedAt": 1762300000000 },
+      { "setId": "doc-single", "kind": "docu", "title": "Lone Documentary", "addedAt": 1762200000000 },
       { "setId": "epsilon-1", "kind": "tut", "title": "Epsilon 1", "show": "Epsilon", "season": 1, "episode": 1, "addedAt": 1762214400000 },
       { "setId": "epsilon-2", "kind": "tut", "title": "Epsilon 2", "show": "Epsilon", "season": 1, "episode": 2, "addedAt": 1762214400000 }
     ],
@@ -56,7 +56,8 @@
         "latestMovies": ["m9", "m8", "m7", "m6", "m5", "m4", "m3", "m2"],
         "latestSeries": ["Beta", "Alpha"],
         "latestCourses": ["Epsilon"],
-        "totals": { "continues": 6, "nextUp": 4, "latestMovies": 9, "latestSeries": 2, "latestCourses": 1 }
+        "latestDocumentaries": ["delta-2", "doc-single", "delta-1"],
+        "totals": { "continues": 6, "nextUp": 4, "latestMovies": 9, "latestSeries": 2, "latestCourses": 1, "latestDocumentaries": 3 }
       },
       "editorial": {
         "cover": ["m8"],

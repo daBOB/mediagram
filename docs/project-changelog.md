@@ -37,6 +37,15 @@ to `main`. Full phase-by-phase detail lives in
 - Zündstoff's TV frees its avatars' decoded textures when the game ends, with the scene clean-up Grand Allee already used, and uploads the avatars' normal maps before play like their colours, so the first frame no longer stalls on them.
 - The HUD label helpers moved from Grand Allee to the shared table code, since Zündstoff draws with them too.
 
+## 0.188.0 — Documentaries on Latest and Home, and a jump line on Latest
+
+**Added** (web, tablet and phone, TV)
+
+- **Latest has a Documentaries part**, after Series: the newest documentaries, on their own or in a folder, as plates that play, as the Documentaries page's "Recently added" does (a documentary has no page of its own).
+- **Latest opens with a line of its parts** — Movies · Series · Documentaries · Tutorials, those it holds — each a pill that jumps to its part: on the web and the tablet the page scrolls to the heading; on the TV the remote lands on the part's first plate.
+- **Home has a Latest documentaries row**, between Latest series and Latest courses, with its count and See all.
+- The shared library-pages fixture holds the row, so the web and Android are checked against the same newest-first order.
+
 ## 0.187.1 — New titles get their posters on a device that slept through them
 
 **Fixed** (Android)

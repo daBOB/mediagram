@@ -58,12 +58,19 @@ export function homeShelves({
     .filter(Boolean);
   const underwaySets = started.filter((set) => !shown.has(set.setId));
 
+  // Every documentary, on its own or in a folder: each plays as itself, so
+  // a row of them is a row of titles, as the Documentaries page's own
+  // "Recently added" is. A library from a caller that has none has none.
+  const documentaries = library.documentaries
+    ? [...library.documentaries.singles, ...library.documentaries.collections.flatMap((collection) => flattenCollection(collection))]
+    : [];
   return {
     continues: underwaySets.slice(0, limit),
     nextUp,
     latestMovies: byArrival(library.movies, addedAt).slice(0, posterLimit),
     latestSeries: byArrival(library.series, newestIn).slice(0, posterLimit),
     latestCourses: byArrival(library.tutorials, newestIn).slice(0, limit),
+    latestDocumentaries: byArrival(documentaries, addedAt).slice(0, posterLimit),
     // How much is behind each row, for its heading. A row shows six; the
     // number is the whole of what "See all" would open, which is the thing
     // the six cannot tell a viewer on their own.
@@ -76,6 +83,7 @@ export function homeShelves({
       latestMovies: library.movies.length,
       latestSeries: library.series.length,
       latestCourses: library.tutorials.length,
+      latestDocumentaries: documentaries.length,
     },
   };
 }

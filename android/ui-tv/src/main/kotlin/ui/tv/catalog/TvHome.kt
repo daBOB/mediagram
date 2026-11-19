@@ -44,6 +44,7 @@ import ui.tv.catalog.home.TvHomeFeatures
 import ui.tv.catalog.home.TvHomeSection
 import ui.tv.catalog.home.TvPosterStrip
 import ui.tv.catalog.home.TvRecentBand
+import ui.tv.catalog.home.TvRecentPosterRow
 import ui.tv.catalog.home.homeTargetOf
 import ui.tv.chrome.LocalTvPagePadding
 
@@ -99,12 +100,13 @@ internal fun TvHome(
     val watchlist = remember(watch) { watch.watchlist.toSet() }
     val series = latest.series
     val courses = latest.courses
+    val documentaries = latest.documentaries
     val together = togetherJoin()
 
     // Only stops with a focus requester of their own are restorable; any other
     // key (the quote, This month's rows) falls back to homeTargetOf's default.
     val sections =
-        remember(editorial, magazine, series, courses, together) {
+        remember(editorial, magazine, series, documentaries, courses, together) {
             listOf(
                 DeptSection(TvHomeSection.COVER, editorial.cover.map { it.setId }),
                 DeptSection(TvHomeSection.TOGETHER, listOfNotNull(together?.offer?.set?.setId)),
@@ -112,6 +114,7 @@ internal fun TvHome(
                 DeptSection(TvHomeSection.CONTINUE, magazine.resumeCards.map { it.set.setId }),
                 DeptSection(TvHomeSection.RECENT, magazine.recentlyAdded.map { it.setId }),
                 DeptSection(TvHomeSection.SERIES, series.map { it.key }),
+                DeptSection(TvHomeSection.DOCUMENTARIES, documentaries.map { it.setId }),
                 DeptSection(TvHomeSection.COURSES, courses.map { it.key }),
             )
         }
@@ -124,7 +127,7 @@ internal fun TvHome(
     // `included` scrolled one item short of every band below.
     val hasCover = editorial.cover.isNotEmpty()
     val drawn =
-        remember(editorial, magazine, series, courses) {
+        remember(editorial, magazine, series, documentaries, courses) {
             buildList {
                 if (hasCover) add(TvHomeSection.COVER)
                 // Drawn with or without a session, so one starting or ending moves no index.
@@ -133,6 +136,7 @@ internal fun TvHome(
                 if (magazine.resumeCards.isNotEmpty() || editorial.quote != null) add(TvHomeSection.CONTINUE)
                 if (magazine.recentlyAdded.isNotEmpty() || editorial.thisMonth.isNotEmpty()) add(TvHomeSection.RECENT)
                 if (series.isNotEmpty()) add(TvHomeSection.SERIES)
+                if (documentaries.isNotEmpty()) add(TvHomeSection.DOCUMENTARIES)
                 if (courses.isNotEmpty()) add(TvHomeSection.COURSES)
             }
         }
@@ -342,6 +346,22 @@ internal fun TvHome(
                                     focus = entryFocus.getValue(TvHomeSection.SERIES),
                                 )
                             }
+                        }
+                    }
+                }
+            }
+            if (TvHomeSection.DOCUMENTARIES in drawn) {
+                item(key = "documentaries") {
+                    Box(gutter.padding(top = HomeSectionTop).remembersBand(TvHomeSection.DOCUMENTARIES)) {
+                        Column {
+                            TvBandHeading(title = "Latest documentaries", count = latest.documentariesTotal)
+                            // A documentary plays from its poster, as on the Documentaries page: it has no page of its own.
+                            TvRecentPosterRow(
+                                documentaries, onPlay,
+                                focusAt = stopAt(TvHomeSection.DOCUMENTARIES),
+                                focus = entryFocus.getValue(TvHomeSection.DOCUMENTARIES),
+                                lastStop = Modifier,
+                            )
                         }
                     }
                 }

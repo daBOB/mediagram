@@ -80,8 +80,19 @@ class LibraryPagesFixtureTest {
             assertEquals(home.strings("latestSeries"), pages.home.latest.series.map { it.name }, "case: $name (latest series)")
             assertEquals(home.strings("latestCourses"), pages.home.latest.courses.map { it.name }, "case: $name (latest courses)")
             assertEquals(
-                listOf("continues", "latestMovies", "latestSeries", "latestCourses").map { totals.getValue(it).jsonPrimitive.int },
-                listOf(pages.continueWall.size, magazine.recentlyAddedTotal, pages.home.latest.seriesTotal, pages.home.latest.coursesTotal),
+                home.strings("latestDocumentaries"),
+                pages.home.latest.documentaries.map(MediaSet::setId),
+                "case: $name (latest documentaries)",
+            )
+            assertEquals(
+                listOf("continues", "latestMovies", "latestSeries", "latestCourses", "latestDocumentaries").map { totals.getValue(it).jsonPrimitive.int },
+                listOf(
+                    pages.continueWall.size,
+                    magazine.recentlyAddedTotal,
+                    pages.home.latest.seriesTotal,
+                    pages.home.latest.coursesTotal,
+                    pages.home.latest.documentariesTotal,
+                ),
                 "case: $name (totals)",
             )
 

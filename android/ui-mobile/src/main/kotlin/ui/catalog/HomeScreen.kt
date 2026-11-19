@@ -28,6 +28,7 @@ import ui.catalog.home.CourseList
 import ui.catalog.home.HomeCover
 import ui.catalog.home.HomeFeatures
 import ui.catalog.home.HomeShelfRow
+import ui.catalog.home.HomeTitleRow
 import ui.catalog.home.RecentBand
 import ui.catalog.home.gutterFor
 import ui.common.catalog.togetherJoin
@@ -68,6 +69,7 @@ internal fun HomeScreen(
 ) {
     val editorial = magazine.editorial
     val watchlist = remember(watch) { watch.watchlist.toSet() }
+    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     val width = LocalConfiguration.current.screenWidthDp.dp
     val gutter = gutterFor(width)
     val compact = width <= CompactBreakpoint
@@ -144,6 +146,17 @@ internal fun HomeScreen(
                     Column(modifier = Modifier.padding(top = 36.dp, start = gutter, end = gutter)) {
                         BandHeading(title = "Latest series", count = latest.seriesTotal, onSeeAll = { onSeeAll(CatalogTab.Dept(Department.SERIES)) })
                         HomeShelfRow(shows = series, width = columnWidth - gutter * 2, compact = compact, onOpen = onOpenCollection)
+                    }
+                }
+            }
+            if (latest.documentaries.isNotEmpty()) {
+                revealItem(reveals, "documentaries") {
+                    Column(modifier = Modifier.padding(top = 36.dp, start = gutter, end = gutter)) {
+                        BandHeading(
+                            title = "Latest documentaries", count = latest.documentariesTotal,
+                            onSeeAll = { onSeeAll(CatalogTab.Dept(Department.DOCUMENTARIES)) },
+                        )
+                        HomeTitleRow(sets = latest.documentaries, width = columnWidth - gutter * 2, watchedIds = watchedIds, onPlay = onPlay)
                     }
                 }
             }

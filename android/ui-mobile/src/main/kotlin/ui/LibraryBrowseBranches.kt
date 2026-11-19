@@ -98,13 +98,14 @@ internal fun LatestFrame(
     menuActions: MenuActions,
     profileBar: ProfileBarState,
     browse: BrowseActions,
+    play: (setId: String) -> Unit,
 ) {
     val ready = catalogState as? CatalogUiState.Ready
     LibraryBranch(Destination.Latest, menuActions, profileBar, browse, at, at::pop) {
         if (ready == null) {
             CenteredLoading("Loading your library…")
         } else {
-            LatestScreen(ready.pages.latest, watch, ready.heldIds, columns, at::openTitle, at::openCollection)
+            LatestScreen(ready.pages.latest, watch, ready.heldIds, columns, at::openTitle, at::openCollection, play)
         }
     }
 }

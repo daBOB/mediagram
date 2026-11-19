@@ -99,6 +99,9 @@
 .genre { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-2); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; transition: border-color var(--hover), color var(--hover); }
 .genre:hover { border-color: var(--accent); color: var(--accent); }
 .shelf-sub { font: 600 1.5rem/1.2 var(--display); margin: 40px 0 20px; }
+/* Latest's line of its parts' names; a heading jumped to stops clear of the masthead. */
+.jump-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.shelf-sub { scroll-margin-top: calc(var(--masthead-height, 64px) + 24px); }
 
 @media (max-width: 1100px) {
   .card .body { grid-template-columns: minmax(0, 1fr); gap: 4px; }

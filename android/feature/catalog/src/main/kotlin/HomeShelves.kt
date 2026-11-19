@@ -13,10 +13,12 @@ data class SetCard(val set: MediaSet, val caption: String, val progress: Float?,
 
 /**
  * What arrived, newest first, by department — the web's `latestMovies`,
- * `latestSeries` and `latestCourses` (`home-shelves.js`). Home draws the
- * series and the courses; the Latest page draws all three. Each total is the
- * whole shelf, what "See all" would open, which a cut row cannot say on its
- * own.
+ * `latestSeries`, `latestCourses` and `latestDocumentaries`
+ * (`home-shelves.js`). Home draws the series, the documentaries and the
+ * courses; the Latest page draws all four. Each total is the whole shelf,
+ * what "See all" would open, which a cut row cannot say on its own.
+ * [documentaries] are titles, not folders: a documentary plays as itself,
+ * on its own or in a folder, as the Documentaries page's "Recently added" has it.
  */
 data class Latest(
     val movies: List<Entry.Film>,
@@ -25,13 +27,16 @@ data class Latest(
     val moviesTotal: Int,
     val seriesTotal: Int,
     val coursesTotal: Int,
+    val documentaries: List<MediaSet> = emptyList(),
+    val documentariesTotal: Int = 0,
 )
 
 /**
  * [Latest] over [shelves]: films and series cut to [posterLimit], courses to
  * [limit], as the web's `homeShelves` cuts them — a course row is a list, not
- * a row of posters, and keeps the shorter limit. No anime or documentaries:
- * the web never draws either as a Latest row.
+ * a row of posters, and keeps the shorter limit. Documentaries are cut to
+ * [posterLimit] too, singles before folders' episodes on a tie, in the web's
+ * order. No anime: the web never draws it as a Latest row.
  */
 fun latestOf(
     shelves: List<Shelf>,
@@ -42,6 +47,10 @@ fun latestOf(
     val movies = entriesOf(Department.MOVIES)
     val series = entriesOf(Department.SERIES)
     val courses = entriesOf(Department.TUTORIALS)
+    val docus = entriesOf(Department.DOCUMENTARIES)
+    val documentaries =
+        docus.filterIsInstance<Entry.Film>().map { it.set } +
+            docus.filterIsInstance<Entry.Collection>().flatMap { playOrder(it.divisions) }
     return Latest(
         movies = newestFirst(movies, posterLimit).filterIsInstance<Entry.Film>(),
         series = newestFirst(series, posterLimit).filterIsInstance<Entry.Collection>(),
@@ -49,6 +58,8 @@ fun latestOf(
         moviesTotal = movies.size,
         seriesTotal = series.size,
         coursesTotal = courses.size,
+        documentaries = documentaries.sortedByDescending(MediaSet::addedAt).take(posterLimit),
+        documentariesTotal = documentaries.size,
     )
 }
 

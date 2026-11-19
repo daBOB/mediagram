@@ -122,6 +122,12 @@ export function renderHome(main, shelves, editorial, { play, playScene, byId, op
       href({ page: "department", section: "series" }),
       collectionGrid("series", shelves.latestSeries, (name) => open("series", name), { mode: GRID, strip: true })));
   }
+  if (shelves.latestDocumentaries.length > 0) {
+    // A documentary plays from its plate, as on the Documentaries page: it has no page of its own.
+    main.append(section("docu-row", "latestDocumentaries", "Latest documentaries", shelves.totals.latestDocumentaries,
+      href({ page: "department", section: "documentaries" }),
+      movieGrid(shelves.latestDocumentaries, play, { mode: GRID, strip: true })));
+  }
   if (shelves.latestCourses.length > 0) {
     // An index, not plates, for the reason the Tutorials shelf is one: a
     // course has no artwork, so a plate would be a poster-shaped blank.

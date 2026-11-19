@@ -26,6 +26,8 @@ export interface HomeShelves {
   latestMovies: CatalogSet[];
   latestSeries: Collection[];
   latestCourses: Collection[];
+  /** Documentaries, singles and folders' alike, newest arrival first. */
+  latestDocumentaries: CatalogSet[];
   /** How much is behind each row, for its heading: the whole shelf, not the six. */
   totals: {
     continues: number;
@@ -33,6 +35,7 @@ export interface HomeShelves {
     latestMovies: number;
     latestSeries: number;
     latestCourses: number;
+    latestDocumentaries: number;
   };
 }
 

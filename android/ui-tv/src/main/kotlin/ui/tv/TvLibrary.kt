@@ -295,7 +295,7 @@ internal fun TvLibrary(
 
                             FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
 
-                            FrameKind.LATEST -> TvLatestFrame(at, (ready?.pages ?: LibraryPages.Empty).latest, watch, heldIds, restore, here, leave)
+                            FrameKind.LATEST -> TvLatestFrame(at, (ready?.pages ?: LibraryPages.Empty).latest, watch, heldIds, restore, here, leave, ask)
 
                             FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
 

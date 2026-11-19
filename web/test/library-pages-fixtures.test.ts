@@ -57,7 +57,8 @@ interface Case {
       latestMovies: string[];
       latestSeries: string[];
       latestCourses: string[];
-      totals: { continues: number; nextUp: number; latestMovies: number; latestSeries: number; latestCourses: number };
+      latestDocumentaries: string[];
+      totals: { continues: number; nextUp: number; latestMovies: number; latestSeries: number; latestCourses: number; latestDocumentaries: number };
     };
     editorial: {
       cover: string[];
@@ -112,6 +113,7 @@ describe("the shared library-pages fixture", () => {
         latestMovies: ids(shelves.latestMovies),
         latestSeries: names(shelves.latestSeries),
         latestCourses: names(shelves.latestCourses),
+        latestDocumentaries: ids(shelves.latestDocumentaries),
         totals: shelves.totals,
       }).toEqual(one.expect.home);
 

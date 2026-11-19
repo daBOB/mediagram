@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.width
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -40,7 +41,8 @@ class LatestScreenTest : BrowsePageTest() {
         render()
         compose.onNodeWithText("Latest").assertExists()
         compose.onNodeWithText("NEWEST ARRIVALS FIRST").assertExists()
-        listOf("Movies", "Series", "Tutorials").forEach { compose.onNodeWithText(it).assertExists() }
+        // The headings, not the jump line's buttons, which name the same parts.
+        listOf("Movies", "Series", "Tutorials").forEach { compose.onNode(hasText(it) and isHeading()).assertExists() }
         compose.onAllNodesWithText("Latest ", substring = true).assertCountEquals(0)
     }
 
@@ -59,5 +61,20 @@ class LatestScreenTest : BrowsePageTest() {
         assertTrue(row.getUnclippedBoundsInRoot().width >= 350.dp, "expected a full-width row, got ${row.getUnclippedBoundsInRoot().width}")
         row.performClick()
         assertEquals("COURSE/Forex", opened)
+    }
+
+    /** Documentaries are plates that play, and the line under the heading names every part, each a button that jumps to it. */
+    @Test fun documentariesPlayFromTheirPlatesAndTheLineJumpsToEachPart() {
+        var played: String? = null
+        val withDocs = shelves + Shelf(Department.DOCUMENTARIES, listOf(Entry.Film(film("doc", addedAt = 3))))
+        show {
+            LatestScreen(
+                libraryPagesOf(withDocs, WatchSnapshot.Empty, emptySet(), now = 0).latest, WatchSnapshot.Empty, emptySet(), columns = 3,
+                onOpenTitle = {}, onOpenCollection = {}, onPlay = { played = it },
+            )
+        }
+        listOf("Movies", "Series", "Documentaries", "Tutorials").forEach { compose.onNode(hasText(it) and hasClickAction()).assertExists() }
+        compose.onNode(hasText("Film doc") and hasClickAction()).performClick()
+        assertEquals("doc", played)
     }
 }

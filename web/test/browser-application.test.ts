@@ -324,6 +324,24 @@ test("series page shows one season's episodes and picks another from its season 
   expect(page()).not.toContain("Episode one");
 });
 
+test("Latest and Home carry the newest documentaries, and Latest jumps to each of its parts", async () => {
+  catalog = JSON.stringify([
+    { ...film("A film"), addedAt: 3 },
+    { ...film("An episode"), kind: "ep", show: "A show", season: 1, episode: 1, addedAt: 2 },
+    { ...film("A documentary"), kind: "docu", addedAt: 1 },
+  ]);
+  await start();
+  await env.navigate("#/home");
+  expect(page()).toContain("Latest documentaries");
+  expect(page()).toContain("A documentary");
+  await env.navigate("#/latest");
+  const parts = descendants(env.node("main")).filter((node) => node.className === "shelf-sub").map(textOf);
+  expect(parts).toEqual(["Movies", "Series", "Documentaries"]);
+  const jumps = descendants(env.node("main")).find((node) => node.className === "jump-nav")!;
+  expect(descendants(jumps).filter((node) => node.tagName === "BUTTON").map(textOf)).toEqual(parts);
+  expect(page()).toContain("A documentary");
+});
+
 test("course pages preserve nested folders, breadcrumbs and document links", async () => {
   catalog = JSON.stringify([
     { ...film("Lesson"), kind: "tut", show: "Course", path: "Basics/Advanced" },
