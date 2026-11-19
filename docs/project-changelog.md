@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.190.1 — S0undTV's newest build on funstation
+
+**Changed** (funstation)
+
+- **funstation installs S0undTV's newest beta** (beta_148 tonight), not the stable 1.5.10 from 2024, at the user's request. The beta targets the current Android, so Play Protect lets it through without the "Install anyway" step. The script picks the highest-numbered `beta_N.apk` of the repository's "beta" release, which keeps only its newest few builds.
+
 ## 0.190.0 — S0undTV and funstation's own remote
 
 **Added** (funstation)

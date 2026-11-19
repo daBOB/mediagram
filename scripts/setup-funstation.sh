@@ -368,17 +368,16 @@ Categories=AudioVideo;Video;
 EOF
 kwriteconfig6 --file ~/.local/share/applications/waydroid.org.smarttube.stable.desktop \
   --group "Desktop Entry" --key NoDisplay true
-# S0undTV (Twitch for the TV), its standalone build, which updates itself. Its "latest"
-# release is a beta, so the newest v-tag is the stable one. Play Protect blocks it as built
-# for an old Android and holds the install until "More details, Install anyway" on the TV.
+# S0undTV (Twitch for the TV), the newest build of its "beta" release, which the user chose:
+# the v-tagged stable line stopped at 1.5.10 in 2024, and Play Protect blocks that one as
+# built for an old Android. The beta release keeps only its newest few builds, by number.
 if waydroid status | grep -q 'Session:.*RUNNING'; then
   if ! sudo waydroid shell -- pm path com.s0und.s0undtv >/dev/null 2>&1; then
-    url=$(curl -fsSL https://api.github.com/repos/S0und/S0undTV/releases |
-      jq -r '[.[] | select(.tag_name | startswith("v"))][0].assets[]
-        | select(.name | endswith("_standalone.apk")) | .browser_download_url')
+    url=$(curl -fsSL https://api.github.com/repos/S0und/S0undTV/releases/tags/beta |
+      jq -r '[.assets[] | select(.name | test("^beta_[0-9]+\\.apk$"))]
+        | max_by(.name | ltrimstr("beta_") | rtrimstr(".apk") | tonumber) | .browser_download_url')
     tmp=~/.local/share/waydroid/data/local/tmp/s0undtv.apk
     sudo curl -fsSL -o "$tmp" "$url"
-    echo "On the TV, Play Protect asks about S0undTV: More details, then Install anyway."
     sudo waydroid shell -- pm install -r /data/local/tmp/s0undtv.apk || true
     sudo rm -f "$tmp"
   fi
