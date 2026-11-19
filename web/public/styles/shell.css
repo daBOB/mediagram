@@ -170,10 +170,10 @@ main.turning { animation: page-in 420ms var(--ease) backwards; }
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
 }
-/* Shaped like the cover story, not a shelf the home page no longer has, so the
-   catalogue arrives into the page it is loading instead of replacing another. */
-.loading-state { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 24px;
-  height: var(--cover-height); padding: 0 var(--gutter) 96px;
+/* The whole screen under the masthead's dark glass, the film leader and its words
+   in its middle: alone on an empty page, one in a corner reads as misplaced. */
+.loading-state { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 24px;
+  height: 100svh; padding: 0 var(--gutter); text-align: center;
   margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) 0; background: #0a0a0b; }
 .loading-state p { margin: 0; color: var(--on-image-2); }
 
@@ -182,7 +182,7 @@ main.turning { animation: page-in 420ms var(--ease) backwards; }
   .departments a { padding-inline: 12px; }
 }
 @media (max-width: 900px) {
-  .loading-state { height: 84vh; margin: calc(-1 * var(--main-top)) -16px 0; padding: 0 16px 104px; }
+  .loading-state { height: 84vh; margin: calc(-1 * var(--main-top)) -16px 0; padding: 0 16px; }
   :root { --rail-width: 0px; --masthead-height: auto; --main-top: 24px; }
   .library-rail {
     position: static;

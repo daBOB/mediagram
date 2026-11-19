@@ -25,20 +25,26 @@ sealed interface ProfileRequest {
         val pin: String,
     ) : ProfileRequest
 
+    /** [household] is where the owner places the new grown-up; null is the maker's own. */
     class CreateGrownUp(
         val actorId: String,
         val pin: String,
         val name: String,
         val newPin: String,
+        val household: String? = null,
     ) : ProfileRequest
 
-    /** [age] is the new kid's limit, 6 or 12; [dailyLimit] its minutes per day, null for none. */
+    /**
+     * [age] is the new kid's limit, 6 or 12; [dailyLimit] its minutes per day, null for none;
+     * [parentId] the grown-up it belongs to, null for the maker (the owner may name any).
+     */
     class CreateKid(
         val actorId: String,
         val pin: String,
         val name: String,
         val age: Int,
         val dailyLimit: Int? = null,
+        val parentId: String? = null,
     ) : ProfileRequest
 
     /** A grown-up's kids go with it. */

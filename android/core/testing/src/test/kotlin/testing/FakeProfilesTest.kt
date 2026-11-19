@@ -68,8 +68,8 @@ class FakeProfilesTest {
             core.roles.formerNames["a"] = listOf("Mia")
             assertEquals(ProfileOutcome.NameTaken, core.createHousehold("a", "1234", "Loft", NewHouseholdAdmin.New(" MIA ", "5678")))
             assertEquals(listOf("Home"), core.households().households.map { it.name })
-            assertEquals(ProfileOutcome.NameTaken, core.createGrownUp("a", "1234", "mia", "5678"))
-            assertEquals(ProfileOutcome.Done, core.createGrownUp("a", "1234", "Mira", "5678"))
+            assertEquals(ProfileOutcome.NameTaken, core.createGrownUp("a", "1234", "mia", "5678", null))
+            assertEquals(ProfileOutcome.Done, core.createGrownUp("a", "1234", "Mira", "5678", null))
         }
     }
 

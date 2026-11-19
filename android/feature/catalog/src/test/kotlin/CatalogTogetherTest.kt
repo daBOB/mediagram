@@ -2,7 +2,7 @@ package catalog
 
 import app.cash.turbine.test
 import data.CatalogEnrichmentFetcher
-import data.LibraryUpdateCoordinator
+import data.LibraryUpdate
 import data.LiveSession
 import data.WatchStateRepository
 import data.settings.InMemoryTmdbSettings
@@ -65,7 +65,7 @@ class CatalogTogetherTest {
     ): CatalogViewModel {
         val repository = FakeCatalogRepository(given = listOf(family, grown, episode))
         val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings())
-        return CatalogViewModel(repository, watch, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, shelving = Dispatchers.Main.immediate)
+        return CatalogViewModel(repository, watch, LibraryUpdate(repository, enrichment), togetherLive = together, shelving = Dispatchers.Main.immediate)
     }
 
     @After

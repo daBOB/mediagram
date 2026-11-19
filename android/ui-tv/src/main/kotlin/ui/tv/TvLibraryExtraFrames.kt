@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import catalog.BrowseViewModel
 import catalog.CatalogUiState
+import catalog.Latest
 import catalog.Shelf
 import catalog.allTitles
 import catalog.franchisePageOf
@@ -134,7 +135,7 @@ internal fun TvGenresFrame(
 @Composable
 internal fun TvLatestFrame(
     at: LibraryPositions,
-    shelves: List<Shelf>,
+    latest: Latest,
     watch: WatchSnapshot,
     heldIds: Set<String>,
     restore: TvRestoreKeys,
@@ -143,7 +144,7 @@ internal fun TvLatestFrame(
 ) {
     BackHandler(onBack = leave)
     TvLatestPage(
-        shelves = shelves,
+        latest = latest,
         watch = watch,
         heldIds = heldIds,
         onOpenTitle = { setId ->

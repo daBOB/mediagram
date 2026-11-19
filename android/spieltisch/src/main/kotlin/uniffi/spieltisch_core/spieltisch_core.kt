@@ -702,8 +702,6 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
-    external fun uniffi_spieltisch_core_checksum_func_game_catalogue(
-    ): Int
     external fun uniffi_spieltisch_core_checksum_func_night_back(
     ): Int
     external fun uniffi_spieltisch_core_checksum_func_start_night(
@@ -738,8 +736,6 @@ internal object UniffiLib {
     external fun uniffi_spieltisch_core_fn_init_callback_vtable_mediaimages(`vtable`: UniffiVTableCallbackInterfaceMediaImages,
     ): Unit
     external fun uniffi_spieltisch_core_fn_method_mediaimages_fetch(`ptr`: Long,`key`: RustBuffer.ByValue,`kind`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-    external fun uniffi_spieltisch_core_fn_func_game_catalogue(uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun uniffi_spieltisch_core_fn_func_night_back(
     ): Long
@@ -866,9 +862,6 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if ((lib.uniffi_spieltisch_core_checksum_func_game_catalogue() and 0xFFFF) != 32957) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_spieltisch_core_checksum_func_night_back() and 0xFFFF) != 48192) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1107,33 +1100,6 @@ private class JavaLangRefCleanable(
     val cleanable: java.lang.ref.Cleaner.Cleanable
 ) : UniffiCleaner.Cleanable {
     override fun clean() = cleanable.clean()
-}
-
-/**
- * @suppress
- */
-public object FfiConverterUByte: FfiConverter<UByte, Byte> {
-    override fun lift(value: Byte): UByte {
-        return value.toUByte()
-    }
-
-    fun lift(value: Int): UByte {
-        return value.toUByte()
-    }
-
-    override fun read(buf: ByteBuffer): UByte {
-        return lift(buf.get())
-    }
-
-    override fun lower(value: UByte): Byte {
-        return value.toByte()
-    }
-
-    override fun allocationSize(value: UByte) = 1UL
-
-    override fun write(value: UByte, buf: ByteBuffer) {
-        buf.put(value.toByte())
-    }
 }
 
 /**
@@ -1547,69 +1513,6 @@ public object FfiConverterTypeMediaImages: FfiConverter<MediaImages, Long> {
 
 
 /**
- * One game on the shelf, as the host's lobby lists it.
- */
-data class GameEntry (
-    /**
-     * The host's name for the game (`GameKind` on the wire), which the TV page takes as `?game=`.
-     */
-    var `kind`: kotlin.String
-    ,
-    /**
-     * The name players read.
-     */
-    var `name`: kotlin.String
-    ,
-    /**
-     * The fewest players the game starts with.
-     */
-    var `minPlayers`: kotlin.UByte
-    ,
-    /**
-     * The most players the game starts with.
-     */
-    var `maxPlayers`: kotlin.UByte
-
-){
-
-
-
-
-
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeGameEntry: FfiConverterRustBuffer<GameEntry> {
-    override fun read(buf: ByteBuffer): GameEntry {
-        return GameEntry(
-            FfiConverterString.read(buf),
-            FfiConverterString.read(buf),
-            FfiConverterUByte.read(buf),
-            FfiConverterUByte.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: GameEntry) = (
-            FfiConverterString.allocationSize(value.`kind`) +
-            FfiConverterString.allocationSize(value.`name`) +
-            FfiConverterUByte.allocationSize(value.`minPlayers`) +
-            FfiConverterUByte.allocationSize(value.`maxPlayers`)
-    )
-
-    override fun write(value: GameEntry, buf: ByteBuffer) {
-            FfiConverterString.write(value.`kind`, buf)
-            FfiConverterString.write(value.`name`, buf)
-            FfiConverterUByte.write(value.`minPlayers`, buf)
-            FfiConverterUByte.write(value.`maxPlayers`, buf)
-    }
-}
-
-
-
-/**
  * Where the box shows the game and where phones join it.
  */
 data class NightUrls (
@@ -1845,49 +1748,8 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 
 
 
-/**
- * @suppress
- */
-public object FfiConverterSequenceTypeGameEntry: FfiConverterRustBuffer<List<GameEntry>> {
-    override fun read(buf: ByteBuffer): List<GameEntry> {
-        val len = buf.getInt()
-        return List<GameEntry>(len) {
-            FfiConverterTypeGameEntry.read(buf)
-        }
-    }
-
-    override fun allocationSize(value: List<GameEntry>): ULong {
-        val sizeForLength = 4UL
-        val sizeForItems = value.map { FfiConverterTypeGameEntry.allocationSize(it) }.sum()
-        return sizeForLength + sizeForItems
-    }
-
-    override fun write(value: List<GameEntry>, buf: ByteBuffer) {
-        buf.putInt(value.size)
-        value.iterator().forEach {
-            FfiConverterTypeGameEntry.write(it, buf)
-        }
-    }
-}
 
 
-
-
-
-
-
-
-        /**
-         * Every game the host can start, in the order its lobby lists them.
-         */ fun `gameCatalogue`(): List<GameEntry> {
-            return FfiConverterSequenceTypeGameEntry.lift(
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_spieltisch_core_fn_func_game_catalogue(
-
-        _status)
-}
-    )
-    }
 
 
         /**

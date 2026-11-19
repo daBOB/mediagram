@@ -8,7 +8,7 @@
 
 import { el } from "../dom.js";
 import { playbackFor } from "../link.js";
-import { isWatched, progressOf } from "../watch-state.js";
+import { playedOf, positionOf } from "../film-watch.js";
 import { watchedFraction } from "../resume-point.js";
 
 /**
@@ -32,7 +32,7 @@ export function progressRule(fraction) {
 
 /** The same rule, for a caller holding the set rather than the figure. */
 export function progressRuleFor(set) {
-  return progressRule(watchedFraction(progressOf(set.setId)));
+  return progressRule(watchedFraction(positionOf(set)));
 }
 
 /**
@@ -43,7 +43,7 @@ export function progressRuleFor(set) {
  * label is on the tooltip for anyone who cannot see a glyph.
  */
 export function watchedTick(set) {
-  if (!isWatched(set.setId)) return null;
+  if (!playedOf(set)) return null;
   const tick = el("span", "tick", "✓");
   tick.title = "Watched";
   tick.setAttribute("aria-label", "Watched");
@@ -65,8 +65,21 @@ export function offlineBadge(set) {
   return set.offline === true ? el("span", "badge held", "offline") : null;
 }
 
-/** Whether this set will have to be converted before it plays. */
+/**
+ * How many copies a film held more than once offers; its page and the
+ * chooser list them. Nothing for a title held once.
+ */
+export function versionsBadge(set) {
+  return set.versions ? el("span", "badge", `${set.versions.length} versions`) : null;
+}
+
+/**
+ * Whether this set will have to be converted before it plays. A film held
+ * more than once is answered per copy, on its rows: one copy may play as it
+ * is while another has to be converted.
+ */
 export function transcodeBadge(set) {
+  if (set.versions) return null;
   const decision = playbackFor(set);
   if (decision.kind === "direct") return null;
 

@@ -3,14 +3,41 @@ import type { Connection } from "../net";
 import type { LobbySettings } from "../protocol/LobbySettings";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
-import { inApp } from "./app-bridge";
+import { boardCapable, inApp } from "./app-bridge";
 import { AvatarPicker } from "./AvatarPicker";
-import { QUIZ_MODES } from "../ui/lobby";
+import { LENGTHS, QUIZ_MODES, SPEEDS } from "../ui/lobby";
 import { Token } from "../ui/Token";
 
 type Lobby = Extract<PhoneScreen, { kind: "lobby" }>;
 
-export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby; conn: Connection }) {
+type Props = { me: PlayerInfo; screen: Lobby; conn: Connection; onBecomeBoard: () => void };
+
+type ChoiceProps<T> = { label: string; options: { mode: T; label: string }[]; value: T; pick: (mode: T) => void };
+
+/** One named row of segment buttons for the chosen game: its questions, tempo or length. */
+function Choice<T extends string>({ label, options, value, pick }: ChoiceProps<T>) {
+  return (
+    <div role="group" aria-label={label}>
+      <p className="kicker choice-label" aria-hidden="true">
+        {label}
+      </p>
+      <div className="seg">
+        {options.map((m) => (
+          <button
+            key={m.mode}
+            className={`seg-btn${value === m.mode ? " is-selected" : ""}`}
+            aria-pressed={value === m.mode}
+            onClick={() => pick(m.mode)}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function PhoneLobby({ me, screen, conn, onBecomeBoard }: Props) {
   const { settings } = screen;
   const style = { "--player": me.color } as CSSProperties;
   // A plain-HTTP page cannot keep the screen on (no Wake Lock outside HTTPS, and Chrome ignored a
@@ -22,6 +49,11 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
       {!inApp() && (
         <p className="hint">Tipp: Schalte für den Spieleabend die automatische Bildschirmsperre deines Handys aus, sonst geht es mitten im Spiel aus.</p>
       )}
+      {boardCapable() && settings.game === "kritzelei" && (
+        <button className="cta" onClick={onBecomeBoard}>
+          Als Zeichenbrett verwenden
+        </button>
+      )}
     </>
   );
 
@@ -31,7 +63,7 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
         <Token player={me} size="lg" />
         <h1 className="screen-title">{me.name}</h1>
         <p className="screen-text">
-          {screen.leader_name ? `${screen.leader_name} wählt das Spiel …` : "Das Spiel wird gewählt …"}
+          {screen.leader_name ? `${screen.leader_name} startet das Spiel …` : "Das Spiel wird gewählt …"}
         </p>
         <p className="hint">
           {screen.players === 1 ? "Du bist allein am Tisch." : `Ihr seid zu ${screen.players}.`}
@@ -46,39 +78,36 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
     const next = { ...settings, ...patch };
     conn.send({
       t: "action",
-      action: { t: "configure", game: next.game, quiz_mode: next.quiz_mode, kids_only: next.kids_only, adult: next.adult },
+      action: {
+        t: "configure",
+        game: next.game,
+        quiz_mode: next.quiz_mode,
+        speed: next.speed,
+        length: next.length,
+        kids_only: next.kids_only,
+      },
     });
   };
-  const quiz = settings.game === "quiz";
+  const picked = screen.games.find((g) => g.kind === settings.game);
 
+  // The game is picked on the TV with the remote; the quiz's questions, a game's tempo and length have no place there, so they stay here.
   return (
     <section className="screen lobby lobby-leader" style={style}>
       <header className="lobby-head">
         <p className="kicker">Du startest</p>
-        <h1 className="lobby-title">Was spielen wir?</h1>
+        <h1 className="lobby-title">{picked?.name}</h1>
+        <p className="hint">Gewählt wird am Fernseher.</p>
       </header>
 
-      {screen.games.map(({ kind, name }) => (
-        <div key={kind} className={`game${settings.game === kind ? " is-selected" : ""}`}>
-          <button className="game-pick" aria-pressed={settings.game === kind} onClick={() => configure({ game: kind })}>
-            {name}
-          </button>
-          {quiz && kind === "quiz" && (
-            <div className="seg" role="group" aria-label="Fragen">
-              {QUIZ_MODES.map((m) => (
-                <button
-                  key={m.mode}
-                  className={`seg-btn${settings.quiz_mode === m.mode ? " is-selected" : ""}`}
-                  aria-pressed={settings.quiz_mode === m.mode}
-                  onClick={() => configure({ quiz_mode: m.mode })}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+      {settings.game === "quiz" && (
+        <Choice label="Fragen" options={QUIZ_MODES} value={settings.quiz_mode} pick={(quiz_mode) => configure({ quiz_mode })} />
+      )}
+      {picked?.timed && (
+        <Choice label="Tempo" options={SPEEDS} value={settings.speed} pick={(speed) => configure({ speed })} />
+      )}
+      {picked?.sized && (
+        <Choice label="Dauer" options={LENGTHS} value={settings.length} pick={(length) => configure({ length })} />
+      )}
 
       <div className="toggle-row">
         <div>
@@ -92,23 +121,6 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
           aria-labelledby="kids-label"
           disabled={settings.kids_locked}
           onClick={() => configure({ kids_only: !settings.kids_only })}
-        />
-      </div>
-
-      <div className="toggle-row">
-        <div>
-          <span id="adult-label">Matratzensport (ab 18)</span>
-          <p className="toggle-hint">
-            {settings.kids_only ? "Nicht im Kindermodus" : "Fragen zu Sexualität in Quiz, Kopfnuss und Dreifelder"}
-          </p>
-        </div>
-        <button
-          className="switch"
-          role="switch"
-          aria-checked={settings.adult}
-          aria-labelledby="adult-label"
-          disabled={settings.kids_only}
-          onClick={() => configure({ adult: !settings.adult })}
         />
       </div>
 

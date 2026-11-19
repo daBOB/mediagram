@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
 import catalog.KeptKind
+import catalog.paged
 import catalog.resumeLine
 import catalog.shelvesOf
 import model.ListOfSets
@@ -147,7 +148,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
     private fun withWatch(
         sets: List<MediaSet>,
         watch: WatchSnapshot,
-    ) = CatalogUiState.Ready(shelvesOf(sets), watch = watch)
+    ) = CatalogUiState.Ready(shelvesOf(sets), watch = watch).paged()
 
     private fun showCatalog(
         state: CatalogUiState,

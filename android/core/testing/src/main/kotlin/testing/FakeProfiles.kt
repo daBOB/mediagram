@@ -1,9 +1,9 @@
 package testing
 
 import data.toModel
-import model.HOME_HOUSEHOLD
 import model.RoleAction
 import model.allowed
+import uniffi.mediagram_core.Household
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.ProfileOutcome
 import java.text.Normalizer
@@ -20,9 +20,6 @@ private const val PIN_LENGTH = 4
 
 private val SIX: UByte = 6u
 private val TWELVE: UByte = 12u
-
-/** The two limits a kid may have. */
-private val KIDS_AGES = setOf(SIX, TWELVE)
 
 /** The minutes a daily limit may be, as `manage/daily_limit.rs` checks them. */
 private val DAILY_MINUTES = 1..1440
@@ -45,10 +42,12 @@ private const val MAX_SECTIONS = 16
  * door ([prove]), read against [nowMs], which a test moves rather than waiting.
  */
 class FakeProfiles(
-    private val read: () -> List<Profile>,
-    private val write: (List<Profile>) -> Unit,
+    internal val read: () -> List<Profile>,
+    internal val write: (List<Profile>) -> Unit,
     /** Whether this device has taken in a sync round; a first profile waits for one. */
-    private val synced: () -> Boolean,
+    internal val synced: () -> Boolean,
+    /** The live households, with who runs each: where the owner may place a new grown-up. */
+    internal val households: () -> List<Household>,
     /** A profile left: whatever was its goes with it, and the choice when it was the one chosen. */
     private val removed: (String) -> Unit,
 ) {
@@ -68,7 +67,7 @@ class FakeProfiles(
     // Monotonic rather than derived from the list's size: a create after a
     // delete must not reissue an id a removed row once had, and skipped past
     // any id a test seeded, as the real core's fresh ULID per row never collides.
-    private var nextId = 1
+    internal var nextId = 1
 
     /**
      * As `profiles::list` reads a row: a kid always has a limit, 12 where
@@ -80,44 +79,6 @@ class FakeProfiles(
         } else {
             profile.copy(kidsAge = null, hasPin = profile.id in pins, dailyLimit = null)
         }
-
-    fun createFirst(
-        name: String,
-        newPin: String,
-    ): ProfileOutcome =
-        first(
-            { ProfileOutcome.Invalid.takeUnless { validPin(newPin) } },
-            { unusable(name) },
-            { ProfileOutcome.NotAllowed.takeIf { read().any { !it.kids } } },
-            // Last, once everything else says yes, as `manage.rs` asks it.
-            { ProfileOutcome.NotSynced.takeUnless { synced() } },
-        ) ?: add(name, newPin = newPin, admin = true)
-
-    fun createGrownUp(
-        actorId: String,
-        pin: String,
-        name: String,
-        newPin: String,
-    ): ProfileOutcome =
-        first(
-            { ProfileOutcome.Invalid.takeUnless { validPin(newPin) } },
-            { unusable(name) },
-            { check(actorId, pin, RoleAction.CREATE_GROWN_UP, null) },
-        ) ?: add(name, newPin = newPin, maker = actorId)
-
-    fun createKid(
-        actorId: String,
-        pin: String,
-        name: String,
-        kidsAge: UByte,
-        dailyLimit: UShort? = null,
-    ): ProfileOutcome =
-        first(
-            { ProfileOutcome.Invalid.takeUnless { kidsAge in KIDS_AGES } },
-            { ProfileOutcome.Invalid.takeUnless { validMinutes(dailyLimit) } },
-            { unusable(name) },
-            { check(actorId, pin, RoleAction.CREATE_KID, null) },
-        ) ?: add(name, kidsAge = kidsAge, maker = actorId, dailyLimit = dailyLimit?.toUInt())
 
     /** A grown-up takes the kids it is the parent of with it; a kid takes only itself. */
     fun remove(
@@ -216,25 +177,7 @@ class FakeProfiles(
     }
 
     /** The first refusal any of [checks] finds, asked in order and no further. */
-    private fun first(vararg checks: () -> ProfileOutcome?): ProfileOutcome? = checks.firstNotNullOfOrNull { it() }
-
-    private fun add(
-        name: String,
-        newPin: String? = null,
-        admin: Boolean = false,
-        kidsAge: UByte? = null,
-        maker: String? = null,
-        dailyLimit: UInt? = null,
-    ): ProfileOutcome {
-        val clean = cleanName(name) ?: return ProfileOutcome.Invalid
-        while (read().any { it.id == "p$nextId" }) nextId++
-        val id = "p${nextId++}"
-        val kids = kidsAge != null
-        val household = read().find { it.id == maker }?.household ?: HOME_HOUSEHOLD
-        write(read() + Profile(id, clean, kids = kids, kidsAge = kidsAge, parentId = maker.takeIf { kids }, admin = admin && !kids, dailyLimit = dailyLimit, owner = admin && !kids, household = household))
-        newPin?.let { pins[id] = it }
-        return ProfileOutcome.Done
-    }
+    internal fun first(vararg checks: () -> ProfileOutcome?): ProfileOutcome? = checks.firstNotNullOfOrNull { it() }
 
     private fun update(
         id: String,
@@ -250,8 +193,8 @@ class FakeProfiles(
         return ProfileOutcome.NameTaken.takeIf { read().any { one -> (formerNames[one.id].orEmpty() + one.name).any { normalName(it) == wanted } } }
     }
 
-    /** Somebody there, a grown-up acting, its PIN unless [unproven], then the rule. */
-    private fun check(
+    /** Somebody there (and the target, unless it is a household), a grown-up acting, its PIN unless [unproven], then the rule. */
+    internal fun check(
         actorId: String,
         pin: String,
         action: RoleAction,
@@ -261,7 +204,7 @@ class FakeProfiles(
         val profiles = read().map(::shown)
         val actor = profiles.find { it.id == actorId }
         return first(
-            { ProfileOutcome.NotFound.takeIf { actor == null || (targetId != null && profiles.none { it.id == targetId }) } },
+            { ProfileOutcome.NotFound.takeIf { actor == null || (targetId != null && action != RoleAction.CREATE_GROWN_UP && profiles.none { it.id == targetId }) } },
             // A kid manages nothing, and has no PIN to prove otherwise with.
             { ProfileOutcome.NotAllowed.takeIf { actor?.kids == true } },
             { if (unproven) null else prove(actorId, pin) },
@@ -302,7 +245,7 @@ class FakeProfiles(
     }
 }
 
-private fun validMinutes(minutes: UShort?): Boolean = minutes == null || minutes.toInt() in DAILY_MINUTES
+internal fun validMinutes(minutes: UShort?): Boolean = minutes == null || minutes.toInt() in DAILY_MINUTES
 
 /** Four ASCII digits, nothing else. */
 internal fun validPin(pin: String): Boolean = pin.length == PIN_LENGTH && pin.all { it in '0'..'9' }

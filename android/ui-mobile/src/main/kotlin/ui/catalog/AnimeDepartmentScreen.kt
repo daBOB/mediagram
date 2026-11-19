@@ -14,15 +14,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import catalog.AnimeDepartment
-import catalog.AnimeLibrary
 import catalog.CatalogUiState
 import catalog.Department
 import catalog.Entry
-import catalog.Shelf
-import catalog.allSetsById
-import catalog.animeDepartmentOf
 import catalog.animeLineOf
-import catalog.resumeCardsOf
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -36,7 +31,6 @@ internal const val ANIME_DEPT_TEST_TAG = "anime-department"
  */
 @Composable
 internal fun AnimeDepartmentTab(
-    shelf: Shelf,
     state: CatalogUiState.Ready,
     columns: Int,
     onOpenTitle: (String) -> Unit,
@@ -44,15 +38,7 @@ internal fun AnimeDepartmentTab(
     gridState: LazyGridState = rememberLazyGridState(),
     onPlay: (String) -> Unit,
 ) {
-    val byId = remember(state.shelves) { allSetsById(state.shelves) }
-    val library = remember(shelf) {
-        AnimeLibrary(
-            shows = shelf.entries.filterIsInstance<Entry.Collection>(),
-            films = shelf.entries.filterIsInstance<Entry.Film>().map { it.set },
-        )
-    }
-    val department = remember(library, byId, state.watch) { animeDepartmentOf(library, byId, state.watch) }
-    department?.let {
+    state.pages.anime?.let {
         AnimeDepartmentScreen(
             department = it,
             watch = state.watch,
@@ -86,9 +72,7 @@ internal fun AnimeDepartmentScreen(
 ) {
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-    val resumeCards = remember(department.continuing, department.nextUp, watch, heldIds) {
-        resumeCardsOf(department.continuing, department.nextUp, watch, heldIds)
-    }
+    val resumeCards = department.resumeCards
     val reveals = rememberReveals()
 
     LazyVerticalGrid(

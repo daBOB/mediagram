@@ -11,7 +11,7 @@ use rand::rngs::StdRng;
 pub use crate::dreifelder_config::DreifelderConfig;
 use crate::dreifelder_rules::{Tally, placement_scores};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::quiz_config::{Answer, Question, Round};
 use crate::room_seats::Player;
 
@@ -135,16 +135,20 @@ impl Game for DreifelderGame {
         }
     }
 
-    fn phone_screen(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-        self.phone_view(view, player)
+    fn phone_screen(&self, _view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+        self.phone_view(player)
     }
 
     fn tv_scene(&self, _view: &ViewCtx) -> TvScene {
         self.tv_view()
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.tally.players())
+    }
+
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        (self.stage == Stage::Final).then(|| Ranking::in_order(self.order.iter().copied()))
     }
 }
 

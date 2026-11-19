@@ -1,7 +1,7 @@
 //! What the phones and the TV show for each Preisfrage stage.
 
 use crate::articles::{MAX_CENTS, article_photo_url};
-use crate::game::ViewCtx;
+use crate::game::unasked;
 use crate::preisfrage::{PreisfrageGame, Stage};
 use crate::protocol::{
     ArticleView, PhoneScreen, PlayerId, PreisfrageScene, PreisfrageStage, PriceKeypad, Tone, TvScene,
@@ -30,18 +30,9 @@ impl PreisfrageGame {
         }
     }
 
-    pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+    pub(crate) fn phone_view(&self, player: PlayerId) -> PhoneScreen {
         match self.stage {
-            Stage::Final => {
-                let standings = self.standings();
-                let mine = standings.iter().find(|s| s.player == player);
-                PhoneScreen::Final {
-                    rank: mine.map_or(standings.len() as u8 + 1, |s| s.place),
-                    of: view.players.len() as u8,
-                    score: mine.map_or(0, |s| i32::try_from(s.points).unwrap_or(i32::MAX)),
-                    can_restart: view.leader == Some(player),
-                }
-            }
+            Stage::Final => unasked(),
             _ if !self.playing.contains(&player) => {
                 PhoneScreen::Wait { title: "Preisfrage läuft".into(), text: Some("Beim nächsten Artikel bist du dabei.".into()) }
             }

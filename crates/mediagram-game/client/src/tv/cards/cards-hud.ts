@@ -5,8 +5,9 @@
 // atlas, so they need no texture of their own.
 
 import * as THREE from "three";
+import { HUD_FONT } from "../table/hud-font";
 import type { Spot } from "./cards-layout";
-import { COLS, HUD_FONT, ROWS, printNumbers } from "./cards-print";
+import { COLS, ROWS, printNumbers } from "./cards-print";
 import { canvasOf } from "./cards-world";
 
 export interface HudPlayer {

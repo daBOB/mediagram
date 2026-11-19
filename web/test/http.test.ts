@@ -677,6 +677,16 @@ describe("releasing a transcode", () => {
     }
   });
 
+  test("the fixture's HEVC is decoded on the GPU, as the index's codec says", async () => {
+    const { specs, server } = await recordingServer(SESSION);
+    try {
+      await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`, START);
+      expect(specs[0]?.gpuDecode).toBe(true);
+    } finally {
+      await server.close();
+    }
+  });
+
   test("a codec the policy does not know is not negotiated", async () => {
     const { specs, server } = await recordingServer(SESSION);
     try {

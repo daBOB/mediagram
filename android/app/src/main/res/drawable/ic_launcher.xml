@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The player's film leader, the countdown it shows while a film loads, on the player's dark paper. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#1B1B1F"
-        android:pathData="M0,0h108v108h-108z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,24a30,30 0,1 0,0.1 0z M54,42a12,12 0,1 1,-0.1 0z" />
+    <path android:fillColor="#0d0d0e" android:pathData="M0,0h108v108h-108z" />
+    <path android:fillColor="#e57a61" android:fillAlpha="0.85" android:pathData="M54,54L54,29A25,25 0 1,1 29,54z" />
+    <path android:strokeColor="#f3efe7" android:strokeWidth="2.6" android:pathData="M20,54a34,34 0 1,0 68,0a34,34 0 1,0 -68,0z" />
+    <path android:strokeColor="#f3efe7" android:strokeWidth="1.6" android:pathData="M29,54a25,25 0 1,0 50,0a25,25 0 1,0 -50,0z" />
+    <path android:strokeColor="#f3efe7" android:strokeAlpha="0.45" android:strokeWidth="1.2" android:pathData="M16,54H92M54,16V92" />
+    <path android:fillColor="#f3efe7" android:pathData="M52.87 53.75 52.43 53.26Q52.7 53.19 53.04 53.15Q53.37 53.12 53.73 53.09Q54.09 53.06 54.47 53.06Q57.11 53.06 59.04 53.86Q60.97 54.65 62 56.13Q63.04 57.62 63.04 59.72Q63.04 62.08 61.88 63.83Q60.73 65.57 58.64 66.55Q56.56 67.52 53.69 67.52Q50.94 67.52 49.08 66.78Q47.21 66.04 46.26 64.76Q45.31 63.49 45.31 61.9Q45.31 60.55 46.09 59.73Q46.87 58.91 48.06 58.91Q49.27 58.91 49.89 59.6Q50.51 60.28 50.51 61.43V63.16Q50.51 64.49 51.34 65.34Q52.18 66.19 53.75 66.19Q54.94 66.19 55.84 65.57Q56.75 64.96 57.27 63.73Q57.78 62.5 57.78 60.57Q57.78 57.58 56.58 56.19Q55.39 54.79 53.01 54.79H51.82Q51.3 54.79 51.05 54.58Q50.8 54.36 50.8 53.96Q50.8 53.66 50.95 53.4Q51.1 53.14 51.52 52.74L59.63 44.55L59.78 45.99H49.81Q49.19 45.99 48.85 46.21Q48.51 46.42 48.38 46.94L47.9 48.85Q47.83 49.21 47.58 49.43Q47.34 49.64 46.91 49.64Q46.48 49.63 46.22 49.38Q45.95 49.14 46.01 48.64L46.6 42.98Q46.66 42.41 47.06 42.08Q47.47 41.76 48.19 41.76H61.99Q62.68 41.76 62.98 41.94Q63.29 42.12 63.29 42.5Q63.29 42.79 63.08 43.13Q62.87 43.47 62.21 44.12Z" />
 </vector>

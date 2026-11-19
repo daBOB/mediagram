@@ -27,6 +27,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import model.HouseholdWords
 import model.Profile
 import org.junit.After
 import org.junit.Before
@@ -36,6 +37,7 @@ import org.robolectric.android.controller.ActivityController
 import testing.FakeCore
 import ui.tv.catalog.films
 import ui.tv.profile.TvManageProfilesTag
+import ui.tv.profile.tvManagerTileTag
 import ui.tv.profile.tvPinKeyTag
 import ui.tv.setup.TvTextQuestionFieldTag
 
@@ -93,19 +95,16 @@ abstract class TvProfilesHarness {
         compose.onAllNodesWithText("Who's watching?").assertCountEquals(0)
     }
 
-    /** From the picker's Manage profiles, or [fromPicker] not, from the Profiles page's own row → who you are → that grown-up's PIN. */
+    /** From the picker's Manage profiles, or [fromPicker] not, from the Profiles page's own row → Who's managing? → [who]'s tile → their PIN. */
     internal fun openManageAs(
-        who: SemanticsMatcher,
+        who: String,
         pin: String,
         fromPicker: Boolean = true,
     ) {
-        if (fromPicker) {
-            walkTo(hasTestTag(TvManageProfilesTag), Key.DirectionDown)
-            press(Key.DirectionCenter)
-        }
-        compose.onNode(rowOf("Manage profiles")).assertIsFocused()
+        if (fromPicker) walkTo(hasTestTag(TvManageProfilesTag), Key.DirectionDown) else compose.onNode(rowOf("Manage profiles")).assertIsFocused()
         press(Key.DirectionCenter)
-        walkTo(who, Key.DirectionDown)
+        compose.onNodeWithText(HouseholdWords.WHOS_MANAGING).assertExists()
+        walkTo(hasTestTag(tvManagerTileTag(who)), Key.DirectionRight)
         press(Key.DirectionCenter)
         pin(pin)
         compose.onNodeWithText("Manage profiles").assertExists()

@@ -1,0 +1,17 @@
+/* Kritzelei on the TV: paper at 16:9 in the middle, drawer and clock left, scores right. Sizes in vh/vw. */
+.tv-kz { position: fixed; inset: 0; display: grid; grid-template-columns: 19vw 1fr 17vw; gap: 2vw; align-items: center; padding: 4vh 2.5vw; }
+.kz-left { display: grid; justify-items: center; gap: 2.4vh; text-align: center; }
+.kz-name { font: 800 4vh/1.1 var(--display); }
+.kz-hint { font: 700 2.8vh/1.25 var(--body); color: var(--muted); min-height: 7vh; }
+.kz-clock { width: 15vh; height: 15vh; border-radius: 50%; display: grid; place-items: center; }
+.kz-clock b { width: 12.2vh; height: 12.2vh; border-radius: 50%; background: var(--felt-deep); color: var(--card); display: grid; place-items: center; font: 800 6vh/1 var(--display); }
+.kz-stage { display: grid; justify-items: center; gap: 2vh; min-width: 0; }
+.kz-paper { width: 100%; aspect-ratio: 16 / 9; max-height: 80vh; background: var(--card); border-radius: 2vh; box-shadow: 0 2.8vh 5.6vh rgba(0, 0, 0, 0.35), 0 0 0 0.6vh var(--card-edge) inset; }
+.kz-word { font: 800 9vh/1 var(--display); color: var(--yellow); }
+.kz-result { font: 800 3.6vh/1.1 var(--display); }
+.kz-scores { list-style: none; padding: 0; margin: 0; display: grid; gap: 1.6vh; }
+.kz-scores li { display: flex; align-items: center; gap: 1vw; font: 700 2.6vh var(--body); }
+.kz-scores li span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kz-scores b { font: 800 3.2vh var(--display); color: var(--yellow); }
+.kz-scores .is-drawer span { color: var(--yellow); }
+.kz-banner { position: absolute; left: 50%; bottom: 3vh; transform: translateX(-50%); padding: 1.2vh 2vw; border-radius: 1.2vh; background: var(--yellow); color: var(--ink); font: 800 2.6vh var(--display); }

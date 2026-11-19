@@ -3,7 +3,7 @@
 //! across styles rather than hiding behind one strategy.
 
 use super::board::HOTELS;
-use super::live_asks::{Ask, Opt};
+use super::live_asks::{Choices, Opt};
 use super::rules::{Permit, Table};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -98,11 +98,11 @@ impl Bot {
         (bid >= 100).then_some(bid)
     }
 
-    /// The index of the option the bot answers `ask` with for `seat`. A
+    /// The index of the option the bot answers `choices` with for `seat`. A
     /// playing bot rolls again after a 6, and on a Doppelt it cannot pay
     /// raises the money when its other properties, sold to the bank, cover the shortfall.
-    pub(crate) fn pick(&self, t: &Table, seat: usize, ask: &Ask) -> usize {
-        let opts = &ask.opts;
+    pub(crate) fn pick(&self, t: &Table, seat: usize, choices: &Choices) -> usize {
+        let opts = &choices.opts;
         let at = |want: Option<Opt>| want.and_then(|w| opts.iter().position(|&o| o == w));
         let mut hotels: Vec<u8> = opts.iter().filter_map(|o| o.hotel()).collect();
         hotels.dedup();

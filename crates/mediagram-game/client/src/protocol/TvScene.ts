@@ -5,11 +5,14 @@ import type { FluechtigScene } from "./FluechtigScene";
 import type { GameEntry } from "./GameEntry";
 import type { GrandAlleeScene } from "./GrandAlleeScene";
 import type { KopfnussScene } from "./KopfnussScene";
+import type { KritzeleiScene } from "./KritzeleiScene";
+import type { LetztesWortScene } from "./LetztesWortScene";
 import type { LobbySettings } from "./LobbySettings";
 import type { PosterScene } from "./PosterScene";
 import type { PreisfrageScene } from "./PreisfrageScene";
 import type { QuizScene } from "./QuizScene";
 import type { RaceScene } from "./RaceScene";
+import type { ZuendstoffScene } from "./ZuendstoffScene";
 
 export type TvScene = { "kind": "lobby", min_players: number, settings: LobbySettings, leader_name: string | null, 
 /**
@@ -19,4 +22,8 @@ blocked: string | null,
 /**
  * The game catalogue, in lobby order.
  */
-games: Array<GameEntry>, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, } | { "kind": "cards", scene: CardsScene, } | { "kind": "kopfnuss", scene: KopfnussScene, } | { "kind": "grand_allee", scene: GrandAlleeScene, } | { "kind": "dreifelder", scene: DreifelderScene, } | { "kind": "fluechtig", scene: FluechtigScene, } | { "kind": "preisfrage", scene: PreisfrageScene, };
+games: Array<GameEntry>, 
+/**
+ * A drawing board is connected.
+ */
+board: boolean, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, } | { "kind": "cards", scene: CardsScene, } | { "kind": "kopfnuss", scene: KopfnussScene, } | { "kind": "grand_allee", scene: GrandAlleeScene, } | { "kind": "dreifelder", scene: DreifelderScene, } | { "kind": "fluechtig", scene: FluechtigScene, } | { "kind": "preisfrage", scene: PreisfrageScene, } | { "kind": "kritzelei", scene: KritzeleiScene, } | { "kind": "zuendstoff", scene: ZuendstoffScene, } | { "kind": "letztes_wort", scene: LetztesWortScene, };

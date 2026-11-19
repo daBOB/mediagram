@@ -9,6 +9,9 @@ import catalog.CollectionKind
 import catalog.Entry
 import catalog.MenuScreen
 import catalog.firstItemOf
+import catalog.listedOf
+import catalog.playedOf
+import catalog.versionRowsOf
 import catalog.seriesResumeFor
 import catalog.similarShows
 import catalog.similarTo
@@ -46,7 +49,9 @@ internal fun TvTitleFrame(
 ) {
     TvResolvedBranch(title, catalogState, leave) { set ->
         val credits = rememberTitleCredits(set.posterKey, catalogViewModel::titleCredits)
-        val similar = remember(set, allFilms, watchedIds) { similarTo(set, allFilms) { it.setId in watchedIds } }
+        val similar = remember(set, allFilms, watchedIds) { similarTo(set, allFilms) { playedOf(it, watchedIds) } }
+        val heldIds = (catalogState as? CatalogUiState.Ready)?.heldIds.orEmpty()
+        val versions = remember(set, watch, heldIds) { if (set.versions.isEmpty()) emptyList() else versionRowsOf(set, watch, heldIds) }
         TvTitlePage(
             set = set,
             info = rememberTitleInfo(set.posterKey, catalogViewModel::titleInfo),
@@ -88,8 +93,14 @@ internal fun TvTitleFrame(
                 },
             // Films only here, as on the phone — an episode's own control sits on its row of the show page.
             preload = if (set.kind == Kind.MOVIE) rememberFilmPreloadUi(set, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
-            watchlisted = set.setId in watch.watchlist,
+            watchlisted = listedOf(set, watch.watchlist),
             onToggleWatchlist = { catalogViewModel.toggleWatchlist(set.setId) },
+            versions = versions,
+            // A copy picked on its own page plays as it is; only a card that plays straight away asks.
+            onPlayVersion = { copy ->
+                restore.forget(here)
+                at.openPlayer(copy.setId)
+            },
         )
     }
 }

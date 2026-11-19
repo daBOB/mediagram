@@ -121,16 +121,16 @@ fn existing(id: &str, new_pin: Option<&str>) -> NewHouseholdAdmin {
 #[test]
 fn a_households_admin_adds_a_grown_up_into_its_own_household() {
     let store = store_with(&[grown_up("owner", "home", true, 1), household("flat", Some("maja")), grown_up("maja", "flat", false, 2)]);
-    assert_eq!(store.run(|m| m.create_grown_up("maja", PIN, "Lena", "5678")), Done);
+    assert_eq!(store.run(|m| m.create_grown_up("maja", PIN, "Lena", "5678", None)), Done);
     assert_eq!(store.named("Lena").household, "flat");
-    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Paul", "5678")), Done);
+    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Paul", "5678", None)), Done);
     assert_eq!(store.named("Paul").household, "home");
 }
 
 #[test]
 fn a_kid_is_made_in_its_parents_household() {
     let store = store_with(&[grown_up("owner", "home", true, 1), household("flat", Some("maja")), grown_up("maja", "flat", false, 2)]);
-    assert_eq!(store.run(|m| m.create_kid("maja", PIN, "Mia", 6, None)), Done);
+    assert_eq!(store.run(|m| m.create_kid("maja", PIN, "Mia", 6, None, None)), Done);
     let mia = store.named("Mia");
     assert!(mia.kids);
     assert_eq!(mia.household, "flat");
@@ -142,13 +142,88 @@ fn a_kid_is_made_in_its_parents_household() {
 #[test]
 fn a_profile_made_in_home_is_undated_and_one_made_elsewhere_is_dated() {
     let store = store_with(&[grown_up("owner", "home", true, 1), household("flat", Some("maja")), grown_up("maja", "flat", false, 2)]);
-    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Paul", "5678")), Done);
-    assert_eq!(store.run(|m| m.create_kid("owner", PIN, "Ben", 6, None)), Done);
-    assert_eq!(store.run(|m| m.create_grown_up("maja", PIN, "Lena", "5678")), Done);
-    assert_eq!(store.run(|m| m.create_kid("maja", PIN, "Mia", 6, None)), Done);
+    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Paul", "5678", None)), Done);
+    assert_eq!(store.run(|m| m.create_kid("owner", PIN, "Ben", 6, None, None)), Done);
+    assert_eq!(store.run(|m| m.create_grown_up("maja", PIN, "Lena", "5678", None)), Done);
+    assert_eq!(store.run(|m| m.create_kid("maja", PIN, "Mia", 6, None, None)), Done);
     for (name, stamp) in [("Paul", 0), ("Ben", 0), ("Lena", T), ("Mia", T)] {
         assert_eq!(store.row(&store.named(name).id).household_updated_at, stamp, "{name}");
     }
+}
+
+/// The owner at home, Maja running "flat", Lena running "loft", and "empty", which nobody runs.
+fn three_households() -> Store {
+    store_with(&[
+        grown_up("owner", "home", true, 1),
+        household("flat", Some("maja")),
+        grown_up("maja", "flat", false, 2),
+        household("loft", Some("lena")),
+        grown_up("lena", "loft", false, 3),
+        household("empty", None),
+    ])
+}
+
+#[test]
+fn the_owner_adds_a_grown_up_straight_into_another_household() {
+    let store = three_households();
+    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Paul", "5678", Some("loft"))), Done);
+    let paul = store.named("Paul");
+    assert_eq!((paul.household.as_str(), paul.admin, paul.kids), ("loft", false, false));
+    assert_eq!(store.row(&paul.id).household_updated_at, T);
+    assert_eq!(store.run(|m| m.unlock(&paul.id, "5678")), Done);
+}
+
+#[test]
+fn a_grown_up_added_to_a_household_with_no_admin_becomes_its_admin() {
+    let store = three_households();
+    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Paul", "5678", Some("empty"))), Done);
+    let paul = store.named("Paul");
+    assert!(paul.admin);
+    assert_eq!(store.household_named("empty").admin_id.as_deref(), Some(paul.id.as_str()));
+}
+
+#[test]
+fn a_households_admin_cannot_add_a_grown_up_to_another_household() {
+    let store = three_households();
+    let before = store.everyone().len();
+    assert_eq!(store.run(|m| m.create_grown_up("lena", PIN, "Paul", "5678", Some("home"))), NotAllowed);
+    assert_eq!(store.everyone().len(), before);
+}
+
+#[test]
+fn a_household_that_does_not_exist_is_not_found() {
+    let store = three_households();
+    let before = store.everyone().len();
+    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Paul", "5678", Some("nowhere"))), NotFound);
+    assert_eq!(store.everyone().len(), before);
+}
+
+#[test]
+fn the_owner_adds_a_kid_for_a_grown_up_in_another_household() {
+    let store = three_households();
+    assert_eq!(store.run(|m| m.create_kid("owner", PIN, "Nia", 6, None, Some("lena"))), Done);
+    let nia = store.named("Nia");
+    assert_eq!((nia.kids, nia.household.as_str()), (true, "loft"));
+    assert_eq!(store.row(&nia.id).parent_id.as_deref(), Some("lena"));
+    assert_eq!(store.run(|m| m.create_kid("owner", PIN, "Ola", 6, None, Some("nobody"))), NotFound);
+}
+
+#[test]
+fn a_grown_up_cannot_add_a_kid_for_somebody_else() {
+    let store = three_households();
+    assert_eq!(store.run(|m| m.create_kid("maja", PIN, "Nia", 6, None, Some("owner"))), NotAllowed);
+}
+
+#[test]
+fn naming_nobody_keeps_the_makers_own_household() {
+    let store = three_households();
+    assert_eq!(store.run(|m| m.create_grown_up("lena", PIN, "Paul", "5678", None)), Done);
+    assert_eq!(store.run(|m| m.create_kid("lena", PIN, "Nia", 6, None, None)), Done);
+    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Hanna", "5678", Some(""))), Done);
+    assert_eq!(store.named("Paul").household, "loft");
+    let nia = store.named("Nia");
+    assert_eq!((nia.household.as_str(), store.row(&nia.id).parent_id.as_deref()), ("loft", Some("lena")));
+    assert_eq!(store.named("Hanna").household, "home");
 }
 
 #[test]

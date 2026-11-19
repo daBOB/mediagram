@@ -12,14 +12,15 @@ use rand::{Rng, SeedableRng};
 
 use super::bots::{Bot, Style};
 pub use super::live_config::GrandAlleeConfig;
-use super::live_asks::Ask;
+use super::live_asks::Choices;
 use super::live_debts::Debt;
 use super::live_log::{By, Log};
 use super::live_text::Phrase;
 use super::live_turn::Step;
 use super::rules::{Permit, Table};
+use crate::ask::Ask;
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
 
 /// Decides for an absent player and when a clock runs out.
@@ -48,7 +49,7 @@ pub(crate) enum Stage {
     /// Rules card `card` (from 0) on the TV since `at`, before the first roll.
     Intro { card: u8, at: ServerTime },
     /// The mover decides, rolling included; `step` is where the move goes on.
-    Ask { ask: Ask, since: ServerTime, step: Step },
+    Ask { choices: Choices, ask: Ask, step: Step },
     Rolled { value: u8, at: ServerTime },
     /// `rathaus`: the walk passed the Rathaus, whose menu comes first.
     Walking { value: u8, from: u8, at: ServerTime, ends_at: ServerTime, bank: bool, rathaus: bool },
@@ -123,13 +124,13 @@ impl Game for GrandAlleeGame {
         if let Stage::Intro { .. } = self.stage {
             return self.skip_intro(ctx, player);
         }
-        let Stage::Ask { ask, since, step } = &self.stage else { return Err(ActionError::Ignored) };
+        let Stage::Ask { choices, ask, step } = &self.stage else { return Err(ActionError::Ignored) };
         // a tap that began before this prompt appeared answered the one before it
-        if seat != self.turn || at < since - self.cfg.early_ms {
+        if seat != self.turn || at < ask.opened_at() - self.cfg.early_ms {
             return Err(ActionError::Ignored);
         }
-        let opt = *ask.opts.get(usize::from(index)).ok_or(ActionError::NotAllowed("Das gibt es nicht."))?;
-        let (step, kind, since) = (step.clone(), ask.kind(), *since);
+        let opt = *choices.opts.get(usize::from(index)).ok_or(ActionError::NotAllowed("Das gibt es nicht."))?;
+        let (step, kind, since) = (step.clone(), choices.kind(), ask.opened_at());
         self.idle = false;
         self.log_decision(kind, since, opt, ctx.now, By::Player);
         self.choose(ctx, opt, step);
@@ -150,8 +151,12 @@ impl Game for GrandAlleeGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        Some(self.ids.clone())
+    }
+
+    fn ranking(&self, _players: &[Player]) -> Option<Ranking> {
+        (self.stage == Stage::Final).then(|| Ranking::in_order(self.standings().into_iter().map(|s| self.ids[s])))
     }
 
     fn take_log(&mut self) -> Vec<serde_json::Value> {

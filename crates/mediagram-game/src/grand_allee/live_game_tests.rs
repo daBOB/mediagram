@@ -12,7 +12,7 @@ fn whole_game(players: usize, seed: u64) -> (GrandAlleeGame, Vec<Player>) {
     let mut g = GrandAlleeGame::new(GrandAlleeConfig { seed: Some(seed), ..GrandAlleeConfig::default() }, &p, 0.0);
     let mut now = 0.0;
     // far beyond the longest game the simulator has seen
-    while !g.is_finished() && now < 4.0 * 3_600_000.0 {
+    while g.ranking(&p).is_none() && now < 4.0 * 3_600_000.0 {
         now += 50.0;
         let mut ctx = GameCtx { now, players: &mut p };
         let (before, due) = (g.stage.clone(), g.due(&ctx));
@@ -26,7 +26,7 @@ fn whole_game(players: usize, seed: u64) -> (GrandAlleeGame, Vec<Player>) {
             }
         }
     }
-    assert!(g.is_finished(), "{players} players, seed {seed}: no end after {now} ms, round {} of {}", g.round, g.rounds);
+    assert!(g.ranking(&p).is_some(), "{players} players, seed {seed}: no end after {now} ms, round {} of {}", g.round, g.rounds);
     (g, p)
 }
 

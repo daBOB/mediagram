@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { Connection } from "../net";
 import type { FluechtigScene } from "../protocol/FluechtigScene";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
+import type { Ranking } from "../protocol/Ranking";
 import { figureOf } from "../ui/fluechtig-naming";
 import { TICKET_COLOR, TICKET_SHORT, type TicketKey } from "../ui/fluechtig-tickets";
 import { Token } from "../ui/Token";
@@ -23,10 +24,10 @@ const RUNNER_KEYS: TicketKey[] = ["taxi", "bus", "ubahn", "schatten", "doppel"];
  * avatar heads. The fugitive's field is never in the scene until a reveal or
  * the end, so nothing here can show it early.
  */
-export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; players: PlayerInfo[]; conn: Connection }) {
+export function TvFluechtig({ scene, players, ranking, conn }: { scene: FluechtigScene; players: PlayerInfo[]; ranking: Ranking | null; conn: Connection }) {
   const [cheered, setCheered] = useState(false);
   const [settings, setSettings] = useState(false);
-  const over = scene.turn.turn === "over";
+  const over = ranking !== null;
 
   // OK on the remote opens the settings over the plan; the game runs on underneath
   useEffect(() => {
@@ -54,8 +55,8 @@ export function TvFluechtig({ scene, players, conn }: { scene: FluechtigScene; p
   const fugitive = byId.get(scene.fugitive);
   const runner = name(scene.fugitive);
   const turn = scene.turn;
-  if (turn.turn === "over" && cheered) {
-    return <TvFinal players={players} conn={conn} title={turn.winner === "fugitive" ? `${runner} ist entkommen!` : "Die Jäger gewinnen!"} />;
+  if (ranking && turn.turn === "over" && cheered) {
+    return <TvFinal ranking={ranking} players={players} conn={conn} title={turn.winner === "fugitive" ? `${runner} ist entkommen!` : "Die Jäger gewinnen!"} />;
   }
 
   const piece = turn.turn === "hunter" ? figureOf(scene.hunters, turn.index) : null;

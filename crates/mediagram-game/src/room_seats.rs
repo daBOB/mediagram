@@ -14,6 +14,8 @@ pub(crate) struct Conn {
     pub(crate) local: bool,
     /// Last view sent, so unchanged views are not resent on every tick.
     pub(crate) last_view: Option<String>,
+    /// Drawing already sent to a TV or the board: turn and number of ops.
+    pub(crate) drawn: Option<(u32, usize)>,
 }
 
 const PLAYER_COLORS: [&str; 8] = [
@@ -99,6 +101,8 @@ impl Room {
                 .find(|c| !self.players.iter().any(|p| p.color == *c))
                 .unwrap_or(PLAYER_COLORS[0]);
             let avatar = crate::avatars::assign(&self.players, avatar.as_deref());
+            // someone joining after the end is no part of it, so the ranking keeps to who was there
+            self.ended = self.ranking();
             let id = self.next_player_id;
             self.next_player_id = self.next_player_id.wrapping_add(1);
             self.players.push(Player {
@@ -131,6 +135,7 @@ impl Room {
                 p.left_at = Some(now);
             }
         }
+        self.release_board(conn, now);
     }
 
     /// The room's leader, by the one rule in [`leader`].
@@ -166,7 +171,7 @@ pub(crate) fn clean_name(raw: &str) -> String {
         .collect()
 }
 
-fn new_token() -> String {
+pub(crate) fn new_token() -> String {
     let bytes: [u8; 16] = rand::rng().random();
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }

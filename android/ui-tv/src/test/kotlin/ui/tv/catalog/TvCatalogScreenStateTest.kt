@@ -23,8 +23,10 @@ import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
 import catalog.MenuScreen
 import catalog.factsLine
+import catalog.paged
 import catalog.resumeLine
 import catalog.shelvesOf
+import data.LibraryUpdateState
 import designsystem.COUNTDOWN_LEADER_TEST_TAG
 import designsystem.TvStyle
 import kotlin.test.assertEquals
@@ -176,11 +178,11 @@ class TvCatalogScreenStateTest {
     /** The phone's progress bar, as the words its Update item waits with. */
     @Test
     fun anArtworkFetchOrAChannelReadSaysSoAboveTheShelves() {
-        show(ready(films(1)), fetching = true)
+        show(ready(films(1)), update = LibraryUpdateState(fetching = true))
         compose.onNodeWithText("Fetching details and artwork…").assertExists()
         close()
 
-        show(ready(films(1)).copy(refreshing = true))
+        show(ready(films(1)), update = LibraryUpdateState(reading = true))
         compose.onNodeWithText("Reading the channel…").assertExists()
         close()
 
@@ -192,7 +194,7 @@ class TvCatalogScreenStateTest {
     /** A run under way says which step it is on, how far, and how long is left — not only that it runs. */
     @Test
     fun aFetchUnderWayCountsItsStepAboveTheShelves() {
-        show(ready(films(1)), fetching = true, fetchProgress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL))
+        show(ready(films(1)), update = LibraryUpdateState(fetching = true, progress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL)))
         compose.onNodeWithText("Downloading artwork · 300 of 900 · about 2 min left").assertExists()
         compose.onNodeWithTag(TvPlateProgressFillTag, useUnmergedTree = true).assertExists()
     }
@@ -200,7 +202,7 @@ class TvCatalogScreenStateTest {
     /** The bar is opaque and drawn over the page's top, so a line placed there exists but nobody sees it. */
     @Test
     fun theFetchLineAndItsBarSitBelowTheTopBar() {
-        show(ready(films(1)), fetching = true, fetchProgress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL))
+        show(ready(films(1)), update = LibraryUpdateState(fetching = true, progress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL)))
         val barFoot = TvDepartmentsBarHeight
         val line = compose.onNodeWithText("Downloading artwork · 300 of 900 · about 2 min left").getBoundsInRoot()
         val rule = compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).getBoundsInRoot()
@@ -240,15 +242,6 @@ class TvCatalogScreenStateTest {
         compose.onNodeWithText("A Show").assertIsFocused()
         compose.onNodeWithText("Movies").assertIsNotFocused()
         compose.onNodeWithText("Series").assertIsNotFocused()
-    }
-
-    /** Home's Latest courses holds six, as the web's Home does: a course row is a list and keeps the shorter row limit, not the poster rows' eight. */
-    @Test
-    fun homesLatestCoursesHoldsTheNewestSix() {
-        show(ready(courses(8)))
-
-        (2..7).forEach { compose.onNodeWithText("Course $it").assertExists() }
-        (0..1).forEach { compose.onNodeWithText("Course $it").assertDoesNotExist() }
     }
 
     /**
@@ -353,7 +346,7 @@ class TvCatalogScreenStateTest {
                 progress = listOf(stopped),
                 watched = listOf(Watched(setId = "ep-1", finishedAt = 1)),
             )
-        show(CatalogUiState.Ready(shelvesOf(film + episodes), watch = watch))
+        show(CatalogUiState.Ready(shelvesOf(film + episodes), watch = watch).paged())
 
         // The magazine band's own resume cards hold this line back from
         // view the same way the phone's own `ResumeCard` does (the progress
@@ -585,8 +578,7 @@ class TvCatalogScreenStateTest {
         onOpenMenu: () -> Unit = {},
         onOpenTitle: (String) -> Unit = {},
         onOpenCollection: (String) -> Unit = {},
-        fetching: Boolean = false,
-        fetchProgress: FetchProgress? = null,
+        update: LibraryUpdateState = LibraryUpdateState(),
         restoreKey: String? = null,
         style: TvStyle = TvStyle.Default,
         pendingRail: RailItem? = null,
@@ -606,8 +598,7 @@ class TvCatalogScreenStateTest {
                         onOpenCollection = onOpenCollection,
                         onOpenList = {},
                         onCreateList = {},
-                        fetching = fetching,
-                        fetchProgress = fetchProgress,
+                        update = update,
                         restoreKey = restoreKey,
                         pendingRail = pendingRail,
                         onPendingRailHandled = onPendingRailHandled,
@@ -620,7 +611,7 @@ class TvCatalogScreenStateTest {
     }
 }
 
-internal fun ready(sets: List<MediaSet>) = CatalogUiState.Ready(shelvesOf(sets))
+internal fun ready(sets: List<MediaSet>) = CatalogUiState.Ready(shelvesOf(sets)).paged()
 
 /** [count] films, each newer than the last, so "latest" has an order to keep. */
 internal fun films(count: Int) = (0 until count).map { set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()) }

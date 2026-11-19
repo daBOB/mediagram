@@ -17,8 +17,8 @@ fn a_double_tap_on_the_last_entrance_does_not_answer_the_field_question() {
     place(&mut g, 0, 19);
     let now = pick(&mut g, &mut p, ANA, "Würfeln", 10.0);
     let now = pick(&mut g, &mut p, ANA, "Lagune · 300 Taler", now);
-    let Stage::Ask { since, .. } = g.stage else { panic!("no place question: {:?}", g.stage) };
-    let at = since.max(now);
+    let Stage::Ask { ask, .. } = g.stage else { panic!("no place question: {:?}", g.stage) };
+    let at = ask.opened_at().max(now);
     assert!(tap(&mut g, &mut p, at), "the first tap places the entrance");
     assert!(matches!(g.stage, Stage::Ask { .. }), "the field question follows");
     assert!(!tap(&mut g, &mut p, at + 80.0), "the second tap of a double tap is too early for it");

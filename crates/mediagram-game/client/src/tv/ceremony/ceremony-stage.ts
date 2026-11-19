@@ -5,6 +5,7 @@
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { Performer, flatFigure, loadAvatar, loadFigure } from "./ceremony-avatar";
 import { hangCurtain } from "./ceremony-curtain";
@@ -157,12 +158,14 @@ export async function startCeremony(container: HTMLElement, top: Contender[], go
 
     // 3D avatars: never awaited by the screen; a missing file just leaves the flat figure
     const r = renderer;
-    // the shipped files are meshopt-compressed with WebP textures, both read without workers
-    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-    contenders.forEach((c, i) => {
-      if (!c.avatar) return;
+    // the shipped files are meshopt-compressed with KTX2 UASTC textures: a worker transcodes them into a format the
+    // GPU keeps compressed (three's Basis transcoder in /basis/, as Grand Allee loads its atlases)
+    const ktx = new KTX2Loader().setTranscoderPath("/basis/").detectSupport(r);
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx);
+    const loads = contenders.map((c, i) => {
+      if (!c.avatar) return null;
       const x = slotX(i, contenders.length);
-      loadAvatar(loader, c.avatar, AVATAR_HEIGHT, look!.dress)
+      return loadAvatar(loader, c.avatar, AVATAR_HEIGHT, look!.dress)
           .then(async ({ holder, root, clips }) => {
             if (disposed) return;
             holder.position.set(x, PLACES[c.place - 1].h, 0);
@@ -185,6 +188,8 @@ export async function startCeremony(container: HTMLElement, top: Contender[], go
           .catch((e) => console.warn(`avatar ${c.avatar}`, e))
           .finally(settled);
     });
+    // the transcoder workers are not needed once every avatar is in or failed
+    Promise.all(loads).finally(() => ktx.dispose());
   } catch (e) {
     dispose();
     throw e;

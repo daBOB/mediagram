@@ -1,21 +1,13 @@
 //! What the phones and the TV show for each Dreifelder stage.
 
 use crate::dreifelder::{DreifelderGame, Stage};
-use crate::game::ViewCtx;
 use crate::protocol::{
     AnswerColor, ChoiceOption, ChoiceStatus, DreifelderScene, DreifelderStage, FieldPick, OutPlayer, OutcomeKey,
     PhoneScreen, PlayerId, Tone, TvScene,
 };
-use crate::quiz_views::final_by_order;
 
 impl DreifelderGame {
-    pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-        if self.stage == Stage::Final {
-            return final_by_order(&self.order, view, player);
-        }
-        if !self.tally.plays(player) {
-            return PhoneScreen::Wait { title: "Dreifelder läuft".into(), text: Some("Beim nächsten Spiel bist du dabei.".into()) };
-        }
+    pub(crate) fn phone_view(&self, player: PlayerId) -> PhoneScreen {
         let Stage::Question { opens_at, closes_at } = self.stage else { return self.outcome(player) };
         let round = self.round();
         let (alive, all) = self.head_count();

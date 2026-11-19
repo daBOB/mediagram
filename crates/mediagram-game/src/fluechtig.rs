@@ -11,21 +11,16 @@ use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
 
+use crate::ask::Ask;
 pub use crate::fluechtig_config::FluechtigConfig;
 use crate::fluechtig_intro::Intro;
 use crate::fluechtig_map::Field;
 use crate::fluechtig_rules::{Chase, Rules, Turn};
 use crate::game::{ActionError, Game, GameCtx, ViewCtx, name};
-use crate::protocol::{Action, FluechtigTicket as Ticket, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, FluechtigTicket as Ticket, PhoneScreen, PlayerId, Ranking, ServerTime, TvScene};
 use crate::room_seats::Player;
 
-/// The question open on the mover's phone, from `opens_at`.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct Ask {
-    pub opens_at: ServerTime,
-    pub step: Step,
-}
-
+/// Which question the mover's phone asks.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Step {
     Field,
@@ -48,7 +43,9 @@ pub struct FluechtigGame {
     pub(crate) fugitive: PlayerId,
     /// Who moves each hunter figure, in turn order.
     pub(crate) owners: Vec<PlayerId>,
+    /// The mover's open question, and which one it is.
     pub(crate) ask: Ask,
+    pub(crate) step: Step,
     /// The rules card on the TV; None once the chase runs.
     pub(crate) intro: Option<Intro>,
 }
@@ -74,7 +71,7 @@ impl FluechtigGame {
         let start = city.fugitive_starts[rng.random_range(0..city.fugitive_starts.len())];
         let chase = Chase::new(rules, start, &starts[..figures]);
         let intro = (cfg.intro_ms > 0.0).then_some(Intro { card: 0, at: now });
-        let mut game = Self { cfg, chase, fugitive, owners, ask: Ask { opens_at: now, step: Step::Field }, intro };
+        let mut game = Self { cfg, chase, fugitive, owners, ask: Ask::open(fugitive, now, None), step: Step::Field, intro };
         game.chase.names = (0..figures)
             .map(|i| {
                 let player = name(players, game.owners[i]);
@@ -92,6 +89,14 @@ impl FluechtigGame {
             Turn::Over(_) => None,
         }
     }
+
+    /// Puts question `step` to the mover from `at`, with no clock; once the chase is over nobody is asked.
+    pub(crate) fn ask_mover(&mut self, at: ServerTime, step: Step) {
+        self.step = step;
+        if let Some(mover) = self.mover() {
+            self.ask = Ask::open(mover, at, None);
+        }
+    }
 }
 
 impl Game for FluechtigGame {
@@ -102,7 +107,7 @@ impl Game for FluechtigGame {
         if self.intro.is_some() {
             return self.skip_intro(ctx, player);
         }
-        if self.mover() != Some(player) || at < self.ask.opens_at - self.cfg.early_ms {
+        if self.mover() != Some(player) || at < self.ask.opened_at() - self.cfg.early_ms {
             return Err(ActionError::Ignored);
         }
         let pick = *self.picks().get(usize::from(index)).ok_or(ActionError::Ignored)?;
@@ -117,12 +122,11 @@ impl Game for FluechtigGame {
             }
             return;
         }
-        let Some(id) = self.mover() else { return };
-        if !ctx.house_at(id, self.ask.opens_at).is_some_and(|at| ctx.now >= at) {
+        if self.mover().is_none() || !self.ask.house_decides(ctx) {
             return;
         }
         if let Some(mv) = self.chase.house_move() {
-            self.ask.step = Step::Ticket(mv.to);
+            self.step = Step::Ticket(mv.to);
             self.take(ctx.players, ctx.now, Pick::Ride(mv.ticket));
         }
     }
@@ -135,8 +139,17 @@ impl Game for FluechtigGame {
         self.tv_view(view)
     }
 
-    fn is_finished(&self) -> bool {
-        self.chase.winner().is_some()
+    fn seats(&self) -> Option<Vec<PlayerId>> {
+        let mut seats: Vec<PlayerId> = std::iter::once(self.fugitive).chain(self.owners.iter().copied()).collect();
+        seats.sort_unstable();
+        seats.dedup();
+        Some(seats)
+    }
+
+    fn ranking(&self, players: &[Player]) -> Option<Ranking> {
+        self.chase.winner()?;
+        let seats = self.seats()?;
+        Some(Ranking::by_score(players.iter().filter(|p| seats.contains(&p.id))))
     }
 }
 

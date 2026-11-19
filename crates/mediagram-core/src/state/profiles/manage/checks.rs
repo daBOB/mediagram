@@ -60,7 +60,8 @@ impl ProfileManager<'_> {
         let Some(actor) = found(actor_id) else {
             return Ok(Some(NotFound));
         };
-        if target_id.is_some_and(|id| found(id).is_none()) {
+        // A grown-up is added to a household, which is not a profile row.
+        if action != Action::CreateGrownUp && target_id.is_some_and(|id| found(id).is_none()) {
             return Ok(Some(NotFound));
         }
         // A kid manages nothing, and has no PIN to prove otherwise with.

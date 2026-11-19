@@ -184,7 +184,7 @@ class FakeCore(
 
     /** The household's PINs and wrong-PIN wait, and the rules every profile change is checked against. */
     override val roles =
-        FakeProfiles(read = { profiles }, write = { profiles = it }, synced = { syncedOnce }) { id ->
+        FakeProfiles(read = { profiles }, write = { profiles = it }, synced = { syncedOnce }, households = { homes.view().households }) { id ->
             if (chosen == id) chosen = null
             watchState.forget(id)
         }
@@ -622,11 +622,11 @@ class FakeCore(
 
     override suspend fun createFirstAdmin(name: String, newPin: String): ProfileOutcome = roles.createFirst(name, newPin)
 
-    override suspend fun createGrownUp(actorId: String, pin: String, name: String, newPin: String): ProfileOutcome =
-        roles.createGrownUp(actorId, pin, name, newPin)
+    override suspend fun createGrownUp(actorId: String, pin: String, name: String, newPin: String, household: String?): ProfileOutcome =
+        roles.createGrownUp(actorId, pin, name, newPin, household)
 
-    override suspend fun createKid(actorId: String, pin: String, name: String, kidsAge: UByte, dailyLimit: UShort?): ProfileOutcome =
-        roles.createKid(actorId, pin, name, kidsAge, dailyLimit)
+    override suspend fun createKid(actorId: String, pin: String, name: String, kidsAge: UByte, dailyLimit: UShort?, parentId: String?): ProfileOutcome =
+        roles.createKid(actorId, pin, name, kidsAge, dailyLimit, parentId)
 
     override suspend fun deleteProfile(actorId: String, pin: String, id: String): ProfileOutcome = roles.remove(actorId, pin, id)
 

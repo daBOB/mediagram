@@ -12,7 +12,6 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.Department
 import catalog.Entry
-import catalog.ShelfViewModel
 import catalog.allTitles
 import catalog.everyFilm
 import catalog.franchisePageOf
@@ -30,8 +29,8 @@ import ui.catalog.GenresIndexScreen
 import ui.catalog.LatestScreen
 import ui.catalog.PersonScreen
 import ui.catalog.PreloadsScreen
-import ui.catalog.ShelfViewChoice
 import ui.catalog.ShelfWall
+import ui.catalog.shelfViewChoice
 import ui.chrome.BrowseActions
 import ui.chrome.ProfileBarState
 import ui.common.FrameKind
@@ -100,12 +99,12 @@ internal fun LatestFrame(
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val shelves = (catalogState as? CatalogUiState.Ready)?.shelves
+    val ready = catalogState as? CatalogUiState.Ready
     LibraryBranch(Destination.Latest, menuActions, profileBar, browse, at, at::pop) {
-        if (shelves == null) {
+        if (ready == null) {
             CenteredLoading("Loading your library…")
         } else {
-            LatestScreen(shelves, watch, catalogState.heldIdsOrEmpty(), columns, at::openTitle, at::openCollection)
+            LatestScreen(ready.pages.latest, watch, ready.heldIds, columns, at::openTitle, at::openCollection)
         }
     }
 }
@@ -121,23 +120,22 @@ internal fun MoviesPageFrame(
     menuActions: MenuActions,
     profileBar: ProfileBarState,
     browse: BrowseActions,
+    play: (setId: String) -> Unit,
 ) {
     val shelf = (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.department == Department.MOVIES }
     LibraryBranch(Destination.MoviesPage, menuActions, profileBar, browse, at, at::pop) {
         if (shelf == null) {
             CenteredLoading("Loading your library…")
         } else {
-            val shelfViewModel: ShelfViewModel = hiltViewModel()
-            val chosenView by shelfViewModel.view.collectAsStateWithLifecycle()
             ShelfWall(
                 shelf = shelf,
                 watch = watch,
                 heldIds = catalogState.heldIdsOrEmpty(),
                 columns = columns,
-                view = ShelfViewChoice(chosenView, shelfViewModel::choose),
+                view = shelfViewChoice(),
                 onOpenTitle = at::openTitle,
                 onOpenCollection = at::openCollection,
-                films = FilmShelfActions(onPlay = { at.openPlayer(it.setId) }, titleInfo = catalogViewModel::titleInfo),
+                films = FilmShelfActions(onPlay = { play(it.setId) }, titleInfo = catalogViewModel::titleInfo),
             )
         }
     }

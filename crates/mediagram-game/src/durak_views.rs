@@ -1,34 +1,26 @@
 //! What the phones and the TV show during Durak.
 
+use crate::card_table::button;
 use crate::cards::Card;
 use crate::durak::{DurakGame, Stage};
 use crate::durak_rules::{beats, can_throw};
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::protocol::{
     ButtonNeeds, CardDesk, CardsBanner, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard, PhoneScreen, PlayerId, TvScene,
 };
 
-fn button(id: &str, label: &str, needs: ButtonNeeds, primary: bool) -> DeskButton {
-    DeskButton { id: id.into(), label: label.into(), needs, primary, suit: None }
-}
-
 impl DurakGame {
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-        let Some(me) = self.seat_of(player) else {
-            return PhoneScreen::Wait { title: "Durak läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
+        let Some(me) = self.table.seat_of(player) else {
+            return unasked();
         };
-        if let Stage::Final { ranking, .. } = &self.stage {
-            return PhoneScreen::Final {
-                rank: ranking.iter().position(|&s| s == me).map_or(1, |r| r as u8 + 1),
-                of: self.ids.len() as u8,
-                score: view.players.iter().find(|p| p.id == player).map_or(0, |p| p.score),
-                can_restart: view.leader == Some(player),
-            };
+        if matches!(self.stage, Stage::Final { .. }) {
+            return unasked();
         }
         let hand = &self.hands[me];
         let table = self.table();
         let trump = self.trump_suit();
-        let who = |seat: usize| name(view.players, self.player_at(seat));
+        let who = |seat: usize| name(view.players, self.table.player_at(seat));
         let mine = self.actor() == Some(me);
         let (prompt, enabled, buttons): (String, Vec<bool>, Vec<DeskButton>) = match (&self.stage, mine) {
             (Stage::Attack { .. }, true) => ("Du greifst an – spiele eine Karte".into(), vec![true; hand.len()], vec![button("play", "Ausspielen", ButtonNeeds::OneHand, true)]),
@@ -68,7 +60,7 @@ impl DurakGame {
 
     fn settle_text(&self, view: &ViewCtx) -> String {
         match self.stage {
-            Stage::Settle { taken: true, .. } => format!("{} nimmt die Karten auf", name(view.players, self.player_at(self.defender()))),
+            Stage::Settle { taken: true, .. } => format!("{} nimmt die Karten auf", name(view.players, self.table.player_at(self.defender()))),
             _ => "Bito – alles geschlagen".into(),
         }
     }
@@ -87,10 +79,7 @@ impl DurakGame {
 
     pub(crate) fn tv_view(&self, view: &ViewCtx) -> TvScene {
         let over = matches!(self.stage, Stage::Final { .. });
-        let banner = match &self.banner {
-            Some((b, at)) if over || matches!(self.stage, Stage::Settle { .. }) || view.now < at + self.cfg.banner_ms => b.clone(),
-            _ => self.status_banner(),
-        };
+        let banner = self.table.banner(view.now, over || matches!(self.stage, Stage::Settle { .. })).unwrap_or_else(|| self.status_banner());
         let pair = |&(a, d): &(Card, Option<Card>)| {
             let cards: Vec<Card> = std::iter::once(a).chain(d).collect();
             CardsPile { count: cards.len() as u16, cards }
@@ -99,7 +88,8 @@ impl DurakGame {
             scene: CardsScene {
                 game: "Durak".into(),
                 seats: self
-                    .ids
+                    .table
+                    .players()
                     .iter()
                     .zip(&self.hands)
                     .enumerate()
@@ -108,13 +98,13 @@ impl DurakGame {
                 piles: self.bout.iter().map(pair).collect(),
                 deck: self.deck.len() as u16,
                 trump: (!self.deck.is_empty()).then_some(self.trump),
-                turn: self.actor().map(|s| self.player_at(s)),
+                turn: self.actor().map(|s| self.table.player_at(s)),
                 wish: None,
                 note: Some(format!("Trumpf {} {}", self.trump.suit.symbol(), self.trump.suit.name())),
                 banner: Some(banner),
-                events: self.events.clone(),
+                events: self.table.events().to_vec(),
                 ranking: match &self.stage {
-                    Stage::Final { ranking, .. } => Some(ranking.iter().map(|&s| self.player_at(s)).collect()),
+                    Stage::Final { ranking, .. } => Some(ranking.iter().map(|&s| self.table.player_at(s)).collect()),
                     _ => None,
                 },
             },
@@ -130,6 +120,6 @@ impl DurakGame {
             Stage::Throw { taking: true, .. } => " darf noch dazulegen",
             _ => " darf dazulegen",
         };
-        CardsBanner { player: self.player_at(seat), text: text.into() }
+        CardsBanner { player: self.table.player_at(seat), text: text.into() }
     }
 }

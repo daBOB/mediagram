@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -21,11 +22,13 @@ import androidx.compose.ui.semantics.Role
 import catalog.Entry
 import catalog.extentOf
 import catalog.factsLine
+import catalog.heldOf
 import catalog.keyOf
-import catalog.watchedFractionOf
+import catalog.playedOf
+import catalog.versionsBadgeOf
 import designsystem.Spacing
 import model.Progress
-import androidx.compose.foundation.lazy.rememberLazyListState
+import ui.common.catalog.cardProgressOf
 
 /**
  * A shelf as rows — the web's list mode, and the only way a shelf of
@@ -52,9 +55,10 @@ internal fun ShelfList(
                 is Entry.Film -> ShelfRow(
                     title = entry.set.title,
                     caption = factsLine(entry.set.year, entry.set.durationSecs),
-                    watched = entry.set.setId in watchedIds,
-                    held = entry.set.setId in heldIds,
-                    progress = watchedFractionOf(positions[entry.set.setId]),
+                    watched = playedOf(entry.set, watchedIds),
+                    held = heldOf(entry.set, heldIds),
+                    progress = cardProgressOf(entry.set, positions),
+                    versions = versionsBadgeOf(entry.set),
                     onClick = { onOpenTitle(entry.set.setId) },
                 )
                 is Entry.Collection -> ShelfRow(
@@ -69,14 +73,17 @@ internal fun ShelfList(
     }
 }
 
+/** One row of a list shelf; [resume] is this viewer's place in it, under the facts, as a plate's caption sits under its meta. */
 @Composable
-private fun ShelfRow(
+internal fun ShelfRow(
     title: String,
     caption: String?,
     onClick: () -> Unit,
+    resume: String? = null,
     watched: Boolean = false,
     held: Boolean = false,
     progress: Float? = null,
+    versions: String? = null,
 ) {
     val source = remember { MutableInteractionSource() }
     Column(
@@ -91,6 +98,10 @@ private fun ShelfRow(
         caption?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        resume?.let {
+            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        versions?.let { CardBadge(it, modifier = Modifier.padding(top = Spacing.extraSmall)) }
         if (held) OfflineBadge(modifier = Modifier.padding(top = Spacing.extraSmall))
         progress?.let { fraction ->
             LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().padding(top = Spacing.small))

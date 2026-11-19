@@ -5,20 +5,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import catalog.CatalogUiState
 import catalog.Department
-import catalog.Entry
 import catalog.Shelf
-import catalog.allSetsById
-import catalog.moviesDepartmentOf
-import catalog.showsDepartmentOf
-import model.Kind
 import ui.common.catalog.DepartmentScrollStates
 import uniffi.mediagram_core.TitleInfo
 
 /**
  * A department pill's own page: Movies, Series and Tutorials on their
  * department screens ([MoviesDepartmentScreen], [ShowsDepartmentScreen]),
- * Anime and Documentaries on theirs. Chosen by [Shelf.department], so a
- * department the library gains does not compile until it has a page here.
+ * Anime and Documentaries on theirs, each read from the state's pages.
+ * Chosen by [Shelf.department], so a department the library gains does not
+ * compile until it has a page here.
  */
 @Composable
 internal fun DepartmentTab(
@@ -38,8 +34,7 @@ internal fun DepartmentTab(
     when (shelf.department) {
         Department.MOVIES -> {
             val films = remember(shelf) { filmsOf(shelf) }
-            val department = remember(films, state.watch) { moviesDepartmentOf(films) { id -> state.watch.watched.any { it.setId == id } } }
-            department?.let {
+            state.pages.movies?.let {
                 MoviesDepartmentScreen(
                     department = it,
                     films = films,
@@ -55,10 +50,10 @@ internal fun DepartmentTab(
                 )
             }
         }
-        Department.SERIES -> ShowsDepartmentTab(Department.SERIES, shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.series, onPlay)
-        Department.ANIME -> AnimeDepartmentTab(shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.anime, onPlay)
-        Department.TUTORIALS -> ShowsDepartmentTab(Department.TUTORIALS, shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.tutorials, onPlay)
-        Department.DOCUMENTARIES -> DocumentariesDepartmentTab(shelf, state, onOpenCollection, deptScroll.documentaries, onPlay)
+        Department.SERIES -> ShowsDepartmentTab(Department.SERIES, state, columns, onOpenTitle, onOpenCollection, deptScroll.series, onPlay)
+        Department.ANIME -> AnimeDepartmentTab(state, columns, onOpenTitle, onOpenCollection, deptScroll.anime, onPlay)
+        Department.TUTORIALS -> ShowsDepartmentTab(Department.TUTORIALS, state, columns, onOpenTitle, onOpenCollection, deptScroll.tutorials, onPlay)
+        Department.DOCUMENTARIES -> DocumentariesDepartmentTab(state, onOpenCollection, deptScroll.documentaries, onPlay)
     }
 }
 
@@ -66,7 +61,6 @@ internal fun DepartmentTab(
 @Composable
 private fun ShowsDepartmentTab(
     dept: Department,
-    shelf: Shelf,
     state: CatalogUiState.Ready,
     columns: Int,
     onOpenTitle: (String) -> Unit,
@@ -74,10 +68,7 @@ private fun ShowsDepartmentTab(
     listState: LazyGridState,
     onPlay: (String) -> Unit,
 ) {
-    val shows = remember(shelf) { shelf.entries.filterIsInstance<Entry.Collection>() }
-    val byId = remember(state.shelves) { allSetsById(state.shelves) }
-    val kind = if (dept == Department.TUTORIALS) Kind.TUTORIAL else Kind.EPISODE
-    val department = remember(shows, byId, state.watch) { showsDepartmentOf(kind, shows, byId, state.watch) }
+    val department = if (dept == Department.TUTORIALS) state.pages.tutorials else state.pages.series
     department?.let {
         ShowsDepartmentScreen(dept, it, state.watch, state.heldIds, columns, onOpenTitle, onOpenCollection, onPlay, listState)
     }

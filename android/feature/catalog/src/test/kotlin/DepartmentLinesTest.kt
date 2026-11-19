@@ -31,7 +31,7 @@ class DepartmentLinesTest {
     private fun showsDept(showCount: Int, itemCount: Int) =
         ShowsDepartment(
             showCount = showCount, itemCount = itemCount, lead = null,
-            underway = Underway(emptyList(), emptyList(), 0, 0), categories = emptyList(),
+            resumeCards = emptyList(), categories = emptyList(),
             popular = emptyList(), newEpisodes = emptyList(), all = emptyList(),
         )
 
@@ -46,7 +46,7 @@ class DepartmentLinesTest {
     }
 
     private fun animeDept(showCount: Int, filmCount: Int) =
-        AnimeDepartment(showCount = showCount, filmCount = filmCount, lead = null, continuing = emptyList(), nextUp = emptyList(), shows = emptyList(), films = emptyList())
+        AnimeDepartment(showCount = showCount, filmCount = filmCount, lead = null, resumeCards = emptyList(), shows = emptyList(), films = emptyList())
 
     @Test
     fun animeJoinsBothHalvesWhenNeitherIsZero() {

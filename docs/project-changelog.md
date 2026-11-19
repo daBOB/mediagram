@@ -5,6 +5,301 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.195.1 — Every 3D avatar in KTX2 UASTC
+
+**Changed**
+
+- The awards ceremony's 22 avatars carry KTX2 UASTC textures instead of WebP (colour 2048, normal 1024), the format every 3D avatar copy now uses: the ceremony, the Kopfnuss arena, Zündstoff 3D and later games. UASTC stays compressed in GPU memory on any GPU, so the same memory holds a sharper map. The ceremony reads them with a KTX2Loader (`/basis/`, as Grand Allee); `make-ceremony-avatars.mjs` writes only UASTC and defaults to Spieltisch's assets folder. The 22 files grow from 40 MB to 82 MB, and the APK with them. Side by side they look the same (`plans/261115-2330-avatars-uastc/reports/avatars-webp-vs-uastc.jpg`).
+
+## Spieltisch 0.195.0 — Kopfnuss plays on 3D stages
+
+**Added**
+
+- Kopfnuss's TV stages are 3D sets behind the game's text, with the players' avatars standing in them and the walnut showmaster floating beside: a hall of four glitter-gold doors for the category vote and the tricks, a quiz studio with a gloss floor, light rings and a marquee arch for question and reveal, a candy pyramid on an island above the clouds for the Gipfelsturm (climbers stand on its ten treads), and a velvet-curtain stage with a gold podium for the fact. The final keeps the shared awards ceremony. Without WebGL the earlier HTML screens show.
+- The sets are built and lit in Blender Cycles from Poly Haven scans (marble, walnut veneer, velvet, a studio HDRI, all CC0) and procedural gold, glitter, lacquer and candy, then baked into one picture per set that the TV draws unlit: soft shadows, bounce light, glow and floor reflections at the cost of one texture lookup (`tools/kopfnuss-arena`, `public/kopfnuss/kopfnuss-arena.glb`, 4.5 MB). Small shaders add the moving light on top: chasing ring and marquee lights, spot beams, sparkle on the doors, a halo round the summit star, confetti for the winner (`tv/kopfnuss/arena-fx.ts`). They stand still under reduced motion.
+- Not measured on the funstation yet. Plan: `plans/261118-0108-kopfnuss-stage-overhaul/`.
+
+**Changed**
+
+- Kopfnuss sits in the shelf's **Spiele** half, not under **Minispiele**: it is the quiz played as a TV show, seven rounds and the Gipfelsturm (`ui/shelf-games.ts`).
+
+## Spieltisch 0.194.1 — Zündstoff's TV is told the timing instead of guessing it
+
+**Changed**
+
+- The host sends Zündstoff's TV when the bomb leaves the hand, when and how a holder came by it (caught, dropped, or the round's start) and when it went off. The TV no longer keeps copies of the host's throw and pick-up times or works out from them whether a bomb was caught, so retuning those times on the host cannot silently break the animation. A TV joining just after a catch now shows the catcher's leap.
+- Zündstoff's TV frees its avatars' decoded textures when the game ends, with the scene clean-up Grand Allee already used, and uploads the avatars' normal maps before play like their colours, so the first frame no longer stalls on them.
+- The HUD label helpers moved from Grand Allee to the shared table code, since Zündstoff draws with them too.
+
+## 0.187.1 — New titles get their posters on a device that slept through them
+
+**Fixed** (Android)
+
+- **A device catches up on the artwork of an index it installed bare.** Funstation showed no posters for the 125 titles added on 2026-11-18: the three indexes published that day arrived while its app was not listening, and opening it installed the newest one without fetching. Funstation also ran 0.180.4, a hand-installed build from before the fix that fetches when an opening installs a newer index, and that fix alone would not have caught up an index already installed. The app now remembers which index it last finished fetching artwork for; a start that reaches the channel and finds the installed index not yet fetched for fetches it once, quietly. A start that cannot reach the channel does not try, and a fetch that could not run leaves the index for the next start.
+
+## 0.187.0 — Season posters on every show page
+
+**Changed** (web, tablet and phone)
+
+- **A show's seasons are a row of season posters**, as the television has had since the user chose season cards: the web's season select and the tablet's season drop-down are gone. Each card is the season's own cover where the library holds one (22,660 of 22,931 episodes do), else the show's poster with the season's number over it; the watched share is the poster's rule, and under it the season, its episode count and how many are watched. The season showing has a rule under it, as the showing tab does; a press shows that season's episodes below, through the URL on the web as before. On the tablet the row opens on the season showing.
+
+## 0.186.0 — Continue and My List as a list on the tablet
+
+**Added** (tablet and phone)
+
+- **Continue and My List offer List · Grid**, as the web's did in 0.185.0 and the tablet's Movies page already did: one choice per device, the same one Movies reads. List draws a row per title with its show, episode, year and runtime, the resume time under them, and *Mark finished* on Continue's rows. Grid is still the tablet's default.
+
+## 0.185.0 — Continue and My List as posters
+
+**Added** (web)
+
+- **Continue and My List offer List · Grid**, beside their count, as Movies does. One choice per device, shared by all three pages. Grid draws the posters six to a row, as the tablet draws these two pages, with the progress bar, the resume time and *Mark finished* under each poster on Continue. List stays the default.
+
+## 0.184.0 — Ambient on the web
+
+**Added** (web)
+
+- **Ambient in Settings → Appearance → Artwork**, as on the tablet: rounded cards, and four soft blobs drifting slowly behind the page like a lava lamp's, merging as they pass, faint. The glow takes a poster's strongest colour (its most vivid family of hue, from a few dozen pixels, lifted so dark posters still glow; a black-and-white poster glows grey), by the same pick the Android app makes. A title's or a show's page glows in its own picture's colour; Home and the shelves glow in the colour of the row scrolled to (its first poster on screen, about a third of the way down the window), easing to the next as you scroll. The glow never shows over a page's backdrop art and fades back in over 96px around it. With reduced motion the glow stays still. Drawn as one fixed layer of CSS, so it never redraws the page.
+
+## 0.183.2 — A tidy Profiles page and a centred countdown
+
+**Changed** (web)
+
+- **Settings → Profiles reads as one list.** You is now a row like the people under Manage profiles — the initial, the name, who they are (Owner · Admin, or Kid · FSK 6), Switch profile at its end — with Subtitles on a row of the same columns. A household's name sits over its *Admin X · N profiles* line, its ⋯ at the end of both. *As X* under Manage profiles shows only when the one managing is not the one watching. The System and playback status link is gone from the page: the rail's System link goes to the same place.
+- **The loading countdown stands in the middle of the screen**, its words under it, instead of low on the left of an empty page.
+
+## 0.183.1 — Settings opens before the profiles are read
+
+**Fixed**
+
+- The web Profiles tab no longer breaks Settings when no owner has been read yet and the chosen profile has no id: the two missing ids no longer count as "the owner is managing". 0.183.0's Android release (channel message 51879) is unchanged.
+
+## 0.183.0 — Who's managing? and the calm Profiles page on the tablet and the TV
+
+**Added**
+
+- The Android tablet/phone and TV Profiles pages match the web's: picker → Manage profiles asks *Who's managing?* with the picker's own avatar tiles (the owner first, labelled Owner, asking the owner's PIN; an Owner tile at the end on a device showing another household). The owner's view lists every household with its actions (⋯ on the tablet, the household line's OK on the TV), one row per person that opens that person's controls, one *Add someone* per household (Grown-up or Kid, *Belongs to* only with more than one grown-up), *Create a household*, and *This device* as one line. Anyone else managing gets the same rows for what they may manage.
+- On the TV, Back from the owner view returns to the tiles with the chosen tile focused; after an add or a PIN the remote returns to the row it came from. A refused add keeps what was typed on every surface.
+- Which rows a manager sees and what each opens is decided once, in the shared Android state, for both the tablet and the TV.
+
+**Removed**
+
+- The households-only Owner button and its panel, the *Everyone here* list and the *Who are you?* pills on Android, as on the web.
+
+Not released to devices yet: Android reaches the tablet and the TV with the next release.
+
+## 0.182.1 — The calm Profiles page closes its forms and menus the way keys expect
+
+**Fixed**
+
+- The Grown-up / Kid choice in *Add someone* shows one selection: keyboard focus rings the whole choice and follows the option picked.
+- Rename, Change admin and Move a grown-up here, opened from a household's ⋯, have a Cancel and close on Escape, back to that ⋯. The ⋯ list closes when Tab leaves it.
+- Each *Add someone* is announced with its household ("Add someone to Home"). After Reset PIN or Change your PIN focus returns to that person's row; after a household is deleted, to the next household or *Create a household*.
+
+## 0.182.0 — The owner manages every household from one calm page
+
+**Added**
+
+- The owner can add a grown-up straight into any household and a kid for any grown-up. `POST /api/profiles` takes an optional `household` (grown-up) or `parentId` (kid); a household with no admin makes the new grown-up its admin. The rule is the same in the web server, the Rust core and Android, held to `profile-rules.json`; clients that send neither field behave as before.
+- Watching as the owner, Settings → Profiles shows every household on one page: its name, *Admin X · N profiles* and a ⋯ menu with the actions the rule allows (Rename, Change admin, Move a grown-up here, Use on this device, Delete); one row per person (name, role line) that opens that person's controls on a tap; one *Add someone* per household (Grown-up or Kid, *Belongs to* only with more than one grown-up, defaulting to the admin); *Create a household*; *This device* as one line. The owner's PIN is asked once, at the first change, and dropped when the page is left or on a wrong PIN.
+- Picker → Manage profiles asks *Who's managing?* with the same avatar tiles as *Who's watching?*: the owner first and labelled Owner, an Owner tile at the end on a device showing another household. The Everyone here list, the Who are you? pills and the separate Owner button are gone. A grown-up who is not the owner sees the same tiles in Settings, with This device below them, and then the same calm rows for what they may manage.
+- Android (tablet/phone and TV) has the owner view and add-anywhere in its first, denser form; Who's managing? and the calm rows follow there. Not released to devices.
+
+Spec `docs/superpowers/specs/2026-11-16-owner-profiles-view-design.md` and `2026-11-17-who-is-managing-and-calm-owner-view-design.md`, plan `plans/261116-2016-owner-profiles-view/`.
+
+## Spieltisch 0.194.0 — Zündstoff is a bomb thrown round a circle in 3D
+
+**Changed**
+
+- Zündstoff asks no questions any more. The TV shows the players' avatars standing in a circle round a felt table, seen from high above; whoever holds the bomb taps a name on the phone to throw it, and it flies about a second. The target's phone shows one key, "Fangen!": a tap as the bomb lands catches it, a tap too early fumbles it, no tap misses. A caught bomb can be thrown on a moment later, so a second tap on Fangen! throws nothing; a missed one drops at the target's feet and can be thrown on two seconds later, once it is picked up. Throwing straight back is allowed.
+- The fuse is hidden (18–40 s, stretched by Tempo); nothing on the TV or the phones hints at it. Whoever holds the bomb when it goes off loses one of three lives (Dauer: 2, 3 or 5); a bomb still in the throwing hand hits the thrower, one in the air its target; the last one with lives left wins, and the victim starts the next round. The house throws for an away holder; an away target never catches.
+- With no questions left, kids play Zündstoff like everyone else.
+- The TV's avatar copies carry five more clips (throw, leaping catch, catch and fall, bend-over pick-up, the fall at the blast), rigged and animated on Meshy for all 22 avatars; the copies grow from 41 to 43 MB. Zündstoff's TV is built for the funstation. Spec `docs/superpowers/specs/2026-11-15-zuendstoff-3d-design.md`, plan `plans/261115-2340-zuendstoff-3d/`.
+
+## 0.181.0 — A film held more than once is one entry
+
+**Added**
+
+- A film uploaded twice, at another quality or in another cut, is one card with a "2 versions" badge, on the web player, the phone and tablet, and the TV. Its page lists each copy (`Standard · 4K HDR · 3h 5m · 13 GB`, with codecs and audio languages) with its own Play, in place of the one Play button. Copies are grouped by their TMDB id when the catalogue is read; the index, the watch state and the sync record are unchanged.
+- A card that plays straight away (Continue, My List, a list, search) asks which copy to play: a dialog on the web, a bottom sheet on the phone. Escape, Back or Cancel plays nothing. A Join, a scene and the hand-over to the next title on a list play their copy without asking.
+- A position carries between copies of one cut (stop the 1080p copy, resume in 4K) but never into another cut. A film counts as watched when any copy is; Continue lists it once.
+- The uploader guesses a film's cut from its file name (Director's Cut, Extended, Uncut, Final Cut, Remastered; only the tags after the year) and asks to confirm it at a terminal. When the film is already held it says which copies are, and it refuses an exact duplicate (same quality, HDR, cut and audio languages) unless someone at the terminal says yes.
+
+## Spieltisch 0.193.7 — The final screen counts the players who played
+
+**Changed**
+
+- "Platz 2 von 4" on the phone's final screen counts the players who were in the game when it ended, a player whose phone had gone away included. Someone who joined only to wait for the next game is no longer counted: in Dreifelder and Zündstoff a player who joined during the game no longer raises the number, and in every game someone who joins after the end no longer raises it for everyone else.
+- Whoever joins after a game has ended sees "… läuft – Du spielst in der nächsten Runde mit." instead of a last place of their own, and the award ceremony on the TV no longer lists them. Flüchtig's ceremony lists the fugitive and the hunters only, not players who joined during the chase.
+- Joining a running Dreifelder or Zündstoff now says what every other game says, "Du spielst in der nächsten Runde mit.": Dreifelder said "Beim nächsten Spiel bist du dabei.", and Zündstoff showed the newcomer as already out of the game.
+
+## Spieltisch 0.193.0 — Letztes Wort, the last right answer keeps the stick
+
+**Added**
+
+- Letztes Wort, a minigame for three to eight. Each round is one question with five to ten right answers ("Nenne einen Planeten unseres Sonnensystems") and a hidden clock of 15–35 s. Players buzz on the phone (a buzzer sound on the phone and the TV) and say their answer out loud; the round's host, a different player each round in seat order, judges it on a desk that lists the answers: a right one takes the winning stick, a wrong one (or one already given) is out for the round, "Auch richtig" accepts an answer the list lacks. Whoever holds the stick when the time runs out wins the round; it ends early when nobody else could take the stick. The TV never shows an answer or a clock. 68 bundled questions; Tempo stretches the hidden clock, Dauer gives one, two or three laps round the table; a host who leaves hands the round to the next player with a new question. Spec `docs/superpowers/specs/2026-11-15-letztes-wort-design.md`, plan `plans/261115-1559-letztes-wort/`.
+## Spieltisch 0.192.6 — Kids mode asks no general questions
+
+**Fixed**
+
+- Kids mode no longer asks questions from the general pack, which nobody has checked for children. Zündstoff and the Buzzer-Quiz with general questions now say "… gibt es nicht im Kindermodus." in the lobby, as Kopfnuss and Dreifelder already did. A mixed or film quiz in kids mode asks only about kid-safe films and series, instead of filling half the night (or a small library's shortfall) with general questions; when the library has too few for the chosen length (Kurz 4, Normal 8, Lang 12), the lobby says "Nicht genug Kinderfilme für ein Quiz dieser Dauer." instead of starting. Grown-ups' evenings are unchanged.
+
+## Spieltisch 0.192.5 — Shelf art for the games still to come
+
+**Changed**
+
+- New posters and backdrops for 13 of the 18 "Coming soon" games, made the same way as 0.192.4's: each starts from its blurb, the title in the scene. Neunmalklug a late-night radio host smirking at a caller's answer (the studio's lit sign), Wissensreise a balloon over six landscapes with five of six stones (the balloon), Grundstück the piglet parachuting onto the bear's roof while he holds out a paw for rent (a plot sign), Spielwiese a meadow of minigames from above (mown into the grass), Wortwerk a letterpress shop (printed), Neuland the first landing on an empty island (written in the sand), Feldzug chestnut armies on a chalk map (chalk), Gassenwechsel a row of houses slid aside on rails (a street-name sign), Pleitier the piglet dancing with empty pockets at a wishing fountain (coins under water), Radau a Sunday-noon racket out of one window and a neighbour's broom (comic sound letters), Sprechstunde a school corridor of embarrassed life-stage photos (a brass door plate), Nachtwache keys collected under the eye of a guardian in the TV (a grandfather clock), Herz the raccoon holding every heart up to the moon (a paper lantern). Tiến Lên, Euchre, Pikett, Schafkopf and Klabberjass keep their art until the next credits (user's choice).
+
+## Spieltisch 0.192.4 — Each game's shelf art starts from its own rules
+
+**Changed**
+
+- New posters and backdrops for the 14 playable games and Lebensweg (BudgetPixel gpt-image-2.6). The old set was one picture repeated, the cast crowded into a warm living room under the same cream banner title; each new one starts from something its game does, and its title sits in the scene: Buzzer-Quiz a home cinema where the fox's phone buzzes first (the film's title card), Poster-Raten the dark knight locked out on the kerb beside a blocky poster (an advertising column), Grenzfall country-shaped cookies with Chile too long for the tray (icing), Zündstoff a bomb nobody can escape at the top of a Ferris wheel (bulbs), Kopfnuss a dawn rope team with pranked phones (the summit banner), Dreifelder three ice floes and one tipping (ice letters), Preisfrage a doorstep buried in odd parcels (packing tape), Kritzelei a giraffe drawn in light (light), Heimlauf a frog flung back to his front door (road paint), Grand Allee a guest choosing an entrance on a rainy boulevard (a canopy), Flüchtig the fugitive seen in one ferry lamp (the hull), Mau-Mau a train compartment pointing at the ghost who forgot "Mau" (the reservation sign), Schwimmen the knock in a beer garden, coins as lives and a swim ring for the last (carved in the table), Durak a defender behind a wall of cards (the card box), Lebensweg a tilt-shift Lebensberg (a town sign). The 18 planned games keep their art for now. Plan: `plans/261115-1448-shelf-art-renewal/`.
+
+## 0.180.7 — A new Fun-Station picture from power-on
+
+**Changed**
+
+- The Fun-Station picture (boot screen, login splash, Android's boot animation) is the cast backstage getting a film night and a game night ready, the name painted on the brick wall with "by KipOlsenXyphon" under it; before, a glowing gamepad over a planet. 2880×1620, so the 4K boot animation no longer scales up a 2048 picture.
+- The TV tile's logo is its own file, `scripts/funstation/fun-station-logo.png`, the picture's lettering on transparency, instead of a crop of the picture keyed on its dark sky, which the new picture does not have.
+
+**Fixed**
+
+- `setup-funstation.sh` rebuilds the initramfs when the picture changes, not only when the theme's name does; a new picture would otherwise never reach the boot screen.
+
+## Spieltisch 0.192.2 — The cast at the table is the app's icon
+
+**Changed**
+
+- Spieltisch's icon and TV launcher tile are three of the cast, the cat, the panda and the piglet, at the green felt table with their phones, in the shelf posters' 3D look (BudgetPixel gpt-image-2.6; the user's pick from three options, the others the die and phones round a table). The tile carries the name on the table felt in the TV page's Bricolage Grotesque; before, it was the die alone, and on the launcher the two apps told apart only by colour.
+- The phone controller apps (Android and iOS) carry the same picture, as they carried the same die. Android's adaptive icon has no monochrome layer any more: a themed icon would flatten the picture into one blot.
+- Both are PNG now (`drawable-xxxhdpi`, the banner `drawable-xhdpi`, iOS `Resources/AppIcon.png`); the die's vectors are gone.
+
+## 0.180.4 — The film leader is the app's icon
+
+**Changed**
+
+- The media app's icon and TV launcher tile are the film leader the web player shows while a film loads, rings, crosshair, coral sweep and the 3, on the player's dark paper; the tile adds the player's wordmark, *mediagram* in Fraunces 600 (as outlines). Before, a white ring with no name. The user's pick from three options, the others a film strip cut into the parts a film is stored in, and the letter m.
+
+## Spieltisch 0.192.1 — Spruchreif's shelf art shows a round of the game
+
+**Changed**
+
+- New poster and backdrop for *Spruchreif* (BudgetPixel gpt-image-2.6). The first pair could have belonged to any proverb game; this one stages a question from the game's own file. "Wer im Glashaus sitzt" / "People who live in glass houses" is in both languages with the same wrong ending, so an allotment greenhouse at dusk shows both answers at once: inside, the bodybuilder pulls a much too small curtain (the wrong ending, "Vorhänge" / "close the curtains"), outside the raccoon holds a pebble (the real one). The title is wiped into the fogged glass. The backdrop is the same garden wide, the greenhouse top right above the poster row.
+
+## Spieltisch 0.192.0 — Spruchreif, finish the proverb
+
+**Added**
+
+- A new minigame, *Spruchreif*: the TV shows the start of a proverb ("Wer anderen eine Grube gräbt, …", "Don't put all your eggs …"), the phones four endings, the real one and three that sound right and are not. It is the Buzzer-Quiz with bundled questions, like Grenzfall: faster right answers score more, the reveal and podium are the quiz's.
+- German and English proverbs by turns in every game, either language may open; the label shows 🇩🇪 Sprichwort or 🇬🇧 Proverb (user's decision: mixed, no lobby language setting).
+- 246 proverbs in `questions/sprichwoerter.json`, 139 German and 107 English, each with three handwritten wrong endings, in three tiers: well-known first, rare or old ones last (10 rounds; Kurz 5, Lang 15). A night repeats none until a language's tier runs out.
+- Shelf entry, poster and backdrop (BudgetPixel gpt-image-2.6: the granny telling a saying that trails off, the fox, panda and piglet finishing it on their phones, proverb sight gags and German and British bunting).
+
+## Spieltisch 0.191.0 — Dauer: how much of a game is played
+
+**Added**
+
+- A lobby setting *Dauer* with Kurz, Normal and Lang, beside Tempo: Kurz halves how much of a game is played, Lang adds half again, both rounded up. Buzzer-Quiz 4 / 8 / 12 questions, Poster-Raten 5 / 10 / 15 posters, Grenzfall 5 / 10 / 15 outlines (still easy first, hard last), Kopfnuss 4 / 7 / 11 rounds before the climb (each still three questions), Dreifelder a cap of 6 / 12 / 18 questions, Preisfrage 3 / 6 / 9 articles, Zündstoff 2 / 3 / 5 lives, Kritzelei once / as now / once more round the table (a small table draws three times on Lang), Grand Allee's round limit and its bounds.
+- The leader's phone shows it under Tempo for these games, and the TV's line names it ("1–8 Spieler · Fragen: Gemischt · Tempo: Normal · Dauer: Lang"). Like Tempo it belongs to the room, starts each night on Normal and is left alone by the TV's game pick.
+- The catalogue marks which games have a length (`GameEntry.sized`). Heimlauf, Flüchtig, Mau-Mau, Schwimmen and Durak are played to their end and show none.
+
+**Changed**
+
+- Each setting row on the leader's phone is named above its buttons (Fragen, Tempo, Dauer), since Tempo and Dauer both have a Normal.
+- The Buzzer-Quiz's description on the shelf no longer says "Acht Runden", which a Kurz or Lang game would contradict.
+
+## Spieltisch 0.190.0 — Kids mode is the one content switch
+
+**Changed**
+
+- The Matratzensport switch is gone from the phone, and the setting from the box (user's decision): "Nur für Kinder" is the one content switch now. Without it, Quiz, Kopfnuss and Dreifelder also ask the adult questions about sexuality; with it, never. A grown-ups' evening no longer has to switch them on, and the TV lobby drops its "Matratzensport · ab 18" badge. A page still sending the old switch is accepted and the switch ignored. Breaking for the wire (`LobbySettings.adult` and `configure`'s `adult` are gone), so minor.
+
+## Spieltisch 0.189.0 — The TV picks the game, Kritzelei on the iPad
+
+**Changed**
+
+- The host's phone no longer lists the games: the game is picked on the TV with the remote, and the phone shows the pick as its title ("Gewählt wird am Fernseher."). The Buzzer-Quiz's question mix (Filme, Allgemein, Gemischt) and the tempo of a game with a clock stay on the phone, since the TV has no place for them. The other phones say "… startet das Spiel" instead of "… wählt das Spiel".
+- With "Nur für Kinder" on, the phone no longer shows the Matratzensport switch at all (the box already switched the adult questions off in kids mode).
+- The iOS controller's build number follows the Spieltisch version again (`CFBundleVersion` 189000); it had been left at 153003 while the version moved on.
+- An iPad that played before becomes the drawing board on its next launch; "Doch mitspielen" turns it back into a player and is remembered.
+
+**Fixed**
+
+- The iOS controller launches on iOS 16 and 17 again. xtool's linker kept a link to `SwiftUICore`, a framework that exists only from iOS 18, so the app quit at once on older iPads; the app target now drops that auto-link.
+
+**Removed**
+
+- The finger-to-TV latency test merged in 0.184.0 (its "Latenztest" button, the TV's stats overlay, the iPad's test view and the box's relay). It was a throwaway measurement. Its merge had also brought a dev-only search filter into the iOS app, which then found only a server announced as "Spieltisch dev" and never the TV box.
+
+## Spieltisch 0.188.0 — Tempo for every game with a clock
+
+**Added**
+
+- The lobby's *Tempo* (Entspannt, Normal, Speedrun) now sets the clocks of every game where players race one: Buzzer-Quiz and Grenzfall (time to answer), Poster-Raten (how fast the poster sharpens), Kopfnuss (the pick, every question and the summit climb), Dreifelder (time to pick a field), Kritzelei (time to draw), Zündstoff (the fuse), Preisfrage (time to guess) and Grand Allee (a decision's and an auction's clock). Entspannt doubles these times and Speedrun halves them; reveals, animations and the fair-tap margins stay as they are.
+- The leader's phone shows the tempo under each of these games, and the TV's line names it ("1–8 Spieler · Fragen: Gemischt · Tempo: Speedrun"). The setting belongs to the room, so it carries from one game to the next.
+- The catalogue marks which games have a clock (`GameEntry.timed`). Heimlauf, Flüchtig, Mau-Mau, Schwimmen and Durak are played turn by turn without one, so they show no tempo.
+
+**Changed**
+
+- Preisfrage's Speedrun gives 30 seconds to guess instead of 20, now that Speedrun means half the time in every game.
+
+## Spieltisch 0.187.0 — Zündstoff, the bomb passed until one is left
+
+**Added**
+
+- Zündstoff (`plans/261114-1220-zuendstoff-bomb-game/plan.md`), the second minigame from the user's first list that had been left unbuilt: a bomb with a hidden fuse goes from phone to phone. Whoever holds it answers a quick question from the general pack on their phone; a right answer lets them throw the bomb to a player of their choice, a wrong one brings the next question after a 2-second pause. When the fuse runs out (18 to 40 seconds a round) the holder loses one of three lives and starts the next round; out at zero, the last one left wins, ranked by when the others went out. The house throws for a holder who is away. The holder's phone buzzes on the catch and at the bang.
+- The TV shows the bomb with its holder, the question and its answers big, who threw to whom, a "BUMM!" with the life it cost, and everyone's lives along the bottom; the fuse is never shown.
+- Zündstoff's shelf poster and backdrop.
+## Spieltisch 0.186.0 — A tempo for Preisfrage
+
+**Added**
+
+- A lobby setting *Tempo* with Entspannt, Normal and Speedrun. The leader picks it on the phone under Preisfrage, and the TV shows it beside the game ("1–8 Spieler · Tempo: Entspannt"). It sets how long the keypads stay open for each article: 2 minutes, 1 minute or 20 seconds. Each night starts on Normal, and the TV's own game pick leaves it alone, as it does the other settings. Only Preisfrage reads it so far; the setting is named for the whole lobby so other games with a clock can follow.
+
+**Changed**
+
+- Preisfrage gives 1 minute to guess by default (Normal), instead of the 2 minutes of 0.184.1. The 2 minutes are now Entspannt.
+
+## Spieltisch 0.185.0 — Grenzfall, the country by its outline
+
+**Added**
+
+- Grenzfall (`plans/261114-1114-grenzfall-country-shapes/plan.md`), a minigame from the user's first list of minigames that had been left unbuilt: a country's outline on the TV, four country names on the phones, scored like the Buzzer-Quiz (the faster a right answer, the more points). Ten rounds: three well-known shapes, four middle ones, three hard ones. The wrong answers are other famous shapes in an easy round, countries of the same continent in a middle one and the neighbours in a hard one. A country shown tonight comes back only once its tier is used up. It runs the quiz engine with questions made from `questions/laender.json`.
+- 166 country outlines, built by `scripts/build_country_shapes.py` from Natural Earth's 1:50m countries (public domain): the UN members, each in its own Mercator view, overseas territory dropped (Alaska and Hawaii, French Guiana, the Canaries, Svalbard …), Somaliland and Northern Cyprus joined to Somalia and Cyprus. Left out: states whose statehood is disputed, and 28 states that are a blob or a few dots of atoll at that scale (Malta, Singapore, the small Caribbean and Pacific island states …).
+- Grenzfall's shelf poster and backdrop.
+
+**Changed**
+
+- A long answer on a phone's answer key breaks at a syllable ("Deutsch-land") instead of at any letter ("Deutschlan-d").
+
+## Spieltisch 0.184.2 — The latency test stays out of a game night
+
+**Fixed**
+
+- The latency test's stats box ("n=0") sat over the top left of every TV page since the spike was merged in 0.184.0, covering the lobby's and each game's heading. It shows only while test points arrive now.
+- The phone lobby's "Latenztest" button showed in every controller app; only the iOS controller has the test, so on Android a tap would have thrown. It shows only where the app offers the test.
+
+## Spieltisch 0.184.1 — Preisfrage gives two minutes to guess
+
+**Changed**
+
+- Preisfrage's keypads stay open for 2 minutes per article instead of 20 seconds. The reveal still comes as soon as everyone at the table has guessed, so the clock only matters for whoever is still thinking.
+
+## Spieltisch 0.184.0 — Kritzelei, the drawing game, as far as it is built
+
+**Added**
+
+- Kritzelei (`plans/261113-2115-kritzelei-drawing-game/plan.md`), merged mid-build at the user's request: one player draws on an iPad with a finger, the TV shows the line live, the room guesses out loud and the drawer taps who got it. A drawing board joins the room beside the phones and the TV; the iPad's page becomes the board by itself and drives a native drawing view (iOS controller), and the game waits in the lobby until a board is there. Its word list, turns, clock and scoring are in; the plan's device walk is not done yet.
+- On the shelf Kritzelei is a playable minigame now instead of WIP.
+- The Lebensberg board prototype for Lebensweg (`plans/261112-0055-lebensweg/`), a realistic miniature look; prototype only, no game code.
+
+## Spieltisch 0.183.0 — The native core without its game list
+
+**Removed**
+
+- `game_catalogue()` and its `GameEntry` record from `spieltisch-core`'s native interface, with `wire_name()`, their tests and `mediagram-game`'s `CATALOGUE` re-export. Nothing called them since 0.179.0, when the app began listing the games from the web page; the Kotlin bindings are regenerated. Minor, not patch, because a public API goes.
+
 ## Spieltisch 0.182.0 — Preisfrage with sound
 
 **Added**
@@ -65,6 +360,12 @@ to `main`. Full phase-by-phase detail lives in
 - The host takes only the game from the TV's `configure`, never quiz mode, kids mode or adult questions: a pick from the poster row crossing the leader's kids-mode tap could otherwise switch it back.
 - The art moved from `res/drawable-nodpi/game_{poster,backdrop}_<kind>.webp` to `assets/game-art/{poster,backdrop}-<kind>.webp` (kind with dashes), served to the page at `/game-art/` by `GamePageClient` like the ceremony avatars, so it is not embedded once per ABI with the web client. A game without art shows its name on the felt; so does every game on the dev host.
 - "The library's films aren't available right now" is now on the page (`?films=0`): "Die Filme der Mediathek sind gerade nicht erreichbar."
+
+## 0.180.1 — The web player converts on the GPU end to end
+
+**Fixed**
+
+- A conversion for a browser that cannot play the original now decodes on the GPU too, not only encodes there (`web/src/transcode/vaapi-decode.ts`). On funstation, 4K HEVC 10-bit converted at barely real time with the CPU decoding (10 s of film in 9.9 s, 29 s of CPU), so the warm-up's 60 s buffer never filled and every start sat out the whole 45 s; decoded, fitted and encoded on the GPU it takes 4.7 s and under 1 s of CPU, with the same picture. AV1 keeps the CPU path: with `-hwaccel` ffmpeg picks an AV1 decoder with no software fallback, and funstation's GPU has no AV1. Sources the GPU cannot decode (H.264 High 10, pictures over 4096 wide) fall back to software within the same command.
 
 ## 0.180.0 — The remote's battery on funstation
 

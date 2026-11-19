@@ -18,8 +18,7 @@ REPO_URL=https://github.com/daBOB/mediagram.git
 REPO="$HOME/mediagram"
 # The Fun-Station picture: the boot and splash screens, and the Android TV tile's logo.
 ART="$REPO/scripts/funstation/fun-station.png"
-# shortcut: follows feat/funstation until it is merged; switch to main then.
-REPO_BRANCH=feat/funstation
+REPO_BRANCH=main
 # The TV apps ask TMDB in the library's language (else the device's); posters must ask in
 # the same one to share their cache server entries.
 TMDB_LANGUAGE="${TMDB_LANGUAGE:-de-DE}"
@@ -55,15 +54,42 @@ chmod 600 ~/.ssh/authorized_keys
 grep -qF "$DEV_KEY" ~/.ssh/authorized_keys || echo "$DEV_KEY" >>~/.ssh/authorized_keys
 
 step "packages (and the rest of the system up to date)"
-sudo pacman -Syu --needed --noconfirm plasma-bigscreen waydroid chromium git rustup bun ffmpeg swayidle avahi
+sudo pacman -Syu --needed --noconfirm plasma-bigscreen plasma-keyboard waydroid chromium git rustup bun ffmpeg swayidle avahi
 
 step "announced on the network as $(hostname).local"
-sudo systemctl enable --now avahi-daemon
+# avahi alone answers for this host: systemd-resolved's own responder made avahi lose the name and rename itself funstation-2.local.
+sudo install -d /etc/systemd/resolved.conf.d
+printf '[Resolve]\nMulticastDNS=resolve\n' | sudo tee /etc/systemd/resolved.conf.d/mdns-resolve-only.conf >/dev/null
+sudo systemctl restart systemd-resolved
+# Everything here listens on IPv4 only. A resolver that keeps the first family to answer (systemd-resolved does) got only IPv6 addresses, all refused.
+sudo sed -i -e 's/^#\?use-ipv6=.*/use-ipv6=no/' -e 's/^#\?publish-aaaa-on-ipv4=.*/publish-aaaa-on-ipv4=no/' /etc/avahi/avahi-daemon.conf
+sudo systemctl enable avahi-daemon
+sudo systemctl restart avahi-daemon
 
 step "mediagram source (public repo, updated on every run)"
 [ -d "$REPO/.git" ] || git clone "$REPO_URL" "$REPO"
 git -C "$REPO" fetch -q origin "$REPO_BRANCH"
 git -C "$REPO" checkout -q -B "$REPO_BRANCH" FETCH_HEAD
+
+step "Plasma Bigscreen with funstation's fixes: Wi-Fi details, Back in dialogs"
+# Stock 6.8.2 (and upstream master on 2026-11-15) shows only Speed under Network
+# information and ignores Back there. Its QML is compiled in, so the fix is a rebuilt
+# package; an update to another upstream release needs the PKGBUILD moved to it.
+BIGSCREEN_PKG="$REPO/scripts/funstation/plasma-bigscreen"
+bigscreen_installed="$(pacman -Q plasma-bigscreen | cut -d' ' -f2)"
+bigscreen_pinned="$(sed -n 's/^pkgver=//p' "$BIGSCREEN_PKG/PKGBUILD")"
+if pacman -Qi plasma-bigscreen | grep -q '^Description.*funstation build'; then
+  echo "already the funstation build ($bigscreen_installed)"
+elif [ "${bigscreen_installed%-*}" != "$bigscreen_pinned" ]; then
+  echo "WARNING: plasma-bigscreen $bigscreen_installed is not $bigscreen_pinned: move the PKGBUILD" \
+    "to it (pkgver and Arch's sha256) and check the patch still applies; stock build kept" >&2
+else
+  bigscreen_build="$(mktemp -d)"
+  cp "$BIGSCREEN_PKG"/* "$bigscreen_build"/
+  bigscreen_rel="${bigscreen_installed#*-}"
+  (cd "$bigscreen_build" && FUNSTATION_PKGREL="${bigscreen_rel%%.*}.90" makepkg -sirc --noconfirm)
+  rm -rf "$bigscreen_build"
+fi
 
 step "cache server: the LAN chunk store every player in the house reads through"
 rustup default stable >/dev/null
@@ -273,28 +299,24 @@ rm -f "$js"
 EOF
 chmod +x ~/.local/bin/funstation-android
 # WayDroid lists only phone-launcher apps; mediagram is TV-only, so it gets its own tile.
+# The icon is the one WayDroid extracts from the installed app, so the tile follows the
+# app's icon. Android writes it when its session starts, not when the app updates.
 cat >~/.local/share/applications/mediagram.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=mediagram
 Comment=Films, series and game night
 Exec=$HOME/.local/bin/funstation-android com.mediagram.android
-Icon=video-television
+Icon=$HOME/.local/share/waydroid/data/icons/com.mediagram.android.png
 Categories=AudioVideo;Video;Player;
 EOF
 # The Android TV tile wears the Fun-Station logo, which Bigscreen's loading screen shows
-# too: the logo cut from the picture, its dark sky made transparent for the tile's card.
-# Two magick runs: chained into one, the grey mask took the logo's colour with it.
-# shortcut: crop and star box measured on this picture; a new picture needs new numbers.
+# too: the picture's lettering, kept as its own cut-out since the picture's backstage wall
+# leaves no plain sky to key out.
 ICON=~/.local/share/icons/fun-station.png
-LOGO=$(mktemp -d)
 mkdir -p "$(dirname "$ICON")"
-magick "$ART" -crop 1240x470+410+195 +repage "$LOGO/logo.png"
-magick "$LOGO/logo.png" -colorspace gray -level 6%,40% -fill black -draw "rectangle 1150,0 1240,200" "$LOGO/mask.png"
-magick "$LOGO/logo.png" "$LOGO/mask.png" -alpha off -compose CopyOpacity -composite -colorspace sRGB "$LOGO/cut.png"
-magick "$LOGO/cut.png" -channel A -morphology Open Disk:3 +channel -trim +repage -resize 496x496 \
+magick "$REPO/scripts/funstation/fun-station-logo.png" -trim +repage -resize 496x496 \
   -background none -gravity center -extent 512x512 "$ICON"
-rm -rf "$LOGO"
 cat >~/.local/share/applications/android-tv.desktop <<EOF
 [Desktop Entry]
 Type=Application
@@ -419,6 +441,8 @@ printf '[Autologin]\nUser=%s\nSession=plasma-bigscreen-wayland\n' "$ME" |
 step "the Fun-Station picture from power-on to Bigscreen, and while Android starts"
 # Plymouth, from power-on until the login, scaled to whatever the screen is.
 THEME=/usr/share/plymouth/themes/funstation
+# A new picture is a new theme to the initramfs too, though the theme keeps its name.
+cmp -s "$ART" "$THEME/fun-station.png" && NEW_PICTURE= || NEW_PICTURE=1
 sudo install -Dm644 "$ART" "$THEME/fun-station.png"
 sudo tee "$THEME/funstation.plymouth" >/dev/null <<EOF
 [Plymouth Theme]
@@ -436,8 +460,10 @@ Window.SetBackgroundBottomColor(0, 0, 0);
 picture = Sprite(Image("fun-station.png").Scale(Window.GetWidth(), Window.GetHeight()));
 picture.SetPosition(Window.GetX(), Window.GetY(), 0);
 EOF
-# -R rebuilds the initramfs, which carries the theme; only when the theme changes.
-[ "$(plymouth-set-default-theme)" = funstation ] || sudo plymouth-set-default-theme -R funstation
+# -R rebuilds the initramfs, which carries the theme; only when the theme or its picture changes.
+if [ -n "$NEW_PICTURE" ] || [ "$(plymouth-set-default-theme)" != funstation ]; then
+  sudo plymouth-set-default-theme -R funstation
+fi
 # Plasma's own splash after the autologin, so the picture stays up until Bigscreen.
 SPLASH=~/.local/share/plasma/look-and-feel/org.funstation.splash
 install -Dm644 "$ART" "$SPLASH/contents/splash/images/fun-station.png"
@@ -475,8 +501,8 @@ step "Android TV on the home network, so phones can join its game night"
 # its game night (port 8080) or find it over mDNS. On a bridge over the wired port
 # Android gets an address from the home router like any other device, and WayDroid's
 # network script steps aside for any bridge that isn't its own waydroid0.
-# shortcut: wired only, since a Wi-Fi client can't carry another device's MAC; a
-# Wi-Fi-only funstation keeps the NAT bridge, and phones can't join its game night.
+# Wired only, since a Wi-Fi client can't carry another device's MAC: without a cable the
+# next step moves Android back behind WayDroid's NAT and forwards the game night to it.
 LXC=/var/lib/waydroid/lxc/waydroid/config
 WIRED=$(nmcli -t -f DEVICE,TYPE,STATE device | awk -F: '$2 == "ethernet" && $3 == "connected" {print $1; exit}')
 if [ -n "$WIRED" ] && ! nmcli -t -f NAME con show | grep -qx br0; then
@@ -495,5 +521,45 @@ if nmcli -t -f NAME con show | grep -qx br0 && ! sudo grep -qx 'lxc.net.0.link =
   # The session ends with the container; without a TV session yet it starts at the next login.
   systemctl --user restart android-tv-session 2>/dev/null || true
 fi
+
+step "without the cable, Android goes online over Wi-Fi and phones still join its game night"
+# On the bridge alone, a missing cable left Android with no network at all: Spieltisch
+# showed 127.0.0.1 and the media app reached nothing (2026-11-15). The helper follows the
+# cable at boot and on every NetworkManager event; moving Android restarts it.
+sed "s/@TV_USER@/$ME/" "$REPO/scripts/funstation/funstation-android-net" |
+  sudo tee /usr/local/bin/funstation-android-net >/dev/null
+sudo chmod 755 /usr/local/bin/funstation-android-net
+sudo tee /etc/systemd/system/funstation-android-net.service >/dev/null <<'EOF'
+[Unit]
+Description=Funstation: Android on the bridge or behind WayDroid's NAT, as the cable allows
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/funstation-android-net
+EOF
+sudo tee /etc/systemd/system/funstation-android-net-boot.service >/dev/null <<'EOF'
+[Unit]
+Description=Funstation: pick Android's network before its container starts
+After=NetworkManager.service
+Before=waydroid-container.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/funstation-android-net --boot
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo tee /etc/NetworkManager/dispatcher.d/90-funstation-android-net >/dev/null <<'EOF'
+#!/bin/sh
+# Android's own links come and go with every move; the helper decides the rest.
+case "$1" in veth* | waydroid0) exit 0 ;; esac
+case "$2" in up | down | dhcp4-change) systemctl start --no-block funstation-android-net.service ;; esac
+EOF
+sudo chmod 755 /etc/NetworkManager/dispatcher.d/90-funstation-android-net
+sudo ufw route allow out on waydroid0 to 192.168.240.112 port 8080 proto tcp comment "Spieltisch over Wi-Fi"
+sudo systemctl daemon-reload
+sudo systemctl enable funstation-android-net-boot.service
+sudo systemctl start funstation-android-net.service
 
 printf '\nfunstation ready: reboot to start the TV interface\n'

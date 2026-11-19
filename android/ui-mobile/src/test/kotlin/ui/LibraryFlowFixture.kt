@@ -6,13 +6,15 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
+import catalog.profile.OwnerPin
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
 import data.CoreProvider
-import data.LibraryUpdateCoordinator
+import data.LibraryUpdate
 import data.PortraitRequestLog
+import data.RefreshOutcome
 import data.WatchSync
 import data.settings.InMemoryShelfViewSettings
 import data.settings.InMemoryTmdbSettings
@@ -71,7 +73,8 @@ import setup.ProfileSettingsViewModel
 /** Real routing and catalog/profile/player ViewModels; only external IO and unrelated menu facts are controlled. */
 internal class LibraryFlowFixture(
     loading: Boolean = false,
-    settingsModel: SettingsViewModel? = null,
+    /** Built over this fixture's own library update, the one its catalog reads. */
+    settingsModel: ((LibraryUpdate) -> SettingsViewModel)? = null,
     achievements: Achievements = NO_ACHIEVEMENTS,
     heldIds: Set<String> = emptySet(),
 ) : ViewModelStoreOwner,
@@ -90,15 +93,16 @@ internal class LibraryFlowFixture(
     var refreshes = 0
     var startOvers = 0
     var signedOut = 0
-    val settings = settingsModel ?: mockk<SettingsViewModel>(relaxed = true)
+    val repository = mockk<CatalogRepository>()
+    private val enrichment = CatalogEnrichmentFetcher(mockk<CoreProvider>(), InMemoryTmdbSettings())
+    val libraryUpdate = LibraryUpdate(repository, enrichment)
+    val settings = settingsModel?.invoke(libraryUpdate) ?: mockk<SettingsViewModel>(relaxed = true)
 
     /** What this device has shown the fixture's viewer; a test marks it to put the dot out. */
     val achievementsSeen = InMemoryAchievementsSeen()
 
     /** The Stats page's ViewModel — relaxed, so a test can verify what the page asked of it. */
     val stats = mockk<StatsViewModel>(relaxed = true)
-
-    val repository = mockk<CatalogRepository>()
 
     /** Watch together as the catalog hears it: a test puts a session up, or takes Telegram away. */
     val together = FakeTogetherLive()
@@ -113,9 +117,11 @@ internal class LibraryFlowFixture(
     init {
         if (!loading) catalogReady.complete(Unit)
         val stored = playback.repository
+        // An index with no push time on record: a start fetches artwork only when a refresh installs a newer one.
+        coEvery { repository.publishedAt() } returns null
         coEvery { repository.refresh() } coAnswers {
             refreshes++
-            Result.success(sets.size)
+            RefreshOutcome.AlreadyCurrent
         }
         coEvery { repository.sets() } coAnswers {
             catalogReady.await()
@@ -126,8 +132,7 @@ internal class LibraryFlowFixture(
         // pages ask on every render, and a strict mockk throws for an unstubbed call.
         coEvery { repository.titleCredits(any()) } returns TitleCredits.Empty
         coEvery { repository.fetchPortrait(any()) } returns null
-        val enrichment = CatalogEnrichmentFetcher(mockk<CoreProvider>(), InMemoryTmdbSettings())
-        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, heldSets = FakeHeldSets(heldIds), shelving = Dispatchers.Main.immediate)
+        catalog = CatalogViewModel(repository, stored, libraryUpdate, togetherLive = together, heldSets = FakeHeldSets(heldIds), shelving = Dispatchers.Main.immediate)
         player = playback.factory.create(PlayerViewModel::class.java)
         if (settingsModel == null) {
             every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Viewer", library = "Library"))
@@ -171,7 +176,7 @@ internal class LibraryFlowFixture(
                 CatalogViewModel::class.java to catalog,
                 ProfileViewModel::class.java to ProfileViewModel(stored, mockk<WatchSync>(relaxed = true)),
                 // The gate resolves Manage profiles beside the picker every time it draws, and Join a household (below).
-                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, ui.profile.homeAlone(), mockk<WatchSync>(relaxed = true)),
+                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, ui.profile.homeAlone(), mockk<WatchSync>(relaxed = true), OwnerPin()),
                 FetchViewModel::class.java to FetchViewModel(enrichment),
                 PlayerViewModel::class.java to player,
                 // Play on TV, which the title pages, the player and the library's answer to it all resolve.

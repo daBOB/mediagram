@@ -13,10 +13,12 @@ use ts_rs::TS;
 pub use crate::avatars::AvatarSlot;
 pub use crate::cards::{Card, Rank, Suit};
 pub use crate::catalogue::GameEntry;
+pub use crate::protocol_board::{BoardAct, BoardPlayer, BoardScreen, Buzz, Clock, DrawOp};
 pub use crate::protocol_cards::{
     ButtonNeeds, CardDesk, CardsBanner, CardsEvent, CardsEventKind, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard,
 };
 pub use crate::protocol_client::{Action, ClientMsg, Role};
+pub use crate::protocol_kritzelei::{KritzeleiScene, KritzeleiStage};
 pub use crate::protocol_kopfnuss::{Climber, KopfnussScene, KopfnussStage, Trick, TrickHit, TrickLoad};
 pub use crate::protocol_fluechtig::{
     FluechtigBoard, FluechtigHunter, FluechtigIntro, FluechtigLink, FluechtigLogEntry, FluechtigScene, FluechtigSide, FluechtigSpot, FluechtigTicket,
@@ -30,11 +32,13 @@ pub use crate::protocol_grand_allee::{
 pub use crate::protocol_dreifelder::{DreifelderScene, DreifelderStage, FieldPick, OutPlayer};
 pub use crate::protocol_choice::{AnswerColor, BidRange, ChoiceOption, ChoiceStatus, HotelCard, OutcomeKey, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
+pub use crate::protocol_zuendstoff::{ZuendstoffScene, ZuendstoffSeat, ZuendstoffStage};
+pub use crate::protocol_letztes_wort::{HostAnswer, LetztesWortPhone, LetztesWortScene, LetztesWortStage};
 pub use crate::protocol_preisfrage::{ArticleView, PreisfrageScene, PreisfrageStage, PriceKeypad, PriceRow, PriceStanding};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
-pub use crate::protocol_settings::{GameKind, LobbySettings, QuizMode};
-pub use crate::protocol_tv::{TvScene, TvView};
+pub use crate::protocol_settings::{GameKind, GameLength, GameSpeed, LobbySettings, QuizMode};
+pub use crate::protocol_tv::{Placed, Ranking, TvScene, TvView};
 
 pub type PlayerId = u8;
 pub type ServerTime = f64;
@@ -49,6 +53,10 @@ pub enum ServerMsg {
     Pong { t0: f64, now: ServerTime },
     Phone { view: PhoneView },
     Tv { view: TvView },
+    /// The drawing board's screen.
+    Board { screen: BoardScreen },
+    /// Drawing ops of `turn` from index `from` on, for the board and the TV.
+    Draw { turn: u32, from: u32, ops: Vec<DrawOp> },
     Error { code: ErrorCode, message: String },
 }
 
@@ -86,6 +94,9 @@ pub struct PlayerInfo {
 pub struct PhoneView {
     pub me: PlayerInfo,
     pub screen: PhoneScreen,
+    /// A vibration to play with this view.
+    #[serde(default)]
+    pub buzz: Option<Buzz>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -161,6 +172,10 @@ pub enum PhoneScreen {
     /// Preisfrage's keypad: type a price in euros, send it once.
     Price {
         keypad: PriceKeypad,
+    },
+    /// Letztes Wort: a player's buzzer, the stick, or the round host's desk.
+    LetztesWort {
+        phone: LetztesWortPhone,
     },
     Final {
         rank: u8,

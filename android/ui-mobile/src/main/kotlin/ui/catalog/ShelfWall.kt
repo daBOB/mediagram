@@ -7,40 +7,47 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.Entry
+import catalog.Page
 import catalog.Shelf
+import catalog.ShelfViewModel
 import catalog.extentOf
 import catalog.factsLine
+import catalog.filmsWatched
+import catalog.heldOf
 import catalog.keyOf
 import catalog.offersViewChoice
-import catalog.shelfViewFor
-import catalog.watchedFractionOf
-import data.settings.ShelfView
-import designsystem.Spacing
-import model.Progress
-import model.WatchSnapshot
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import catalog.Page
 import catalog.pageOf
 import catalog.pickFeatured
+import catalog.playedOf
+import catalog.shelfViewFor
+import catalog.versionsBadgeOf
+import data.settings.ShelfView
+import designsystem.Spacing
 import model.MediaSet
+import model.Progress
+import model.WatchSnapshot
+import ui.common.catalog.cardProgressOf
 import kotlin.random.Random
 
 /**
@@ -79,14 +86,14 @@ internal fun ShelfWall(
     val pager: @Composable () -> Unit = { ShelfPager(shown.page, shown.pages, onPage = { requested = it }) }
     var reel by remember { mutableStateOf<List<MediaSet>?>(null) }
     val filmSets = remember(shelf) { shelf.entries.filterIsInstance<Entry.Film>().map { it.set } }
-    val featurable = films != null && filmShelf && pickFeatured(filmSets, watchedIds, Random, 1).isNotEmpty()
+    val featurable = films != null && filmShelf && pickFeatured(filmSets, filmsWatched(watchedIds, filmSets), Random, 1).isNotEmpty()
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (offersViewChoice(shelf)) {
             ShelfBar(
                 pageLine = "page ${shown.page} of ${shown.pages}".takeIf { shown.pages > 1 },
                 view = view,
-                onFeatured = { reel = pickFeatured(filmSets, watchedIds, Random) }.takeIf { featurable },
+                onFeatured = { reel = pickFeatured(filmSets, filmsWatched(watchedIds, filmSets), Random) }.takeIf { featurable },
             )
         }
         if (shelfViewFor(shelf, view.chosen) == ShelfView.LIST) {
@@ -124,6 +131,14 @@ internal fun ShelfWall(
 /** This device's shelf view and the way to change it, handed down as one. */
 internal data class ShelfViewChoice(val chosen: ShelfView, val onChoose: (ShelfView) -> Unit)
 
+/** This device's shelf view, read where a page offers List · Grid: Movies, Continue and My List share it. */
+@Composable
+internal fun shelfViewChoice(): ShelfViewChoice {
+    val model: ShelfViewModel = hiltViewModel()
+    val chosen by model.view.collectAsStateWithLifecycle()
+    return ShelfViewChoice(chosen, model::choose)
+}
+
 /** One shelf card: a film's poster, or a show's or a course's. Shared with Home. */
 @Composable
 internal fun EntryCard(
@@ -148,9 +163,10 @@ internal fun EntryCard(
             // artwork; the line under the name is what tells two
             // versions of the same title apart.
             caption = factsLine(entry.set.year, entry.set.durationSecs),
-            progress = watchedFractionOf(positions[entry.set.setId]),
-            watched = entry.set.setId in watchedIds,
-            held = entry.set.setId in heldIds,
+            progress = cardProgressOf(entry.set, positions),
+            watched = playedOf(entry.set, watchedIds),
+            held = heldOf(entry.set, heldIds),
+            versions = versionsBadgeOf(entry.set),
             modifier = Modifier,
             onClick = { onOpenTitle(entry.set.setId) },
         )

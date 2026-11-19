@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import model.HouseholdWords
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -116,7 +117,7 @@ class ProfileGateFlowTest : ProfileGateHarness() {
         compose.waitForIdle()
         assertEquals(12, profile("t").kidsAge?.toInt(), "a change went through on a PIN nobody gave again")
         compose.onNodeWithText("Manage profiles").performClick()
-        compose.onNodeWithText("Who are you?").assertExists()
+        compose.onNodeWithText(HouseholdWords.WHOS_MANAGING).assertExists()
     }
 
     /** A first entry of a new PIN is not kept for whoever opens the app next. */

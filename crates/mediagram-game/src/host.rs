@@ -14,9 +14,7 @@ use crate::game::GameFactory;
 use crate::general::general_pack;
 use crate::image_files::ImageLookup;
 use crate::lan::lan_ip;
-use crate::poster_config::poster_ready;
 use crate::poster_lookup::PosterLookup;
-use crate::preisfrage_draw::enough_articles;
 use crate::room::{Room, RoomConfig};
 use crate::room_loop::{Event, room_loop};
 use crate::room_settings::Readiness;
@@ -54,7 +52,7 @@ impl Default for HostConfig {
             max_players: ROOM_CAP,
             kids_locked: false,
             // The default pool holds no titles, so no poster game can be started.
-            readiness: Readiness { poster: false, poster_kids: false, preisfrage: false },
+            readiness: Readiness { poster: false, poster_kids: false, preisfrage: false, kids_quiz: 0 },
             pool: Arc::default(),
             textless: None,
             images: None,
@@ -83,11 +81,7 @@ pub async fn start_game_night(
     let cfg = HostConfig {
         preferred_port,
         kids_locked,
-        readiness: Readiness {
-            poster: poster_ready(&pool, &pool.eligible(false)),
-            poster_kids: poster_ready(&pool, &pool.eligible(true)),
-            preisfrage: enough_articles(&articles),
-        },
+        readiness: Readiness::of(&pool, &articles),
         pool: pool.clone(),
         textless: textless.clone(),
         images,

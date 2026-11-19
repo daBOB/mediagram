@@ -1,12 +1,12 @@
 /**
  * The picker's Manage profiles: the same Profiles page Settings shows, opened
- * over the picker with nobody chosen — so everyone here and managing them, no
- * You. Done or Escape leaves it for the picker again, dropping the PIN.
+ * over the picker with nobody chosen — so no You, only Who's managing?, drawn
+ * as Who's watching? is, with Done where the picker has Stay as I am. Done or
+ * Escape leaves it for the picker again, dropping the PIN.
  */
 
 import { el } from "./dom.js";
-import { pill } from "./profile-manage.js";
-import { PROFILES, profilesPanel } from "./catalog/settings-profiles.js";
+import { profilesPanel } from "./catalog/settings-profiles.js";
 
 /**
  * Covers `parent` — the picker — with the page.
@@ -32,7 +32,10 @@ export function openProfilesPage(parent, onClose) {
     if (event.key === "Escape" && screen.childElementCount === 1) close();
   }
 
-  card.append(el("h1", null, PROFILES), box, pill("Done", close));
+  const done = el("button", "quiet", "Done");
+  done.type = "button";
+  done.addEventListener("click", close);
+  card.append(box, done);
   screen.append(card);
   parent.append(screen);
   document.addEventListener("keydown", onKey);

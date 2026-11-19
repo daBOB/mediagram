@@ -11,19 +11,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import catalog.Department
-import catalog.Shelf
+import catalog.Latest
 import catalog.keyOf
-import catalog.latestOf
 import designsystem.Spacing
 import model.WatchSnapshot
 import ui.catalog.home.CourseList
 
-private const val LATEST_LIMIT = 48
-
 /**
  * Films, shows and courses, newest arrival first — a Compose port of
- * `utility-pages.js#renderLatest`. Built from the same [latestOf] the start
- * page's own Latest bands are, each under its department's own label — the
+ * `utility-pages.js#renderLatest`, drawing the Latest page the state's pages
+ * hold, each under its department's own label — the
  * web heads them `SECTIONS.*.label` ("Movies", "Series", "Tutorials"), not
  * Home's "Latest films" wording. Courses are a list, not plates, as the web
  * asks `collectionGrid` for `{mode: LIST}`: a course carries no artwork to
@@ -31,14 +28,13 @@ private const val LATEST_LIMIT = 48
  */
 @Composable
 internal fun LatestScreen(
-    shelves: List<Shelf>,
+    latest: Latest,
     watch: WatchSnapshot,
     heldIds: Set<String>,
     columns: Int,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
 ) {
-    val latest = remember(shelves) { latestOf(shelves, posterLimit = LATEST_LIMIT, limit = LATEST_LIMIT) }
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
 
@@ -62,8 +58,8 @@ internal fun LatestScreen(
         if (latest.courses.isNotEmpty()) {
             shelfSub(Department.TUTORIALS.label)
             // One item, not one per course: the grid's own gap would open
-            // between rows the list draws edge to edge. Capped at
-            // [LATEST_LIMIT], so never long enough to need laziness.
+            // between rows the list draws edge to edge. Capped by the
+            // Latest page's own limit, so never long enough to need laziness.
             item(key = "courses", span = { GridItemSpan(maxLineSpan) }) {
                 CourseList(latest.courses, onOpenCollection)
             }

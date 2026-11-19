@@ -18,7 +18,8 @@
 
 /* Artwork: how a hero (cover, title spread, department) shows its picture.
    Default fades it into the page; Blurred softens it to colour and light;
-   Artwork lets it run behind the words; Solid leaves the page plain. */
+   Artwork lets it run behind the words; Solid leaves the page plain;
+   Ambient (ambient.css) draws a Default hero over a drifting glow. */
 [data-backdrop="blurred"] :is(.spread-art, .dept-art, .cover-stage) img { filter: blur(28px) saturate(1.25); transform: scale(1.12); }
 [data-backdrop="artwork"] :is(.spread-art, .dept-art) { inset: 0; }
 [data-backdrop="solid"] :is(.spread-art, .dept-art) { display: none; }
@@ -27,8 +28,6 @@
 
 /* The Settings page's controls: native radios drawn as swatches. */
 .settings-panel { display: grid; gap: 40px; max-width: 52rem; }
-/* The System link closes You mid-page: its own width, the panel's gap rather than a department's margin. */
-.settings-panel > .dept-all { justify-self: start; margin-top: 0; }
 .setting { margin: 0; padding: 0; border: 0; min-width: 0; }
 .setting legend, .setting-title { margin: 0 0 16px; padding: 0; font: 600 1rem/1.3 var(--text); }
 .setting-value { margin: 0 0 16px; color: var(--ink-2); }
@@ -55,6 +54,7 @@
 .backdrop-blurred { background: radial-gradient(circle at 70% 40%, #c07a4a, #2b3550 70%); filter: saturate(0.8); } /* deslop-ignore 06 19: previews the blurred artwork mode */
 .backdrop-artwork { background: linear-gradient(120deg, #6b4b2a, #1c2a3a); }
 .backdrop-solid { background: var(--paper-sunk); }
+.backdrop-ambient { background: radial-gradient(circle at 70% 25%, color-mix(in srgb, var(--accent) 40%, transparent), var(--paper-sunk) 70%); }
 .accents .option { grid-template-columns: auto; justify-items: center; }
 .dot { display: block; width: 34px; height: 34px; border-radius: 50%; transition: box-shadow var(--hover); } /* deslop-ignore 19: accent swatch */
 .option input:checked + .dot { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
@@ -76,10 +76,3 @@
 .manage-inline .pin-message:empty { min-height: 0; }
 /* An inline form's select sits on the line with its fields, not a settings select's own row. */
 .setting .who-new select { margin-bottom: 0; }
-/* Households: a household's name and line, then what the owner may do to it, then the form it opened and what was refused. */
-.household-row > :is(.household-actions, .household-form, .pin-message) { flex-basis: 100%; }
-.household-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.households :is(.household-form, .pin-message):empty { display: none; }
-.households .who-new { justify-content: flex-start; margin: 0; }
-.household-create { margin-top: 16px; }
-.household-admin { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }

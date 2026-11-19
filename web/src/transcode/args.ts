@@ -8,6 +8,7 @@
  * bitrate cap saturates the uplink. None of these announce themselves.
  */
 
+import { vaapiFilter, vaapiInputArgs } from "./vaapi-decode";
 /** Which encoder to use, and what it needs to work. */
 export type Encoder =
   | { kind: "software"; name: "libx264" }
@@ -46,6 +47,8 @@ export interface TranscodeRequest {
   hevcCopy?: boolean;
   /** Cap the read rate; set once the `encoders.ts` probe finds ffmpeg accepts it. */
   pacedReads?: boolean;
+  /** Decode on the GPU too, with a VAAPI encoder. See `vaapi-decode.ts`. */
+  gpuDecode?: boolean;
 }
 
 /**
@@ -69,16 +72,15 @@ export const READ_RATE = 2;
 export const READ_BURST_SECONDS = 30;
 
 /**
- * Brings a picture larger than UHD down to fit inside it, keeping its shape;
- * anything already smaller passes through untouched.
+ * The `scale` options that bring a picture larger than UHD down to fit inside
+ * it, keeping its shape; anything already smaller passes through untouched.
  *
  * Screen recordings arrive at sizes like 4784x2464. VAAPI refuses to encode
  * anything over 4096 wide, and a frame that size is past every H.264 level,
  * so a browser could refuse it even from libx264. The quotes keep the commas
  * in `min()` from being read as the next filter in the chain.
  */
-const FIT_UHD =
-  "scale=w='min(iw,3840)':h='min(ih,2160)':force_original_aspect_ratio=decrease:force_divisible_by=2";
+const FIT_UHD = "w='min(iw,3840)':h='min(ih,2160)':force_original_aspect_ratio=decrease:force_divisible_by=2";
 
 export function transcodeArgs(request: TranscodeRequest): string[] {
   const fps = request.frameRate ?? ASSUMED_FRAME_RATE;
@@ -90,7 +92,7 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
   // The device has to exist before the input that will be uploaded to it —
   // and is pointless for a copy, which never reaches the GPU.
   if (request.encoder.kind === "vaapi" && request.copyVideo !== true) {
-    args.push("-vaapi_device", request.encoder.device);
+    args.push(...vaapiInputArgs(request.encoder.device, request.gpuDecode === true));
   }
 
   if (request.seekSeconds > 0) {
@@ -146,8 +148,8 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
     // the bytes are the same, only the name on the box differs.
     if (request.hevcCopy === true) args.push("-tag:v", "hvc1");
   } else {
-    // Uploaded only after it is fitted: VAAPI checks the size at the upload.
-    args.push("-vf", request.encoder.kind === "vaapi" ? `${FIT_UHD},format=nv12,hwupload` : FIT_UHD);
+    // Fitted before the encoder, which refuses anything over 4096 wide.
+    args.push("-vf", request.encoder.kind === "vaapi" ? vaapiFilter(FIT_UHD, request.gpuDecode === true) : `scale=${FIT_UHD}`);
     args.push(
       "-c:v",
       request.encoder.name,

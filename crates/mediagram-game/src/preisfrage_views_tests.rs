@@ -1,5 +1,5 @@
 use super::*;
-use crate::game::{Game, GameCtx};
+use crate::game::{Game, GameCtx, ViewCtx};
 use crate::preisfrage::PreisfrageConfig;
 use crate::preisfrage::tests::players;
 use crate::protocol::Action;
@@ -15,8 +15,8 @@ fn the_reveal_tells_each_phone_its_own_result_and_the_tv_everyones() {
     let article = crate::articles::Article { asin: "B000000001".into(), name: "Halter".into(), title: "Halter".into(), cents: 1000, reviews: 0 };
     let mut g = PreisfrageGame::new(PreisfrageConfig::default(), vec![article], "12.11.".into(), &ps, 0.0);
     g.on_action(&mut GameCtx { now: 4_000.0, players: &mut ps }, 0, &Action::GuessPrice { cents: 900 }).unwrap();
-    g.on_tick(&mut GameCtx { now: 23_000.0, players: &mut ps });
-    let view = ViewCtx { now: 23_000.0, players: &ps, leader: Some(0) };
+    g.on_tick(&mut GameCtx { now: 63_000.0, players: &mut ps });
+    let view = ViewCtx { now: 63_000.0, players: &ps, leader: Some(0) };
 
     let PhoneScreen::Outcome { title, text, tone, points, .. } = g.phone_screen(&view, 0) else { panic!() };
     assert_eq!((title.as_str(), text.as_deref(), tone, points), ("10,00 €", Some("Dein Tipp: 9,00 € · am nächsten dran"), Tone::Good, 900));
@@ -39,10 +39,9 @@ fn the_final_ranks_by_total_and_ties_share_a_place() {
     }
     g.on_tick(&mut GameCtx { now: 4_000.0, players: &mut ps });
     g.on_tick(&mut GameCtx { now: 11_000.0, players: &mut ps });
-    assert!(g.is_finished());
+    let places = g.ranking(&ps).map(|r| r.places.iter().map(|x| (x.player, x.place)).collect::<Vec<_>>());
+    assert_eq!(places, Some(vec![(0, 1), (1, 1), (2, 3)]), "Ana and Ben share first place");
     let view = ViewCtx { now: 11_000.0, players: &ps, leader: Some(0) };
-    let PhoneScreen::Final { rank, of, score, can_restart } = g.phone_screen(&view, 1) else { panic!() };
-    assert_eq!((rank, of, score, can_restart), (1, 3, 900, false), "Ana and Ben share first place");
     let TvScene::Preisfrage { scene } = g.tv_scene(&view) else { panic!() };
     let PreisfrageStage::Final { standings } = scene.stage else { panic!() };
     assert_eq!(standings.iter().map(|s| (s.player, s.place)).collect::<Vec<_>>(), [(0, 1), (1, 1), (2, 3)]);

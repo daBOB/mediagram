@@ -1,6 +1,6 @@
 # Games overview and lobby in one screen
 
-Status: built and on the funstation, awaiting a night with real phones · Branch `feat/games-lobby` (worktree `spieltisch/mediagram-lobby`) · Spieltisch line
+Status: merged into main as 4b380639 (Spieltisch 0.179.0) and on the funstation; a night with real phones still open · Branch `feat/games-lobby` (worktree `spieltisch/mediagram-lobby`) · Spieltisch line
 
 Today Spieltisch opens on a native poster shelf; a poster opens the web lobby (QR code, players,
 Los geht's), and every other game goes back through the shelf and that same lobby. The user asked
@@ -31,7 +31,7 @@ for one screen: games overview and lobby combined (2026-11-13).
 |---|-------|--------|
 | 1 | [Web page: shelf + table panel](phase-01-web-shelf-lobby.md) | done |
 | 2 | [App: open the page directly, serve the art](phase-02-app-frame-and-art.md) | done |
-| 3 | Verify on the funstation, versions, changelog, merge when asked | screens and remote checked on the box (`reports/funstation-*.png`); phones, commit and merge open |
+| 3 | Verify on the funstation, versions, changelog, merge when asked | done: screens and remote checked on the box (`reports/funstation-*.png`), merged as 4b380639; a night with real phones open |
 
 ## Verification (2026-11-13)
 

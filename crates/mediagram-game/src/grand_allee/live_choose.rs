@@ -2,7 +2,7 @@
 
 use super::board::HOTELS;
 use super::live::{GrandAlleeGame, Stage};
-use super::live_asks::{Ask, Opt};
+use super::live_asks::{Choices, Opt};
 use super::live_debts::Debt;
 use super::live_turn::Step;
 use super::rules::{permit_for, Permit};
@@ -101,7 +101,7 @@ impl GrandAlleeGame {
             }
             let cost = format!("{} kostet {}", HOTELS[usize::from(hotel)].name, taler(price));
             let prompt = Phrase::new(format!("Doppelt: {cost} – oder du versteigerst es."), format!("muss doppelt zahlen: {cost} – oder es wird versteigert."));
-            return self.ask(now, Ask { prompt, hotel: Some(hotel), opts: vec![Opt::Sell(hotel), Opt::Raise { hotel, count }] }, Step::Done);
+            return self.ask(now, Choices { prompt, hotel: Some(hotel), opts: vec![Opt::Sell(hotel), Opt::Raise { hotel, count }] }, Step::Done);
         }
         let first = self.t.build(s, hotel, count, price);
         self.built(ctx, hotel, first);

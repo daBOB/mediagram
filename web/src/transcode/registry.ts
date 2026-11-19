@@ -43,6 +43,12 @@ export interface SessionSpec {
    * Absent means MPEG-TS, which is what every other session still is.
    */
   hevcCopy?: boolean;
+  /**
+   * Decode on the GPU as well (`vaapi-decode.ts`). Left out of the identity:
+   * it follows from the title's codec alone, so two viewers of one spec
+   * always agree on it.
+   */
+  gpuDecode?: boolean;
 }
 
 /** A running transcode, however it is actually run. */

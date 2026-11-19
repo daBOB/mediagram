@@ -48,7 +48,7 @@ abstract class HouseholdContract {
 
             assertEquals(ProfileOutcome.Done, core.joinHousehold(flat.id, BO_PIN))
             // A kid lands in the household of the grown-up who makes it.
-            assertEquals(ProfileOutcome.Done, core.createKid(bo.id, BO_PIN, "Mo", 6u, null))
+            assertEquals(ProfileOutcome.Done, core.createKid(bo.id, BO_PIN, "Mo", 6u, null, null))
 
             assertEquals(flat.id, core.households().joined)
             assertEquals(listOf("Bo", "Mo"), core.profiles().map { it.name })
@@ -87,7 +87,7 @@ abstract class HouseholdContract {
         runBlocking {
             val core = core()
             val ada = core.owner()
-            assertEquals(ProfileOutcome.Done, core.createGrownUp(ada.id, PIN, "Cy", PIN))
+            assertEquals(ProfileOutcome.Done, core.createGrownUp(ada.id, PIN, "Cy", PIN, null))
             val flat = core.flat(ada)
             val (bo, cy) = core.households().everyone.let { all -> all.single { it.name == "Bo" } to all.single { it.name == "Cy" } }
 
@@ -115,6 +115,60 @@ abstract class HouseholdContract {
             assertEquals(ProfileOutcome.Done, core.moveToHousehold(ada.id, PIN, HOME_HOUSEHOLD, cy.id, null))
             assertEquals(ProfileOutcome.Done, core.deleteHousehold(ada.id, PIN, flat.id))
             assertEquals(listOf("Home"), core.households().households.map { it.name })
+        }
+    }
+
+    @Test
+    fun ownerAddsAGrownUpIntoAnotherHousehold() {
+        runBlocking {
+            val core = core()
+            val ada = core.owner()
+            val flat = core.flat(ada)
+            val bo = core.households().everyone.single { it.name == "Bo" }
+
+            assertEquals(ProfileOutcome.NotFound, core.createGrownUp(ada.id, PIN, "Cy", PIN, "no-such-household"))
+            assertEquals(ProfileOutcome.Done, core.createGrownUp(ada.id, PIN, "Cy", PIN, flat.id))
+            val cy = core.households().everyone.single { it.name == "Cy" }
+            assertEquals(flat.id, cy.household)
+            assertTrue(!cy.admin, "$cy")
+            assertEquals(bo.id, core.households().households.single { it.id == flat.id }.adminId)
+
+            // A household nobody runs gives its first new grown-up the keys.
+            assertEquals(ProfileOutcome.Done, core.moveToHousehold(ada.id, PIN, HOME_HOUSEHOLD, cy.id, null))
+            assertEquals(ProfileOutcome.Done, core.moveToHousehold(ada.id, PIN, HOME_HOUSEHOLD, bo.id, null))
+            assertEquals(ProfileOutcome.Done, core.createGrownUp(ada.id, PIN, "Di", PIN, flat.id))
+            val di = core.households().everyone.single { it.name == "Di" }
+            assertEquals(di.id, core.households().households.single { it.id == flat.id }.adminId)
+        }
+    }
+
+    @Test
+    fun ownerAddsAKidForAGrownUpElsewhere() {
+        runBlocking {
+            val core = core()
+            val ada = core.owner()
+            val flat = core.flat(ada)
+            val bo = core.households().everyone.single { it.name == "Bo" }
+
+            assertEquals(ProfileOutcome.NotFound, core.createKid(ada.id, PIN, "Mo", 6u, null, "no-such-profile"))
+            assertEquals(ProfileOutcome.Done, core.createKid(ada.id, PIN, "Mo", 6u, null, bo.id))
+            val mo = core.households().everyone.single { it.name == "Mo" }
+            assertEquals(bo.id, mo.parentId)
+            assertEquals(flat.id, mo.household)
+        }
+    }
+
+    @Test
+    fun anAdminCannotAddIntoAnotherHousehold() {
+        runBlocking {
+            val core = core()
+            val ada = core.owner()
+            core.flat(ada)
+            val bo = core.households().everyone.single { it.name == "Bo" }
+
+            assertEquals(ProfileOutcome.NotAllowed, core.createGrownUp(bo.id, BO_PIN, "Cy", PIN, HOME_HOUSEHOLD))
+            assertEquals(ProfileOutcome.NotAllowed, core.createKid(bo.id, BO_PIN, "Mo", 6u, null, ada.id))
+            assertEquals(listOf("Ada", "Bo"), core.households().everyone.map { it.name })
         }
     }
 

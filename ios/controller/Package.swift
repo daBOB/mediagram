@@ -18,7 +18,11 @@ let package = Package(
     targets: [
         .target(
             name: "Spieltisch",
-            dependencies: [.product(name: "ControllerCore", package: "ControllerCore")]
+            dependencies: [.product(name: "ControllerCore", package: "ControllerCore")],
+            resources: [.process("Resources")],
+            // SwiftUI re-exports SwiftUICore, which exists only from iOS 18. Apple's linker drops the
+            // auto-link to it; lld keeps it, and iOS 16/17 then refuse to launch the app.
+            linkerSettings: [.unsafeFlags(["-Xlinker", "--ignore-auto-link-option=SwiftUICore"])]
         ),
     ],
     // UIKit and WebKit delegates are not yet annotated for Swift 6's strict checking.

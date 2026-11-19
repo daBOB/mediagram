@@ -61,6 +61,7 @@ import { markCurrent } from "./lib/nav-current.js";
 import { collectionOf, playsNext, requestPreload } from "./lib/playback/plays-next.js";
 import { loadPlayer } from "./lib/playback/player-loader.js";
 import * as dailyLimit from "./lib/daily-limit-gate.js";
+import { filmSession } from "./lib/film-session.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -97,6 +98,7 @@ const librarySession = createLibrarySession({
   together: { heard: heardTogether, reopened: () => void refreshTogether(), inSession: inTogether, onLeave: onLeaveTogether },
   artwork: (progress) => showArtworkProgress(document.querySelector(".masthead"), progress),
 });
+const films = filmSession(state, () => librarySession.current());
 
 // Counts and the colophon reach the page at once, even while a redraw waits;
 // safe to subscribe before a profile is chosen — `librarySession.start()`'s
@@ -130,8 +132,6 @@ const KEPT = {
   watchlist: { label: "My List", empty: "Nothing on your list." },
 };
 
-/** Ids to sets, quietly dropping any the catalog no longer holds. */
-const setsFor = (ids) => ids.map((id) => byId.get(id)).filter(Boolean);
 
 /**
  * Where the player opens: what is underway, and what arrived.
@@ -147,7 +147,7 @@ function viewHome() {
   const shelves = homeShelves({
     library,
     byId,
-    progress: state.inProgress(),
+    progress: films.continuing(),
     watchedAt: state.watchedAt,
   });
 
@@ -162,14 +162,14 @@ function viewHome() {
   const editorial = homeEditorial({
     movies: library.movies,
     byId,
-    isWatched: state.isWatched,
+    isWatched: films.watched,
     editorsChoice: editorsChoice(),
     now: Date.now(),
     onRow: new Set(shelves.latestMovies.map((set) => set.setId)),
   });
   renderHome(main, shelves, editorial, {
     play: (set) => play(set),
-    playScene: (set, options) => play(set, null, options), byId,
+    playScene: (set, options) => play(set, null, { ...options, chosen: true }), byId,
     openFilm,
     open: openShow,
   });
@@ -219,7 +219,7 @@ function movieControls() {
 
 /** The Featured reel's button, when there is a film left to suggest. */
 function reelButton() {
-  const picks = () => pickFeatured(library.movies, state.isWatched, Math.random);
+  const picks = () => pickFeatured(library.movies, films.watched, Math.random);
   if (picks().length === 0) return null;
   const featured = el("button", "mode featured-open", "Featured");
   featured.type = "button";
@@ -229,13 +229,13 @@ function reelButton() {
 
 /** What a department's front page draws from. */
 const deptContext = () => ({
-  library, byId, progress: state.inProgress(), watchedAt: state.watchedAt, isWatched: state.isWatched,
+  library, byId, progress: films.continuing(), watchedAt: state.watchedAt, isWatched: films.watched,
   kidsLimit: kidsLimitOf(state.profile()), play: (set) => play(set), openFilm, reel: reelButton(),
   hidden: hiddenSectionsOf(state.profile()), openShow,
 });
 
 // Join, from Home or a title page, opens a title in this profile's catalog the way its own Play would.
-setTogetherOpener((set) => play(set), (setId) => byId.get(setId) ?? null, (setId) => (byId.has(setId) ? playsNext(library, byId.get(setId), null).next?.setId ?? null : null));
+setTogetherOpener((set) => play(set, null, { chosen: true }), (setId) => byId.get(setId) ?? null, (setId) => (byId.has(setId) ? playsNext(library, byId.get(setId), null).next?.setId ?? null : null));
 
 /** A film's card opens its page; the page's button plays it. */
 function openFilm(set) {
@@ -247,16 +247,16 @@ function openFilm(set) {
  * for after the facts are drawn, as a series header's are.
  */
 function viewFilm(setId) {
-  const set = byId.get(setId);
+  const set = films.filmOf(setId) ?? byId.get(setId);
   if (!set || set.kind !== "movie") {
     heading(main, SECTIONS.movies.label);
     main.append(el("p", "error", "That film is not in the library any more."));
     return;
   }
   const page = filmPage(set, {
-    resume: resumeAt(state.progressOf(set.setId)),
-    onPlay: (film) => play(film),
-    similar: () => similarTo(set, everyFilm(library), (film) => state.isWatched(film.setId)),
+    resume: resumeAt(films.positionFor(set)), ...films.versionState,
+    onPlay: (film) => play(film, null, { chosen: true }),
+    similar: () => similarTo(set, everyFilm(library), (film) => films.watched(film.setId)),
     openFilm,
     hasFranchise: franchisesIn(everyFilm(library)).some((franchise) => franchise.id === set.collectionId),
   });
@@ -291,14 +291,15 @@ let pendingOpen = 0;
  * playback has not really moved on; see `player.js`'s `RESUME_DRIFT_SECONDS`.
  */
 function play(set, queue = null, options = {}) {
+  if (films.asks(set, options)) return films.pick(set, queue, options, play);
   const request = ++pendingOpen;
   // This tab may have been open while the same viewer watched further on
   // another device. Started here, not awaited: a superseded request resolves
   // to `null` rather than a stale position.
   const freshResume = state.refreshState().then(() =>
-    request === pendingOpen ? resumeAt(state.progressOf(set.setId)) : null,
+    request === pendingOpen ? resumeAt(films.positionFor(set)) : null,
   );
-  return openTitle(set, queue, { ...options, freshResume }, request);
+  return openTitle(set, queue, { ...options, freshResume, saved: resumeAt(films.positionFor(set)) }, request);
 }
 
 async function openTitle(set, queue, options, request) {
@@ -322,7 +323,7 @@ async function openTitle(set, queue, options, request) {
   // says which kind of start that is. Opening a title from a shelf carries
   // none, and the player warms it up and starts it once it holds enough.
   const autoplay = options.autoplay ?? null;
-  const { freshResume, at, clip } = options;
+  const { freshResume, at, clip, saved } = options;
 
   const { next, previous, inRun, preload } = playsNext(library, set, queue);
   requestPreload(preload);
@@ -330,7 +331,7 @@ async function openTitle(set, queue, options, request) {
     next, previous, inRun, collection: queue ? null : collectionOf(library, set),
     onOpenNext: (following, how) => play(following, queue, how),
     autoplay,
-    freshResume, at, clip,
+    freshResume, at, clip, saved,
   });
   dailyLimit.opened(freshResume);
   return true;
@@ -385,9 +386,9 @@ function setShelfEditing(editing) {
 }
 
 function refreshShelfCounts() {
-  const started = state.inProgress().filter((row) => resumeAt(row) !== null && byId.has(row.setId));
+  const started = films.continuing().filter((row) => resumeAt(row) !== null && byId.has(row.setId));
   document.getElementById("n-continue").textContent = String(started.length);
-  document.getElementById("n-watchlist").textContent = String(setsFor(state.watchlist()).length);
+  document.getElementById("n-watchlist").textContent = String(films.setsFor(state.watchlist()).length);
   document.getElementById("n-collections").textContent = String(state.collections().length);
 }
 
@@ -418,24 +419,19 @@ window.addEventListener("mediagram:profiles", () => librarySession.reapply());
 
 /** What was started and not finished, most recent first. */
 function viewContinue() {
-  const started = state
-    .inProgress()
-    .filter((row) => resumeAt(row) !== null)
-    .map((row) => byId.get(row.setId))
-    .filter(Boolean);
-
-  heading(main, KEPT.continue.label, countOf(started.length, "title"));
-  if (started.length === 0) return main.append(el("p", "empty", KEPT.continue.empty));
+  const started = films.continuing().filter((row) => resumeAt(row) !== null).map((row) => byId.get(row.setId)).filter(Boolean);
   // The shelf redraws itself from the change, so the title simply leaves it.
-  main.append(setGrid(started, play, { finish: (set) => state.markFinished(set.setId) }));
+  keptWall(KEPT.continue, started, (set) => state.markFinished(set.setId));
 }
 
 /** Titles marked to come back to. */
-function viewWatchlist() {
-  const listed = setsFor(state.watchlist());
-  heading(main, KEPT.watchlist.label, countOf(listed.length, "title"));
-  if (listed.length === 0) return main.append(el("p", "empty", KEPT.watchlist.empty));
-  main.append(setGrid(listed, play));
+function viewWatchlist() { keptWall(KEPT.watchlist, films.setsFor(state.watchlist())); }
+
+/** Continue or My List: its titles as a list or as plates, the device's choice shared with Movies. */
+function keptWall(kept, sets, finish) {
+  heading(main, kept.label, countOf(sets.length, "title"), sets.length > 0 ? shelfToggle(route) : null);
+  if (sets.length === 0) return main.append(el("p", "empty", kept.empty));
+  main.append(setGrid(sets, play, { finish, mode: shelfMode() }));
 }
 
 /** Asks the server, because summaries live there and are not in the catalog. */
@@ -448,7 +444,7 @@ async function viewSearch(query, generation) {
     if (generation !== routeGeneration) return;
     main.textContent = "";
     // The server's search knows no profile; keep only what this one can see.
-    renderSearch(main, query, hits.filter((hit) => byId.has(hit.setId)), {
+    renderSearch(main, query, films.asFilms(hits.filter((hit) => byId.has(hit.setId))), {
       ...deptContext(), shows: library.series, animeShows: library.anime.collections,
       people: visiblePeople(people ?? [], titlesByKey(library)), franchises: franchisesIn(everyFilm(library)), lists: state.collections(),
     });
@@ -582,7 +578,7 @@ function drawRoute() {
   if (address.page === "person") return renderPerson(main, address.id, { ...openers, byKey: titlesByKey(library) }, () => generation === routeGeneration);
   if (address.page === "settings") {
     stopSettings = renderSettings(main, {
-      profile: state.profile(), switchProfile, systemVisible: !document.getElementById("nav-system").hidden,
+      profile: state.profile(), switchProfile,
       admin: adminSettings ? renderAdminSettings : null,
     });
     return;
@@ -594,13 +590,13 @@ function drawRoute() {
   if (address.page === "franchise") return renderFranchise(main, address.id, { library, openFilm }, () => generation === routeGeneration);
   if (address.page === "list") {
     const list = state.collections().find((entry) => entry.id === address.id);
-    return renderList(main, list, list ? setsFor(list.items) : [], {
+    return renderList(main, list, list ? films.setsFor(list.items) : [], {
       play, onEditing: setShelfEditing, visible: (setId) => byId.has(setId), onGone: () => {
         if (navigation === navigationGeneration && location.hash === visitedHash) go({ page: "collections" });
       },
     });
   }
-  if (address.page === "collections") return renderCollectionsPage(main, { library, lists: state.collections(), setsFor });
+  if (address.page === "collections") return renderCollectionsPage(main, { library, lists: state.collections(), setsFor: films.setsFor });
 
   if (address.page === "moviesPage") return viewMovies(address.n);
   if (address.page === "department" && address.section === "movies") return renderMoviesDept(main, deptContext());

@@ -27,7 +27,7 @@ Every file gets a `_tests.rs` beside it. Then the game is registered: `GameKind`
 
 ## Task 1: Words
 
-**Files:** Create `crates/mediagram-game/src/kritzelei_words.rs` and `kritzelei_words_tests.rs`.
+**Files:** Create `crates/mediagram-game/src/kritzelei_words.rs` and `kritzelei_words_tests.rs`. Modify `lib.rs`: `mod kritzelei_words;` (like `mod preisfrage;`), so the tests compile and run in this task.
 
 **Interfaces:**
 ```rust
@@ -48,7 +48,7 @@ pub(crate) fn deck(kids_only: bool, rng: &mut impl rand::Rng) -> Vec<&'static st
 
 ## Task 2: Clock, op checks and turn order
 
-**Files:** Create `kritzelei_config.rs`, `kritzelei_clock.rs`, `kritzelei_rules.rs`, `kritzelei_clock_tests.rs`, `kritzelei_rules_tests.rs`.
+**Files:** Create `kritzelei_config.rs`, `kritzelei_clock.rs`, `kritzelei_rules.rs`, `kritzelei_clock_tests.rs`, `kritzelei_rules_tests.rs`. Modify `lib.rs`: `mod kritzelei_config;`, `mod kritzelei_clock;`, `mod kritzelei_rules;`.
 
 **Interfaces:**
 ```rust
@@ -101,6 +101,7 @@ pub(crate) fn check_op(op: &DrawOp, ops: &[DrawOp], held: usize, cfg: &Kritzelei
 **Files:**
 - Create `kritzelei.rs` and `kritzelei_tests.rs`
 - Create `protocol_kritzelei.rs`
+- Modify `lib.rs`: `mod kritzelei;`, `mod protocol_kritzelei;`
 - Modify `protocol.rs` (re-exports) and `protocol_tv.rs` (`TvScene::Kritzelei { scene: KritzeleiScene }`)
 - Modify `client/src/tv/TvApp.tsx`: a `kritzelei` branch rendering `<p className="tv-wait">Kritzelei</p>` so the client typechecks. The real page replaces it next phase.
 
@@ -131,7 +132,7 @@ Transitions, all in `on_board` unless noted:
 | Drawing | `Draw{op}` | `check_op`, then append |
 
 - Any other act/stage pairing → `Ignored`.
-- `on_tick`: Drawing at `left == 0` → Picking. Reveal past `ends_at` → next turn: clear ops and `held`, fresh clock, Handover, or Final after the last turn.
+- `on_tick`: Drawing at `left == 0` → Picking, with the clock paused (`left_ms` is 0). Reveal past `ends_at` → next turn: clear ops and `held`, fresh clock, Handover, or Final after the last turn.
 - `on_board_presence`: in Drawing, start or pause the clock. Always set `board_present`.
 - `drawing()`: `Some((index+1, &[]))` in Handover, `Some((index+1, &ops))` in Drawing, Picking and Reveal, `None` in Final.
 
@@ -139,7 +140,7 @@ Transitions, all in `on_board` unless noted:
   - `ich_bin_dran_starts_the_clock`: Ready at 1_000 → the TV stage is `Drawing` with `clock.ends_at == Some(91_000.0)`.
   - `the_clock_stands_while_the_list_is_open`: Ready@0, Guessed@10_000 → `left_ms == 80_000`, `ends_at None`; KeepDrawing@20_000 → `ends_at == Some(100_000.0)`.
   - `the_clock_stands_while_the_board_is_gone`: Ready@0, presence false@10_000, true@30_000 → `ends_at == Some(110_000.0)`.
-  - `time_up_opens_the_list_for_good`: tick@90_001 → Picking; KeepDrawing → `Err(Ignored)`, still Picking.
+  - `time_up_opens_the_list_for_good`: tick@90_001 → Picking; KeepDrawing → `Err(Ignored)`, still Picking; the Picking clock has `ends_at None` and `left_ms == 0`. Picking always carries a paused clock.
   - `a_pick_gives_two_and_one`: guesser score 2, drawer 1. `niemand_gives_nothing`: all 0.
   - `the_drawer_or_a_stranger_cannot_be_picked` → `Err(NotAllowed(_))`.
   - `a_second_pick_scores_nothing`: Pick again in Reveal → `Err(Ignored)`, scores unchanged.
@@ -152,14 +153,14 @@ Transitions, all in `on_board` unless noted:
 
 ## Task 4: Views
 
-**Files:** Create `kritzelei_views.rs` and `kritzelei_views_tests.rs`.
+**Files:** Create `kritzelei_views.rs` and `kritzelei_views_tests.rs`. Modify `lib.rs`: `mod kritzelei_views;`.
 
 **Interfaces** (on `KritzeleiGame`, called by the `Game` impl):
 `phone_view(&self, &ViewCtx, PlayerId) -> PhoneScreen`, `buzz(&self, PlayerId) -> Option<Buzz>`, `tv_view(&self, &ViewCtx) -> TvScene`, `board_view(&self, &ViewCtx) -> BoardScreen`.
 
 | Stage | Drawer's phone | Others' phones | Board |
 |---|---|---|---|
-| Handover, Drawing, Picking | `Wait { "Du zeichnest – hol dir das iPad", None }`, buzz `Turn` | `Wait { "Rate laut!", Some("{drawer} zeichnet.") }` | Handover hides the word. Drawing and Picking carry it. Picking lists every **seated** player but the drawer, with `can_go_back = left > 0` |
+| Handover, Drawing, Picking | `Wait { "Du zeichnest – hol dir das iPad", None }`, buzz `Turn` | `Wait { "Rate laut!", Some("{drawer} zeichnet.") }` | Handover hides the word. Drawing and Picking carry it. Picking lists every **seated** player but the drawer, with `can_go_back = left > 0`. Drawing and Picking also carry `drawer` (the same `BoardPlayer` Handover carries) |
 | Reveal | `Outcome { word, "{name} hat's erraten" / "Niemand hat's erraten", Good/Neutral, 1/0 }` | guesser: `Outcome { "Richtig!", Some(word), Good, 2 }`, buzz `Accepted`. The rest: `Outcome { word, same line, Neutral, 0 }`. All `show_score: true` | `Wait { word, Some(same line), can_leave: false }` |
 | Final | `Final` from `rank_of`, `of = players.len()`, `can_restart = leader` | same | `Wait { "Spiel vorbei", Some("Die Siegerehrung läuft auf dem Fernseher."), false }` |
 
@@ -168,6 +169,7 @@ Transitions, all in `on_board` unless noted:
   - `the_drawer_is_buzzed_for_the_turn_and_the_guesser_for_the_point`: only those two, and only in those stages.
   - `the_drawer_fetches_the_ipad_and_the_rest_guess_out_loud`: exact titles.
   - `picking_lists_everyone_seated_but_the_drawer`: includes a disconnected player.
+  - `drawing_and_picking_name_the_drawer`: the board's Drawing and Picking screens carry the drawer as a `BoardPlayer`, also after the board reconnects mid-turn.
   - `after_time_up_the_list_cannot_go_back`.
   - `the_reveal_says_who_got_it`: Richtig! +2 Good; the drawer gets 1; others get „Bo hat's erraten“. With nobody: „Niemand hat's erraten“ and the drawer gets 0.
   - `the_final_ranks_by_score`.
@@ -181,7 +183,6 @@ Transitions, all in `on_board` unless noted:
 - `catalogue.rs`: `("Kritzelei", 2, ROOM_CAP)` with the comment "One draws, at least one guesses." It goes into `CATALOGUE` after `Preisfrage`.
 - `factory.rs`: `GameKind::Kritzelei => Box::new(KritzeleiGame::new(KritzeleiConfig::default(), deck(settings.kids_only, &mut StdRng::from_os_rng()), ctx.players, ctx.now))`
 - `room_settings.rs`: `pub(crate) const KRITZELEI_NEEDS_BOARD: &str = "Kritzelei braucht das iPad als Zeichenbrett.";` and an arm before the min/max check: `GameKind::Kritzelei if !self.board_connected() => return Some(KRITZELEI_NEEDS_BOARD.into())`. Kritzelei has no kids-mode block.
-- `lib.rs`: the new modules.
 - Tests: `catalogue_tests.rs` and `room_settings_tests.rs`.
 
 - [ ] **Step 1: Failing tests:**

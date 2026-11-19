@@ -6,6 +6,7 @@ import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { bodiless, withBody } from "../response";
 import { failureMessage } from "../failure-message";
 import { copyVideoAs } from "./video-copy";
+import { gpuDecodes } from "./vaapi-decode";
 import type { SessionSpec } from "./registry";
 
 /** A session's answer: the file, or the reason there is none. */
@@ -143,6 +144,7 @@ export async function beginTranscode(
       audioTrack: track,
       copyVideo,
       hevcCopy,
+      gpuDecode: gpuDecodes(profile.vcodec),
     });
   } catch (error) {
     console.warn(`transcode: ${setId} did not start: ${failureMessage(error)}`);

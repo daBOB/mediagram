@@ -1,9 +1,16 @@
-//! Quiz inputs (question, timing, scoring) and the per-game state types.
+//! Quiz inputs (question, timing, scoring), the per-game state types and the
+//! quiz's catalogue entry.
 
+use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 
-use crate::protocol::ServerTime;
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::factory::Night;
+use crate::game::{Game, GameCtx};
+use crate::protocol::{GameLength, GameSpeed, LobbySettings, ServerTime};
+use crate::quiz::Quiz;
+use crate::quiz_mix::quiz_questions;
 
 /// One multiple-choice question. `correct` is shuffled in among `wrong`.
 #[derive(Debug, Clone)]
@@ -46,6 +53,38 @@ impl Default for QuizConfig {
             seed: None,
         }
     }
+}
+
+impl QuizConfig {
+    /// At the lobby's length: the number of questions.
+    pub fn sized(mut self, length: GameLength) -> Self {
+        self.rounds = length.scale(self.rounds);
+        self
+    }
+
+    /// At the lobby's tempo: the time to answer stretches, the fair-tap margins do not.
+    pub fn at(mut self, speed: GameSpeed) -> Self {
+        self.answer_ms = speed.stretch(self.answer_ms);
+        self
+    }
+}
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    name: "Buzzer-Quiz", seats: Seats::AnyRoom, timed: true, sized: true,
+    kids: Kids::FilmsOnly, board: false, needs: Need::Nothing, start,
+};
+
+fn start(night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box<dyn Game> {
+    let cfg = QuizConfig::default().at(settings.speed).sized(settings.length);
+    let general = night.general(settings);
+    let mut rng = StdRng::from_os_rng();
+    let mut questions =
+        quiz_questions(settings.quiz_mode, &night.pool, settings.kids_only, general, &mut rng, cfg.rounds, &mut night.history());
+    if questions.is_empty() {
+        // `Quiz::new` panics on an empty list; the pack is never empty, and the lobby starts no kids quiz short of films.
+        questions = general.to_vec();
+    }
+    Box::new(Quiz::new(cfg, questions, ctx.now))
 }
 
 impl QuizConfig {

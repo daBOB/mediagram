@@ -1,6 +1,16 @@
-//! Preisfrage's numbers, in one place.
+//! Preisfrage's numbers, in one place, and its catalogue entry.
 
-use crate::protocol::ServerTime;
+use rand::SeedableRng;
+use rand::rngs::StdRng;
+
+use crate::catalogue::{CatalogueEntry, Kids, Need, Seats};
+use crate::factory::Night;
+use crate::game::{Game, GameCtx};
+use crate::host::ROOM_CAP;
+use crate::preisfrage::PreisfrageGame;
+use crate::preisfrage_draw::draw;
+use crate::preisfrage_rules::checked_label;
+use crate::protocol::{GameLength, GameSpeed, LobbySettings, ServerTime};
 
 /// Fewer articles than this and the lobby says the game needs some.
 pub(crate) const MIN_ARTICLES: usize = 3;
@@ -13,6 +23,7 @@ pub struct PreisfrageConfig {
     pub rounds: usize,
     /// The article alone before the keypads open.
     pub intro_ms: ServerTime,
+    /// The keypads open: the lobby's tempo sets it, see [`PreisfrageConfig::at`].
     pub guess_ms: ServerTime,
     pub reveal_ms: ServerTime,
     /// On top of the 1000 a guess to the cent earns.
@@ -21,6 +32,33 @@ pub struct PreisfrageConfig {
 
 impl Default for PreisfrageConfig {
     fn default() -> Self {
-        Self { rounds: 6, intro_ms: 3_000.0, guess_ms: 20_000.0, reveal_ms: 7_000.0, exact_bonus: 500 }
+        Self { rounds: 6, intro_ms: 3_000.0, guess_ms: 60_000.0, reveal_ms: 7_000.0, exact_bonus: 500 }
     }
+}
+
+impl PreisfrageConfig {
+    /// At the lobby's length: the number of articles.
+    pub fn sized(mut self, length: GameLength) -> Self {
+        self.rounds = length.scale(self.rounds);
+        self
+    }
+
+    /// At the lobby's tempo: 2 min to guess, 1 min, or 30 s.
+    pub fn at(mut self, speed: GameSpeed) -> Self {
+        self.guess_ms = speed.stretch(self.guess_ms);
+        self
+    }
+}
+
+pub(crate) const ENTRY: CatalogueEntry = CatalogueEntry {
+    // Everyone guesses for themselves, so one player can play alone.
+    name: "Preisfrage", seats: Seats::Range(1, ROOM_CAP), timed: true, sized: true,
+    // Its gag-gift searches bring articles nobody checked for children.
+    kids: Kids::Barred, board: false, needs: Need::Articles, start,
+};
+
+fn start(night: &mut Night, ctx: &mut GameCtx, settings: &LobbySettings) -> Box<dyn Game> {
+    let cfg = PreisfrageConfig::default().at(settings.speed).sized(settings.length);
+    let drawn = draw(&night.articles, cfg.rounds, &mut night.shown, &mut StdRng::from_os_rng());
+    Box::new(PreisfrageGame::new(cfg, drawn, checked_label(&night.articles.fetched), ctx.players, ctx.now))
 }

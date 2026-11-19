@@ -2,9 +2,10 @@
 
 use super::board::FIELDS;
 use super::live::{GrandAlleeGame, Stage, HOUSE};
-use super::live_asks::Ask;
+use super::live_asks::Choices;
 use super::live_debts::Debt;
 use super::live_text::Phrase;
+use crate::ask::Ask;
 use crate::game::{GameCtx, name};
 use crate::protocol::ServerTime;
 use crate::room_seats::Player;
@@ -35,20 +36,20 @@ impl GrandAlleeGame {
         name(players, self.ids[seat]).into()
     }
 
-    pub(crate) fn ask(&mut self, now: ServerTime, ask: Ask, step: Step) {
-        self.stage = Stage::Ask { ask, since: now, step };
+    /// Asks the mover `choices` from `now`, on the table's clock.
+    pub(crate) fn ask(&mut self, now: ServerTime, choices: Choices, step: Step) {
+        let ask = Ask::open(self.ids[self.turn], now, Some(self.cfg.ask_ms));
+        self.stage = Stage::Ask { choices, ask, step };
     }
 
-    /// When the house decides an ask opened at `since`: when its clock runs
-    /// out, or the grace after an absent mover left. Once a clock ran out this
-    /// turn the house goes on at once, so a phone left on the table costs one
-    /// clock per turn, not one per follow-up question.
-    pub(crate) fn house_at(&self, ctx: &GameCtx, since: ServerTime) -> ServerTime {
+    /// When the house decides `ask`: as the ask says, except that once a clock
+    /// ran out this turn the house goes on at once, so a phone left on the
+    /// table costs one clock per turn, not one per follow-up question.
+    pub(crate) fn house_at(&self, ctx: &GameCtx, ask: &Ask) -> ServerTime {
         if self.idle {
-            return since;
+            return ask.opened_at();
         }
-        let clock = since + self.cfg.ask_ms;
-        clock.min(ctx.house_at(self.ids[self.turn], since).unwrap_or(clock))
+        ask.house_due(ctx).expect("every Grand Allee ask runs on a clock")
     }
 
     /// When the current stage acts: the house answers an ask, a die lands, a
@@ -57,7 +58,7 @@ impl GrandAlleeGame {
     pub(crate) fn due(&self, ctx: &GameCtx) -> Option<ServerTime> {
         Some(match &self.stage {
             Stage::Intro { at, .. } => at + self.cfg.intro_ms,
-            Stage::Ask { since, .. } => self.house_at(ctx, *since),
+            Stage::Ask { ask, .. } => self.house_at(ctx, ask),
             Stage::Rolled { at, .. } | Stage::Guest { at, .. } | Stage::Permit { at, .. } => at + self.cfg.roll_ms + self.cfg.show_ms,
             Stage::Walking { ends_at, .. } => *ends_at,
             Stage::Auction(a) => self.auction_close(ctx, a),
@@ -73,10 +74,10 @@ impl GrandAlleeGame {
         }
         match self.stage.clone() {
             Stage::Intro { card, .. } => self.next_card(now, card),
-            Stage::Ask { ask, since, step } => {
-                let opt = ask.opts[HOUSE.pick(&self.t, self.turn, &ask)];
-                let by = self.silent_by(ctx, since);
-                self.log_decision(ask.kind(), since, opt, now, by);
+            Stage::Ask { choices, ask, step } => {
+                let opt = choices.opts[HOUSE.pick(&self.t, self.turn, &choices)];
+                let by = self.silent_by(ctx, &ask);
+                self.log_decision(choices.kind(), ask.opened_at(), opt, now, by);
                 self.idle = true;
                 self.choose(ctx, opt, step);
             }

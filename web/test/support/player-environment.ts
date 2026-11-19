@@ -20,6 +20,7 @@ export class Node extends EventTarget {
   disabled = false;
   open = false;
   value = "";
+  checked = false;
   max = "";
   id = "";
   title = "";

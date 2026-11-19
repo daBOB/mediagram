@@ -474,10 +474,11 @@ library, cancelling the previous wait when either changes. The subscription
 ends after the last consumer leaves, with a short grace period; failed settings
 reads and interrupted connections retry without crashing the app.
 
-`LibraryUpdateCoordinator` in `core:data` owns refresh, local catalog reading,
-optional artwork fetch and shelf regrouping as an awaited operation.
-`CatalogViewModel` presents its progress and keeps held shelves visible when a
-read fails. A manual update still fetches missing artwork when a channel refresh
+`LibraryUpdate` in `core:data` is the library update: refresh, artwork fetch and
+a re-read of the installed sets, one update at a time, exposed as the installed
+library and one update state; Start over and Sign out make it forget the read.
+`CatalogViewModel` shelves each read and keeps held shelves visible when a read
+fails. A manual update still fetches missing artwork when a channel refresh
 fails; a pushed update fetches quietly only after a successful refresh. Compose
 renders these states and submits requests; it does not infer completion from
 intermediate UI emissions. The web server listens continuously and always checks
@@ -1070,11 +1071,12 @@ winner's banner on the board for 4 s, then the shared final ranking.
 **The race board has sound, on the TV only.** `race-sound-cues.ts` turns each
 stage into timed cues from the host's times alone (the die's clatter at its
 first touch of the table, a knock per hop, thunk and jingle at a capture, a
-jingle into the goal, the winner's jingle); `race-sound.ts` schedules them
-once per stage on the Web Audio clock and skips any already past, so a TV
-that reconnects never replays a backlog. Each sound starts early by the
-speaker delay, read every frame from `getOutputTimestamp()` and smoothed: the
-box's WebView takes ~370 ms (±50) from start to speaker. That is longer than
+jingle into the goal, the winner's jingle); the shared TV sound engine
+`client/src/tv/table/tv-sound.ts` (the race's, the card table's and Grand
+Allee's) schedules them once per stage on the Web Audio clock and skips any
+already past, so a TV that reconnects never replays a backlog. Each sound
+starts early by the speaker delay, read every frame from `getOutputTimestamp()`
+and smoothed: the box's WebView takes ~370 ms (±50) from start to speaker. That is longer than
 a hop, so the host starts a move `lead_ms` (200) after deciding it; without
 that lead the first knock of every move could only come late. The background music is an `<audio>`
 element fed blob URLs, two tracks in turn: decoded into Web Audio, three
@@ -1205,7 +1207,8 @@ master's colour and normal maps baked onto them (`tools/rebake-texture-atlas.mjs
 Meshy's thousands of edge-to-edge islands bled into each other at every
 smaller mip level). Each normal is turned into the new chart's frame, the frame
 three.js derives on screen for a mesh without tangents. The output is a 2048
-WebP colour map and a 1024 normal map, with meshopt: 40 MB in all, into
+KTX2 UASTC colour map and a 1024 UASTC normal map (the format every 3D avatar copy uses, user
+2026-11-15), with meshopt: 82 MB in all (WebP was 40 MB until 0.192.8), into
 `android/spieltisch/src/main/assets/game-avatars/` — generated,
 not committed, like the native libraries — and Spieltisch's WebView answers
 `/game-avatars/<id>.glb` from its APK assets (`GamePageClient.kt`), so they are
@@ -1264,8 +1267,8 @@ phone's rail has no Games row, as before: Spieltisch is a television app
 when Spieltisch leaves the screen, and takes another port when 8080 is taken.
 
 **Its own native core.** `crates/spieltisch-core` links `mediagram-game`, not
-`mediagram-core`, and exports `start_night(config, images)`, `night_back`, `stop_night` and
-`game_catalogue` (`libspieltisch_core.so`, four ABIs, `scripts/build-spieltisch-core.sh`;
+`mediagram-core`, and exports `start_night(config, images)`, `night_back` and `stop_night`
+(`libspieltisch_core.so`, four ABIs, `scripts/build-spieltisch-core.sh`;
 bindings by `scripts/generate-spieltisch-bindings.sh`, committed under
 `android/spieltisch/src/main/kotlin/uniffi/`). One night per process, held in a
 static slot. `scripts/check.sh` regenerates the
@@ -1551,6 +1554,33 @@ differs on purpose:
 - **Under the Blurred backdrop the cover's drift is the one thing to watch**:
   see the changelog's 0.121.0 entry for the frame times.
 
+### Films held more than once
+
+A port of the web's rules (`docs/web-player.md`, Films held more than once).
+The core hands each set's cut to Kotlin as `MediaSet.variant`.
+`feature/catalog`'s `FilmVersions.kt` groups films by their TMDB poster key
+after the kids filter, orders copies, labels them and applies the per-cut
+position and played rules; `FilmWatch.kt` reads watch state per film for
+cards, and `FilmVersionRows.kt` builds the rows. `FilmVersionsFixtureTest`
+runs the web's `test/fixtures/film-versions/` files, so the two surfaces
+cannot drift apart.
+
+- **Where the copies live.** On the representative `MediaSet` itself
+  (`MediaSet.versions`), as on the web, not on `Entry.Film`: many screens
+  unwrap an entry to its set and rebuild it, which would drop the copies.
+  `filmOf` finds the film for any copy's id.
+- **The choice.** The title page (phone and TV) replaces Play with a Versions
+  list. A card that plays straight away asks through `VersionAsk`
+  (`ui-common`): a bottom sheet on phone and tablet, the TV's own `TvDialog` on
+  television, the one deliberate difference from the web's centred dialog.
+  The TV's Continue and My List walls open the title page, as they always
+  have, so there the Versions list is the choice.
+- **Not asked** for a row on the title page, a Join, a scene, or the
+  player's up-next hand-over, as on the web. The player opens a copy at its
+  cut's position (`cutPosition`).
+- **Preload** (Android only) preloads the first copy of a film held more
+  than once.
+
 ### Settings and System
 
 Settings is a two-pane index — Telegram, Storage, Appearance, Profile, System — on phone,
@@ -1833,9 +1863,9 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   with digit keys types with those too. Four digits are handed over at once, so there is no
   OK, and a new PIN's second entry is a step of its own headed as the web's second field is
   ("The new PIN again").
-- **Manage profiles opens a person's choices in a dialog.** The web lays Reset PIN, the
-  limit select and Remove along each row; on a remote, buttons along a row would make Down
-  mean "next button" in one row and "next person" in another. Each row is one stop that
+- **Manage profiles opens a person's choices in a dialog.** The web and the tablet open a
+  person's controls under their row on a tap; on a remote, controls opening inside the list
+  would make Down mean "next control" under one row and "next person" elsewhere. Each row is one stop that
   opens its choices (a kid's FSK 6 / FSK 12, the current one holding the remote, then
   Daily limit, which opens its own choices, then Remove; a grown-up's Reset PIN, then
   Remove), and Remove still asks in the web's words. Adding asks the name on a screen of

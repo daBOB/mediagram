@@ -84,17 +84,12 @@ fn runs_through_all_rounds_to_final() {
     let mut players = vec![Player::for_test(0, "Ana", true)];
     let mut quiz = Quiz::new(cfg(3), general_pack(), 0.0);
     let mut now = 0.0;
-    while !quiz.is_finished() && now < 120_000.0 {
+    while quiz.ranking(&players).is_none() && now < 120_000.0 {
         now += 50.0;
         tick(&mut quiz, &mut players, now);
     }
-    assert!(quiz.is_finished());
     assert_eq!(quiz.index, 3);
-    let view = ViewCtx { now, players: &players, leader: Some(0) };
-    assert!(matches!(
-        quiz.phone_screen(&view, 0),
-        PhoneScreen::Final { rank: 1, of: 1, can_restart: true, .. }
-    ));
+    assert_eq!(quiz.ranking(&players).and_then(|r| r.place_of(0)), Some(1));
 }
 
 #[test]

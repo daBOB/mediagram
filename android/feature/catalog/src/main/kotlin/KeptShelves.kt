@@ -38,7 +38,9 @@ fun continueWall(
     watch: WatchSnapshot,
 ): List<MediaSet> {
     val byId = allSetsById(shelves)
-    return watch.progress
+    return watch
+        .continuing(shelves)
+        .progress
         .sortedByDescending(Progress::updatedAt)
         .filter { ResumePoint.resumeAt(it.toProgressPoint()) != null }
         .mapNotNull { byId[it.setId] }
@@ -52,7 +54,7 @@ fun continueWall(
 fun watchlistWall(
     shelves: List<Shelf>,
     watch: WatchSnapshot,
-): List<MediaSet> = setsFor(shelves, watch.watchlist)
+): List<MediaSet> = asFilms(setsFor(shelves, watch.watchlist), filmIndexOf(shelves)::get)
 
 /** Ids to sets, quietly dropping any the catalog no longer holds — `setsFor` in app.js. */
 private fun setsFor(

@@ -40,6 +40,10 @@ pub struct PlayableSet {
     pub quality: Option<String>,
     pub hdr: Option<String>,
     pub duration: Option<u32>,
+    /// A film's cut (`Director's Cut`, `Extended`, …), as the uploader
+    /// stored it; `None` is the standard cut. Players group copies of one
+    /// film by poster key and tell them apart by this and the picture.
+    pub variant: Option<String>,
     pub total: u64,
     pub part_count: u32,
     /// When the uploader recorded this set, as a Unix time. The row has
@@ -65,7 +69,7 @@ pub struct PartLocation {
 
 const COLUMNS: &str =
     "set_id, kind, title, show, chap, path, season, episode, tmdb, year, container,
-     vcodec, acodec, quality, hdr, alang, slang, duration, total, part_count, created_at";
+     vcodec, acodec, quality, hdr, alang, slang, duration, variant, total, part_count, created_at";
 
 /// A JSON list column (`alang`/`slang`) as plain strings; malformed text
 /// reads as no languages, like the web player's own `languagesIn`.
@@ -93,6 +97,7 @@ fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
         alang: languages_in(row.get("alang")?),
         slang: languages_in(row.get("slang")?),
         duration: row.get("duration")?,
+        variant: row.get("variant")?,
         total: row.get("total")?,
         part_count: row.get("part_count")?,
         created_at: row.get("created_at")?,

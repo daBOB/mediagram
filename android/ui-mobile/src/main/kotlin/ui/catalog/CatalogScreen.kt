@@ -4,7 +4,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import catalog.CatalogTab
 import catalog.CatalogUiState
-import catalog.magazineHomeOf
 import ui.catalog.home.LibraryLoading
 import ui.common.catalog.DepartmentScrollStates
 import uniffi.mediagram_core.TitleInfo
@@ -49,8 +48,8 @@ internal fun CatalogScreen(
     /**
      * Home's own list state, hoisted up to [ui.chrome.LibraryHome] so the
      * departments bar can read where the page actually is — the same
-     * instance [magazineHomeOf] below is asked to draw into, not a state of
-     * this screen's own that the bar would have no way to reach.
+     * instance Home below draws into, not a state of this screen's own that
+     * the bar would have no way to reach.
      */
     homeListState: LazyListState,
     /**
@@ -59,8 +58,6 @@ internal fun CatalogScreen(
      * is the active tab's for the departments bar's own over-hero blend.
      */
     deptScroll: DepartmentScrollStates,
-    /** The magazine's own "now" — shared with whoever needs to know ahead of composing this whether Home has a cover to draw, so the two never pick different editorial sets from two different moments. */
-    now: Long,
     /** What the index says about a title — the Featured reel's score and tagline. */
     titleInfo: suspend (String) -> TitleInfo? = { null },
 ) {
@@ -75,7 +72,7 @@ internal fun CatalogScreen(
             onCreateList = onCreateList, onOpenGenre = onOpenGenre, onOpenGenresIndex = onOpenGenresIndex,
             onOpenLatest = onOpenLatest, onOpenMoviesPage = onOpenMoviesPage, onOpenFranchise = onOpenFranchise,
             onPlayRun = onPlayRun, onFinish = onFinish, onToggleWatchlist = onToggleWatchlist,
-            homeListState = homeListState, deptScroll = deptScroll, now = now, titleInfo = titleInfo,
+            homeListState = homeListState, deptScroll = deptScroll, titleInfo = titleInfo,
         )
     }
 }

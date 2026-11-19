@@ -21,6 +21,7 @@ fn set(id: &str, kind: &str, title: Option<&str>, show: Option<&str>, year: u16)
         quality: None,
         hdr: None,
         duration: None,
+        variant: None,
         total: 0,
         part_count: 1,
         created_at: 0,

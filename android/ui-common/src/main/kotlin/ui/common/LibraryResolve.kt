@@ -3,6 +3,7 @@ package ui.common
 import catalog.CatalogUiState
 import catalog.Entry
 import catalog.collection
+import catalog.filmOf
 import catalog.mediaSet
 import model.ListOfSets
 import model.MediaSet
@@ -28,7 +29,8 @@ data class ResolvedPositions(
  */
 fun LibraryPositions.resolve(catalogState: CatalogUiState): ResolvedPositions {
     val resolvedCollection = collection?.let(catalogState::collection)
-    val resolvedTitle = titleId?.let(catalogState::mediaSet)
+    // A title page opened on any copy of a film held more than once shows the whole film.
+    val resolvedTitle = titleId?.let { catalogState.filmOf(it) ?: catalogState.mediaSet(it) }
     val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
     // Resolved the same way a collection is: a saved id, looked up again
     // against whatever the snapshot currently holds, so a list renamed or

@@ -15,6 +15,7 @@ import { genresOf, scoreLabel } from "./genres.js";
 import { artworkUrl } from "./plate.js";
 import { playPill } from "./title-spread.js";
 import { listToggle } from "./list-toggle.js";
+import { versionsOf } from "../film-versions.js";
 import { href } from "../address.js";
 
 const HOLD_MS = 9000;
@@ -140,7 +141,7 @@ function slide(set, at, count, play) {
   const details = el("a", "cover-details", "Details");
   details.href = href({ page: "film", setId: set.setId });
   details.setAttribute("aria-label", `Details: ${title}`);
-  actions.append(watch, listToggle(set.setId), details);
+  actions.append(watch, listToggle(versionsOf(set).map((copy) => copy.setId)), details);
   copy.append(actions);
   article.append(copy);
 

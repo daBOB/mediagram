@@ -4,11 +4,11 @@
 use crate::fluechtig::{FluechtigGame, Pick, Step};
 use crate::fluechtig_map::{City, Field};
 use crate::fluechtig_rules::Turn;
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::room_seats::leader;
 use crate::protocol::{
     FluechtigAsk, FluechtigBoard, FluechtigHunter, FluechtigLink, FluechtigLogEntry, FluechtigMover, FluechtigOption, FluechtigPhone,
-    FluechtigPiece, FluechtigScene, FluechtigSeen, FluechtigSide as Side, FluechtigSpot, FluechtigTicket as Ticket, FluechtigTurn,
+    FluechtigPiece, FluechtigScene, FluechtigSeen, FluechtigSpot, FluechtigTicket as Ticket, FluechtigTurn,
     PhoneScreen, PlayerId, TvScene,
 };
 
@@ -23,21 +23,8 @@ impl FluechtigGame {
         let c = &self.chase;
         let runs = player == self.fugitive;
         let mine: Vec<usize> = (0..self.owners.len()).filter(|&i| self.owners[i] == player).collect();
-        if !runs && mine.is_empty() {
-            return PhoneScreen::Wait { title: "Flüchtig läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
-        }
-        if let Some(side) = c.winner() {
-            let mut hunters = self.owners.clone();
-            hunters.sort_unstable();
-            hunters.dedup();
-            let won = (side == Side::Fugitive) == runs;
-            let winners = if side == Side::Fugitive { 1 } else { hunters.len() as u8 };
-            return PhoneScreen::Final {
-                rank: if won { 1 } else { winners + 1 },
-                of: 1 + hunters.len() as u8,
-                score: i32::from(won),
-                can_restart: view.leader == Some(player),
-            };
+        if (!runs && mine.is_empty()) || c.winner().is_some() {
+            return unasked();
         }
         let phone = FluechtigPhone {
             round: c.round,
@@ -125,12 +112,12 @@ impl FluechtigGame {
             })
             .collect();
         let seen_after = c.turn == Turn::Fugitive && c.double_left != 2 && c.rules.reveal_rounds.contains(&c.round);
-        FluechtigAsk { opens_at: self.ask.opens_at, prompt: self.prompt(), at, tickets, seen_after, options }
+        FluechtigAsk { opens_at: self.ask.opened_at(), prompt: self.prompt(), at, tickets, seen_after, options }
     }
 
     fn prompt(&self) -> String {
         let c = &self.chase;
-        match (self.ask.step, c.turn) {
+        match (self.step, c.turn) {
             (Step::Ticket(to), _) => format!("Nach Feld {to} – womit?"),
             (Step::Field, Turn::Hunter(i)) => self.figure(i).map_or_else(|| "Wohin fährst du?".into(), |k| format!("Wohin fährt Figur {k}?")),
             (Step::Field, _) => match c.double_left {

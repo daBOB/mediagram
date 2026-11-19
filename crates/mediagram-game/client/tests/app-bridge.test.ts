@@ -1,6 +1,6 @@
 // Run with `bun test` in crates/mediagram-game/client.
 import { afterEach, expect, test } from "bun:test";
-import { buzz, inApp, memory } from "../src/phone/app-bridge";
+import { boardCapable, buzz, inApp, listenToBoard, memory } from "../src/phone/app-bridge";
 
 type Bag = Record<string, string>;
 const g = globalThis as Record<string, unknown>;
@@ -31,6 +31,7 @@ function fakeBridge(stored: Bag = {}) {
 
 afterEach(() => {
   delete g.mediagramApp;
+  delete g.mediagramBoard;
   delete g.localStorage;
   delete nav.vibrate;
 });
@@ -103,4 +104,26 @@ test("storage that throws is ignored", () => {
 
   expect(memory.get("spieltisch.name")).toBeNull();
   expect(() => memory.set("spieltisch.name", "Ada")).not.toThrow();
+});
+
+test("the board is offered only when the app says it is an iPad", () => {
+  expect(boardCapable()).toBe(false);
+  g.mediagramApp = { ...fakeBridge(), board: false };
+  expect(boardCapable()).toBe(false);
+  g.mediagramApp = { ...fakeBridge(), board: true };
+  expect(boardCapable()).toBe(true);
+});
+
+test("board acts reach the page parsed, until removed", () => {
+  const acts: unknown[] = [];
+  const remove = listenToBoard((act) => acts.push(act));
+  const board = () => g.mediagramBoard as { receive(json: string): void } | undefined;
+
+  board()!.receive('{"t":"pick","player":3}');
+  board()!.receive("not json");
+  board()!.receive("null");
+  remove();
+
+  expect(acts).toEqual([{ t: "pick", player: 3 }]);
+  expect(board()).toBeUndefined();
 });

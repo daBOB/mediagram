@@ -1,7 +1,8 @@
 //! What the phones and the TV show during Mau-Mau.
 
+use crate::card_table::button;
 use crate::cards::Suit;
-use crate::game::{ViewCtx, name};
+use crate::game::{ViewCtx, name, unasked};
 use crate::maumau::{MauMauGame, Stage};
 use crate::maumau_rules::playable;
 use crate::protocol::{
@@ -16,28 +17,19 @@ pub(crate) fn wish_id(suit: Suit) -> String {
     format!("wish_{}", format!("{suit:?}").to_lowercase())
 }
 
-pub(crate) fn button(id: &str, label: &str, needs: ButtonNeeds, primary: bool) -> DeskButton {
-    DeskButton { id: id.into(), label: label.into(), needs, primary, suit: None }
-}
-
 impl MauMauGame {
     pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-        let Some(me) = self.seat_of(player) else {
-            return PhoneScreen::Wait { title: "Mau-Mau läuft".into(), text: Some("Du spielst in der nächsten Runde mit.".into()) };
+        let Some(me) = self.table.seat_of(player) else {
+            return unasked();
         };
-        if let Stage::Final { ranking } = &self.stage {
-            return PhoneScreen::Final {
-                rank: ranking.iter().position(|&s| s == me).map_or(1, |r| r as u8 + 1),
-                of: self.ids.len() as u8,
-                score: view.players.iter().find(|p| p.id == player).map_or(0, |p| p.score),
-                can_restart: view.leader == Some(player),
-            };
+        if matches!(self.stage, Stage::Final { .. }) {
+            return unasked();
         }
         let mine = me == self.turn;
         let top = self.top();
         let hand = &self.hands[me];
         let (prompt, enabled, buttons): (String, Vec<bool>, Vec<DeskButton>) = match (&self.stage, mine) {
-            (_, false) => (format!("{} ist dran", name(view.players, self.player_at(self.turn))), vec![false; hand.len()], vec![]),
+            (_, false) => (format!("{} ist dran", name(view.players, self.table.player_at(self.turn))), vec![false; hand.len()], vec![]),
             (Stage::Turn { .. }, true) => {
                 let draw = if self.owed > 0 { format!("{} Karten ziehen", self.owed) } else { "Karte ziehen".into() };
                 let prompt = if self.owed > 0 { format!("Lege eine 7 oder zieh {}", self.owed) } else { "Du bist dran".into() };
@@ -85,19 +77,13 @@ impl MauMauGame {
 
     pub(crate) fn tv_view(&self, view: &ViewCtx) -> TvScene {
         let over = matches!(self.stage, Stage::Final { .. });
-        let shown = match &self.queued {
-            Some((b, from)) if view.now >= *from => Some((b, *from)),
-            _ => self.banner.as_ref().map(|(b, at)| (b, *at)),
-        };
-        let banner = match shown {
-            Some((b, at)) if over || view.now < at + self.cfg.banner_ms => b.clone(),
-            _ => CardsBanner { player: self.player_at(self.turn), text: " ist dran".into() },
-        };
+        let banner = self.table.banner(view.now, over).unwrap_or_else(|| CardsBanner { player: self.table.player_at(self.turn), text: " ist dran".into() });
         TvScene::Cards {
             scene: CardsScene {
                 game: "Mau-Mau".into(),
                 seats: self
-                    .ids
+                    .table
+                    .players()
                     .iter()
                     .zip(&self.hands)
                     .map(|(&player, h)| CardsSeat {
@@ -111,13 +97,13 @@ impl MauMauGame {
                 piles: vec![CardsPile { cards: self.discard[self.discard.len().saturating_sub(PILE_SHOWN)..].to_vec(), count: self.discard.len() as u16 }],
                 deck: self.deck.len() as u16,
                 trump: None,
-                turn: (!over).then(|| self.player_at(self.turn)),
+                turn: (!over).then(|| self.table.player_at(self.turn)),
                 wish: self.wish,
                 note: (self.owed > 0).then(|| format!("Zieh {}", self.owed)),
                 banner: Some(banner),
-                events: self.events.clone(),
+                events: self.table.events().to_vec(),
                 ranking: match &self.stage {
-                    Stage::Final { ranking } => Some(ranking.iter().map(|&s| self.player_at(s)).collect()),
+                    Stage::Final { ranking } => Some(ranking.iter().map(|&s| self.table.player_at(s)).collect()),
                     _ => None,
                 },
             },

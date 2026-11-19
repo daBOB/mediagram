@@ -22,13 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import designsystem.LocalCatalogueTones
 import designsystem.Radius
 import designsystem.Spacing
 import model.Profile
@@ -37,10 +35,10 @@ import model.SectionAccessWords
 import model.turning
 
 /**
- * Which sections [profile] is shown, on its own line under its row in Manage
- * profiles — the web's `sectionSwitches`: a quiet "Sections", then a switch
- * per section in nav order, on while it is shown, the group named for whose
- * it is. Turning one hands [onSet] the whole hidden list, keys this app does
+ * Which sections [profile] is shown, in what opens under its row in Manage
+ * profiles — the web's `sectionSwitches`: a switch per section in nav order,
+ * on while it is shown, the group named for whose it is; the caption above
+ * it is its line's ([Line]). Turning one hands [onSet] the whole hidden list, keys this app does
  * not know kept as they came, and holds every switch until the panel's next
  * answer — [answers] moves on every one, a refusal heard before included — so
  * a second turn never sends a list the first has not settled.
@@ -56,15 +54,8 @@ internal fun SectionSwitches(
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(bottom = Spacing.small).semantics { contentDescription = SectionAccessWords.forName(profile.name) },
+        modifier = Modifier.semantics { contentDescription = SectionAccessWords.forName(profile.name) },
     ) {
-        // The group's name already says it, as the web hides its caption from a screen reader.
-        Text(
-            SectionAccessWords.TITLE,
-            style = MaterialTheme.typography.bodySmall,
-            color = LocalCatalogueTones.current.quiet,
-            modifier = Modifier.clearAndSetSemantics {},
-        )
         SECTIONS.forEach { section ->
             SectionSwitch(section.label, shown = section.key !in profile.hiddenSections, enabled = !held) {
                 held = true

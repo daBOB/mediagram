@@ -26,6 +26,7 @@ import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.Department
 import catalog.Entry
+import catalog.LibraryPages
 import catalog.everyFilm
 import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
@@ -48,6 +49,10 @@ import ui.tv.catalog.TvPillEntryKey
 import ui.tv.catalog.TvProfileEntryKey
 import ui.tv.chrome.LocalTvMenu
 import ui.tv.chrome.TvMenuSlot
+import ui.common.catalog.LocalWatchedAt
+import ui.common.catalog.rememberVersionAsk
+import ui.common.catalog.watchedAtOf
+import ui.tv.catalog.TvVersionChooser
 import ui.tv.player.TvTogetherNotice
 import ui.tv.profile.TvChosenProfile
 import ui.tv.system.TvMenuPage
@@ -85,6 +90,7 @@ internal fun TvLibrary(
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
     val fetchViewModel: FetchViewModel = hiltViewModel()
     val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
+    val updateState by catalogViewModel.updateState.collectAsStateWithLifecycle()
     val browse: BrowseViewModel = hiltViewModel()
     val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
     val titlePreloadViewModel: TitlePreloadViewModel = hiltViewModel()
@@ -105,6 +111,9 @@ internal fun TvLibrary(
     val resolved = at.resolve(catalogState)
     val watch = resolved.watch
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
+    val watchedAt = remember(watch) { watchedAtOf(watch) }
+    // A card that plays straight away asks which copy of a film held more than once.
+    val ask = rememberVersionAsk(catalogState) { setId, run -> at.openPlayer(setId, run) }
     val ready = catalogState as? CatalogUiState.Ready
     val shelves = ready?.shelves.orEmpty()
     val heldIds = ready?.heldIds.orEmpty()
@@ -139,7 +148,7 @@ internal fun TvLibrary(
     // Never the raw engine count: a kids profile must not see a
     // grown-up's own preloads counted into its own menu badge.
     val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
-    val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, fetchState, { menuOpen = false }, onStartOver, queueCount)
+    val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, updateState, fetchState, { menuOpen = false }, onStartOver, queueCount)
     val casts = rememberCastOpens(at)
     // A cast over comes back to Home as a fresh arrival: the catalogue's kept
     // tab and scroll, and the plate Back would have landed on, are dropped.
@@ -217,7 +226,12 @@ internal fun TvLibrary(
         )
 
     Box(Modifier.fillMaxSize()) {
-        CompositionLocalProvider(LocalTogetherOffers provides togetherOffers, LocalTvMenu provides menuSlot, LocalAmbientTint provides ambientTint) {
+        CompositionLocalProvider(
+            LocalTogetherOffers provides togetherOffers,
+            LocalTvMenu provides menuSlot,
+            LocalAmbientTint provides ambientTint,
+            LocalWatchedAt provides watchedAt,
+        ) {
             when {
                 top == FrameKind.PLAYER -> key(casts) { TvPlayerBranch(at, catalogViewModel, leave, onCastOver = home) }
 
@@ -229,8 +243,8 @@ internal fun TvLibrary(
                 // Nothing open: the shelves.
                 top == null ->
                     TvLibraryHomeFrame(
-                        saved, catalogState, profile, fetchState.running, fetchState.progress, restore, here, at, catalogViewModel, menu,
-                        pendingRail, { pendingRail = null }, pendingTab, { pendingTab = null }, games.open,
+                        saved, catalogState, profile, updateState, restore, here, at, catalogViewModel, menu,
+                        pendingRail, { pendingRail = null }, pendingTab, { pendingTab = null }, games.open, ask,
                     ) { menuOpen = true }
 
                 // Every other page sits in the catalogue's own rail and bar, as every web page sits in its shell.
@@ -261,7 +275,7 @@ internal fun TvLibrary(
                         onMenu = { menuOpen = true },
                     ) {
                         when (top) {
-                            FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, searchField, leave)
+                            FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, searchField, ask, leave)
 
                             FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
 
@@ -271,7 +285,7 @@ internal fun TvLibrary(
                             FrameKind.COLLECTION ->
                                 TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)
 
-                            FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
+                            FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, ask, leave)
 
                             FrameKind.PERSON ->
                                 TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
@@ -281,7 +295,7 @@ internal fun TvLibrary(
 
                             FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
 
-                            FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
+                            FrameKind.LATEST -> TvLatestFrame(at, (ready?.pages ?: LibraryPages.Empty).latest, watch, heldIds, restore, here, leave)
 
                             FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
 
@@ -303,9 +317,10 @@ internal fun TvLibrary(
     // until it is dismissed is still there when the film is left, which is
     // when there is somebody to read it.
     if (top != FrameKind.PLAYER) {
+        TvVersionChooser(ask, catalogState)
         TvFetchResultDialog(
-            message = fetchResultMessage(fetchState.report, fetchState.error),
-            onDismiss = fetchViewModel::dismissResult,
+            message = fetchResultMessage(updateState.report, updateState.error),
+            onDismiss = catalogViewModel::dismissUpdateResult,
         )
     }
 }

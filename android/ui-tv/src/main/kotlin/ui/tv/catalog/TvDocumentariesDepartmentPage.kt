@@ -24,7 +24,6 @@ import catalog.Department
 import catalog.DocumentariesDepartment
 import catalog.documentariesLineOf
 import catalog.keyOf
-import catalog.resumeCardsOf
 import kotlinx.coroutines.flow.first as firstOf
 import model.WatchSnapshot
 import ui.tv.TvTextRow
@@ -57,7 +56,7 @@ internal fun TvDocumentariesDepartmentPage(
     listState: LazyListState = rememberLazyListState(cacheWindow = LazyLayoutCacheWindow(ahead = DocumentariesCacheWindow, behind = DocumentariesCacheWindow)),
 ) {
     val (positions, watchedIds) = rememberWatchMarks(watch)
-    val resumeCards = remember(dept, watch, heldIds) { resumeCardsOf(dept.continuing, emptyList(), watch, heldIds) }
+    val resumeCards = dept.resumeCards
     val focus = remember { FocusRequester() }
     var lastSection by rememberSaveable { mutableStateOf<String?>(null) }
     val sections =

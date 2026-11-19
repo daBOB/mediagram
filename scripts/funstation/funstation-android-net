@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Puts funstation's Android on the home network the way the cable allows. With a link on
+# the wired port, Android sits on the bridge over it and gets its own address from the
+# router. Without one, it goes behind WayDroid's own NAT over Wi-Fi: this machine then
+# forwards Spieltisch's port, announces it to the phones, and tells Spieltisch which
+# address to show. Moving Android between the two restarts it.
+#
+# Runs as root: from NetworkManager's dispatcher on network events, and with --boot once
+# before WayDroid's container starts. Safe to run any number of times.
+set -euo pipefail
+
+TV_USER=@TV_USER@
+LXC=/var/lib/waydroid/lxc/waydroid/config
+PROP=/var/lib/waydroid/waydroid_base.prop
+PREFS=/home/$TV_USER/.local/share/waydroid/data/data/com.mediagram.android/shared_prefs/playback_settings.xml
+NFT=/etc/funstation-spieltisch.nft
+AVAHI=/etc/avahi/services/funstation-spieltisch.service
+ANDROID_NAT_IP=192.168.240.112 # WayDroid's fixed address for Android on its own bridge
+HOST_NAT_IP=192.168.240.1
+GAME_PORT=8080
+CACHE_PORT=7788
+
+BOOT=0
+[ "${1:-}" = --boot ] && BOOT=1
+
+exec 9>/run/funstation-android-net.lock
+flock 9
+
+# The wired port is the one NetworkManager enslaves to br0; without a link it is taken off
+# the bridge, so it is found through its connection, not the bridge's members.
+port() { nmcli -t -f NAME con show | sed -n 's/^br0-//p' | head -1; }
+has_link() { [ "$(cat "/sys/class/net/$1/carrier" 2>/dev/null)" = 1 ]; }
+wanted() {
+  local p
+  p=$(port)
+  if [ -n "$p" ] && has_link "$p"; then echo br0; else echo waydroid0; fi
+}
+current() { sed -n 's/^lxc\.net\.0\.link = //p' "$LXC"; }
+# This machine's address on the home network, and the device it is on.
+lan_ip() { ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p'; }
+lan_dev() { ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* dev \([^ ]*\).*/\1/p'; }
+
+set_prop() { # Spieltisch reads it each time a night starts
+  sed -i '/^funstation\.lan_address=/d' "$PROP"
+  [ -n "$1" ] && echo "funstation.lan_address=$1" >>"$PROP"
+  return 0
+}
+
+nat_extras_on() {
+  local ip=$1 dev=$2
+  [ -n "$ip" ] && [ -n "$dev" ] || return 0
+  # A table of its own, which ufw leaves alone (the same as port 80's redirect).
+  cat >"$NFT" <<EOF
+destroy table ip funstation_spieltisch
+table ip funstation_spieltisch {
+  chain prerouting {
+    type nat hook prerouting priority dstnat; policy accept;
+    iifname "$dev" tcp dport $GAME_PORT dnat to $ANDROID_NAT_IP:$GAME_PORT
+  }
+}
+EOF
+  nft -f "$NFT"
+  # Android's own announcement stays behind the NAT; the phones hear this one instead.
+  local avahi
+  avahi=$(
+    cat <<EOF
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name>Spieltisch</name>
+  <service>
+    <type>_mediagram-game._tcp</type>
+    <port>$GAME_PORT</port>
+    <txt-record>url=http://$ip:$GAME_PORT/</txt-record>
+  </service>
+</service-group>
+EOF
+  )
+  [ "$(cat "$AVAHI" 2>/dev/null)" = "$avahi" ] || printf '%s\n' "$avahi" >"$AVAHI"
+  if ! grep -qx "funstation.lan_address=$ip" "$PROP"; then
+    set_prop "$ip"
+    # A running Android takes the new address at once; no restart for a DHCP move.
+    [ "$BOOT" = 1 ] || waydroid shell -- setprop funstation.lan_address "$ip" >/dev/null 2>&1 || true
+  fi
+}
+
+nat_extras_off() {
+  nft delete table ip funstation_spieltisch 2>/dev/null || true
+  rm -f "$NFT" "$AVAHI"
+}
+
+move_android() {
+  local link=$1 ip=$2 cache=$2
+  echo "moving Android to $link"
+  [ "$BOOT" = 1 ] || systemctl stop waydroid-container
+  sed -i "s/^lxc\.net\.0\.link = .*/lxc.net.0.link = $link/" "$LXC"
+  if [ "$link" = waydroid0 ]; then
+    set_prop "$ip"
+    cache=$HOST_NAT_IP
+  else
+    set_prop ""
+  fi
+  # The media app's LAN cache: this machine, at the address Android can reach it on.
+  if [ -n "$cache" ] && [ -f "$PREFS" ]; then
+    sed -i "s|\(name=\"lan_cache_manual_address\">http://\)[^<]*|\1$cache:$CACHE_PORT|" "$PREFS"
+  fi
+  [ "$BOOT" = 1 ] && return 0
+  systemctl start waydroid-container
+  systemctl --user -M "$TV_USER@" restart android-tv-session || true
+}
+
+if [ "$BOOT" = 1 ]; then
+  # Before NetworkManager brings the port up it reports no link even with a cable in.
+  p=$(port)
+  if [ -n "$p" ]; then
+    ip link set "$p" up 2>/dev/null || true
+    for _ in $(seq 16); do has_link "$p" && break; sleep 0.5; done
+  fi
+else
+  sleep 10 # a reseated or flapping cable switches once
+fi
+
+while :; do
+  want=$(wanted)
+  if [ "$want" = waydroid0 ]; then nat_extras_on "$(lan_ip)" "$(lan_dev)"; else nat_extras_off; fi
+  [ "$want" = "$(current)" ] && break
+  move_android "$want" "$(lan_ip)"
+done

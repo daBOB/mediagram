@@ -159,3 +159,12 @@ fields and cards, as well as the event animations."
 Rule: before mockups or views of a board game, the concept defines every field (text, look, staging),
 every card (text, look, where it shows) and a storyboard per event animation, each shown and approved.
 Rules and balance fix what things do; the concept fixes what players see and read.
+
+## 2026-11-15 — Take a game's rules as the user states them; don't add to them
+
+The user described Letztes Wort in two sentences (one question with 5–10 correct answers; a correct
+answer takes the stick; whoever holds it when the hidden time is up wins). I played it back with the TV
+listing every given answer and a multi-option question about used answers. The user: "NO the TV is not
+showing the correct answers", then "AGAIN. We have ONE Question …".
+Rule: build the stated rules literally. Anything I add (what the TV shows, tie rules, edge cases) goes
+in as a one-line proposal marked as mine, never as a menu that reopens the rule.

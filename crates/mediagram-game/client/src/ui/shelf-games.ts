@@ -25,11 +25,16 @@ export type ShelfItem = {
 
 /** What the shelf says about each game the host offers. No wildcard: a new game does not compile without its text. */
 const PLAYABLE: Record<GameKind, { blurb: string; group: ShelfGroup }> = {
-  quiz: { group: "mini", blurb: "Acht Runden Fragen aus Filmen, Allgemeinwissen oder beidem. Wer zuerst richtig drückt, holt die meisten Punkte." },
+  quiz: { group: "mini", blurb: "Fragen aus Filmen, Allgemeinwissen oder beidem. Wer zuerst richtig drückt, holt die meisten Punkte." },
   poster: { group: "mini", blurb: "Ein Film- oder Serienplakat wird Schritt für Schritt schärfer. Wer es zuerst erkennt, gewinnt die Runde – falsch getippt heißt aussetzen." },
-  kopfnuss: { group: "mini", blurb: "Kategorie wählen, den anderen Streiche aufs Handy schicken, Fragen beantworten – und am Ende der Gipfelsturm um den Sieg." },
+  grenzfall: { group: "mini", blurb: "Auf dem Fernseher erscheint nur der Umriss eines Landes. Welches ist es? Erst die bekannten, am Ende die kniffligen – je schneller richtig, desto mehr Punkte." },
+  spruchreif: { group: "mini", blurb: "Der Fernseher zeigt den Anfang eines Sprichworts, abwechselnd deutsch und englisch. Wie geht es weiter? Vier Enden stehen zur Wahl – je schneller richtig, desto mehr Punkte." },
+  zuendstoff: { group: "mini", blurb: "Alle stehen im Kreis, eine Bombe mit verstecktem Zünder fliegt herum. Tipp an, wem du sie zuwirfst – und fang sie mit Fangen!, wenn sie bei dir landet. Fallen lassen kostet Zeit. Wer sie beim Knall hält, verliert ein Leben." },
+  letztes_wort: { group: "mini", blurb: "Eine Frage, viele richtige Antworten und eine versteckte Uhr. Wer buzzert, sagt seine Antwort laut, die Moderation entscheidet. Richtig holt dir den Stab, falsch bist du raus – wer ihn hält, wenn die Zeit um ist, hat das letzte Wort." },
+  kopfnuss: { group: "full", blurb: "Kategorie wählen, den anderen Streiche aufs Handy schicken, Fragen beantworten – und am Ende der Gipfelsturm um den Sieg." },
   dreifelder: { group: "mini", blurb: "Eine Frage, drei Felder. Wer falsch steht, fliegt raus – wer als Letzter übrig bleibt, gewinnt." },
   preisfrage: { group: "mini", blurb: "Seltsame Produkte aus dem Netz: Wer schätzt den Preis am genauesten? Je näher dran, desto mehr Punkte." },
+  kritzelei: { group: "mini", blurb: "Einer zeichnet mit dem Finger auf dem iPad, der Fernseher zeigt jeden Strich live. Alle raten laut – wer's zuerst hat, punktet." },
   race: { group: "full", blurb: "Das Rennen ums Brett: vier Figuren, mit einer Sechs geht es los, und wer geschlagen wird, muss zurück nach Hause." },
   grand_allee: { group: "full", blurb: "Grundstücke kaufen, Hotels bauen, Eingänge setzen – und die Gäste zahlen. Der reichste Hotelier am Boulevard gewinnt." },
   fluechtig: { group: "full", blurb: "Einer flieht unsichtbar durch die Stadt, die anderen jagen ihn. Nur seine Tickets verraten, wie er fährt – und ab und zu taucht er auf." },
@@ -40,7 +45,6 @@ const PLAYABLE: Record<GameKind, { blurb: string; group: ShelfGroup }> = {
 
 /** The games in the works and the ones planned, in the order the shelf shows them within their half. */
 export const UPCOMING: readonly ShelfItem[] = [
-  { key: "kritzelei", name: "Kritzelei", min: 2, max: 8, group: "mini", badge: "wip", blurb: "Einer zeichnet mit dem Finger auf dem iPad, der Fernseher zeigt jeden Strich live. Alle raten laut – wer's zuerst hat, punktet." },
   { key: "neunmalklug", name: "Neunmalklug", min: 2, max: 8, group: "mini", badge: "soon", blurb: "Ein Quiz mit frechem Moderator: knifflige Fragen, fiese Fallen und jede Menge Sprüche über eure Antworten." },
   { key: "lebensweg", name: "Lebensweg", min: 2, max: 6, group: "full", badge: "wip", blurb: "Mit dem Auto den Lebensberg hinauf: Ausbildung, Beruf, Familie und Haus. Wer oben am meisten erreicht hat, gewinnt." },
   { key: "wissensreise", name: "Wissensreise", min: 2, max: 6, group: "full", badge: "soon", blurb: "Würfeln, ziehen, Frage beantworten: In sechs Kategorien je einen Stein sammeln – wer zuerst alle hat, gewinnt die Reise." },

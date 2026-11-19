@@ -7,8 +7,9 @@ import * as THREE from "three";
 import type { Card } from "../../protocol/Card";
 import type { Suit } from "../../protocol/Suit";
 import { SUITS, SUIT_SYMBOL, isRed } from "../../ui/card-face";
+import { HUD_FONT } from "../table/hud-font";
 import { CARD_H, CARD_W, TABLE_Y, type Placed } from "./cards-layout";
-import { COLS, HUD_FONT, ROWS, cellOf, printCards } from "./cards-print";
+import { COLS, ROWS, cellOf, printCards } from "./cards-print";
 
 /** Enough meshes for eight full fans, the piles and every card in flight. */
 const POOL = 150;
@@ -147,11 +148,8 @@ function badgeCanvas(suit: Suit) {
   });
 }
 
-export async function buildWorld(canvas: HTMLCanvasElement, seats: number): Promise<World> {
+export async function buildWorld(renderer: THREE.WebGLRenderer, seats: number): Promise<World> {
   const woodTable = await image("/race/table-lacquered-cherry.jpg");
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.autoClear = false;
   const camera = new THREE.PerspectiveCamera(36, 16 / 9, 0.1, 300);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#1a110b");

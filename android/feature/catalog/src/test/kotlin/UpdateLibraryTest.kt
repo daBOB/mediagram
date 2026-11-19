@@ -1,5 +1,6 @@
 package catalog
 
+import data.LibraryUpdateState
 import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchStep
 import kotlin.test.Test
@@ -9,16 +10,14 @@ import kotlin.test.assertNull
 class UpdateLibraryTest {
     @Test
     fun readingAndArtworkHaveTheirExistingMenuMessages() {
-        assertEquals("Reading the channel…", updateDisabledReason(CatalogUiState.Loading, false))
-        assertEquals("Reading the channel…", updateDisabledReason(CatalogUiState.Ready(emptyList(), refreshing = true), false))
-        assertEquals("Fetching details and artwork…", updateDisabledReason(CatalogUiState.Ready(emptyList()), true))
+        assertEquals("Reading the channel…", updateDisabledReason(LibraryUpdateState(reading = true)))
+        assertEquals("Fetching details and artwork…", updateDisabledReason(LibraryUpdateState(fetching = true)))
     }
 
     @Test
-    fun aSettledEmptyOrFailedCatalogCanBeUpdatedAgain() {
-        assertNull(updateDisabledReason(CatalogUiState.Empty, false))
-        assertNull(updateDisabledReason(CatalogUiState.Failed("offline"), false))
-        assertNull(updateDisabledReason(CatalogUiState.Ready(emptyList()), false))
+    fun aSettledUpdateCanBeRunAgain() {
+        assertNull(updateDisabledReason(LibraryUpdateState()))
+        assertNull(updateDisabledReason(LibraryUpdateState(error = "offline")))
     }
 
     @Test
@@ -27,7 +26,7 @@ class UpdateLibraryTest {
         val looking = FetchProgress(FetchStep.LOOKING_UP, 200u, 640u, 60_000uL)
         assertEquals(
             "Looking up titles · 200 of 640 · about 3 min left",
-            updateDisabledReason(CatalogUiState.Ready(emptyList()), true, looking),
+            updateDisabledReason(LibraryUpdateState(fetching = true, progress = looking)),
         )
         assertEquals(200f / 640f, fetchFraction(looking))
     }

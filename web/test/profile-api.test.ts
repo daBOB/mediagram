@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { allowed, type RoleView } from "../src/state/profiles-rules";
 import * as api from "../public/lib/profile-api.js";
 import * as state from "../public/lib/watch-state.js";
 import { ANDRE, LEA, MAJA, SPLIT, TIM, writesOf } from "./support/household-fixture";
@@ -142,8 +143,9 @@ function offered(profiles: object[], actorId: string, action: string, targetId: 
   const { actor, grownUps, kids } = api.manageable(profiles, actorId);
   const has = (list: Array<{ id: string }>) => list.some((entry) => entry.id === targetId);
   if (!actor) return false;
-  if (action === "create-grown-up") return actor.admin === true;
-  if (action === "create-kid") return true;
+  // The add forms are drawn per household by the page, not listed by `manageable`, so the shared rule
+  // answers here; the owner's view's adds, a household and a parent each, are checked in profile-manage-owner.test.ts.
+  if (action === "create-grown-up" || action === "create-kid") return allowed(profiles as RoleView[], actorId, action, targetId ?? "");
   if (action === "remove") return has(grownUps) || has(kids);
   if (action === "set-pin") return targetId === actorId || has(grownUps);
   if (action === "set-kids-age") return has(kids);

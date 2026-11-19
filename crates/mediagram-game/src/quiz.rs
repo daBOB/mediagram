@@ -11,8 +11,9 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::game::{ActionError, Game, GameCtx, ViewCtx};
-use crate::protocol::{Action, AnswerColor, PhoneScreen, PlayerId, QuizResult, ServerTime, TvScene};
+use crate::protocol::{Action, AnswerColor, PhoneScreen, PlayerId, QuizResult, Ranking, ServerTime, TvScene};
 use crate::quiz_config::{Answer, Question, QuizConfig, Round, Stage};
+use crate::room_seats::Player;
 
 pub struct Quiz {
     pub(crate) cfg: QuizConfig,
@@ -151,16 +152,16 @@ impl Game for Quiz {
         }
     }
 
-    fn phone_screen(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-        self.phone_view(view, player)
+    fn phone_screen(&self, _view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+        self.phone_view(player)
     }
 
     fn tv_scene(&self, _view: &ViewCtx) -> TvScene {
         self.tv_view()
     }
 
-    fn is_finished(&self) -> bool {
-        self.stage == Stage::Final
+    fn ranking(&self, players: &[Player]) -> Option<Ranking> {
+        (self.stage == Stage::Final).then(|| Ranking::by_score(players))
     }
 }
 

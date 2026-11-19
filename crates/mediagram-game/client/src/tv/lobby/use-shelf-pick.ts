@@ -33,8 +33,8 @@ export function useShelfPick(settings: LobbySettings, conn: Connection) {
     (game: GameKind) => {
       // a pick the socket dropped is never echoed: keep the list short
       inFlight.current = [...inFlight.current.slice(-7), game];
-      const { quiz_mode, kids_only, adult } = latest.current;
-      conn.send({ t: "action", action: { t: "configure", game, quiz_mode, kids_only, adult } });
+      const { quiz_mode, speed, length, kids_only } = latest.current;
+      conn.send({ t: "action", action: { t: "configure", game, quiz_mode, speed, length, kids_only } });
     },
     [conn],
   );

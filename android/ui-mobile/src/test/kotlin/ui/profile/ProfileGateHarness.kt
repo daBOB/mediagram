@@ -14,7 +14,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -31,6 +30,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import catalog.profile.OwnerPin
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.DefaultHouseholdsRepository
@@ -42,6 +42,7 @@ import io.mockk.unmockkStatic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import model.HouseholdWords
 import model.Profile
 import org.junit.After
 import org.junit.Before
@@ -111,8 +112,9 @@ abstract class ProfileGateHarness {
             household = WatchStateFixture(profiles.toList(), chosen, FakeCore().apply { roles.pins += pins }.apply(seed))
             val sync = mockk<WatchSync>(relaxed = true)
             val homes = DefaultHouseholdsRepository(household.provider, household.repository, scope, Dispatchers.Unconfined)
-            manage = ManageProfilesViewModel(household.repository, homes, sync)
-            val models = listOf(ProfileViewModel(household.repository, sync), manage) + householdViewModels(household.repository, homes).values
+            val ownerPin = OwnerPin()
+            manage = ManageProfilesViewModel(household.repository, homes, sync, ownerPin)
+            val models = listOf(ProfileViewModel(household.repository, sync), manage) + householdViewModels(household.repository, homes, ownerPin).values
             val provider =
                 ViewModelProvider(
                     store,
@@ -157,12 +159,16 @@ abstract class ProfileGateHarness {
         digits: String,
     ) {
         compose.onNodeWithText("Manage profiles").performClick()
-        compose.onNodeWithText("Who are you?").assertExists()
-        // The pill, not the same name in Everyone here above it.
-        compose.onNode(hasText(name) and hasClickAction()).performScrollTo().performClick()
+        compose.onNodeWithText(HouseholdWords.WHOS_MANAGING).assertExists()
+        compose.onNode(tile(name)).performScrollTo().performClick()
         pin(digits)
         compose.onNodeWithText("As $name").assertExists()
     }
+
+    /** [name]'s row on Manage, or Add someone, opened unless it already is. */
+    fun opened(name: String) = compose.onNode(personRow(name)).openIfClosed()
+
+    fun openAdd() = compose.onNode(addSomeoneUnnamed).openIfClosed()
 
     fun profile(id: String) = household.core.profiles.single { it.id == id }
 

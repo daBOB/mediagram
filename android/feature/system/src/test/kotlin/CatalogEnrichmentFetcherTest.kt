@@ -4,7 +4,9 @@ import data.CatalogEnrichmentFetcher
 import data.HomeCacheServer
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -12,9 +14,11 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import testing.FakeCore
 import testing.FakeCoreProvider
+import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.FetchStep
+import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -154,6 +158,106 @@ class CatalogEnrichmentFetcherTest {
             home.linked(null)
             runCurrent()
             assertFalse(enrichment.state.value.viaHomeCache)
+        }
+
+    @Test
+    fun fetchingWithNoKeyStoredDoesNothing() =
+        runTest {
+            val core = FakeCore()
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings(), dispatcher = Dispatchers.Unconfined)
+
+            enrichment.fetch()
+
+            assertNull(core.lastKey)
+            assertNull(enrichment.state.value.report)
+        }
+
+    /**
+     * The defect this closes: the fallback language used to be the constant
+     * `en-US`, so a library with nothing to say about its own language was
+     * described to its owner in a language they may not read. The device
+     * knows better, and is the only thing here that does.
+     */
+    @Test
+    fun theFallbackLanguageIsTheDevicesOwn() =
+        runTest {
+            val core = FakeCore()
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("a-fake-key") }, dispatcher = Dispatchers.Unconfined)
+
+            enrichment.fetch()
+
+            assertEquals(Locale.getDefault().toLanguageTag(), core.lastLanguage)
+        }
+
+    /** A rejected key is named as such — never quoted back, and never mistaken for a network fault. */
+    @Test
+    fun aRejectedKeyNamesTheKeyRatherThanTheNetwork() =
+        runTest {
+            val core = FakeCore(failure = CoreException.NotAuthorized("That key was not accepted."))
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("a-wrong-key") }, dispatcher = Dispatchers.Unconfined)
+
+            enrichment.fetch()
+
+            assertEquals("That key was not accepted.", enrichment.state.value.error)
+            assertNull(enrichment.state.value.report)
+        }
+
+    @Test
+    fun dismissingAResultClearsItWithoutTouchingWhetherAKeyIsStored() =
+        runTest {
+            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u))
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("a-fake-key") }, dispatcher = Dispatchers.Unconfined)
+            enrichment.fetch()
+
+            enrichment.dismissResult()
+
+            assertNull(enrichment.state.value.report)
+            assertTrue(enrichment.state.value.hasKey)
+        }
+
+    /** The fetch new media brings is nobody's request: it does its work and says nothing. */
+    @Test
+    fun aQuietFetchFillsInWithoutAReport() =
+        runTest {
+            val core = FakeCore(report = FetchReport(2u, 7u, 0u, 0u, 5u, 1u, 0u, 0u))
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("a-fake-key") }, dispatcher = Dispatchers.Unconfined)
+
+            enrichment.fetch(quiet = true)
+
+            assertEquals("a-fake-key", core.lastKey)
+            assertNull(enrichment.state.value.report)
+            assertNull(enrichment.state.value.error)
+            assertFalse(enrichment.state.value.running)
+        }
+
+    /** A result the viewer has not dismissed yet is theirs; a quiet fetch neither clears nor replaces it. */
+    @Test
+    fun aQuietFetchLeavesAResultStillOnScreen() =
+        runTest {
+            val core = FakeCore(report = FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u))
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("a-fake-key") }, dispatcher = Dispatchers.Unconfined)
+            enrichment.fetch()
+
+            enrichment.fetch(quiet = true)
+
+            assertEquals(FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u), enrichment.state.value.report)
+        }
+
+    @Test
+    fun cancellingAFetchClearsItsRunningFlagAndAllowsAnotherAttempt() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val core = FakeCore(gate = gate)
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") }, dispatcher = Dispatchers.Unconfined)
+            val run = launch { enrichment.fetch() }
+            runCurrent()
+            assertTrue(enrichment.state.value.running)
+            run.cancelAndJoin()
+            assertFalse(enrichment.state.value.running)
+            assertNull(enrichment.state.value.error)
+            gate.complete(Unit)
+            enrichment.fetch()
+            assertEquals(2, core.fetchCalls)
         }
 
     private fun linkedHomeCache() = HomeCacheServer().apply { linked("http://192.168.0.240:7788") }

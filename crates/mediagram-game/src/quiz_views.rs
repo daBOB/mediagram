@@ -1,10 +1,10 @@
 //! What the phones and the TV show for each quiz stage.
 
-use crate::game::ViewCtx;
 use crate::protocol::{
     AnswerColor, ChoiceOption, PhoneScreen, PlayerId, QuizQuestionView, QuizResult, QuizScene,
     QuizStage, Tone, TvScene,
 };
+use crate::game::unasked;
 use crate::quiz::Quiz;
 use crate::quiz_config::{Round, Stage};
 use crate::room_seats::Player;
@@ -14,17 +14,6 @@ pub(crate) fn rank_of(players: &[Player], id: PlayerId) -> (u8, i32) {
     let score = players.iter().find(|p| p.id == id).map_or(0, |p| p.score);
     let better = players.iter().filter(|p| p.score > score).count();
     (better as u8 + 1, score)
-}
-
-/// The final screen of a game that places players by `order`, not by points.
-pub(crate) fn final_by_order(order: &[PlayerId], view: &ViewCtx, player: PlayerId) -> PhoneScreen {
-    let rank = order.iter().position(|&p| p == player).map_or(order.len() + 1, |i| i + 1);
-    PhoneScreen::Final {
-        rank: rank as u8,
-        of: view.players.len() as u8,
-        score: view.players.iter().find(|p| p.id == player).map_or(0, |p| p.score),
-        can_restart: view.leader == Some(player),
-    }
 }
 
 impl Round {
@@ -39,7 +28,7 @@ impl Round {
 }
 
 impl Quiz {
-    pub(crate) fn phone_view(&self, view: &ViewCtx, player: PlayerId) -> PhoneScreen {
+    pub(crate) fn phone_view(&self, player: PlayerId) -> PhoneScreen {
         match self.stage {
             Stage::Intro { opens_at, closes_at } | Stage::Open { opens_at, closes_at } => {
                 PhoneScreen::Choice {
@@ -91,15 +80,7 @@ impl Quiz {
                     },
                 }
             }
-            Stage::Final => {
-                let (rank, score) = rank_of(view.players, player);
-                PhoneScreen::Final {
-                    rank,
-                    of: view.players.len() as u8,
-                    score,
-                    can_restart: view.leader == Some(player),
-                }
-            }
+            Stage::Final => unasked(),
         }
     }
 

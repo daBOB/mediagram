@@ -124,9 +124,10 @@ const ROOT = join(import.meta.dir, "..");
  * query fields a clip download and listing read; the jobs and routes are `transcode/clip-*.ts`.
  * Raised 2026-11-13 for `player.js`, by 13, and `transport.js`, by 5, to mount the clip panel, gate
  * saving while it is up and open a title at a given place; the panel is `clip-panel*.js`.
+ * Lowered 2026-11-18 for `public/app.js`, by 4, once Continue and My List drew one shared wall.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 714,
+  "public/app.js": 710,
   "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,

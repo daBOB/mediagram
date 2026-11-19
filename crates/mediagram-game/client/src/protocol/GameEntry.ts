@@ -16,4 +16,12 @@ min: number,
 /**
  * The most players the game starts with.
  */
-max: number, };
+max: number, 
+/**
+ * The lobby's tempo sets its clocks; turn-based games have none.
+ */
+timed: boolean, 
+/**
+ * The lobby's length sets how much of it is played; games played to the end have none.
+ */
+sized: boolean, };

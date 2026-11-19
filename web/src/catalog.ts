@@ -101,6 +101,8 @@ export interface PlayableSet {
   /** Subtitle languages the file itself carries, as a JSON array. */
   slang: string | null;
   duration: number | null;
+  /** The film's cut (`Director's Cut`, …); `null` is the standard one. */
+  variant: string | null;
   total: number;
   partCount: number;
   /**
@@ -123,7 +125,7 @@ export interface PartLocation {
 }
 
 const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode, year,
-     container, vcodec, acodec, quality, hdr, alang, slang, duration, total,
+     container, vcodec, acodec, quality, hdr, alang, slang, duration, variant, total,
      part_count AS partCount, created_at AS addedAt, tmdb`;
 
 /**

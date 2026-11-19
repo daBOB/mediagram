@@ -24,12 +24,11 @@ import { openProfilesPage } from "./profiles-page-overlay.js";
 import { waitingForHousehold } from "./household-waiting.js";
 import { needsJoin } from "./household.js";
 import { joinChoices, joinElsewhere } from "./household-join.js";
+import { profileTiles } from "./profile-tiles.js";
+export { initialOf } from "./profile-tiles.js";
 
 /** Said plainly, so nobody takes a PIN for a login. */
 const NOTE = "Profiles keep your places and lists apart. A grown-up’s PIN keeps children out of it; it is not a login, and someone who knows their way around a browser can get past it.";
-
-/** The letter on a profile's tile. */
-export const initialOf = (name) => (name ?? "?").trim().charAt(0).toUpperCase() || "?";
 
 /**
  * Shows the chooser and resolves once somebody has been chosen.
@@ -133,19 +132,8 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
       return ask;
     }
 
-    function tiles() {
-      const row = el("div", "who-tiles");
-      for (const entry of state.profiles()) {
-        const tile = el("button", "who-tile");
-        tile.append(el("span", "who-initial", initialOf(entry.name)));
-        tile.append(el("span", "who-name", entry.name));
-        if (entry.kids) tile.append(el("span", "who-kids", `Kids · FSK ${kidsLimitOf(entry)}`));
-        tile.disabled = selecting;
-        tile.addEventListener("click", () => void enter(entry));
-        row.append(tile);
-      }
-      return row;
-    }
+    const tiles = () => profileTiles(state.profiles(), { disabled: selecting, onChoose: (entry) => void enter(entry),
+      extra: (entry) => (entry.kids ? el("span", "who-kids", `Kids · FSK ${kidsLimitOf(entry)}`) : null) });
 
     const draw = () => {
       choices.textContent = "";
