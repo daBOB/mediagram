@@ -1,17 +1,17 @@
 // Makes the TV copy of each game-night avatar from its 2K game copy (the awards podium and Zündstoff): only the clips they
 // play, all ~51k triangles (the TV box draws three at ~44 fps at full resolution; the user's floor is 30, and 30k
 // looked low-poly), colour and normal maps re-unwrapped into padded charts and baked from the 4K master's maps
-// (rebake-texture-atlas.mjs) into WebP (EXT_texture_webp, which GLTFLoader reads natively): colour 2048, normal 1024
-// (fabric folds and fur relief; an avatar is ~600 px tall on the TV). Compressed with EXT_meshopt_compression (the
-// page needs MeshoptDecoder). No metallic/roughness map: the look is matte Lambert.
+// (rebake-texture-atlas.mjs) into KTX2 UASTC (KHR_texture_basisu; the page needs KTX2Loader): colour 2048, normal 1024
+// (fabric folds and fur relief; an avatar is ~600 px tall on the TV). Every 3D avatar copy uses UASTC (user,
+// 2026-11-15): it stays compressed in GPU memory, sharper at 2048 than WebP at 1024 and in less memory. Compressed
+// with EXT_meshopt_compression (the page needs MeshoptDecoder). No metallic/roughness map: the look is matte Lambert.
 // Usage: bun crates/mediagram-game/tools/make-ceremony-avatars.mjs [--tris=N] [--tex=2048] [--ntex=1024] [--out=dir]
-//   [--in=dir] [--clips=a,b,...] [--padding=6] [--textures=webp|uastc] [--detail=1] [--ao=0] [id ...]
-// The Kopfnuss arena's copies: --tris=20000 --detail=1.5 --ao=0.7 --padding=4 --textures=uastc --out=<dir> --clips=...
-// --textures=uastc writes KTX2 UASTC (KHR_texture_basisu; the page needs KTX2Loader) and needs KTX-Software's `ktx`
-// on PATH. --detail=N keeps N times the body's triangle density on the face and hands; --ao=S multiplies ambient
+//   [--in=dir] [--clips=a,b,...] [--padding=6] [--detail=1] [--ao=0] [id ...]
+// The Kopfnuss arena's copies: --tris=20000 --detail=1.5 --ao=0.7 --padding=4 --out=<dir> --clips=...
+// Needs KTX-Software's `ktx` on PATH. --detail=N keeps N times the body's triangle density on the face and hands; --ao=S multiplies ambient
 // occlusion at strength S (0..1) into the colour map.
 // Reads assets/game-night/avatars/<id>/<id>.glb and <id>-master.glb (kept out of git; --in elsewhere), writes
-// android/app/src/main/assets/game-avatars/<id>.glb (generated and gitignored; the TV app serves it to the game page).
+// android/spieltisch/src/main/assets/game-avatars/<id>.glb (generated and gitignored; Spieltisch serves it to the game page).
 // Resolves its packages from the client's (bun install in crates/mediagram-game/client).
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -31,16 +31,13 @@ const KEEP = opt('clips', 'Idle_15,victory,Happy_Jump,Cheer_With_One_Hand_Up,Shr
 const TRIS = Number(opt('tris', Infinity));
 // texels between charts; 4 at 2048 lets the charts cover 64% of the map instead of 43% at 6 (block-aligned for KTX2)
 const PADDING = Number(opt('padding', 6));
-// uastc stays compressed in GPU memory (sharper at 2048 than webp at 1024, in less memory); webp is unpacked there
-const FORMAT = opt('textures', 'webp');
-if (!['webp', 'uastc'].includes(FORMAT)) throw new Error('--textures is webp or uastc');
 const DETAIL = Number(opt('detail', 1));
 const AO = Number(opt('ao', 0));
 if (!(DETAIL >= 1) || !(AO >= 0 && AO <= 1)) throw new Error('--detail is 1 or more, --ao between 0 and 1');
 const TEX = Number(opt('tex', 2048));
 const NTEX = Number(opt('ntex', 1024));
 // absolute: the KTX2 step runs in the client's folder
-const OUT_DIR = resolve(opt('out', here('../../../android/app/src/main/assets/game-avatars/'))) + '/';
+const OUT_DIR = resolve(opt('out', here('../../../android/spieltisch/src/main/assets/game-avatars/'))) + '/';
 if (!(TRIS > 0) || !(TEX > 0) || !(NTEX > 0) || !(PADDING >= 0)) throw new Error('--tris, --tex, --ntex and --padding must be positive numbers');
 
 const req = createRequire(here('../client/package.json'));
@@ -117,12 +114,10 @@ for (const id of ids) {
     await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio: TRIS / before, error: 0.1 }));
   }
   const rebaked = await rebakeTextureAtlas(doc, TEX, PADDING, fullFrame);
-  const raster = FORMAT === 'uastc' ? 'png' : FORMAT; // the KTX2 encoder reads PNG
-  // quality is for webp only: given to PNG, sharp turns it into a 256-colour palette
-  const q = (n) => (raster === 'webp' ? { quality: n } : {});
+  // PNG for the KTX2 encoder; no quality option: given to PNG, sharp turns it into a 256-colour palette
   await doc.transform(
-    textureCompress({ encoder: sharp, targetFormat: raster, slots: /^baseColorTexture$/, resize: [TEX, TEX], ...q(90) }),
-    textureCompress({ encoder: sharp, targetFormat: raster, slots: /^normalTexture$/, resize: [NTEX, NTEX], ...q(95) }),
+    textureCompress({ encoder: sharp, targetFormat: 'png', slots: /^baseColorTexture$/, resize: [TEX, TEX] }),
+    textureCompress({ encoder: sharp, targetFormat: 'png', slots: /^normalTexture$/, resize: [NTEX, NTEX] }),
     quantize(),
     prune(),
     dedup(),
@@ -132,22 +127,20 @@ for (const id of ids) {
   const out = `${OUT_DIR}${id}.glb`, tmp = `${OUT_DIR}${id}.part.glb`;
   try {
     await io.write(tmp, doc);
-    if (FORMAT === 'uastc') {
-      // gltf-transform's command line in its own process: its ES-module copy of the library cannot share a document
-      // with the CommonJS copy loaded here. Its write drops the meshopt compression, so that runs again after.
-      for (const args of [['uastc', tmp, tmp, '--slots', '{baseColorTexture,normalTexture}', '--level', '2', '--rdo', '--zstd', '18'],
-        ['meshopt', tmp, tmp, '--level', 'high']]) {
-        const r = spawnSync('bunx', ['gltf-transform', ...args], { cwd: here('../client/'), encoding: 'utf8' });
-        if (r.status !== 0) throw new Error(`${id}: gltf-transform ${args[0]} failed (is KTX-Software's ktx on PATH?) ${r.stderr || r.error}`);
-      }
+    // gltf-transform's command line in its own process: its ES-module copy of the library cannot share a document
+    // with the CommonJS copy loaded here. Its write drops the meshopt compression, so that runs again after.
+    for (const args of [['uastc', tmp, tmp, '--slots', '{baseColorTexture,normalTexture}', '--level', '2', '--rdo', '--zstd', '18'],
+      ['meshopt', tmp, tmp, '--level', 'high']]) {
+      const r = spawnSync('bunx', ['gltf-transform', ...args], { cwd: here('../client/'), encoding: 'utf8' });
+      if (r.status !== 0) throw new Error(`${id}: gltf-transform ${args[0]} failed (is KTX-Software's ktx on PATH?) ${r.stderr || r.error}`);
     }
     // read back: the file on disk is what the app ships
     const back = (await io.read(tmp)).getRoot();
-    if (FORMAT === 'uastc' && !back.listExtensionsUsed().some((e) => e.extensionName === 'EXT_meshopt_compression')) throw new Error(`${id}: meshopt compression lost`);
+    if (!back.listExtensionsUsed().some((e) => e.extensionName === 'EXT_meshopt_compression')) throw new Error(`${id}: meshopt compression lost`);
     const clips = back.listAnimations().map((a) => a.getName()).sort().join();
     if (clips !== [...KEEP].sort().join()) throw new Error(`${id}: wrote clips ${clips}`);
     const mat = back.listMaterials()[0], colour = mat?.getBaseColorTexture(), normal = mat?.getNormalTexture();
-    const mime = FORMAT === 'uastc' ? 'image/ktx2' : `image/${FORMAT}`;
+    const mime = 'image/ktx2';
     if (back.listTextures().length !== 2 || [colour, normal].some((t) => t?.getMimeType() !== mime)) {
       throw new Error(`${id}: expected a ${mime} colour and normal map, got ${back.listTextures().map((t) => t.getMimeType()).join()}`);
     }

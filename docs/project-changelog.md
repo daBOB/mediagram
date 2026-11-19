@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.195.1 — Every 3D avatar in KTX2 UASTC
+
+**Changed**
+
+- The awards ceremony's 22 avatars carry KTX2 UASTC textures instead of WebP (colour 2048, normal 1024), the format every 3D avatar copy now uses: the ceremony, the Kopfnuss arena, Zündstoff 3D and later games. UASTC stays compressed in GPU memory on any GPU, so the same memory holds a sharper map. The ceremony reads them with a KTX2Loader (`/basis/`, as Grand Allee); `make-ceremony-avatars.mjs` writes only UASTC and defaults to Spieltisch's assets folder. The 22 files grow from 40 MB to 82 MB, and the APK with them. Side by side they look the same (`plans/261115-2330-avatars-uastc/reports/avatars-webp-vs-uastc.jpg`).
+
 ## Spieltisch 0.195.0 — Kopfnuss plays on 3D stages
 
 **Added**
