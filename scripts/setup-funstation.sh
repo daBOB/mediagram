@@ -494,6 +494,21 @@ evdev:name:AR Keyboard:*
 EOF
 sudo systemd-hwdb update
 sudo udevadm trigger --subsystem-match=input --action=change
+# Plasma's media controls hold the media keys as global shortcuts, so KWin swallowed the
+# remote's play/pause, rewind and fast-forward before Android saw them, and on this host
+# nothing plays for Plasma to send them to. Released, the keys reach the window in front.
+for action in playpausemedia pausemedia stopmedia nextmedia previousmedia seekbackwardmedia seekforwardmedia; do
+  # Plasma writes these on its first start; before that a later run of this script does it.
+  default=$(kreadconfig6 --file kglobalshortcutsrc --group mediacontrol --key "$action" | cut -d, -f2-)
+  [ -n "$default" ] || continue
+  if busctl --user status org.kde.kglobalaccel >/dev/null 2>&1; then
+    # The running shortcut service keeps its own copy and would write it back over the file.
+    busctl --user call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel setForeignShortcut \
+      asai 4 mediacontrol "$action" "Media Controller" "${default#*,}" 0
+  else
+    kwriteconfig6 --file kglobalshortcutsrc --group mediacontrol --key "$action" "none,$default"
+  fi
+done
 
 step "log $ME straight into Plasma Bigscreen"
 printf '[Autologin]\nUser=%s\nSession=plasma-bigscreen-wayland\n' "$ME" |

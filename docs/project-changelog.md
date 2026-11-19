@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.190.2 — Play/pause on funstation's remote reaches Android
+
+**Fixed** (funstation)
+
+- **The remote's ⏯, ⏪ and ⏩ work in Android.** The remote sent the right keys, but Plasma's media controls held Play/Pause, Pause, Stop, Next, Previous, Rewind and Fast Forward as global shortcuts, so KWin swallowed them before Android saw them, and nothing on the host plays for Plasma to send them to. The setup script releases those seven shortcuts over D-Bus (the running shortcut service would write its own copy back over an edited file), so the keys go to the window in front.
+
 ## 0.190.1 — S0undTV's newest build on funstation
 
 **Changed** (funstation)
