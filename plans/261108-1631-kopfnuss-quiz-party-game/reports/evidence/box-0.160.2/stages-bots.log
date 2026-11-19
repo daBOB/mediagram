@@ -1,0 +1,108 @@
+21:38:33 lobby
+21:38:35 choice:Welche Kategorie?
+21:38:36 choice:Welchen Trick verschickst du?
+21:38:37 choice:Wechselbad – für wen?
+21:38:38 wait:Erledigt!
+21:38:43 wait:Geschichte
+21:38:47 choice:Geschichte
+21:38:52 outcome:Leider falsch
+21:38:56 choice:Geschichte
+21:39:01 outcome:Leider falsch
+21:39:05 choice:Geschichte
+21:39:11 outcome:Leider falsch
+21:39:15 choice:Welche Kategorie?
+21:39:15 choice:Welchen Trick verschickst du?
+21:39:16 choice:Kleber – für wen?
+21:39:17 wait:Erledigt!
+21:39:22 wait:Sprache
+21:39:26 choice:Sprache
+21:39:31 outcome:Leider falsch
+21:39:35 choice:Sprache
+21:39:41 outcome:Leider falsch
+21:39:45 choice:Sprache
+21:39:50 outcome:Leider falsch
+21:39:54 choice:Welche Kategorie?
+21:39:55 choice:Welchen Trick verschickst du?
+21:39:56 choice:Kleber – für wen?
+21:39:57 wait:Erledigt!
+21:40:02 wait:Natur & Tiere
+21:40:06 choice:Natur & Tiere
+21:40:11 outcome:Richtig!
+21:40:15 choice:Natur & Tiere
+21:40:20 outcome:Leider falsch
+21:40:24 choice:Natur & Tiere
+21:40:29 outcome:Leider falsch
+21:40:33 choice:Welche Kategorie?
+21:40:34 choice:Welchen Trick verschickst du?
+21:40:35 choice:Wechselbad – für wen?
+21:40:36 wait:Erledigt!
+21:40:41 wait:Film & Fernsehen
+21:40:45 choice:Film & Fernsehen
+21:40:50 outcome:Leider falsch
+21:40:54 choice:Film & Fernsehen
+21:40:59 outcome:Leider falsch
+21:41:03 choice:Film & Fernsehen
+21:41:09 outcome:Leider falsch
+21:41:13 choice:Welche Kategorie?
+21:41:13 choice:Welchen Trick verschickst du?
+21:41:14 choice:Kleber – für wen?
+21:41:15 wait:Erledigt!
+21:41:20 wait:Kinderwissen
+21:41:24 choice:Kinderwissen
+21:41:29 outcome:Richtig!
+21:41:33 choice:Kinderwissen
+21:41:39 outcome:Leider falsch
+21:41:43 choice:Kinderwissen
+21:41:48 outcome:Richtig!
+21:41:52 choice:Welche Kategorie?
+21:41:53 choice:Welchen Trick verschickst du?
+21:41:54 choice:Wechselbad – für wen?
+21:41:55 wait:Erledigt!
+21:42:00 wait:Natur & Tiere
+21:42:04 choice:Natur & Tiere
+21:42:09 outcome:Leider falsch
+21:42:13 choice:Natur & Tiere
+21:42:18 outcome:Richtig!
+21:42:22 choice:Natur & Tiere
+21:42:27 outcome:Leider falsch
+21:42:31 choice:Welche Kategorie?
+21:42:32 choice:Welchen Trick verschickst du?
+21:42:33 choice:Wechselbad – für wen?
+21:42:34 wait:Erledigt!
+21:42:39 wait:Eure Filme
+21:42:43 choice:Eure Filme
+21:42:48 outcome:Leider falsch
+21:42:52 choice:Eure Filme
+21:42:58 outcome:Leider falsch
+21:43:02 choice:Eure Filme
+21:43:07 outcome:Leider falsch
+21:43:11 choice:Wie viele Jahreszeiten gibt es
+21:43:12 choice:Was wird beim Curling über das
+21:43:13 choice:Wie heißt die frühe Zeit, in d
+21:43:15 choice:Wie heißt der Buchstabe ß?
+21:43:18 choice:Was bedeutet „nur Bahnhof vers
+21:43:20 choice:Mit welcher Stadt als Zentrum 
+21:43:23 choice:Wie viele Tage hat ein Schaltj
+21:43:26 choice:Welche zwei Tiere jagen sich b
+21:43:28 choice:Auf welchem Kontinent leben Ze
+21:43:31 choice:Was sind Rosinen?
+21:43:32 choice:Wie viele Buchstaben hat das l
+21:43:35 choice:Wer veröffentlichte 1880 das e
+21:43:37 choice:Wer malte die „Mona Lisa“?
+21:43:40 choice:Wer entdeckte das Penicillin?
+21:43:41 choice:Wie heißt die Schrift der alte
+21:43:44 choice:Was kommt in Deutschland in de
+21:43:45 choice:Aus wie vielen Tagen besteht e
+21:43:46 choice:Wem folgt Alice ins Wunderland
+21:43:48 choice:Welcher Fluss fließt durch Wie
+21:43:51 choice:Welche römische Stadt wurde im
+21:43:54 choice:Wer entwickelte die Relativitä
+21:43:56 choice:An welchem Datum ist Silvester
+21:43:57 choice:Was bedeutet das italienische 
+21:44:00 choice:Welche Notrufnummer gilt in ga
+21:44:03 choice:Welcher Planet ist der Sonne a
+21:44:03 wait:Du hast den Gipfel erreicht!
+21:44:15 final
+Ana final rank 1 score 4899
+Ben final rank 2 score 4682
+Cem final rank 3 score 3124
