@@ -1,0 +1,197 @@
+//! What every board space does: the original's 147 spaces in board order
+//! (numbered as the fan clone numbers them, `research/original-rules-and-numbers.md` §14),
+//! with the original's amounts and our own texts. The red STOP spaces (11
+//! Berufswahl, 25 Hochzeit, 36 Hauskauf, 147 Ruhestand) are the board's STOP
+//! fields instead; 81, the clone's "sell or buy a house" STOP, is in neither
+//! rulebook and left out.
+
+use super::cards::Perk;
+
+/// Amounts are the original's, per space; the stretched board has more spaces, not bigger ones.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Effect {
+    Payday,
+    /// A life token.
+    Life,
+    /// Children join the car (2 for twins) and bring one life token.
+    Baby(u8),
+    Collect(i64),
+    /// Paid to the bank.
+    Pay(i64),
+    /// Paid to the player whose career has this perk; to the bank when nobody has it.
+    Career(Perk, i64),
+    /// The salary's taxes, to the player in Buchhaltung or the bank.
+    Taxes,
+    /// Waived with car insurance.
+    Car(i64),
+    /// Waived with home insurance.
+    Home(i64),
+    MissTurn,
+    /// May pay 20,000 to change career and salary (degree careers allowed).
+    NightSchool,
+    /// Lose the job: a new career and salary at random.
+    NewCareer,
+    /// May swap salary cards with any player.
+    TradeSalary,
+    /// Spin again unless this player alone has the most money.
+    SpinAgainIfBehind,
+    /// A free stock (a second one allowed).
+    StockBoom,
+    /// One stock goes back to the bank.
+    StockCrash,
+}
+
+pub const NIGHT_SCHOOL: i64 = 20_000;
+
+use Effect::*;
+use Perk::{Art, Medicine, Police, Repair, Sales, Sport, Stage, Teaching};
+
+pub const SPACES: &[(u8, Effect, &str)] = &[
+    (1, Collect(20_000), "Stipendium!"),
+    (2, Pay(5_000), "Bücher und Skripte"),
+    (3, Life, "Neue Freunde"),
+    (4, Collect(5_000), "Nebenjob im Café"),
+    (5, MissTurn, "Prüfungsphase: einmal aussetzen"),
+    (6, Life, "Auslandssemester"),
+    (7, Pay(5_000), "Semesterferien am Meer"),
+    (8, Life, "Bestnote!"),
+    (9, Car(5_000), "Freunde fahren dein Auto zu Schrott"),
+    (10, Life, "Abschlussfeier"),
+    (12, Payday, "Zahltag"),
+    (13, Pay(5_000), "Die erste Miete"),
+    (14, Collect(10_000), "Kleine Erbschaft"),
+    (15, Payday, "Zahltag"),
+    (16, Life, "Ein Haustier zieht ein"),
+    (17, MissTurn, "Verfahren! Einmal aussetzen"),
+    (18, Life, "Geburtstagsfeier"),
+    (19, Career(Medicine, 5_000), "Skiunfall"),
+    (20, Collect(10_000), "Marathon gewonnen"),
+    (21, Life, "Museumsbesuch"),
+    (22, Life, "Mit dem Rad zur Arbeit"),
+    (23, Payday, "Zahltag"),
+    (24, Car(15_000), "Das Auto rollt weg"),
+    (26, Pay(10_000), "Hochzeitsfeier"),
+    (27, Life, "Flitterwochen"),
+    (28, Career(Sales, 10_000), "Neuer Computer"),
+    (29, Car(10_000), "Autounfall"),
+    (30, Career(Repair, 10_000), "Technik-Seminar"),
+    (31, NightSchool, "Abendschule"),
+    (32, Payday, "Zahltag"),
+    (33, Taxes, "Steuern fällig"),
+    (34, Collect(50_000), "Lottogewinn!"),
+    (35, Life, "Besuch bei den Schwiegereltern"),
+    (37, Payday, "Zahltag"),
+    (38, NewCareer, "Job verloren: neu anfangen"),
+    (39, Baby(1), "Ein Junge!"),
+    (40, Career(Sales, 5_000), "Kinderzimmer einrichten"),
+    (41, Baby(1), "Ein Mädchen!"),
+    (42, Collect(10_000), "Talentshow gewonnen"),
+    (43, Payday, "Zahltag"),
+    (44, Baby(2), "Zwillinge!"),
+    (45, Career(Sport, 20_000), "Tribünenplätze beim Endspiel"),
+    (46, Baby(1), "Ein Mädchen!"),
+    (47, Career(Stage, 5_000), "Filmpremiere"),
+    (48, Home(40_000), "Hochwasser im Keller"),
+    (49, Career(Medicine, 5_000), "Vorsorge für die Familie"),
+    (50, TradeSalary, "Gehalt tauschen?"),
+    (51, Baby(1), "Ein Junge!"),
+    (52, Payday, "Zahltag"),
+    (53, Baby(1), "Ein Mädchen!"),
+    // The clone prints 1,500; every other amount is a multiple of 5,000, so read as 15,000.
+    (54, Home(15_000), "Ein Baum fällt aufs Dach"),
+    (55, Life, "Geldbörse zurückgebracht"),
+    (56, Career(Sales, 5_000), "Großer Fernseher"),
+    (57, StockBoom, "Börse im Höhenflug: eine Aktie gratis"),
+    (58, Life, "Familienpicknick"),
+    (59, Life, "Ausflug in die Berge"),
+    (60, Payday, "Zahltag"),
+    (61, Car(15_000), "Auto gestohlen!"),
+    (62, TradeSalary, "Gehalt tauschen?"),
+    (63, Life, "Für den Gemeinderat kandidiert"),
+    (64, Life, "Wählen gegangen"),
+    (65, Baby(1), "Ein Junge!"),
+    (66, Payday, "Zahltag"),
+    (67, Career(Repair, 25_000), "Kreuzfahrt online gebucht"),
+    (68, NightSchool, "Abendschule"),
+    (69, Life, "Erste-Hilfe-Kurs"),
+    (70, Career(Art, 20_000), "Kunstauktion"),
+    (71, Payday, "Zahltag"),
+    (72, Life, "Helfer beim Benefizlauf"),
+    (73, Collect(10_000), "Fotowettbewerb gewonnen"),
+    (74, SpinAgainIfBehind, "Nicht vorn? Nochmal drehen"),
+    (75, TradeSalary, "Gehalt tauschen?"),
+    (76, Taxes, "Steuern fällig"),
+    (77, Career(Sport, 25_000), "Tenniscamp"),
+    (78, Career(Repair, 25_000), "Computer für die Schule gespendet"),
+    (79, Payday, "Zahltag"),
+    (80, StockCrash, "Börsencrash: eine Aktie weg"),
+    (82, Career(Teaching, 5_000), "Kita-Beitrag"),
+    (83, Collect(80_000), "Bestseller geschrieben"),
+    (84, Baby(2), "Zwillinge adoptiert!"),
+    (85, Career(Stage, 15_000), "In ein Musical investiert"),
+    (86, Payday, "Zahltag"),
+    (87, Life, "Im Sportverein"),
+    (88, Career(Art, 35_000), "Familienporträt in Öl"),
+    (89, TradeSalary, "Gehalt tauschen?"),
+    (90, Career(Sales, 25_000), "Geländewagen gekauft"),
+    (91, Collect(75_000), "Steuererstattung"),
+    (92, Career(Police, 15_000), "Polizeiball ausgerichtet"),
+    (93, Payday, "Zahltag"),
+    (94, Collect(80_000), "Schatz im Garten gefunden"),
+    (95, Taxes, "Steuern fällig"),
+    (96, Payday, "Zahltag"),
+    (97, Career(Art, 25_000), "Spende an die Kunsthalle"),
+    (98, Life, "Müll getrennt"),
+    (99, Collect(95_000), "Quizshow gewonnen!"),
+    (100, Career(Teaching, 5_000), "Sommerschule"),
+    (101, Life, "Spieleabend mit der Familie"),
+    (102, Life, "Gebärdensprache gelernt"),
+    (103, Pay(90_000), "Hütte am See gekauft"),
+    (104, Payday, "Zahltag"),
+    (105, Home(50_000), "Einbruch!"),
+    (106, Collect(10_000), "Preis für Zivilcourage"),
+    (107, TradeSalary, "Gehalt tauschen?"),
+    (108, Career(Sport, 30_000), "Fitnessraum zu Hause"),
+    (109, StockCrash, "Börsencrash: eine Aktie weg"),
+    (110, Home(125_000), "Sturm deckt das Dach ab!"),
+    (111, Payday, "Zahltag"),
+    (112, Career(Medicine, 25_000), "Lebensrettende Operation"),
+    (113, Taxes, "Steuern fällig"),
+    (114, Career(Sales, 30_000), "Segelboot gekauft"),
+    (115, Career(Sport, 35_000), "Golfturnier gesponsert"),
+    (116, NewCareer, "Midlife-Crisis: neuer Beruf"),
+    (117, SpinAgainIfBehind, "Nicht vorn? Nochmal drehen"),
+    (118, Payday, "Zahltag"),
+    (119, Career(Stage, 100_000), "Online-Konzert veranstaltet"),
+    (120, TradeSalary, "Gehalt tauschen?"),
+    (121, Life, "In der Suppenküche geholfen"),
+    (122, SpinAgainIfBehind, "Nicht vorn? Nochmal drehen"),
+    (123, Career(Medicine, 100_000), "Schönheitsoperation"),
+    (124, Career(Teaching, 50_000), "Studium der Kinder"),
+    (125, Payday, "Zahltag"),
+    (126, Taxes, "Steuern fällig"),
+    (127, SpinAgainIfBehind, "Nicht vorn? Nochmal drehen"),
+    (128, Life, "Gedenkstätte besucht"),
+    (129, Career(Art, 125_000), "Kunstausstellung gesponsert"),
+    (130, Life, "Urlaub in der Schlucht"),
+    (131, TradeSalary, "Gehalt tauschen?"),
+    (132, Payday, "Zahltag"),
+    (133, Life, "Angeln gegangen"),
+    (134, SpinAgainIfBehind, "Nicht vorn? Nochmal drehen"),
+    (135, Career(Sport, 65_000), "Jockey fürs Rennpferd"),
+    (136, Life, "Wandern"),
+    (137, Payday, "Zahltag"),
+    (138, Life, "Einen Baum gepflanzt"),
+    (139, SpinAgainIfBehind, "Nicht vorn? Nochmal drehen"),
+    (140, Life, "Für den Naturschutz gespendet"),
+    (141, Career(Repair, 45_000), "Webseite gestalten lassen"),
+    (142, Life, "Enkelkind!"),
+    (143, Payday, "Zahltag"),
+    (144, Career(Stage, 35_000), "Party für Preisträger"),
+    (145, Career(Repair, 45_000), "In ein Start-up investiert"),
+    (146, Collect(20_000), "Betriebsrente"),
+];
+
+pub fn space(id: u8) -> (Effect, &'static str) {
+    SPACES.iter().find(|s| s.0 == id).map(|s| (s.1, s.2)).unwrap_or_else(|| panic!("no space {id}"))
+}

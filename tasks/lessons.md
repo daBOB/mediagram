@@ -152,6 +152,14 @@ Rule: a board shown for a look decision is drawn as the finished thing (ground, 
 pieces as the players' avatars), in two or three directions. Anything on the TV that needs a
 caption to be understood is a candidate for putting the fact on the board itself.
 
+## A board game's concept is fields, cards and event animations, not only rules and balance
+Lebensweg (2026-11-14): after the rules and the bot balance were done, the next step offered was screen
+mockups. User: "We are still a long way from finishing the concept phase. We still need to define the
+fields and cards, as well as the event animations."
+Rule: before mockups or views of a board game, the concept defines every field (text, look, staging),
+every card (text, look, where it shows) and a storyboard per event animation, each shown and approved.
+Rules and balance fix what things do; the concept fixes what players see and read.
+
 ## 2026-11-15 — Take a game's rules as the user states them; don't add to them
 
 The user described Letztes Wort in two sentences (one question with 5–10 correct answers; a correct

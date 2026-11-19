@@ -34,6 +34,7 @@ mod image_files;
 pub mod grand_allee;
 pub mod host;
 pub mod lan;
+pub mod lebensweg;
 pub mod protocol;
 mod protocol_board;
 #[cfg(test)]
