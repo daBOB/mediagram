@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.191.1 — One S0undTV in funstation's app list
+
+**Fixed** (funstation)
+
+- **Android TV's app list showed S0undTV twice.** The app carries a second entry for Fire TV's launcher beside its Android TV one; the setup script switches that entry off (`pm disable`), which survives the app's updates. The Bigscreen tile was never doubled.
+
 ## 0.191.0 — Symfonium on funstation
 
 **Added** (funstation)

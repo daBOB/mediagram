@@ -381,6 +381,9 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
     sudo waydroid shell -- pm install -r /data/local/tmp/s0undtv.apk || true
     sudo rm -f "$tmp"
   fi
+  # Its entry for Fire TV's launcher stood beside the Android TV one, so the app list showed
+  # S0undTV twice. Switched off, the Android TV entry stays; the setting survives updates.
+  sudo waydroid shell -- pm disable com.s0und.s0undtv/.activities.FireTVMainActivity >/dev/null 2>&1 || true
 fi
 cat >~/.local/share/applications/s0undtv.desktop <<EOF
 [Desktop Entry]
