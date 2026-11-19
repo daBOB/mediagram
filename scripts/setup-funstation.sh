@@ -393,6 +393,38 @@ Categories=AudioVideo;Video;
 EOF
 kwriteconfig6 --file ~/.local/share/applications/waydroid.com.s0und.s0undtv.desktop \
   --group "Desktop Entry" --key NoDisplay true
+# Symfonium (music from Navidrome), from its Android TV beta repository, which the user
+# chose. It is an F-Droid repository and nothing in the app updates it, so every run
+# installs the newest build when this one is older, after checking the index's SHA-256.
+if waydroid status | grep -q 'Session:.*RUNNING'; then
+  repo=https://repo.symfonium.app/androidtv-beta/repo
+  read -r code name sum < <(curl -fsSL "$repo/index-v2.json" | jq -r '.packages["app.symfonik.music.player"].versions
+    | [.[]] | max_by(.manifest.versionCode) | "\(.manifest.versionCode) \(.file.name) \(.file.sha256)"')
+  # Nothing found (not installed) or grep closing dumpsys early must not end the script.
+  have=$(sudo waydroid shell -- dumpsys package app.symfonik.music.player 2>/dev/null |
+    grep -m1 -o 'versionCode=[0-9]*' | cut -d= -f2 || true)
+  if [ "${have:-0}" -lt "$code" ]; then
+    tmp=~/.local/share/waydroid/data/local/tmp/symfonium.apk
+    sudo curl -fsSL -o "$tmp" "$repo$name"
+    if echo "$sum  $tmp" | sudo sha256sum -c --quiet; then
+      sudo waydroid shell -- pm install -r /data/local/tmp/symfonium.apk
+    else
+      echo "Symfonium's download does not match its index; not installed."
+    fi
+    sudo rm -f "$tmp"
+  fi
+fi
+cat >~/.local/share/applications/symfonium.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=Symfonium
+Comment=Music from Navidrome
+Exec=$HOME/.local/bin/funstation-android app.symfonik.music.player
+Icon=$HOME/.local/share/waydroid/data/icons/app.symfonik.music.player.png
+Categories=AudioVideo;Audio;Player;
+EOF
+kwriteconfig6 --file ~/.local/share/applications/waydroid.app.symfonik.music.player.desktop \
+  --group "Desktop Entry" --key NoDisplay true
 # Bigscreen reads its tiles from Plasma's app cache, which missed the rewritten files and
 # kept running the tiles' old commands. Rebuilt inside the session, so it is the session
 # locale's cache and not one for this shell's.

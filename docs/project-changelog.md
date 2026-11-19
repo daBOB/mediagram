@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.191.0 — Symfonium on funstation
+
+**Added** (funstation)
+
+- **Symfonium (music from Navidrome)** comes from its Android TV beta repository, which the user chose, with its own Bigscreen tile. It is an F-Droid repository and nothing in the app updates it, so every run of `setup-funstation.sh` installs the repository's newest build when funstation's is older, after checking the APK against the SHA-256 in the repository's index. It runs as the x86_64 build.
+
 ## 0.190.2 — Play/pause on funstation's remote reaches Android
 
 **Fixed** (funstation)
