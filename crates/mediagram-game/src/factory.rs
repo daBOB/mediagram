@@ -27,7 +27,7 @@ pub(crate) struct Night {
     /// Preisfrage's articles shown tonight, so a night repeats none until the list runs out.
     pub shown: HashSet<String>,
     /// What was asked tonight. Shared with a running Kopfnuss, which marks questions as it asks them,
-    /// and with Dreifelder and Zündstoff.
+    /// and with Dreifelder.
     pub used: Arc<Mutex<HashSet<String>>>,
 }
 

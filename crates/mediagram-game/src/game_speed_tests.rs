@@ -43,7 +43,22 @@ fn untouched(speed: GameSpeed) -> Vec<f64> {
     let quiz = QuizConfig::default().at(speed);
     let poster = PosterConfig::default().at(speed);
     let allee = GrandAlleeConfig::default().at(speed);
-    vec![quiz.intro_ms, quiz.reveal_ms, quiz.max_claim_lag_ms, quiz.early_tolerance_ms, poster.grace_ms, poster.reveal_ms, allee.hop_ms, allee.early_ms]
+    let zuendstoff = ZuendstoffConfig::default().at(speed);
+    vec![
+        quiz.intro_ms,
+        quiz.reveal_ms,
+        quiz.max_claim_lag_ms,
+        quiz.early_tolerance_ms,
+        poster.grace_ms,
+        poster.reveal_ms,
+        allee.hop_ms,
+        allee.early_ms,
+        zuendstoff.throw_lead_ms,
+        zuendstoff.flight_ms,
+        zuendstoff.catch_before_ms,
+        zuendstoff.catch_after_ms,
+        zuendstoff.pickup_ms,
+    ]
 }
 
 #[test]

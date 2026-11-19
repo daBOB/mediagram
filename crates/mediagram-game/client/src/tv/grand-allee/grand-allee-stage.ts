@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import type { GrandAlleeScene } from "../../protocol/GrandAlleeScene";
 import { BOARD_SOUNDS } from "../table/board-sounds";
-import { startStage, type Live, type StageHandle } from "../table/stage-host";
+import { disposeScene, startStage, type Live, type StageHandle } from "../table/stage-host";
 import { FrameLog, mark, reportStart } from "./grand-allee-timing";
 import { loadAssets } from "./grand-allee-assets";
 import { buildBoard } from "./grand-allee-board";
@@ -23,24 +23,6 @@ import { grandAlleeCues } from "./grand-allee-sound-cues";
 /** What the stand-in host may ask of the board: a fixed camera (null leaves the camera to the turn). */
 export interface BoardOptions {
   camera?: () => CameraPose | null;
-}
-
-// frees what the board holds outside the GL context too: geometries, materials, textures and their decoded images (an
-// ImageBitmap keeps its pixels until closed). Sprites share three's one sprite geometry, which stays.
-function disposeScene(scene: THREE.Scene) {
-  scene.traverse((o) => {
-    const mesh = o as THREE.Mesh;
-    if (!(o as THREE.Sprite).isSprite) mesh.geometry?.dispose();
-    if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose();
-    for (const material of [mesh.material ?? []].flat()) {
-      for (const value of Object.values(material)) {
-        if (!(value instanceof THREE.Texture)) continue;
-        value.dispose();
-        (value.image as { close?: () => void } | null)?.close?.();
-      }
-      material.dispose();
-    }
-  });
 }
 
 /** Draws the board into a canvas of its own inside `container`; `live()` returns the latest scene and players, `now()` the server clock. */

@@ -3,8 +3,7 @@
 
 use crate::game::{ViewCtx, name, unasked};
 use crate::protocol::{
-    AnswerColor, Buzz, ChoiceOption, PhoneScreen, PlayerId, ServerTime, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat,
-    ZuendstoffStage,
+    AnswerColor, Buzz, ChoiceOption, PhoneScreen, PlayerId, Tone, TvScene, ZuendstoffScene, ZuendstoffSeat, ZuendstoffStage,
 };
 use crate::zuendstoff::ZuendstoffGame;
 use crate::zuendstoff_config::{Catch, Stage};
@@ -59,7 +58,7 @@ impl ZuendstoffGame {
             Stage::Hold { ask, .. } if ask.who() != player => {
                 watch(format!("{} hat die Bombe", name(view.players, ask.who())))
             }
-            Stage::Hold { dropped: true, .. } => {
+            Stage::Hold { caught: Some(false), ready_at, .. } if view.now < ready_at => {
                 PhoneScreen::Wait { title: "Heb die Bombe auf …".into(), text: Some(lives_text(mine)) }
             }
             Stage::Hold { ready_at, .. } => {
@@ -87,12 +86,15 @@ impl ZuendstoffGame {
             .collect();
         let stage = match self.stage {
             Stage::Final => ZuendstoffStage::Final { order: self.order.clone() },
-            Stage::Boom { victim, .. } => ZuendstoffStage::Boom { victim, out: !self.alive(victim) },
-            Stage::Hold { ask, ready_at, dropped } => ZuendstoffStage::Hold { holder: ask.who(), ready_at, dropped },
-            Stage::Flight { from, to, thrown_at, lands_at, catch } => ZuendstoffStage::Flight {
+            Stage::Boom { victim, at } => ZuendstoffStage::Boom { victim, out: !self.alive(victim), at },
+            Stage::Hold { ask, ready_at, caught } => {
+                ZuendstoffStage::Hold { holder: ask.who(), since: ask.opened_at(), ready_at, caught }
+            }
+            Stage::Flight { from, to, thrown_at, released_at, lands_at, catch } => ZuendstoffStage::Flight {
                 from,
                 to,
                 thrown_at,
+                released_at,
                 lands_at,
                 caught: match catch {
                     Catch::Pending => None,
@@ -107,8 +109,9 @@ impl ZuendstoffGame {
     pub(crate) fn buzz(&self, player: PlayerId) -> Option<Buzz> {
         match self.stage {
             Stage::Boom { victim, .. } if victim == player => Some(Buzz::Wrong),
+            Stage::Hold { ask, .. } if ask.who() == player => Some(Buzz::Turn),
             // the target's phone buzzes from the throw, before the bomb leaves the hand
-            _ if self.bearer(ServerTime::INFINITY) == Some(player) => Some(Buzz::Turn),
+            Stage::Flight { to, .. } if to == player => Some(Buzz::Turn),
             _ => None,
         }
     }

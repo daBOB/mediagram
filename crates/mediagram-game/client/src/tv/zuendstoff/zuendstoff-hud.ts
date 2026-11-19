@@ -4,7 +4,7 @@
 
 import * as THREE from "three";
 import type { ZuendstoffScene } from "../../protocol/ZuendstoffScene";
-import { drop, fit, label, paint, place, type Label } from "../grand-allee/grand-allee-hud-label";
+import { drop, fit, label, paint, place, type Label } from "../table/hud-label";
 import { HUD_FONT } from "../table/hud-font";
 import type { Seat } from "./zuendstoff-circle";
 
@@ -15,7 +15,7 @@ export function statusLine(scene: ZuendstoffScene, nameOf: (id: number) => strin
   const st = scene.stage;
   switch (st.stage) {
     case "hold":
-      return st.dropped ? `${nameOf(st.holder)} hebt die Bombe auf` : `${nameOf(st.holder)} hat die Bombe`;
+      return st.caught === false && now < st.ready_at ? `${nameOf(st.holder)} hebt die Bombe auf` : `${nameOf(st.holder)} hat die Bombe`;
     case "flight":
       if (now >= st.lands_at && st.caught !== null) return st.caught ? `${nameOf(st.to)} fängt sie!` : `${nameOf(st.to)} lässt sie fallen!`;
       return `${nameOf(st.from)} wirft zu ${nameOf(st.to)}`;
