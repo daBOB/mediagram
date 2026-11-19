@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.190.0 — S0undTV and funstation's own remote
+
+**Added** (funstation)
+
+- **S0undTV (Twitch for the TV)** comes with its own Bigscreen tile, like SmartTube. The script installs its newest standalone release (a `v` tag: the repository's "latest" is a beta), and it updates itself from then on. Play Protect blocks it as built for an older Android and holds the install until someone picks "More details, Install anyway" on the TV; the script says so and waits.
+
+**Fixed** (funstation)
+
+- **OK and Mute on funstation's remote**, a Fire TV-style one that calls itself "AR". Its OK sends Keypad Enter and its Mute sends F7, so neither did anything; a hwdb rule turns them into Enter and Mute, matched by the remote's name because it reports no vendor or product number. Its other keys (ring, Back, Home, Menu, ⏪ ⏯ ⏩, volume) already arrive as what they are.
+- **The rail shows this remote's battery.** The battery service only took a UPower device whose model said "remote"; it now takes "AR" too.
+
 ## 0.189.0 — SmartTube on funstation
 
 **Added** (funstation)

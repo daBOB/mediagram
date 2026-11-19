@@ -368,6 +368,32 @@ Categories=AudioVideo;Video;
 EOF
 kwriteconfig6 --file ~/.local/share/applications/waydroid.org.smarttube.stable.desktop \
   --group "Desktop Entry" --key NoDisplay true
+# S0undTV (Twitch for the TV), its standalone build, which updates itself. Its "latest"
+# release is a beta, so the newest v-tag is the stable one. Play Protect blocks it as built
+# for an old Android and holds the install until "More details, Install anyway" on the TV.
+if waydroid status | grep -q 'Session:.*RUNNING'; then
+  if ! sudo waydroid shell -- pm path com.s0und.s0undtv >/dev/null 2>&1; then
+    url=$(curl -fsSL https://api.github.com/repos/S0und/S0undTV/releases |
+      jq -r '[.[] | select(.tag_name | startswith("v"))][0].assets[]
+        | select(.name | endswith("_standalone.apk")) | .browser_download_url')
+    tmp=~/.local/share/waydroid/data/local/tmp/s0undtv.apk
+    sudo curl -fsSL -o "$tmp" "$url"
+    echo "On the TV, Play Protect asks about S0undTV: More details, then Install anyway."
+    sudo waydroid shell -- pm install -r /data/local/tmp/s0undtv.apk || true
+    sudo rm -f "$tmp"
+  fi
+fi
+cat >~/.local/share/applications/s0undtv.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=S0undTV
+Comment=Twitch
+Exec=$HOME/.local/bin/funstation-android com.s0und.s0undtv
+Icon=$HOME/.local/share/waydroid/data/icons/com.s0und.s0undtv.png
+Categories=AudioVideo;Video;
+EOF
+kwriteconfig6 --file ~/.local/share/applications/waydroid.com.s0und.s0undtv.desktop \
+  --group "Desktop Entry" --key NoDisplay true
 # Bigscreen reads its tiles from Plasma's app cache, which missed the rewritten files and
 # kept running the tiles' old commands. Rebuilt inside the session, so it is the session
 # locale's cache and not one for this shell's.
@@ -414,7 +440,8 @@ while :; do
   pct=''
   for dev in $(upower -e); do
     info=$(upower -i "$dev")
-    if grep -qi 'model:.*remote' <<<"$info"; then
+    # The Chromecast remote, or the Amazon one, which calls itself just "AR".
+    if grep -qiE 'model:\s+(.*remote.*|AR)$' <<<"$info"; then
       pct=$(awk '/percentage:/ { print int($2); exit }' <<<"$info")
       break
     fi
@@ -457,6 +484,14 @@ sudo udevadm control --reload
 sudo tee /etc/udev/hwdb.d/70-funstation-chromecast-remote.hwdb >/dev/null <<'EOF'
 evdev:input:b0005v18D1p9450*
  KEYBOARD_KEY_c0041=enter
+EOF
+# funstation's own remote, a Fire TV-style one calling itself "AR", sends Keypad Enter for
+# OK, which neither side takes as OK, and F7 for Mute. It reports no vendor or product
+# number, so it is matched by its name. Its other keys arrive as what they are.
+sudo tee /etc/udev/hwdb.d/70-funstation-ar-remote.hwdb >/dev/null <<'EOF'
+evdev:name:AR Keyboard:*
+ KEYBOARD_KEY_70058=enter
+ KEYBOARD_KEY_70040=mute
 EOF
 sudo systemd-hwdb update
 sudo udevadm trigger --subsystem-match=input --action=change
