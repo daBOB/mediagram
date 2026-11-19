@@ -1,8 +1,11 @@
 // Serves the real client with a preview page for the Kopfnuss stages. Nothing is written into the repo.
 import fs from "node:fs";
 import path from "node:path";
-const CLIENT = "/home/andre/Workspace/spieltisch/mediagram-kopfnuss-main-game/crates/mediagram-game/client";
-const AVATARS = "/home/andre/Workspace/mediagram/android/spieltisch/src/main/assets/game-avatars";
+// Found from this file's place in the checkout, so the preview runs from any worktree. The avatar copies are
+// generated and not in git: a checkout without them shows the flat figures.
+const ROOT = path.resolve(import.meta.dirname, "../../../..");
+const CLIENT = ROOT + "/crates/mediagram-game/client";
+const AVATARS = ROOT + "/android/spieltisch/src/main/assets/game-avatars";
 const { createServer } = await import(CLIENT + "/node_modules/vite/dist/node/index.js");
 const { createRequire } = await import("node:module");
 const loaded = createRequire(CLIENT + "/package.json")("@vitejs/plugin-react");
