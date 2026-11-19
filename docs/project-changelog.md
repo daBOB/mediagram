@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.195.2 — Lebensweg's rules play themselves with bots
+
+**Added**
+
+- Lebensweg's board, rules and turn engine live in the game crate (`src/lebensweg/`), and `lebensweg-sim` plays them with bots to compare our board with the original's. Nothing changes for players: Lebensweg has no views and is not on the shelf. The rules still follow the 2000 edition and are to be redone on the 2013 German one, and the fields, cards and event animations are designed before any view (`plans/261114-0030-lebensweg-browser-game/`).
+
 ## Spieltisch 0.195.1 — Every 3D avatar in KTX2 UASTC
 
 **Changed**
