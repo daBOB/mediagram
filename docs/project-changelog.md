@@ -37,6 +37,12 @@ to `main`. Full phase-by-phase detail lives in
 - Zündstoff's TV frees its avatars' decoded textures when the game ends, with the scene clean-up Grand Allee already used, and uploads the avatars' normal maps before play like their colours, so the first frame no longer stalls on them.
 - The HUD label helpers moved from Grand Allee to the shared table code, since Zündstoff draws with them too.
 
+## 0.188.1 — Even gaps between Home's rows
+
+**Fixed** (web)
+
+- **A title in a Home poster row takes two lines at most**, as on the tablet. One long title ("The Pendragon Cycle: Rise of the Merlin") stretched Latest series by a line, so the gap above Latest documentaries read twice the one above Latest series.
+
 ## 0.188.0 — Documentaries on Latest and Home, and a jump line on Latest
 
 **Added** (web, tablet and phone, TV)

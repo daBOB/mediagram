@@ -38,7 +38,8 @@
   scrollbar-width: thin;
 }
 .strip .thumb { border-radius: 3px; }
-.strip .name { font-size: 0.9375rem; }
+/* Two lines at most, as the tablet's row titles: one long title would otherwise stretch its whole row and widen the gap below it. */
+.strip .name { font-size: 0.9375rem; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .card { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 20px; width: 100%; min-width: 0; padding: 16px 0; border: 0; border-bottom: 1px solid var(--rule-soft); border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; }
 .card .body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 24px; min-width: 0; }
 .card .name { font-size: 1rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; transition: color var(--hover); }
