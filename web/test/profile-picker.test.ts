@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { chooseProfile } from "../public/lib/profile-picker.js";
+import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
 import { ANDRE, LEA, MAJA as MAJA_WITH_PIN, TIM, writesOf } from "./support/household-fixture";
@@ -214,7 +215,7 @@ test("profiles are made and removed in Manage profiles, not on the picker", () =
   expect(textOf(root)).not.toContain("New profile");
   expect(textOf(root)).not.toContain("Rename or remove");
   buttonNamed(root, "Manage profiles").fire("click");
-  expect(textOf(byClass(root, "who-manage"))).toContain("Who are you?");
+  expect(textOf(byClass(root, "who-manage"))).toContain(HOUSEHOLD_WORDS.whosManaging);
 });
 
 test("Manage profiles opens the Profiles page with nobody chosen, and leaving it returns to the picker", async () => {
@@ -223,8 +224,7 @@ test("Manage profiles opens the Profiles page with nobody chosen, and leaving it
   void chooseProfile(root, { canCancel: true });
   buttonNamed(root, "Manage profiles").fire("click");
   const page = byClass(root, "who-manage");
-  expect(textOf(page)).toContain("Everyone here");
-  expect(textOf(page)).toContain("Who are you?");
+  expect(textOf(page)).toContain(HOUSEHOLD_WORDS.whosManaging);
   expect(textOf(page)).not.toContain("Who is watching");
   expect(textOf(page)).not.toContain("Switch profile");
   buttonNamed(root, "Done").fire("click");

@@ -15,10 +15,11 @@ import { countAnime, groupDepartments } from "../public/lib/departments.js";
 import { countDocumentaries } from "../public/lib/documentaries.js";
 import { createLibrarySession } from "../public/lib/library-session.js";
 import { departmentOf, hiddenSectionsOf, withoutHidden } from "../public/lib/section-access.js";
-import { answerPin, buttonNamed, descendants, textOf } from "./support/browser-application";
+import { answerPin, buttonNamed, descendants, textOf, tileNamed } from "./support/browser-application";
 import { catalogSet } from "./support/catalog-set";
 import { htmlApplicationEnvironment } from "./support/html-application";
 import { fakeLibraryPort } from "./support/library-session-port";
+import { tap } from "./support/households-part";
 import { settle, type Node } from "./support/player-environment";
 
 const film = catalogSet({ setId: "Heat", title: "Heat", kind: "movie", fsk: "12" });
@@ -190,9 +191,9 @@ describe("the page, for a profile with a section hidden", () => {
     expect(env.node("n-movies").textContent).toBe("1");
     await env.navigate("#/settings");
     buttonNamed(env.node("main"), "Profiles").fire("click");
-    buttonNamed(env.node("main"), "andre").fire("click");
+    tileNamed(env.node("main"), "andre").fire("click");
     await answerPin(env.node("main"), "1357");
-    const group = descendants(env.node("main")).find((node) => node.getAttribute("aria-label") === "Sections for Maja")!;
+    const group = descendants(tap(env.node("main"), "Maja")).find((node) => node.getAttribute("aria-label") === "Sections for Maja")!;
     descendants(group).find((node) => node.getAttribute("role") === "switch" && node.textContent === SECTIONS.movies.label)!.fire("click");
     await settle();
     expect(link("movies").hidden).toBe(true);

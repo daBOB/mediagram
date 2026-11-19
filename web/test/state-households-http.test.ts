@@ -63,6 +63,15 @@ describe("the household routes", () => {
     expect(writes).toBe(1);
   });
 
+  test("POST /api/profiles with a household adds the grown-up there", async () => {
+    const flat = read(await create("Flat", "Maja")).id as string;
+    const made = await router()(request("/api/profiles", "POST", { actorId: owner, pin: "1111", name: "Paul", kids: false, newPin: "2468", household: flat }));
+    expect(made.status).toBe(201);
+    expect(read(made)).toMatchObject({ name: "Paul", household: flat });
+    const refused = await router()(request("/api/profiles", "POST", { actorId: owner, pin: "1111", name: "Zed", kids: false, newPin: "2468", household: 5 }));
+    expect(refused.status).toBe(404);
+  });
+
   test("each owner route answers 204, and a refusal its reason and code", async () => {
     const route = router();
     const flat = read(await create("Flat", "Maja")).id as string;

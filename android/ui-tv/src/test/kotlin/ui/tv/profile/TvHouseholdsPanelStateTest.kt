@@ -10,31 +10,24 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 
-/** The owner's Households panel by remote alone ([TvHouseholdsPanelHarness]): the owner's PIN first, then the households and their steps. */
+/** The owner's household steps by remote alone ([TvHouseholdsPanelHarness]): the households, then their steps. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvHouseholdsPanelStateTest : TvHouseholdsPanelHarness() {
+    /** After the owner's tile, the PIN is held: the households at once, asking nothing. */
     @Test
-    fun theOwnerRowAsksThePinThenListsHouseholds() {
+    fun theOwnersViewListsTheHouseholdsAtOnce() {
         panel()
-        compose.onNodeWithText(HouseholdWords.OWNERS_PIN).assertExists()
-        pin("1234")
+        compose.onNodeWithText(HouseholdWords.OWNERS_PIN).assertDoesNotExist()
         row("Flat · Admin Bea · 2 profiles").assertIsFocused()
         row("Home · Admin andre · 1 profile").assertExists()
         row(HouseholdWords.CREATE_A_HOUSEHOLD).assertExists()
     }
 
-    @Test
-    fun givingUpTheOwnersPinLeavesThePanel() {
-        panel()
-        back()
-        assertEquals(1, left)
-    }
-
     /** Flat: a new name, another admin, this device; not empty, so no Delete. Home is the owner's own: no admin to change. */
     @Test
     fun okOnARowOffersOnlyWhatItAllows() {
-        opened()
+        panel()
         press(Key.DirectionCenter)
         row(HouseholdWords.RENAME).assertIsFocused()
         row(HouseholdWords.CHANGE_ADMIN).assertExists()
@@ -55,7 +48,7 @@ class TvHouseholdsPanelStateTest : TvHouseholdsPanelHarness() {
     /** A taken name is said on the step that sent it; a free one is sent, and the remote is back on its household. */
     @Test
     fun renameStepsSendTheName() {
-        opened()
+        panel()
         repeat(2) { press(Key.DirectionCenter) }
         name("home")
         compose.onNodeWithText(HouseholdWords.HOUSEHOLD_NAME_TAKEN).assertExists()
@@ -67,7 +60,7 @@ class TvHouseholdsPanelStateTest : TvHouseholdsPanelHarness() {
     /** A new household run by a new grown-up: its name, the admin, theirs, then their first PIN typed twice. */
     @Test
     fun createStepsSendNameAdminAndPin() {
-        opened()
+        panel()
         repeat(2) { press(Key.DirectionDown) }
         press(Key.DirectionCenter)
         name("Barn")
@@ -89,7 +82,7 @@ class TvHouseholdsPanelStateTest : TvHouseholdsPanelHarness() {
     /** Back walks out the way the remote came in, a row at a time; Back from the list leaves the panel. */
     @Test
     fun backFromAStepReturnsToItsRow() {
-        opened()
+        panel()
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
         press(Key.DirectionDown)

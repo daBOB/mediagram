@@ -103,6 +103,13 @@ export function buttonNamed(root: Node, label: string): Node {
   return found;
 }
 
+/** The avatar tile under `root` — Who's watching? or Who's managing? — of the profile named `name`. */
+export function tileNamed(root: Node, name: string): Node {
+  const found = descendants(root).find((node) => node.className === "who-tile" && node.children[1]?.textContent === name);
+  if (!found) throw new Error(`Missing tile: ${name}`);
+  return found;
+}
+
 /** Types `pins` into the open PIN prompt's fields in order (the first again for any left over) and submits. */
 export async function answerPin(root: Node, ...pins: string[]) {
   const prompt = byClass(root, "pin-prompt");

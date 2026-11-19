@@ -2,48 +2,53 @@ package ui.tv.profile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import catalog.profile.ADD_A_GROWN_UP
-import catalog.profile.ADD_A_KID
-import catalog.profile.GROWN_UPS
-import catalog.profile.KIDS_SECTION
 import catalog.profile.ManagePart
-import model.Profile
-import model.dailyLimitChoiceFor
-import ui.tv.TvTextRow
-import ui.tv.player.TvSettingsHeading
+import catalog.profile.PersonRowModel
+import catalog.profile.RowOpens
+import model.HouseholdWords
 
 /**
- * One household's part of Manage on television — the web's `byHousehold` as
- * rows the remote walks: the household's name while the owner manages more
- * than one, then its Grown-ups and its Kids ("Name · FSK N · daily limit"),
- * each row opening its choices, and adding where [part] offers it. The
- * headings are text the remote passes over, as the web's are no controls.
- * [first] is the part's first row, for the part drawn first.
+ * One household's people on television, as calm rows — the web's
+ * `profile-manage-person.js` and the tablet's `HouseholdPart`, over the same
+ * [ManagePart.people]. Each is one [TvPersonRow] — their name, the line
+ * Everyone here gives them, › — whose OK opens what may be changed of them
+ * ([onOpen]): the manager's own PIN, a kid's limits, a grown-up's PIN;
+ * someone they may not change opens nothing. Then one Add someone ([onAdd])
+ * where adding is offered, named for its household where each has its own.
+ * Each row's requester goes into [requesters], by person, [addRequester] is
+ * Add someone's; [holds] marks the row holding the remote, by person, null
+ * for Add someone.
  */
 @Composable
 internal fun TvManagePart(
     part: ManagePart,
-    first: FocusRequester?,
-    onGrownUp: (Profile) -> Unit,
-    onKid: (Profile) -> Unit,
-    onAdd: (kid: Boolean) -> Unit,
+    onOpen: (TvManageStep) -> Unit,
+    onAdd: () -> Unit,
+    requesters: MutableMap<String, FocusRequester>,
+    holds: (id: String?) -> Modifier = { Modifier },
+    addRequester: FocusRequester? = null,
 ) {
-    part.name?.let { TvSettingsHeading(it) }
-    if (part.showsGrownUps) {
-        TvSettingsHeading(GROWN_UPS)
-        part.grownUps.forEachIndexed { index, grownUp ->
-            key(grownUp.id) { TvTextRow(grownUp.name, onClick = { onGrownUp(grownUp) }, focusRequester = first.takeIf { index == 0 }) }
-        }
-        if (part.addsGrownUp) TvTextRow(ADD_A_GROWN_UP, onClick = { onAdd(false) }, focusRequester = first.takeIf { part.grownUps.isEmpty() })
-    }
-    if (!part.showsKids) return
-    val kidsLead = !part.showsGrownUps
-    TvSettingsHeading(KIDS_SECTION)
-    part.kids.forEachIndexed { index, kid ->
-        key(kid.id) {
-            TvTextRow("${kid.name} · FSK ${kid.kidsLimit} · ${dailyLimitChoiceFor(kid.dailyLimit).label}", onClick = { onKid(kid) }, focusRequester = first.takeIf { kidsLead && index == 0 })
+    for (person in part.people) {
+        val id = person.profile.id
+        key(id) {
+            val requester = remember { FocusRequester() }.also { requesters[id] = it }
+            TvPersonRow(person.profile.name, person.line, stepFor(person)?.let { { onOpen(it) } }, holds(id), requester)
         }
     }
-    if (part.addsKid) TvTextRow(ADD_A_KID, onClick = { onAdd(true) }, focusRequester = first.takeIf { kidsLead && part.kids.isEmpty() })
+    if (part.addsSomeone) {
+        val named = part.household?.let { "${HouseholdWords.ADD_SOMEONE_TO} ${part.name}" }
+        TvPersonRow(HouseholdWords.ADD_SOMEONE, null, onAdd, holds(null), addRequester, mark = "+", description = named)
+    }
 }
+
+/** What OK on [person]'s row opens, as [PersonRowModel.opens] says: nothing for one the manager may not change. */
+private fun stepFor(person: PersonRowModel): TvManageStep? =
+    when (person.opens) {
+        RowOpens.YOU -> TvManageStep.You(person.profile)
+        RowOpens.KID -> TvManageStep.KidActions(person.profile)
+        RowOpens.GROWN_UP -> TvManageStep.GrownUpActions(person.profile)
+        null -> null
+    }

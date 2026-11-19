@@ -17,19 +17,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import catalog.profile.HouseholdsOwnerUiState
 import catalog.profile.HouseholdsOwnerViewModel
+import catalog.profile.MANAGE_PROFILES
 import designsystem.Overscan
-import model.HouseholdWords
 
 /**
- * The owner's Households on television — the web's `settings-households.js`
- * as screens the remote walks: every live household with who runs it and how
- * many are in it, then Create a household. OK on a household offers only what
- * the household rule allows, each a step of its own ([TvHouseholdStep]).
+ * The owner's household actions on television, around the owner's view
+ * ([list]) — the web's `householdHeader` and `createHouseholdBlock` as screens
+ * the remote walks. [list] draws the view, the remote on the header its
+ * landing names, and moves to a step: OK on a household's header offers only
+ * what the household rule allows, each a step of its own ([TvHouseholdStep]).
  *
- * Opened from the Owner row, it asks the owner's PIN first, and giving that
- * up leaves it; opened by the owner watching, it shows at once and asks the
- * PIN at the first change. The PIN is dropped when the panel is left, for
- * anything — another section, the app — and asked again on the way back.
+ * Drawn while the owner's view shows: opened after the owner's tile on Who's
+ * managing?, the owner's PIN is held already; opened at once for the owner
+ * watching, it asks the PIN at the first change. The PIN is dropped when the
+ * panel is left, for anything — another section, the app, Who's managing?
+ * again — and asked again on the way back, unless the owner's view still
+ * shows ([catalog.profile.OwnerPin]).
  *
  * A change stays on the step that sent it until its answer — a PIN pad given
  * up is none — and keeps what was typed: one that took lands the remote on
@@ -45,6 +48,7 @@ internal fun TvHouseholdsPanel(
     reread: () -> Unit,
     onDone: () -> Unit,
     onJoined: () -> Unit = {},
+    list: @Composable (landing: String?, go: (TvHouseholdStep) -> Unit) -> Unit,
 ) {
     val state by owner.state.collectAsStateWithLifecycle()
     val prompt by owner.pin.collectAsStateWithLifecycle()
@@ -58,8 +62,6 @@ internal fun TvHouseholdsPanel(
         owner.joined.collect { joined() }
     }
     LifecycleStartEffect(owner) {
-        // The way in, and back from the background: the owner's PIN, unless the owner is watching.
-        if (owner.state.value is HouseholdsOwnerUiState.Closed) owner.open()
         onStopOrDispose {
             // close() counts the answers afresh, and an answer to what was out is dropped with it.
             owner.close()
@@ -76,9 +78,9 @@ internal fun TvHouseholdsPanel(
     }
     val part = state as? HouseholdsOwnerUiState.Open
     if (part == null) {
-        // Not read yet, or the PIN not given: nothing the remote could be left holding.
+        // Not read yet: nothing the remote could be left holding.
         BackHandler(onBack = onDone)
-        Text(HouseholdWords.HOUSEHOLDS, style = WhoHeading, modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical))
+        Text(MANAGE_PROFILES, style = WhoHeading, modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical))
         return
     }
     LaunchedEffect(part.answers) {
@@ -91,6 +93,7 @@ internal fun TvHouseholdsPanel(
     // A household gone — deleted, here or elsewhere — takes its steps with it.
     val shown = step.takeIf { it.id == null || part.rows.any { row -> row.household.id == it.id } } ?: TvHouseholdStep.List()
     BackHandler { shown.back()?.let { step = it } ?: onDone() }
+    if (shown is TvHouseholdStep.List) return list(shown.row) { step = it }
     TvHouseholdStepScreen(
         step = shown,
         part = part,

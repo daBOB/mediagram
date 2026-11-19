@@ -16,10 +16,10 @@ enum class SettingsSection(val title: String, val pageEyebrow: String) {
     APPEARANCE("Appearance", "How the player looks on this device"),
 
     /**
-     * The web's Profiles tab, on every surface: who is watching, then everyone
-     * here and managing them — a kid sees only the first.
+     * The web's Profiles tab, on every surface: who is watching, then managing
+     * profiles — Who's managing?, or the owner's view — a kid sees only the first.
      */
-    PROFILES("Profiles", "Who is watching, and everyone here"),
+    PROFILES("Profiles", "Who is watching, and managing profiles"),
     SYSTEM("System", "What this player is doing, refreshed as it happens"),
 }
 

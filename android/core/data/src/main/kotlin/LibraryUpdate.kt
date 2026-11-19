@@ -1,5 +1,7 @@
 package data
 
+import data.settings.ArtworkFetchMark
+import data.settings.InMemoryArtworkFetchMark
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.flow.FlowCollector
@@ -50,11 +52,15 @@ data class LibraryUpdateState(
  * then the installed sets read again — one update at a time, so a read never
  * lands after the read of a newer snapshot.
  *
- * Whether artwork is fetched: a [LibraryUpdateKind.Read] only when its refresh
- * installed a newer index (a fetch plans over every title, too dear for every
- * start), a [LibraryUpdateKind.Published] unless the channel refused, and a
+ * Whether artwork is fetched: a [LibraryUpdateKind.Read] when its refresh
+ * installed a newer index, or reached the channel and found the installed
+ * index one no fetch has finished for yet ([ArtworkFetchMark]) — the index a
+ * device asleep at its publishing, or killed mid-fetch, installed bare; never
+ * on every start, since a fetch plans over every title. A
+ * [LibraryUpdateKind.Published] fetches unless the channel refused, and a
  * [LibraryUpdateKind.Manual] always, even offline, to fill the held catalog's
- * gaps. Only a manual fetch reports.
+ * gaps. A fetch that finished marks the installed index done. Only a manual
+ * fetch reports.
  */
 @Singleton
 class LibraryUpdate
@@ -62,6 +68,7 @@ class LibraryUpdate
     constructor(
         private val repository: CatalogRepository,
         private val enrichment: CatalogEnrichmentFetcher,
+        private val fetchMark: ArtworkFetchMark = InMemoryArtworkFetchMark(),
     ) {
         private val updating = Mutex()
         private val reading = MutableStateFlow(false)
@@ -100,14 +107,18 @@ class LibraryUpdate
                     } finally {
                         reading.value = false
                     }
+                val published = repository.publishedAt()
                 val fetches =
                     when (kind) {
-                        LibraryUpdateKind.Read -> outcome == RefreshOutcome.Updated
+                        LibraryUpdateKind.Read ->
+                            outcome == RefreshOutcome.Updated ||
+                                (outcome == RefreshOutcome.AlreadyCurrent && published != null && published != fetchMark.fetchedFor())
                         LibraryUpdateKind.Published -> outcome !is RefreshOutcome.Refused
                         LibraryUpdateKind.Manual -> true
                     }
                 if (!fetches) return@withLock
                 val report = enrichment.fetch(quiet = kind != LibraryUpdateKind.Manual)
+                if (report != null && published != null) fetchMark.mark(published)
                 if (report != null && (report.postersFetched > 0u || report.backdropsFetched > 0u)) {
                     installed.value = InstalledLibrary(readSets(), outcome.refusal())
                 }

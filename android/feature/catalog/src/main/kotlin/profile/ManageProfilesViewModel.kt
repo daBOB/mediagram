@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import model.Households
 import model.Profile
 import model.ProfileOutcome
 import model.ProfileRequest
@@ -21,13 +20,14 @@ import javax.inject.Inject
 
 /**
  * Manage profiles — the web's `profile-manage.js`: say who you are, prove it
- * with your PIN, then act within your role. The PIN is held here only while
- * the panel is open and sent with every change, since the core checks PIN and
- * role each time; [close] drops it — as both gates do once the library shows
- * again or the app is left, since this outlives the screen. Nothing opens this but [open] — entering
- * a profile never hands a child the controls. What the panel offers follows
- * the household's rule, but the core decides: something offered by mistake
- * is still refused there, and the refusal is shown as it comes.
+ * with your PIN, then act within your role. The PIN is held only while the
+ * panel is open and sent with every change, since the core checks PIN and role
+ * each time; [close] drops it, as both gates do once the library shows again or
+ * the app is left. Only [open] opens this — entering a profile never hands a
+ * child the controls. The owner's view of every household ([parts]) opens at
+ * once for the owner watching, or after the owner's tile and PIN ([actAs]),
+ * which is the page's one ([OwnerPin]). The core decides all the same: what is
+ * offered by mistake is still refused there, and the refusal is shown.
  */
 @HiltViewModel
 class ManageProfilesViewModel
@@ -36,16 +36,9 @@ class ManageProfilesViewModel
         private val repository: WatchStateRepository,
         private val households: HouseholdsRepository,
         private val sync: WatchSync,
+        private val ownerPin: OwnerPin,
     ) : ViewModel() {
-        private sealed interface Step {
-            data object Closed : Step
-
-            data class ChoosingActor(val notice: String? = null) : Step
-
-            data class Managing(val actorId: String, val notice: String? = null, val answers: Int = 0) : Step
-        }
-
-        private val step = MutableStateFlow<Step>(Step.Closed)
+        private val step = MutableStateFlow<ManageStep>(ManageStep.Closed)
         private var heldPin: String? = null
         private val ask = PinAsk(viewModelScope)
 
@@ -59,37 +52,40 @@ class ManageProfilesViewModel
             combine(step, repository.profiles, households.view) { current, profiles, install -> current.shown(profiles, install) }
                 .stateIn(viewModelScope, SharingStarted.Eagerly, ManageUiState.Closed)
 
-        fun open() {
-            close()
-            step.value = Step.ChoosingActor()
+        /**
+         * Who's managing? — or, with [chosen] the owner watching here, the owner's view at once. A fresh
+         * question every time, the television's Back to the tiles too: no PIN is held, the owner's included.
+         */
+        fun open(chosen: Profile? = null) {
+            ask.cancel()
+            heldPin = null
+            ownerPin.drop()
+            go(if (chosen?.owner == true && !chosen.kids) ManageStep.Managing(chosen.id) else ManageStep.ChoosingActor())
         }
 
-        /** The actor's PIN, or — from before PINs existed — a first one typed twice, which becomes theirs. */
+        /**
+         * The actor's PIN, or — from before PINs existed — a first one typed twice, which becomes theirs.
+         * The owner's tile asks the owner's PIN, from any household's device, and the page holds it; one
+         * given anywhere on the page is not asked again. An owner here with no PIN yet chooses one first.
+         */
         fun actAs(id: String) {
-            val actor = repository.profiles.value.find { it.id == id && !it.kids } ?: return
+            val here = repository.profiles.value.find { it.id == id && !it.kids }
+            val boss = households.view.value.owner?.takeIf { it.id == id && (it.hasPin || here == null) }
+            if (boss != null) return ask.ownersPin(ownerPin, repository, boss) { go(ManageStep.Managing(id)) }
+            val actor = here ?: return
             ask.ask(
                 PinPrompt(pinTitleFor(actor), newPin = !actor.hasPin),
                 send = { pin -> shared(proving(actor, pin)) },
                 done = { pin ->
-                    heldPin = pin
-                    step.value = Step.Managing(id)
+                    hold(id, pin)
+                    go(ManageStep.Managing(id))
                 },
                 refused = { outcome ->
-                    step.value = Step.ChoosingActor(outcome.reason())
+                    go(ManageStep.ChoosingActor(outcome.reason()))
                     // A first PIN refused is news from another device: read who is here again.
                     viewModelScope.launch { repository.rereadQuietly() }
                 },
             )
-        }
-
-        /** [name] trimmed; a blank one is not sent, as the web's form sends none. */
-        fun addKid(
-            name: String,
-            age: Int = NEW_KID_LIMIT,
-            dailyLimit: Int? = null,
-        ) {
-            val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
-            change { actor, pin -> ProfileRequest.CreateKid(actor, pin, clean, age, dailyLimit) }
         }
 
         /** [minutes] null clears the kid's daily limit; refused for whoever may not set its age limit. */
@@ -109,15 +105,9 @@ class ManageProfilesViewModel
         /** Asked first on screen with [removeQuestion]; a grown-up's kids go with it. */
         fun remove(id: String) = change { actor, pin -> ProfileRequest.Remove(actor, pin, id) }
 
-        /** Admin only; the new grown-up's first PIN is typed twice before anything is sent. */
-        fun addGrownUp(name: String) {
-            val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
-            newPin(newPinTitleFor(clean), own = false) { actor, pin, newPin -> ProfileRequest.CreateGrownUp(actor, pin, clean, newPin) }
-        }
-
         /** The actor's own PIN, or — for the admin — another grown-up's; for the owner, in any household. */
         fun changePin(id: String) {
-            val actorId = (step.value as? Step.Managing)?.actorId ?: return
+            val actorId = (step.value as? ManageStep.Managing)?.actorId ?: return
             val target = (repository.profiles.value + households.view.value.everyone).find { it.id == id } ?: return
             val own = id == actorId
             newPin(if (own) YOUR_NEW_PIN else resetPinTitleFor(target.name), own) { actor, pin, newPin ->
@@ -133,68 +123,73 @@ class ManageProfilesViewModel
         fun close() {
             ask.cancel()
             heldPin = null
-            step.value = Step.Closed
+            ownerPin.drop()
+            go(ManageStep.Closed)
         }
 
         override fun onCleared() {
             heldPin = null
         }
 
-        private fun change(request: (actorId: String, pin: String) -> ProfileRequest) {
-            val managing = step.value as? Step.Managing ?: return
-            val pin = heldPin ?: return
-            step.value = managing.copy(notice = null)
-            viewModelScope.launch {
-                report(managing.actorId, orDefault(null, "profile change") { shared(request(managing.actorId, pin)) })
+        internal fun change(request: (actorId: String, pin: String) -> ProfileRequest) {
+            val actorId = (step.value as? ManageStep.Managing)?.actorId ?: return
+            withPin(actorId) { pin ->
+                val managing = (step.value as? ManageStep.Managing)?.takeIf { it.actorId == actorId } ?: return@withPin
+                go(managing.copy(notice = null))
+                viewModelScope.launch { report(actorId, orDefault(null, "profile change") { shared(request(actorId, pin)) }) }
             }
         }
 
-        private fun newPin(
+        internal fun newPin(
             title: String,
             own: Boolean,
             request: (actorId: String, pin: String, newPin: String) -> ProfileRequest,
         ) {
-            val actorId = (step.value as? Step.Managing)?.actorId ?: return
-            val pin = heldPin ?: return
-            ask.ask(
-                PinPrompt(title, newPin = true),
-                send = { newPin -> shared(request(actorId, pin, newPin)) },
-                done = { newPin ->
-                    // A changed own PIN is the one this panel sends from now on, or the next change is refused.
-                    if (own) heldPin = newPin
-                    report(actorId, ProfileOutcome.Done)
-                },
-                refused = { outcome -> report(actorId, outcome) },
-            )
+            val actorId = (step.value as? ManageStep.Managing)?.actorId ?: return
+            withPin(actorId) { pin ->
+                ask.ask(
+                    PinPrompt(title, newPin = true),
+                    send = { newPin -> shared(request(actorId, pin, newPin)) },
+                    done = { newPin ->
+                        // A changed own PIN is the one sent from now on, or the next change is refused.
+                        if (own) hold(actorId, newPin)
+                        report(actorId, ProfileOutcome.Done)
+                    },
+                    refused = { outcome -> report(actorId, outcome) },
+                )
+            }
+        }
+
+        /** Every step Manage takes: the owner's view shows ([OwnerPin.view]) exactly while it manages as the owner. */
+        private fun go(next: ManageStep) {
+            step.value = next
+            ownerPin.showView(next is ManageStep.Managing && owner(next.actorId) != null)
+        }
+
+        /** [actorId] when they are the install's owner, whichever household this device shows. */
+        private fun owner(actorId: String) = (repository.profiles.value + households.view.value.everyone).find { it.id == actorId && it.owner && !it.kids }
+
+        /** [pin] sent as [actorId] from now: the owner's is the whole page's. */
+        private fun hold(actorId: String, pin: String) {
+            if (owner(actorId) != null) ownerPin.held = pin else heldPin = pin
+        }
+
+        /** [then] with the PIN sent as [actorId]: theirs from Who's managing?, or the owner's, asked now if none is held. */
+        private fun withPin(actorId: String, then: (String) -> Unit) {
+            val owner = owner(actorId)
+            if (owner == null) heldPin?.let(then) else ask.ownersPin(ownerPin, repository, owner, then)
         }
 
         /** [request] sent and shared; one that took reads the households again, which the owner's panel draws from too. */
         private suspend fun shared(request: ProfileRequest) = repository.manageAndShare(request, sync).also { if (it == ProfileOutcome.Done) households.reloadQuietly() }
 
-        /**
-         * How a change went — the web's `report`. Every change sends the PIN
-         * held here, so a wrong one means it is no longer theirs: ask who they
-         * are again rather than spend that profile's tries. Each answer is
-         * counted, so even a refusal already on show — a new try clears it
-         * first ([change]) — is news to a control waiting on its answer.
-         */
+        /** How a change went ([answered]): a wrong PIN is dropped, being no longer theirs. */
         private fun report(actorId: String, outcome: ProfileOutcome?) {
-            val answers = (step.value as? Step.Managing)?.takeIf { it.actorId == actorId }?.answers ?: return
-            step.value =
-                when (outcome) {
-                    ProfileOutcome.Done -> Step.Managing(actorId, answers = answers + 1)
-                    ProfileOutcome.WrongPin -> {
-                        heldPin = null
-                        Step.ChoosingActor(PIN_NO_LONGER_VALID)
-                    }
-                    else -> Step.Managing(actorId, outcome.reason(), answers + 1)
-                }
-        }
-
-        private fun Step.shown(profiles: List<Profile>, install: Households): ManageUiState =
-            when (this) {
-                Step.Closed -> ManageUiState.Closed
-                is Step.ChoosingActor -> ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
-                is Step.Managing -> manageable(profiles, actorId, notice, answers, install)
+            val managing = (step.value as? ManageStep.Managing)?.takeIf { it.actorId == actorId } ?: return
+            if (outcome == ProfileOutcome.WrongPin) {
+                heldPin = null
+                ownerPin.drop()
             }
+            go(managing.answered(outcome, ownersView = owner(actorId) != null))
+        }
     }

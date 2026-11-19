@@ -26,7 +26,7 @@ pub(super) fn name(conn: &Connection, id: &str, name: &str, now: i64) -> rusqlit
 
 /// Only onto a household row that is there: one that lands nowhere fails,
 /// and the caller's transaction rolls back.
-pub(super) fn admin(conn: &Connection, household_id: &str, profile_id: &str, now: i64) -> rusqlite::Result<()> {
+pub(crate) fn admin(conn: &Connection, household_id: &str, profile_id: &str, now: i64) -> rusqlite::Result<()> {
     let written = conn.execute(
         "UPDATE households SET admin_id = ?2, admin_updated_at = MAX(?3, MIN(admin_updated_at, ?4) + 1) WHERE id = ?1",
         params![household_id, profile_id, now, LAST_STAMP],

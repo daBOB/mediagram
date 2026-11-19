@@ -1862,9 +1862,9 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   with digit keys types with those too. Four digits are handed over at once, so there is no
   OK, and a new PIN's second entry is a step of its own headed as the web's second field is
   ("The new PIN again").
-- **Manage profiles opens a person's choices in a dialog.** The web lays Reset PIN, the
-  limit select and Remove along each row; on a remote, buttons along a row would make Down
-  mean "next button" in one row and "next person" in another. Each row is one stop that
+- **Manage profiles opens a person's choices in a dialog.** The web and the tablet open a
+  person's controls under their row on a tap; on a remote, controls opening inside the list
+  would make Down mean "next control" under one row and "next person" elsewhere. Each row is one stop that
   opens its choices (a kid's FSK 6 / FSK 12, the current one holding the remote, then
   Daily limit, which opens its own choices, then Remove; a grown-up's Reset PIN, then
   Remove), and Remove still asks in the web's words. Adding asks the name on a screen of

@@ -45,8 +45,14 @@ fun List<Profile>.allowed(
     targetId: String?,
 ): Boolean {
     val actor = find { it.id == actorId }?.takeUnless { it.kids } ?: return false
-    if (action == RoleAction.CREATE_GROWN_UP) return actor.admin
-    if (action == RoleAction.CREATE_KID) return true
+    // The create-grown-up target is a household, not a profile; null or "" is the maker's own.
+    if (action == RoleAction.CREATE_GROWN_UP) {
+        return actor.admin && (targetId.isNullOrEmpty() || targetId == actor.household || actor.owner)
+    }
+    if (action == RoleAction.CREATE_KID) {
+        return targetId.isNullOrEmpty() || targetId == actor.id ||
+            (actor.owner && any { it.id == targetId && !it.kids })
+    }
     val target = find { it.id == targetId } ?: return false
     // Households are separate: only the owner manages a profile in another one.
     if (target.household != actor.household) return actor.owner && ownerReaches(action, target)

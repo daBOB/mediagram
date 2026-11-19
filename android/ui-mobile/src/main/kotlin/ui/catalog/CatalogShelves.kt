@@ -103,8 +103,8 @@ internal fun Shelves(
                 )
 
                 is CatalogTab.Kept -> when (chosenTab.kind) {
-                    KeptKind.CONTINUE -> KeptWall(KeptKind.CONTINUE, state.pages.continueWall, state.watch, columns, onOpenTitle, state.heldIds, onFinish)
-                    KeptKind.WATCHLIST -> KeptWall(KeptKind.WATCHLIST, state.pages.watchlistWall, state.watch, columns, onOpenTitle, state.heldIds)
+                    KeptKind.CONTINUE -> KeptWall(KeptKind.CONTINUE, state.pages.continueWall, state.watch, columns, shelfViewChoice(), onOpenTitle, state.heldIds, onFinish)
+                    KeptKind.WATCHLIST -> KeptWall(KeptKind.WATCHLIST, state.pages.watchlistWall, state.watch, columns, shelfViewChoice(), onOpenTitle, state.heldIds)
                     KeptKind.COLLECTIONS -> {
                         val movies = remember(shelves) { everyFilm(shelves) }
                         CollectionsScreen(

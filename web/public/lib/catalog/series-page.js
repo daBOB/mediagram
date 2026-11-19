@@ -1,13 +1,13 @@
 /**
  * A show's own page, as a feature article with a table of contents: the
- * opening spread, then Episodes (a season picker over a readable list, not a
+ * opening spread, then Episodes (a row of season cards over a readable list, not a
  * wall of thumbnails), About, and Similar.
  *
  * The season in view is part of the URL (`#/series/Show/Season 2`), so a
  * season can be linked and the back button steps out of it.
  */
 
-import { el, focusWhenAttached } from "../dom.js";
+import { el } from "../dom.js";
 import { countOf } from "../format.js";
 import { firstItemOf, flattenCollection } from "../library.js";
 import { genresOf } from "./genres.js";
@@ -18,6 +18,7 @@ import { listToggle } from "./list-toggle.js";
 import { tabbed } from "./tabs.js";
 import { offerCast } from "./cast.js";
 import { seasonBlock } from "./course-view.js";
+import { seasonCards } from "./season-cards.js";
 import { collectionGrid, heading } from "./shelf-view.js";
 import { SECTIONS } from "./sections.js";
 import { GRID } from "./shelf-mode.js";
@@ -129,32 +130,10 @@ function factsLine(facts, meta, first) {
     .filter(Boolean).join(" · ");
 }
 
-/** The show whose season picker was just used: its rebuilt picker takes focus back. */
-let pickedOn = null;
-
 function episodes(collection, shown, play, openSeason) {
   const box = el("div", "episodes-panel");
-  if (collection.divisions.length > 1) {
-    const label = el("label", "season-pick");
-    label.append(el("span", "sr-only", "Season"));
-    const select = el("select");
-    for (const division of collection.divisions) {
-      const option = el("option", null, `${division.title} · ${countOf(division.items.length, "episode")}`);
-      option.value = division.title;
-      option.selected = division === shown;
-      select.append(option);
-    }
-    select.addEventListener("change", () => {
-      pickedOn = collection.name;
-      openSeason(select.value);
-    });
-    if (pickedOn === collection.name) {
-      pickedOn = null;
-      focusWhenAttached(select);
-    }
-    label.append(select);
-    box.append(label);
-  }
+  // No row for a single season: there is nothing to pick from.
+  if (collection.divisions.length > 1) box.append(seasonCards(collection, shown, openSeason));
   if (shown) box.append(seasonBlock(shown, play));
   return box;
 }

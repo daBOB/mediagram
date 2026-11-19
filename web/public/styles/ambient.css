@@ -1,0 +1,35 @@
+/* Artwork > Ambient (lib/ambient.js): rounded cards, and a faint glow of four
+   soft blobs drifting behind the page like a lava lamp, in a poster's colour.
+   One fixed layer under everything; only transform and translate move, so the
+   page is never redrawn. Under reduced motion theme.css stops the drift and
+   each blob stays where it starts: a still glow, complete without motion. */
+@property --ambient { syntax: "<color>"; inherits: true; initial-value: transparent; }
+
+[data-backdrop="ambient"] :is(.thumb, .strip .thumb) { border-radius: var(--radius-card); }
+
+.ambient-glow { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; transition: --ambient 900ms ease; }
+.ambient-glow i {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 100vh;
+  height: 100vh;
+  margin: -50vh 0 0 -50vh;
+  opacity: 0.34;
+  will-change: transform, translate;
+  /* Full strength to about two thirds of a blob's core, then a long soft fall. */
+  background: radial-gradient(closest-side, var(--ambient) 22%, color-mix(in srgb, var(--ambient) 38%, transparent) 34%, color-mix(in srgb, var(--ambient) 6%, transparent) 52%, transparent 100%);
+  animation: ambient-x var(--tx) ease-in-out infinite alternate, ambient-y var(--ty) ease-in-out infinite alternate;
+}
+.ambient-glow i:nth-child(1) { --x: 50%; --y: 86%; --dx: 40vw; --dy: -72vh; --tx: 18.5s; --ty: 24s; }
+.ambient-glow i:nth-child(2) { --x: 88%; --y: 19%; --dx: -78vw; --dy: 67vh; --tx: 15.6s; --ty: 20s; }
+.ambient-glow i:nth-child(3) { --x: 26%; --y: 67%; --dx: 64vw; --dy: -53vh; --tx: 13.5s; --ty: 17s; }
+.ambient-glow i:nth-child(4) { --x: 28%; --y: 52%; --dx: 62vw; --dy: 34vh; --tx: 12s; --ty: 14.9s; }
+@keyframes ambient-x { to { translate: var(--dx) 0; } }
+@keyframes ambient-y { to { transform: translateY(var(--dy)); } }
+
+/* The glow keeps off a hero's artwork: a veil in the page's own paper under it,
+   feathered (a 48px spread and 48px blur: solid at the art, gone by 96px out) so the glow returns over about 96px instead of meeting the
+   picture's faded edge in a line. In document coordinates, so it scrolls with the page. */
+.ambient-veils { position: absolute; top: 0; left: 0; z-index: -1; pointer-events: none; }
+.ambient-veil { position: absolute; background: var(--paper); box-shadow: 0 0 48px 48px var(--paper); }

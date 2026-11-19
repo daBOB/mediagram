@@ -80,15 +80,13 @@ class LibraryFlowTest {
     }
 
     /**
-     * Picks Season 2 from the show page's own season picker — replaces the
-     * old season-poster wall's own hop. `hasClickAction()` is what tells the
-     * picker's own button apart from the episode list's plain "Season 1"
-     * heading right below it, which names the same season but opens nothing.
+     * Picks Season 2 from the show page's row of season cards.
+     * `hasClickAction()` is what tells the card apart from the episode
+     * list's plain season heading, which names a season but opens nothing.
      */
     private fun season() {
         collection()
-        compose.onNode(hasText("Season 1", substring = true) and hasClickAction()).performClick()
-        compose.onNodeWithText("Season 2 · one episode").performClick()
+        compose.onNode(hasText("Season 2") and hasClickAction()).performClick()
         compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
     }
 

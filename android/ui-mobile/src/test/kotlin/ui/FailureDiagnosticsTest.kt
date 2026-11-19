@@ -200,6 +200,7 @@ class FailureDiagnosticsTest {
 
     private fun catalogRepository(): CatalogRepository =
         mockk<CatalogRepository>().also {
+            coEvery { it.publishedAt() } returns null
             coEvery { it.refresh() } returns RefreshOutcome.AlreadyCurrent
             coEvery { it.sets() } returns emptyList()
         }

@@ -1,5 +1,7 @@
 package ui.tv.profile
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
@@ -12,6 +14,7 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.platform.app.InstrumentationRegistry
+import catalog.profile.OwnerPin
 import catalog.profile.HouseholdsOwnerUiState
 import catalog.profile.HouseholdsOwnerViewModel
 import data.DefaultHouseholdsRepository
@@ -22,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import model.HouseholdWords
 import org.junit.After
 import org.junit.Before
 import testing.FakeCore
@@ -32,10 +36,11 @@ import uniffi.mediagram_core.Profile
 import kotlin.test.assertIs
 
 /**
- * The owner's Households panel over the real view model and [FakeCore]:
+ * The owner's household steps over the real view model and [FakeCore], drawn
+ * around a stand-in for the owner's view that lists only the households:
  * andre, the owner, runs Home; Bea runs Flat, with Cy, who has no PIN.
- * Nobody is watching unless a test says so, and then the panel opens as the
- * Owner row opens it: the owner's PIN first.
+ * Drawn as the owner's view draws it, after the owner's tile and PIN —
+ * unless a test puts the owner in front of it, watching, with no PIN given.
  */
 abstract class TvHouseholdsPanelHarness : TvScreenStateTest() {
     protected val core =
@@ -67,21 +72,32 @@ abstract class TvHouseholdsPanelHarness : TvScreenStateTest() {
     @After
     fun stopReading() = scope.cancel()
 
-    /** The panel; [watching] puts the owner in front of it, so it opens with no PIN. */
+    /** The panel; [watching] puts the owner in front of it, so it opens with no PIN — otherwise the owner's view shows, the PIN held. */
     protected fun panel(watching: Boolean = false) {
         if (watching) core.chosen = "a"
         val repository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
         runBlocking { repository.reload() }
-        owner = HouseholdsOwnerViewModel(repository, DefaultHouseholdsRepository(provider, repository, scope, Dispatchers.Unconfined), mockk(relaxed = true))
+        // As Manage leaves it once the owner's tile had their PIN.
+        val pin =
+            OwnerPin().apply {
+                held = "1234".takeUnless { watching }
+                showView(!watching)
+            }
+        owner = HouseholdsOwnerViewModel(repository, DefaultHouseholdsRepository(provider, repository, scope, Dispatchers.Unconfined), mockk(relaxed = true), pin)
         // As the gate says it, which this panel is drawn without.
         if (watching) owner.watching("a")
-        show { TvHouseholdsPanel(owner, reread = {}, onDone = { left++ }) }
+        show { TvHouseholdsPanel(owner, reread = {}, onDone = { left++ }) { landing, go -> Headers(landing, go) } }
     }
 
-    /** The panel, the owner's PIN given. */
-    protected fun opened() {
-        panel()
-        pin("1234")
+    /** A stand-in for the owner's view around the panel: each household's header, then Create a household. */
+    @Composable
+    private fun Headers(
+        landing: String?,
+        go: (TvHouseholdStep) -> Unit,
+    ) {
+        val rows = (owner.state.collectAsState().value as? HouseholdsOwnerUiState.Open)?.rows.orEmpty()
+        val headers = rows.map { it.household.id to "${it.household.name} · ${it.line}" } + (NEW to HouseholdWords.CREATE_A_HOUSEHOLD)
+        TvChoicesScreen(HouseholdWords.HOUSEHOLDS, null, headers, landing) { go(if (it == NEW) TvHouseholdStep.CreateName() else TvHouseholdStep.Actions(it)) }
     }
 
     /** What the part holds now. */

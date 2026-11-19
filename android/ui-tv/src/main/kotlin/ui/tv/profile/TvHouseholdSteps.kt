@@ -10,18 +10,18 @@ import catalog.profile.HouseholdsOwnerViewModel
 import model.HouseholdWords
 import ui.tv.setup.TvTextQuestion
 
-/** Create a household's row in the list, and A new grown-up's among the admins: no household or profile has an empty id. */
-private const val NEW = ""
+/** Create a household's row in the owner's view, and A new grown-up's among the admins: no household or profile has an empty id. */
+internal const val NEW = ""
 
 /**
- * Where the owner's Households panel stands: the list, a household's
- * actions, or one of their steps — each a whole screen, as the web's forms
- * under a row become on a remote. [id] is the household it is about.
+ * Where the owner's view stands: its rows, a household's actions, or one of
+ * their steps — each a whole screen, as the web's forms under a household's
+ * header become on a remote. [id] is the household it is about.
  */
 internal sealed interface TvHouseholdStep {
     val id: String? get() = null
 
-    /** The list, the remote on household [row] — [NEW] for Create a household — or the first. */
+    /** The owner's view, the remote on household [row]'s header — [NEW] for Create a household — or the first. */
     data class List(val row: String? = null) : TvHouseholdStep
 
     /** What the rule allows on household [id], the remote on [action], the step it opened, or the first. */
@@ -53,12 +53,13 @@ internal sealed interface TvHouseholdStep {
             is CreateGrownUp -> CreateAdmin(name)
         }
 
-    /** Where a change sent from here leaves the remote once it took: on its household's row, or on Create a household. */
+    /** Where a change sent from here leaves the remote once it took: on its household's header, or on Create a household. */
     fun done(): TvHouseholdStep = List(id ?: NEW)
 }
 
 /**
- * [step]'s screen. [go] moves to another step; [send] sends a change from
+ * [step]'s screen, but for the owner's view, which the panel draws itself
+ * ([TvHouseholdsPanel]). [go] moves to another step; [send] sends a change from
  * a step — this one, holding what was typed — which stays, saying [notice]
  * if it was refused, until it takes. A blank name is not sent, as the web's
  * forms send none.
@@ -75,10 +76,7 @@ internal fun TvHouseholdStepScreen(
     val row = part.rows.find { it.household.id == step.id }
     val name = row?.household?.name.orEmpty()
     when (step) {
-        is TvHouseholdStep.List ->
-            TvChoicesScreen(HouseholdWords.HOUSEHOLDS, null, part.rows.map { it.household.id to "${it.household.name} · ${it.line}" } + (NEW to HouseholdWords.CREATE_A_HOUSEHOLD), step.row) {
-                go(if (it == NEW) TvHouseholdStep.CreateName() else TvHouseholdStep.Actions(it))
-            }
+        is TvHouseholdStep.List -> Unit
         is TvHouseholdStep.Actions -> {
             val offered =
                 listOfNotNull(

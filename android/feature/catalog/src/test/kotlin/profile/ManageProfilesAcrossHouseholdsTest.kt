@@ -18,7 +18,7 @@ class ManageProfilesAcrossHouseholdsTest : HouseholdsOwnerHarness() {
     ): ManageProfilesViewModel {
         repository.reload()
         households = DefaultHouseholdsRepository(provider, repository, backgroundScope, Dispatchers.Unconfined)
-        return ManageProfilesViewModel(repository, households, sync).apply {
+        return ManageProfilesViewModel(repository, households, sync, ownerPin).apply {
             open()
             actAs(id)
             enterPin(pin)
@@ -28,13 +28,13 @@ class ManageProfilesAcrossHouseholdsTest : HouseholdsOwnerHarness() {
     private fun ManageProfilesViewModel.panel() = assertIs<ManageUiState.Managing>(state.value)
 
     @Test
-    fun theOwnerManagesEveryHouseholdWithSomeoneInIt() =
+    fun theOwnerManagesEveryHousehold() =
         runTest(UnconfinedTestDispatcher()) {
             val panel = managing("a", "1234").panel()
             assertEquals(listOf("Bea", "Cy"), panel.grownUps.map { it.name })
             assertEquals(listOf("Mia"), panel.kids.map { it.name })
-            // Barn has nobody in it, so it has no part.
-            assertEquals(listOf("Home", "Flat"), panel.parts().map { it.name })
+            // Barn has nobody in it, and still has its part, to add a grown-up to.
+            assertEquals(listOf("Home", "Barn", "Flat"), panel.parts().map { it.name })
         }
 
     /** A change in another household leaves this device's profiles as they were, so the households are read again for it. */

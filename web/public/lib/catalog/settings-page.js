@@ -28,6 +28,7 @@ const BACKDROPS = [
   ["blurred", "Blurred", "Colour and light, softened"],
   ["artwork", "Artwork", "The picture behind the words"],
   ["solid", "Solid", "Plain pages, no artwork"],
+  ["ambient", "Ambient", "The poster's colour, drifting behind the page"],
 ];
 
 function read(name, fallback) {
@@ -41,11 +42,11 @@ function write(name, value) {
 /**
  * @param {HTMLElement} main
  * @param {{ profile: {name: string, kids?: boolean, kidsAge?: number|null}|null,
- *   switchProfile: () => void, systemVisible: boolean,
+ *   switchProfile: () => void,
  *   admin: ((container: HTMLElement) => () => void)|null }} on
  * @returns {() => void} stops the admin panel's work, if it was opened
  */
-export function renderSettings(main, { profile, switchProfile, systemVisible, admin }) {
+export function renderSettings(main, { profile, switchProfile, admin }) {
   let stopAdmin = null;
   let stopProfiles = null;
   const head = el("header", "dept-hero no-art");
@@ -57,7 +58,7 @@ export function renderSettings(main, { profile, switchProfile, systemVisible, ad
     { label: "Appearance", build: appearance },
     {
       label: PROFILES,
-      build: () => { const panel = profilesPanel(main, { profile, switchProfile, systemVisible }); stopProfiles = panel.stop; return panel.box; },
+      build: () => { const panel = profilesPanel(main, { profile, switchProfile }); stopProfiles = panel.stop; return panel.box; },
       leave: () => stopProfiles?.(),
     },
     ...(admin ? [{ label: "Library & Telegram", build: () => {

@@ -1006,9 +1006,9 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_first_admin(`ptr`: Long,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_grown_up(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_create_grown_up(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,`household`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_kid(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`kidsAge`: Byte,`dailyLimit`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_create_kid(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`kidsAge`: Byte,`dailyLimit`: RustBuffer.ByValue,`parentId`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
@@ -1361,10 +1361,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_first_admin() and 0xFFFF) != 20033) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_grown_up() and 0xFFFF) != 18879) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_grown_up() and 0xFFFF) != 50883) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_kid() and 0xFFFF) != 25490) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_kid() and 0xFFFF) != 58452) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_delete_profile() and 0xFFFF) != 32539) {
@@ -2390,15 +2390,17 @@ public interface CoreInterface {
     suspend fun `createFirstAdmin`(`name`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
 
     /**
-     * The admin adds a grown-up, with its first PIN.
+     * The admin adds a grown-up, with its first PIN, to their own household.
+     * The owner may name any other household; `None` or "" is the maker's own.
      */
-    suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
+    suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String, `household`: kotlin.String?): ProfileOutcome
 
     /**
      * A grown-up adds a kid of its own, from 6 or from 12, with a daily
-     * limit in minutes (1..=1440) or none.
+     * limit in minutes (1..=1440) or none. The owner may name any grown-up
+     * in `parent_id`; `None` or "" is the maker.
      */
-    suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?): ProfileOutcome
+    suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?, `parentId`: kotlin.String?): ProfileOutcome
 
     /**
      * Removes a profile and everything that was theirs — a grown-up with
@@ -4297,10 +4299,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * The admin adds a grown-up, with its first PIN.
+     * The admin adds a grown-up, with its first PIN, to their own household.
+     * The owner may name any other household; `None` or "" is the maker's own.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String) : ProfileOutcome {
+    override suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String, `household`: kotlin.String?) : ProfileOutcome {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_create_grown_up(
@@ -4310,6 +4313,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         FfiConverterString.lower(`pin`),
         FfiConverterString.lower(`name`),
         FfiConverterString.lower(`newPin`),
+        FfiConverterOptionalString.lower(`household`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -4325,10 +4329,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     /**
      * A grown-up adds a kid of its own, from 6 or from 12, with a daily
-     * limit in minutes (1..=1440) or none.
+     * limit in minutes (1..=1440) or none. The owner may name any grown-up
+     * in `parent_id`; `None` or "" is the maker.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?) : ProfileOutcome {
+    override suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?, `parentId`: kotlin.String?) : ProfileOutcome {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_create_kid(
@@ -4339,6 +4344,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         FfiConverterString.lower(`name`),
         FfiConverterUByte.lower(`kidsAge`),
         FfiConverterOptionalUShort.lower(`dailyLimit`),
+        FfiConverterOptionalString.lower(`parentId`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },

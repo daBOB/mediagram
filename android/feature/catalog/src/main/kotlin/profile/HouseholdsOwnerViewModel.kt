@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import model.CreateHousehold
 import model.DeleteHousehold
-import model.HouseholdWords
 import model.JoinHousehold
 import model.MoveToHousehold
 import model.ProfileOutcome
@@ -29,10 +28,11 @@ import model.SetHouseholdAdmin
 import javax.inject.Inject
 
 /**
- * The owner's Households part — the web's `settings-households.js`. It is
- * open for the owner the gate says is [watching], or once [open] has the
- * owner's PIN. That PIN is asked once — at [open], or for the watching owner
- * at the first change — then held and sent with every change until [close].
+ * The household actions of the owner's view — the web's `householdHeader`
+ * and `createHouseholdBlock`. It is open for the owner the gate says is
+ * [watching], and while the owner's view shows ([OwnerPin.view]). The owner's
+ * PIN — the page's, given already at the owner's tile — is asked at the first
+ * change when none is held, then held and sent with every change until [close].
  * A grown-up about to run a household with no PIN yet is asked a first one,
  * typed twice, before anything is sent. What a row offers follows the
  * household rule; the core decides all the same — a grown-up gone since
@@ -45,13 +45,10 @@ class HouseholdsOwnerViewModel
         private val repository: WatchStateRepository,
         private val households: HouseholdsRepository,
         private val sync: WatchSync,
+        private val ownerPin: OwnerPin,
     ) : ViewModel() {
-        /** [visit] counts [close]s, so an answer to a change sent before one stays with its own visit. */
-        private data class Step(val open: Boolean = false, val notice: String? = null, val answers: Int = 0, val sending: Boolean = false, val visit: Int = 0)
-
-        private val step = MutableStateFlow(Step())
+        private val step = MutableStateFlow(OwnerStep())
         private val watcher = MutableStateFlow<String?>(null)
-        private var heldPin: String? = null
         private val ask = PinAsk(viewModelScope)
         private val stillHere = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
 
@@ -62,22 +59,16 @@ class HouseholdsOwnerViewModel
         val joined: SharedFlow<Boolean> = stillHere.asSharedFlow()
 
         val state: StateFlow<HouseholdsOwnerUiState> =
-            combine(step, households.view, watcher) { current, view, watchingId ->
+            combine(step, households.view, watcher, ownerPin.view) { current, view, watchingId, ownerView ->
                 when {
                     view.list.isEmpty() -> HouseholdsOwnerUiState.Loading
-                    current.open || view.watchedByOwner(watchingId) -> view.ownersPart(current.notice, current.answers, current.sending)
-                    else -> HouseholdsOwnerUiState.Closed(view.owner != null)
+                    ownerView || view.watchedByOwner(watchingId) -> view.ownersPart(current.notice, current.answers, current.sending)
+                    else -> HouseholdsOwnerUiState.Closed
                 }
             }.stateIn(viewModelScope, SharingStarted.Eagerly, HouseholdsOwnerUiState.Loading)
 
         /** Who the gate has chosen: null while its picker shows, a reopened one too, whatever the core still holds chosen. */
         fun watching(id: String?) { watcher.value = id }
-
-        /** The Owner button: the owner's PIN opens the part. */
-        fun open() {
-            viewModelScope.launch { households.reloadQuietly() }
-            ownersPin { step.update { it.copy(open = true) } }
-        }
 
         /** Run by grown-up [adminId], who moves in with their kids, or by a new one called [adminName]: one of the two. */
         fun create(name: String, adminId: String?, adminName: String?) {
@@ -120,18 +111,21 @@ class HouseholdsOwnerViewModel
 
         fun cancelPin() = ask.cancel()
 
-        /** Leaves the part and forgets the owner's PIN; the watching owner's part stays open and asks it again. */
+        /**
+         * Leaves the part, and the owner's PIN unless Manage's owner's view still
+         * shows, which the part is one step of; the watching owner's part stays open.
+         */
         fun close() {
             ask.cancel()
-            heldPin = null
-            step.value = Step(visit = step.value.visit + 1)
+            ownerPin.stepLeft()
+            step.value = OwnerStep(visit = step.value.visit + 1)
         }
 
-        override fun onCleared() { heldPin = null }
+        override fun onCleared() = ownerPin.drop()
 
         private fun grownUp(id: String) = households.view.value.everyone.find { it.id == id && !it.kids }
 
-        private fun isOpen() = step.value.open || households.view.value.watchedByOwner(watcher.value)
+        private fun isOpen() = ownerPin.view.value || households.view.value.watchedByOwner(watcher.value)
 
         /** [request] sent as the owner with the held PIN — asked first if none is held — and [newPinFor]'s first PIN where named. */
         private fun act(
@@ -140,7 +134,7 @@ class HouseholdsOwnerViewModel
             request: (actorId: String, pin: String, newPin: String?) -> ProfileRequest,
         ) {
             if (!isOpen()) return
-            val pin = heldPin ?: return ownersPin { act(newPinFor, named, request) }
+            val pin = ownerPin.held ?: return ownersPin { act(newPinFor, named, request) }
             val actorId = households.view.value.owner?.id ?: return
             val visit = step.value.visit
             step.update { it.copy(notice = null) }
@@ -164,14 +158,7 @@ class HouseholdsOwnerViewModel
             return try { block() } finally { flag(false) }
         }
 
-        private fun ownersPin(then: () -> Unit) {
-            val owner = households.view.value.owner ?: return
-            ask.ask(
-                PinPrompt(HouseholdWords.OWNERS_PIN, newPin = false),
-                send = { pin -> repository.manage(ProfileRequest.Unlock(owner.id, pin)) },
-                done = { pin -> heldPin = pin; then() },
-            )
-        }
+        private fun ownersPin(then: () -> Unit) = ask.ownersPin(ownerPin, repository, households.view.value.owner) { then() }
 
         /**
          * [request] sent, and the households read again once it took. A join is
@@ -188,13 +175,8 @@ class HouseholdsOwnerViewModel
         /** How a change went. A wrong PIN means the one held is no longer the owner's, so the next change asks again. */
         private fun report(visit: Int, outcome: ProfileOutcome?, named: Boolean) {
             val current = step.value.takeIf { it.visit == visit && isOpen() } ?: return
-            if (outcome == ProfileOutcome.WrongPin) heldPin = null
-            val notice =
-                when {
-                    outcome == ProfileOutcome.Done -> null
-                    outcome == ProfileOutcome.NameTaken && named -> HouseholdWords.HOUSEHOLD_NAME_TAKEN
-                    else -> outcome.reason()
-                }
+            if (outcome == ProfileOutcome.WrongPin) ownerPin.drop()
+            val notice = noticeFor(outcome, named)
             step.value = current.copy(notice = notice, answers = current.answers + 1)
         }
     }

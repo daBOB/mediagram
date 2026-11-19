@@ -48,6 +48,11 @@ class FakeCatalogRepository(
     /** What a refresh that reached the channel says it did; a test that needs a newer index says [RefreshOutcome.Updated]. */
     var refreshOutcome: RefreshOutcome = RefreshOutcome.AlreadyCurrent
 
+    /** The installed index's push time; `null`, the default, is a repository that cannot tell. */
+    var publishedAt: Long? = null
+
+    override suspend fun publishedAt(): Long? = publishedAt
+
     override suspend fun refresh(): RefreshOutcome {
         refreshes += 1
         refreshGate?.await()

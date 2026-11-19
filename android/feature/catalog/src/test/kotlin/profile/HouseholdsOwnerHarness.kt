@@ -39,6 +39,7 @@ abstract class HouseholdsOwnerHarness {
             homes.names["flat"] = "Flat"
             homes.names["barn"] = "Barn"
         }
+    val ownerPin = OwnerPin()
     val provider = FakeCoreProvider(core)
     val repository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
     lateinit var households: DefaultHouseholdsRepository
@@ -49,17 +50,30 @@ abstract class HouseholdsOwnerHarness {
     suspend fun TestScope.owning(): HouseholdsOwnerViewModel {
         repository.reload()
         households = DefaultHouseholdsRepository(provider, repository, backgroundScope, Dispatchers.Unconfined)
-        return HouseholdsOwnerViewModel(repository, households, sync).also { vm -> backgroundScope.launch { vm.joined.collect { said += it } } }
+        return HouseholdsOwnerViewModel(repository, households, sync, ownerPin).also { vm -> backgroundScope.launch { vm.joined.collect { said += it } } }
     }
 
-    /** The part opened by the owner's PIN. */
+    /** The part as the owner watching here finds it, their PIN given already on the page. */
     suspend fun TestScope.opened(): HouseholdsOwnerViewModel =
         owning().apply {
-            open()
-            enterPin("1234")
+            watching("a")
+            ownerPin.held = "1234"
         }
 
     fun HouseholdsOwnerViewModel.part() = assertIs<HouseholdsOwnerUiState.Open>(state.value)
+
+    /** Manage and the owner's household actions on one page, sharing the owner's PIN as the page does. */
+    suspend fun TestScope.page(): Pair<ManageProfilesViewModel, HouseholdsOwnerViewModel> {
+        val owners = owning()
+        return ManageProfilesViewModel(repository, households, sync, ownerPin) to owners
+    }
+
+    /** The page watched by the owner: their view at once. */
+    suspend fun TestScope.watchedByTheOwner() = page().also { (manage) -> manage.open(profile("a")) }
+
+    fun ManageProfilesViewModel.view() = assertIs<ManageUiState.Managing>(state.value)
+
+    fun ManageProfilesViewModel.part(id: String) = view().parts().single { it.id == id }
 
     fun household(id: String) = households.view.value.list.find { it.id == id }
 

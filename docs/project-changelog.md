@@ -13,6 +13,82 @@ to `main`. Full phase-by-phase detail lives in
 - Zündstoff's TV frees its avatars' decoded textures when the game ends, with the scene clean-up Grand Allee already used, and uploads the avatars' normal maps before play like their colours, so the first frame no longer stalls on them.
 - The HUD label helpers moved from Grand Allee to the shared table code, since Zündstoff draws with them too.
 
+## 0.187.1 — New titles get their posters on a device that slept through them
+
+**Fixed** (Android)
+
+- **A device catches up on the artwork of an index it installed bare.** Funstation showed no posters for the 125 titles added on 2026-11-18: the three indexes published that day arrived while its app was not listening, and opening it installed the newest one without fetching. Funstation also ran 0.180.4, a hand-installed build from before the fix that fetches when an opening installs a newer index, and that fix alone would not have caught up an index already installed. The app now remembers which index it last finished fetching artwork for; a start that reaches the channel and finds the installed index not yet fetched for fetches it once, quietly. A start that cannot reach the channel does not try, and a fetch that could not run leaves the index for the next start.
+
+## 0.187.0 — Season posters on every show page
+
+**Changed** (web, tablet and phone)
+
+- **A show's seasons are a row of season posters**, as the television has had since the user chose season cards: the web's season select and the tablet's season drop-down are gone. Each card is the season's own cover where the library holds one (22,660 of 22,931 episodes do), else the show's poster with the season's number over it; the watched share is the poster's rule, and under it the season, its episode count and how many are watched. The season showing has a rule under it, as the showing tab does; a press shows that season's episodes below, through the URL on the web as before. On the tablet the row opens on the season showing.
+
+## 0.186.0 — Continue and My List as a list on the tablet
+
+**Added** (tablet and phone)
+
+- **Continue and My List offer List · Grid**, as the web's did in 0.185.0 and the tablet's Movies page already did: one choice per device, the same one Movies reads. List draws a row per title with its show, episode, year and runtime, the resume time under them, and *Mark finished* on Continue's rows. Grid is still the tablet's default.
+
+## 0.185.0 — Continue and My List as posters
+
+**Added** (web)
+
+- **Continue and My List offer List · Grid**, beside their count, as Movies does. One choice per device, shared by all three pages. Grid draws the posters six to a row, as the tablet draws these two pages, with the progress bar, the resume time and *Mark finished* under each poster on Continue. List stays the default.
+
+## 0.184.0 — Ambient on the web
+
+**Added** (web)
+
+- **Ambient in Settings → Appearance → Artwork**, as on the tablet: rounded cards, and four soft blobs drifting slowly behind the page like a lava lamp's, merging as they pass, faint. The glow takes a poster's strongest colour (its most vivid family of hue, from a few dozen pixels, lifted so dark posters still glow; a black-and-white poster glows grey), by the same pick the Android app makes. A title's or a show's page glows in its own picture's colour; Home and the shelves glow in the colour of the row scrolled to (its first poster on screen, about a third of the way down the window), easing to the next as you scroll. The glow never shows over a page's backdrop art and fades back in over 96px around it. With reduced motion the glow stays still. Drawn as one fixed layer of CSS, so it never redraws the page.
+
+## 0.183.2 — A tidy Profiles page and a centred countdown
+
+**Changed** (web)
+
+- **Settings → Profiles reads as one list.** You is now a row like the people under Manage profiles — the initial, the name, who they are (Owner · Admin, or Kid · FSK 6), Switch profile at its end — with Subtitles on a row of the same columns. A household's name sits over its *Admin X · N profiles* line, its ⋯ at the end of both. *As X* under Manage profiles shows only when the one managing is not the one watching. The System and playback status link is gone from the page: the rail's System link goes to the same place.
+- **The loading countdown stands in the middle of the screen**, its words under it, instead of low on the left of an empty page.
+
+## 0.183.1 — Settings opens before the profiles are read
+
+**Fixed**
+
+- The web Profiles tab no longer breaks Settings when no owner has been read yet and the chosen profile has no id: the two missing ids no longer count as "the owner is managing". 0.183.0's Android release (channel message 51879) is unchanged.
+
+## 0.183.0 — Who's managing? and the calm Profiles page on the tablet and the TV
+
+**Added**
+
+- The Android tablet/phone and TV Profiles pages match the web's: picker → Manage profiles asks *Who's managing?* with the picker's own avatar tiles (the owner first, labelled Owner, asking the owner's PIN; an Owner tile at the end on a device showing another household). The owner's view lists every household with its actions (⋯ on the tablet, the household line's OK on the TV), one row per person that opens that person's controls, one *Add someone* per household (Grown-up or Kid, *Belongs to* only with more than one grown-up), *Create a household*, and *This device* as one line. Anyone else managing gets the same rows for what they may manage.
+- On the TV, Back from the owner view returns to the tiles with the chosen tile focused; after an add or a PIN the remote returns to the row it came from. A refused add keeps what was typed on every surface.
+- Which rows a manager sees and what each opens is decided once, in the shared Android state, for both the tablet and the TV.
+
+**Removed**
+
+- The households-only Owner button and its panel, the *Everyone here* list and the *Who are you?* pills on Android, as on the web.
+
+Not released to devices yet: Android reaches the tablet and the TV with the next release.
+
+## 0.182.1 — The calm Profiles page closes its forms and menus the way keys expect
+
+**Fixed**
+
+- The Grown-up / Kid choice in *Add someone* shows one selection: keyboard focus rings the whole choice and follows the option picked.
+- Rename, Change admin and Move a grown-up here, opened from a household's ⋯, have a Cancel and close on Escape, back to that ⋯. The ⋯ list closes when Tab leaves it.
+- Each *Add someone* is announced with its household ("Add someone to Home"). After Reset PIN or Change your PIN focus returns to that person's row; after a household is deleted, to the next household or *Create a household*.
+
+## 0.182.0 — The owner manages every household from one calm page
+
+**Added**
+
+- The owner can add a grown-up straight into any household and a kid for any grown-up. `POST /api/profiles` takes an optional `household` (grown-up) or `parentId` (kid); a household with no admin makes the new grown-up its admin. The rule is the same in the web server, the Rust core and Android, held to `profile-rules.json`; clients that send neither field behave as before.
+- Watching as the owner, Settings → Profiles shows every household on one page: its name, *Admin X · N profiles* and a ⋯ menu with the actions the rule allows (Rename, Change admin, Move a grown-up here, Use on this device, Delete); one row per person (name, role line) that opens that person's controls on a tap; one *Add someone* per household (Grown-up or Kid, *Belongs to* only with more than one grown-up, defaulting to the admin); *Create a household*; *This device* as one line. The owner's PIN is asked once, at the first change, and dropped when the page is left or on a wrong PIN.
+- Picker → Manage profiles asks *Who's managing?* with the same avatar tiles as *Who's watching?*: the owner first and labelled Owner, an Owner tile at the end on a device showing another household. The Everyone here list, the Who are you? pills and the separate Owner button are gone. A grown-up who is not the owner sees the same tiles in Settings, with This device below them, and then the same calm rows for what they may manage.
+- Android (tablet/phone and TV) has the owner view and add-anywhere in its first, denser form; Who's managing? and the calm rows follow there. Not released to devices.
+
+Spec `docs/superpowers/specs/2026-11-16-owner-profiles-view-design.md` and `2026-11-17-who-is-managing-and-calm-owner-view-design.md`, plan `plans/261116-2016-owner-profiles-view/`.
+
 ## Spieltisch 0.194.0 — Zündstoff is a bomb thrown round a circle in 3D
 
 **Changed**
