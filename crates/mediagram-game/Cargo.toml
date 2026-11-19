@@ -31,6 +31,10 @@ path = "src/bin/game-night-dev.rs"
 name = "grand-allee-sim"
 path = "src/bin/grand-allee-sim.rs"
 
+[[bin]]
+name = "lebensweg-sim"
+path = "src/bin/lebensweg-sim.rs"
+
 [dev-dependencies]
 tempfile.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
