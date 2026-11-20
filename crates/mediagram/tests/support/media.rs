@@ -279,3 +279,42 @@ pub fn patch_bytes(path: &Path, from: &[u8], to: &[u8]) {
     bytes[at..at + to.len()].copy_from_slice(to);
     std::fs::write(path, bytes).unwrap();
 }
+
+/// Builds a 2-second mono MP3 named `name` in `dir`, tagged as asked, with a
+/// 2x2 JPEG attached as cover art when `cover` is set.
+pub fn make_tagged_mp3(
+    dir: &Path,
+    name: &str,
+    title: Option<&str>,
+    genre: Option<&str>,
+    cover: bool,
+) -> PathBuf {
+    let out = dir.join(name);
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args(["-v", "error", "-y"]).args([
+        "-f",
+        "lavfi",
+        "-i",
+        "anullsrc=r=44100:cl=mono",
+        "-t",
+        "2",
+    ]);
+    if cover {
+        cmd.args(["-f", "lavfi", "-i", "color=c=red:s=2x2:d=1"])
+            .args(["-map", "0:a", "-map", "1:v", "-c:v", "mjpeg"])
+            .args(["-frames:v:0", "1", "-disposition:v", "attached_pic"]);
+    }
+    cmd.args(["-c:a", "libmp3lame"]);
+    if let Some(title) = title {
+        cmd.arg("-metadata").arg(format!("title={title}"));
+    }
+    if let Some(genre) = genre {
+        cmd.arg("-metadata").arg(format!("genre={genre}"));
+    }
+    let status = cmd
+        .arg(&out)
+        .status()
+        .expect("spawning ffmpeg for the MP3 fixture");
+    assert!(status.success(), "ffmpeg MP3 fixture build failed");
+    out
+}

@@ -36,6 +36,7 @@ async fn main() -> Result<()> {
         Cmd::AddCourse(args) => commands::add_course::run(&cfg, args).await,
         Cmd::AddShow(args) => commands::add_show::run(&cfg, args).await,
         Cmd::AddDocu(args) => commands::add_docu::run(&cfg, args).await,
+        Cmd::AddAudiobook(args) => commands::add_audiobook::run(&cfg, args).await,
         Cmd::Artwork(args) => commands::artwork::run(&cfg, args),
         Cmd::Edit(args) => commands::edit::run(&cfg, args).await,
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,

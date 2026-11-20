@@ -7,7 +7,8 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 use mediagram::commands::args::{
-    AddArgs, AddCourseArgs, AddDocuArgs, AddShowArgs, ArtworkArgs, EditArgs, PrepareArgs,
+    AddArgs, AddAudiobookArgs, AddCourseArgs, AddDocuArgs, AddShowArgs, ArtworkArgs, EditArgs,
+    PrepareArgs,
 };
 use mediagram::commands::{
     metadata::MetadataArgs, pull_index::PullIndexArgs, push_index::PushIndexArgs,
@@ -42,6 +43,8 @@ pub enum Cmd {
     AddShow(AddShowArgs),
     /// Upload a documentary, or a folder of them as a collection
     AddDocu(AddDocuArgs),
+    /// Upload an audiobook MP3, or every MP3 under a folder
+    AddAudiobook(AddAudiobookArgs),
     /// Set or clear a title's custom poster/backdrop, overriding TMDB's own
     Artwork(ArtworkArgs),
     /// Correct a set's metadata, rewriting its captions in the channel

@@ -37,7 +37,7 @@ pub async fn inspect(path: &Path) -> Result<MediaInfo> {
     let video = report
         .streams
         .iter()
-        .find(|s| s.codec_type.as_deref() == Some("video"));
+        .find(|s| s.codec_type.as_deref() == Some("video") && !s.is_cover());
     let audio = report
         .streams
         .iter()

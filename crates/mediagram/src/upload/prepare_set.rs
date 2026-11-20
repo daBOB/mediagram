@@ -3,7 +3,7 @@
 //! `add-show` and `add-course` for each file they walk.
 
 use anyhow::{Context, Result, bail};
-use mlib_spec::{Caption, Part};
+use mlib_spec::{Caption, Kind, Part};
 
 use crate::config::Config;
 use crate::index::{db, lifecycle};
@@ -30,11 +30,11 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
 
     // A lesson or a documentary is described by hand, so neither needs a key
     // or a lookup.
-    let grouped_or_docu = new.lesson.is_some() || new.docu;
+    let grouped_or_docu = new.lesson.is_some() || new.standalone.is_some();
     if grouped_or_docu && (new.tmdb.is_some() || new.tvdb.is_some() || new.imdb.is_some()) {
         bail!(
-            "--course describes a tutorial and add-docu a documentary, neither of which has a \
-             provider id; drop --tmdb/--tvdb/--imdb"
+            "--course describes a tutorial, add-docu a documentary and add-audiobook a book, none \
+             of which has a provider id; drop --tmdb/--tvdb/--imdb"
         );
     }
     if !grouped_or_docu && !new.manual && cfg.tmdb_key.is_none() {
@@ -56,7 +56,11 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
     };
     let resolved = match lesson {
         Some(lesson) => resolve::lesson(lesson.kind, &lesson.course, &resolve_input),
-        None if new.docu => resolve::docu_file(new.docu_title.as_deref(), &resolve_input),
+        None if new.standalone.is_some() => resolve::standalone_file(
+            new.standalone.unwrap_or(Kind::Docu),
+            new.standalone_title.as_deref(),
+            &resolve_input,
+        ),
         None => resolve::resolve(&api, &resolve_input, &mut DialoguerPrompter)
             .await
             .context("resolving metadata")?,
@@ -64,7 +68,11 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
 
     // Before the remux, so a film refused as a version already held costs
     // nothing but the probe.
-    let hdr = new.hdr.clone().unwrap_or(info.hdr);
+    // A file with no video has no dynamic range to record.
+    let hdr = info
+        .vcodec
+        .is_some()
+        .then(|| new.hdr.clone().unwrap_or(info.hdr));
     let mut conn = db::open(&data_dir)?;
     let variant = film_version::settle(
         &conn,
@@ -72,7 +80,7 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
         &resolved,
         &resolve_input.file_name,
         info.quality.as_deref(),
-        &hdr,
+        hdr.as_deref().unwrap_or_default(),
         new.alang.as_deref().unwrap_or(&info.alang),
     )?;
 
@@ -103,7 +111,7 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
         e: resolved.episode,
         abs: resolved.abs,
         q: info.quality,
-        hdr: Some(hdr),
+        hdr,
         container: classify::container_from_ext(&source_path),
         vcodec: info.vcodec,
         acodec: info.acodec,

@@ -57,6 +57,8 @@ pub(crate) struct RawDisposition {
     pub forced: u8,
     #[serde(default)]
     pub hearing_impaired: u8,
+    #[serde(default)]
+    pub attached_pic: u8,
 }
 
 #[derive(Deserialize, Debug)]
@@ -68,9 +70,24 @@ pub(crate) struct RawSideData {
 pub(crate) struct RawFormat {
     pub duration: Option<String>,
     pub size: Option<String>,
+    pub tags: Option<RawFormatTags>,
+}
+
+/// The container tags an audiobook is described by.
+#[derive(Deserialize, Debug)]
+pub(crate) struct RawFormatTags {
+    pub title: Option<String>,
+    pub genre: Option<String>,
 }
 
 impl RawStream {
+    /// Cover art riding in the file as a video stream, not a picture to play.
+    pub fn is_cover(&self) -> bool {
+        self.disposition
+            .as_ref()
+            .is_some_and(|d| d.attached_pic == 1)
+    }
+
     pub fn language(&self) -> Option<&str> {
         self.tags.as_ref().and_then(|t| t.language.as_deref())
     }
@@ -129,39 +146,8 @@ pub(crate) async fn run(path: &Path) -> Result<Report> {
     parse(&json).with_context(|| format!("probing {}", path.display()))
 }
 
-#[derive(Deserialize)]
-struct Packets {
-    #[serde(default)]
-    packets: Vec<RawPacket>,
-}
-
-#[derive(Deserialize)]
-struct RawPacket {
-    codec_type: Option<String>,
-    pts_time: Option<String>,
-    duration_time: Option<String>,
-}
-
-/// Where the picture and sound end, from the packets after the keyframe before
-/// `near`: for streams with no length, where the container's may count subtitles.
-pub(crate) async fn media_end(path: &Path, near: f64) -> Result<Option<f64>> {
-    // shortcut: the last pts, not a length; subtract format start_time if a file not starting at 0 turns up.
-    let start = format!("{near}%");
-    let entries = "packet=codec_type,pts_time,duration_time";
-    let json = ffprobe(path, &["-read_intervals", &start, "-show_entries", entries]).await?;
-    let packets: Packets = serde_json::from_slice(&json)
-        .with_context(|| format!("reading the last packets of {}", path.display()))?;
-    let seconds = |s: &Option<String>| s.as_deref().and_then(|s| s.parse::<f64>().ok());
-    Ok(packets
-        .packets
-        .iter()
-        .filter(|p| matches!(p.codec_type.as_deref(), Some("video" | "audio")))
-        .filter_map(|p| Some(seconds(&p.pts_time)? + seconds(&p.duration_time).unwrap_or(0.0)))
-        .reduce(f64::max))
-}
-
 /// Runs `ffprobe` with `args` on `path` and returns its JSON.
-async fn ffprobe(path: &Path, args: &[&str]) -> Result<Vec<u8>> {
+pub(super) async fn ffprobe(path: &Path, args: &[&str]) -> Result<Vec<u8>> {
     let output = tokio::process::Command::new("ffprobe")
         .args(network_args(path))
         .args(["-v", "error", "-print_format", "json"])
@@ -184,17 +170,9 @@ async fn ffprobe(path: &Path, args: &[&str]) -> Result<Vec<u8>> {
     Ok(output.stdout)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod packets;
+pub(crate) use packets::media_end;
 
-    #[test]
-    fn only_a_network_input_gets_a_read_timeout() {
-        assert_eq!(
-            network_args(Path::new("http://127.0.0.1:8770/file")),
-            ["-rw_timeout", NETWORK_RW_TIMEOUT_US]
-        );
-        assert!(network_args(Path::new("/media/film.mkv")).is_empty());
-        assert!(network_args(Path::new("file:///media/film.mkv")).is_empty());
-    }
-}
+#[cfg(test)]
+#[path = "probe_tests.rs"]
+mod tests;

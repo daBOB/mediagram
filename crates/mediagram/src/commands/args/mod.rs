@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use clap::Args;
 
-pub use docu::{AddCourseArgs, AddDocuArgs, ArtworkArgs};
+pub use docu::{AddAudiobookArgs, AddCourseArgs, AddDocuArgs, ArtworkArgs};
 pub use edit::EditArgs;
 
 #[derive(Args, Debug, Clone, Default)]

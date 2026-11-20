@@ -118,6 +118,19 @@ pub fn lesson_status(
     Ok(status)
 }
 
+/// The status of the newest standalone set of this kind and title (an
+/// audiobook, or a documentary outside any collection), if any.
+pub fn standalone_status(conn: &Connection, kind: Kind, title: &str) -> Result<Option<SetStatus>> {
+    Ok(conn
+        .query_row(
+            "SELECT status FROM sets WHERE kind = ?1 AND title = ?2 AND show IS NULL
+             ORDER BY created_at DESC, set_id DESC LIMIT 1",
+            params![kind.as_str(), title],
+            |row| row.get(0),
+        )
+        .optional()?)
+}
+
 /// Every film recorded under this TMDB id, pending or complete: the versions
 /// a new upload of the same film would sit beside.
 pub fn film_versions(conn: &Connection, tmdb: u64) -> Result<Vec<SetRow>> {

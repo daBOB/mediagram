@@ -29,10 +29,11 @@ pub struct NewSet {
     /// Set when this is a lesson or a documentary-collection episode, which
     /// is described by hand rather than looked up.
     pub lesson: Option<LessonOf>,
-    /// A standalone documentary (`Kind::Docu`, no course, no TMDB lookup).
-    pub docu: bool,
-    /// Overrides the title `docu` would otherwise derive from the file name.
-    pub docu_title: Option<String>,
+    /// A standalone documentary or audiobook (`Kind::Docu` or `Kind::Book`,
+    /// no course, no TMDB lookup).
+    pub standalone: Option<Kind>,
+    /// Overrides the title a standalone would otherwise derive from the file.
+    pub standalone_title: Option<String>,
 }
 
 /// Where a lesson, or a documentary-collection episode, sits in its

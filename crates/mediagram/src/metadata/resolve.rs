@@ -158,17 +158,19 @@ pub fn lesson(kind: Kind, course: &str, input: &ResolveInput) -> ResolvedItem {
     }
 }
 
-/// Metadata for a standalone documentary: no course, no lookup, titled from
-/// its file name unless `title` overrides it.
-pub fn docu_file(title: Option<&str>, input: &ResolveInput) -> ResolvedItem {
+/// Metadata for a standalone documentary or audiobook: no course, no lookup,
+/// titled from its file name unless `title` overrides it. A book's name is
+/// never number-split, since "99 Mind Hacks" is the title, not a track.
+pub fn standalone_file(kind: Kind, title: Option<&str>, input: &ResolveInput) -> ResolvedItem {
     let title = title.map(str::to_string).or_else(|| {
-        let (_, guessed) = crate::media::file_names::split_number_and_title(
-            crate::media::file_names::stem(&input.file_name),
-        );
-        guessed
+        let stem = crate::media::file_names::stem(&input.file_name);
+        match kind {
+            Kind::Book => Some(crate::media::audiobook_tags::title_from_file_name(stem)),
+            _ => crate::media::file_names::split_number_and_title(stem).1,
+        }
     });
     ResolvedItem {
-        kind: Kind::Docu,
+        kind,
         ids: ProviderIds::default(),
         show: None,
         title,

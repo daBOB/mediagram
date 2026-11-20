@@ -1,4 +1,4 @@
-//! clap argument structs for `add-course`, `add-docu` and `artwork`, split
+//! clap argument structs for `add-course`, `add-docu`, `add-audiobook` and `artwork`, split
 //! out of `args.rs` to keep that file under this crate's line limit.
 
 use std::path::PathBuf;
@@ -64,6 +64,19 @@ pub struct AddDocuArgs {
     /// category untouched
     #[arg(long)]
     pub category: Option<String>,
+}
+
+/// Arguments for `mediagram add-audiobook`.
+#[derive(Args, Debug, Clone)]
+pub struct AddAudiobookArgs {
+    /// One .mp3, or a folder walked recursively for every .mp3 in it
+    pub path: PathBuf,
+    /// Print each book's title, genre and cover, and upload nothing
+    #[arg(long)]
+    pub dry_run: bool,
+    /// Do not push the index after the upload completes
+    #[arg(long)]
+    pub no_push: bool,
 }
 
 /// Arguments for `mediagram artwork`.

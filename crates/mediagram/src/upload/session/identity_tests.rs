@@ -181,3 +181,43 @@ fn a_file_without_a_whole_identity_is_always_planned_anew() {
         assert_eq!(status(&conn, &Set::File(new)).unwrap(), None);
     }
 }
+
+fn book(title: &str) -> NewSet {
+    NewSet {
+        file: PathBuf::from("book.mp3"),
+        standalone: Some(Kind::Book),
+        standalone_title: Some(title.to_string()),
+        ..NewSet::default()
+    }
+}
+
+fn recorded_book(set_id: &str, title: &str, status: SetStatus) -> (Caption, SetStatus) {
+    let mut caption = sample_caption(set_id, 10, 1);
+    caption.t = Kind::Book;
+    caption.ids.tmdb = None;
+    caption.title = Some(title.to_string());
+    (caption, status)
+}
+
+#[test]
+fn a_complete_book_is_found_by_its_title() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    let (caption, status_) = recorded_book("b1", "Momo", SetStatus::Complete);
+    record(&conn, &caption, status_);
+
+    assert_eq!(
+        status(&conn, &Set::File(book("Momo"))).unwrap(),
+        Some(SetStatus::Complete)
+    );
+}
+
+#[test]
+fn a_book_of_another_title_is_not_found() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    let (caption, status_) = recorded_book("b1", "Momo", SetStatus::Complete);
+    record(&conn, &caption, status_);
+
+    assert_eq!(status(&conn, &Set::File(book("Ronja"))).unwrap(), None);
+}

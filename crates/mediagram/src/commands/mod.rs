@@ -8,6 +8,7 @@
 
 pub mod accept_login;
 pub mod add;
+pub mod add_audiobook;
 pub mod add_course;
 pub mod add_docu;
 pub mod add_show;

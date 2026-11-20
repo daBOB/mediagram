@@ -3,6 +3,7 @@
 //! file name follows, faststart detection and remux, the direct-play policy,
 //! `prepare`'s pipeline, and the progress ffmpeg reports while it works.
 
+pub mod audiobook_tags;
 pub mod classify;
 pub mod direct_play;
 pub mod ffmpeg_progress;

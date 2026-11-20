@@ -43,10 +43,11 @@ async fn run_file(cfg: &Config, args: AddDocuArgs) -> Result<()> {
         .to_string();
 
     // The same title the dry run reports and `prepare_and_record_set` (via
-    // `resolve::docu_file`) resolves again for the upload itself — resolved
+    // `resolve::standalone_file`) resolves again for the upload itself — resolved
     // twice on purpose, since a standalone documentary is never looked up at
     // any provider and has nothing else to cache the answer in.
-    let resolved = resolve::docu_file(
+    let resolved = resolve::standalone_file(
+        Kind::Docu,
         args.title.as_deref(),
         &ResolveInput {
             file_name: file_name.clone(),
@@ -83,8 +84,8 @@ async fn run_file(cfg: &Config, args: AddDocuArgs) -> Result<()> {
         file: args.path.clone(),
         variant: args.variant.clone(),
         no_remux: args.no_remux,
-        docu: true,
-        docu_title: args.title.clone(),
+        standalone: Some(Kind::Docu),
+        standalone_title: args.title.clone(),
         ..NewSet::default()
     };
     // No identity to find it by, so it is planned anew every time, as a

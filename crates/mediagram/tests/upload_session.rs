@@ -423,7 +423,7 @@ async fn a_documentary_collection_re_run_finds_its_episodes_held() {
                 number: Some(3),
                 kind: Kind::Docu,
             }),
-            docu: true,
+            standalone: Some(Kind::Docu),
             ..NewSet::default()
         }),
         delete_source: None,

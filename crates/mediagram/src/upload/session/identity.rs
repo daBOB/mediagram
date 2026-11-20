@@ -6,6 +6,7 @@
 //! `docu` and looked up as `tut`, and every re-run uploaded it again.
 
 use anyhow::Result;
+use mlib_spec::Kind;
 use rusqlite::Connection;
 
 use super::Set;
@@ -23,7 +24,8 @@ pub(super) fn status(conn: &Connection, set: &Set) -> Result<Option<SetStatus>> 
 
 /// A lesson or a collection's episode by its collection and numbers, an
 /// episode by its show and numbers; anything else has no identity to find,
-/// so it is always planned anew.
+/// so it is always planned anew — except an audiobook, whose identity is
+/// its title.
 fn file_status(conn: &Connection, new: &NewSet) -> Result<Option<SetStatus>> {
     match (&new.lesson, new.tmdb, new.season, new.episode) {
         (
@@ -39,7 +41,12 @@ fn file_status(conn: &Connection, new: &NewSet) -> Result<Option<SetStatus>> {
         (None, Some(tmdb), Some(season), Some(episode)) => {
             set_lookup::episode_status(conn, tmdb, season, episode)
         }
-        _ => Ok(None),
+        _ => match (new.standalone, new.standalone_title.as_deref()) {
+            (Some(Kind::Book), Some(title)) => {
+                set_lookup::standalone_status(conn, Kind::Book, title)
+            }
+            _ => Ok(None),
+        },
     }
 }
 

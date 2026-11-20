@@ -5,7 +5,7 @@
 use mediagram::course::identity::{collection_id, course_title};
 use mediagram::course::walk::walk_course;
 use mediagram::index::{artwork, db};
-use mediagram::metadata::resolve::{ResolveInput, docu_file, lesson};
+use mediagram::metadata::resolve::{ResolveInput, lesson, standalone_file};
 use mlib_spec::Kind;
 
 /// A standalone documentary is titled from its file name, dropping a leading
@@ -16,7 +16,7 @@ fn a_standalone_file_is_titled_from_its_name_with_no_course() {
         file_name: "02 Deep Ocean.mp4".to_string(),
         ..ResolveInput::default()
     };
-    let resolved = docu_file(None, &input);
+    let resolved = standalone_file(Kind::Docu, None, &input);
     assert_eq!(resolved.kind, Kind::Docu);
     assert_eq!(resolved.title.as_deref(), Some("Deep Ocean"));
     assert_eq!(resolved.show, None);
@@ -31,8 +31,23 @@ fn a_title_override_wins_over_the_file_name() {
         file_name: "raw_export_04.mp4".to_string(),
         ..ResolveInput::default()
     };
-    let resolved = docu_file(Some("Great Barrier Reef"), &input);
+    let resolved = standalone_file(Kind::Docu, Some("Great Barrier Reef"), &input);
     assert_eq!(resolved.title.as_deref(), Some("Great Barrier Reef"));
+}
+
+/// An audiobook is never number-split: "99 Mind Hacks" keeps its 99.
+#[test]
+fn a_book_without_a_title_keeps_its_leading_number() {
+    let input = ResolveInput {
+        file_name: "99 Mind Hacks Mentale Tricks [16969919].mp3".to_string(),
+        ..ResolveInput::default()
+    };
+    let resolved = standalone_file(Kind::Book, None, &input);
+    assert_eq!(resolved.kind, Kind::Book);
+    assert_eq!(
+        resolved.title.as_deref(),
+        Some("99 Mind Hacks Mentale Tricks")
+    );
 }
 
 /// A documentary filed inside a collection folder is grouped and numbered
