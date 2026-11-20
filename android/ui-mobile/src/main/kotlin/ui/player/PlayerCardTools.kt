@@ -96,13 +96,15 @@ internal fun CardToolsRow(
                 )
             }
             if (!actions.drivesTv) {
-                LabelButton(
-                    label = choices.framing.label,
-                    description = "Framing",
-                    onClick = { actions.onOpenMenu(CardMenu.Framing) },
-                    modifier = actions.openerFor(CardMenu.Framing),
-                    state = expanded(CardMenu.Framing),
-                )
+                if (choices.framingOffered) {
+                    LabelButton(
+                        label = choices.framing.label,
+                        description = "Framing",
+                        onClick = { actions.onOpenMenu(CardMenu.Framing) },
+                        modifier = actions.openerFor(CardMenu.Framing),
+                        state = expanded(CardMenu.Framing),
+                    )
+                }
                 LabelButton(
                     label = together.button.words,
                     description = together.description,

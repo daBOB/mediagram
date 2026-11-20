@@ -132,6 +132,16 @@ class PlayerControlCardTest {
     }
 
     @Test
+    fun aFilmOffersFramingAndABookDoesNot() {
+        show()
+        compose.onNodeWithContentDescription("Framing").assertExists()
+        compose.runOnUiThread { controller.close() }
+
+        show(PlayerChoices(audioOnly = true))
+        compose.onNodeWithContentDescription("Framing").assertDoesNotExist()
+    }
+
+    @Test
     fun aSingleAudioTrackOffersNoAudioMenu() {
         show(subtitled)
 

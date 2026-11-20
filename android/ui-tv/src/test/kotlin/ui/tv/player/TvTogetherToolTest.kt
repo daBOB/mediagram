@@ -22,6 +22,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import player.PlayerChoices
 import player.together.TogetherButton
 import player.together.TogetherUi
 import ui.tv.catalog.TvScreenStateTest
@@ -57,8 +58,9 @@ class TvTogetherToolTest : TvPlayerScreenHarness() {
 class TvTogetherViewTest : TvScreenStateTest() {
     private var pressed = 0
 
-    private fun extras(ui: TogetherUi) =
+    private fun extras(ui: TogetherUi, choices: PlayerChoices = PlayerChoices()) =
         TvPlayerExtras(
+            choices = choices,
             marks = null,
             markActions = TvMarksActions({}, {}, {}, {}),
             statsShown = false,
@@ -67,6 +69,17 @@ class TvTogetherViewTest : TvScreenStateTest() {
             together = ui,
             onTogether = { pressed++ },
         )
+
+    @Test
+    fun aBookHasNoFramingToolAndAFilmDoes() {
+        val shown = mutableStateOf(PlayerChoices())
+        show { Row { TvCardTools(TvPlayerFocus(), extras(TogetherUi(), shown.value), TvStageBands(), speed = 1f) } }
+        compose.onNode(hasContentDescription("Framing")).assertIsDisplayed()
+
+        shown.value = PlayerChoices(audioOnly = true)
+        compose.waitForIdle()
+        compose.onNode(hasContentDescription("Framing")).assertDoesNotExist()
+    }
 
     /** A television has no hover for the web's title: greyed out, the tool still takes the remote and says why. */
     @Test

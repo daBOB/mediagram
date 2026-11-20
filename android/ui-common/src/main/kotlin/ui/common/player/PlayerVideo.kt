@@ -21,12 +21,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.state.rememberPresentationState
+import coil3.compose.AsyncImage
+import java.io.File
 import playback.Framing
 import playback.frame
-import ui.common.catalog.HeroArtwork
 
 /**
  * The picture, shaped by [framing] rather than always to itself.
@@ -119,7 +121,7 @@ fun Video(
         // Over the whole container, outside the framing: a cover is the
         // picture, and no framing may crop it. An audio-only title has no
         // native size, so the framing has nothing to shape anyway.
-        coverPath?.let { HeroArtwork(it, Modifier.fillMaxSize(), ContentScale.Fit) }
+        coverPath?.let { PlainCover(it) }
         val overlayModifier = if (framed != null) {
             with(density) { Modifier.size(framed.window.width.toDp(), framed.window.height.toDp()) }
         } else {
@@ -131,3 +133,15 @@ fun Video(
         ) { overlay() }
     }
 }
+
+/**
+ * The cover as it is: whole and sharp. `HeroArtwork` would follow the
+ * viewer's backdrop setting, and a blurred, zoomed cover is neither whole
+ * nor readable.
+ */
+@Composable
+internal fun PlainCover(path: String) {
+    AsyncImage(model = File(path), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().testTag(PLAIN_COVER_TAG))
+}
+
+internal const val PLAIN_COVER_TAG = "player-plain-cover"

@@ -13,7 +13,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import playback.Framing
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -40,8 +42,13 @@ class PlayerAudioOnlyTest {
             assertFalse(rig.vm.audioOnly.value)
             report(Tracks.EMPTY)
             assertFalse(rig.vm.audioOnly.value, "the empty first report is no answer")
+            assertTrue(rig.vm.choices.value.framingOffered)
+            rig.vm.chooseFraming(Framing.FILL)
             report(tracks("audio/mpeg"))
             assertTrue(rig.vm.audioOnly.value)
+            runCurrent()
+            assertFalse(rig.vm.choices.value.framingOffered, "nothing to frame")
+            assertEquals(Framing.FIT, rig.vm.choices.value.framing, "a film's remembered framing is not applied to a book")
 
             rig.vm.open("e1")
             runCurrent()

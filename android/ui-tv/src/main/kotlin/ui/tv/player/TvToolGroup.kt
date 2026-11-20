@@ -110,7 +110,9 @@ internal fun TvCardTools(
     if (choices.audioOptions.isNotEmpty()) {
         TvMenuTool("Audio", "Audio", each.focusRequester(focus.audio).opens(bands, TvCardMenu.Audio)) { extras.onOpenMenu(TvCardMenu.Audio) }
     }
-    TvMenuTool(choices.framing.label, "Framing", each.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
+    if (choices.framingOffered) {
+        TvMenuTool(choices.framing.label, "Framing", each.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
+    }
     TvTogetherTool(
         ui = extras.together,
         modifier = each.focusProperties { right = FocusRequester.Cancel }.focusRequester(focus.together),

@@ -16,6 +16,10 @@ import data.TogetherLive
 import data.WatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import playback.Framing
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Job
@@ -122,8 +126,19 @@ class PlayerViewModel @Inject constructor(
     /** What the statistics overlay says about downloading, asked for only while it is open. */
     val downloadFacts: suspend () -> DownloadFacts = downloadFacts(openSet, seriesPreloader, heldSets, traffic)
 
-    /** What this viewer has chosen for the open title — speed, audio and subtitle style; framing joins it later. */
-    val choices: StateFlow<PlayerChoices> = choicesController.choices
+    internal val _audioOnly = MutableStateFlow(false)
+
+    /** The open title has sound and no picture, so the stage shows its cover; false until its tracks have arrived. */
+    val audioOnly: StateFlow<Boolean> = _audioOnly.asStateFlow()
+
+    /**
+     * What this viewer has chosen for the open title — speed, audio and subtitle style; framing joins it later.
+     * Without a picture the framing is the plain fit whatever was remembered, and the controls for it are gone.
+     */
+    val choices: StateFlow<PlayerChoices> =
+        combine(choicesController.choices, _audioOnly) { chosen, silent ->
+            if (silent) chosen.copy(audioOnly = true, framing = Framing.FIT) else chosen
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, choicesController.choices.value)
 
     /** The open title's subtitle cues, once its chosen language's VTT has resolved — empty for "off" or a file with none. */
     val subtitleCues: StateFlow<List<TimedCue>> = choicesController.subtitleCues
@@ -147,11 +162,6 @@ class PlayerViewModel @Inject constructor(
             },
         )
     val upNext: StateFlow<UpNextUiState> = upNextController.state
-    internal val _audioOnly = MutableStateFlow(false)
-
-    /** The open title has sound and no picture, so the stage shows its cover; false until its tracks have arrived. */
-    val audioOnly: StateFlow<Boolean> = _audioOnly.asStateFlow()
-
     /** Watch together in this player; see `PlayerViewModelTogether.kt`. */
     internal val togetherController = togetherController(togetherLive, relay, catalogRepository, context)
     val together: StateFlow<TogetherUi> = togetherController.ui

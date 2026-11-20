@@ -48,9 +48,14 @@ data class PlayerChoices(
     val deinterlace: Boolean = false,
     /** Whether the open title can be deinterlaced: not HDR, which the filter's video graph would tone-map. */
     val deinterlaceOffered: Boolean = false,
+    /** The open title has sound and no picture: there is nothing to frame or deinterlace, so neither is offered and any remembered framing is not applied. */
+    val audioOnly: Boolean = false,
 ) {
+    /** Whether the Framing control, and the pinch that reaches it, has anything to act on. */
+    val framingOffered: Boolean get() = !audioOnly
+
     /** The Framing menu's Deinterlace row: its state, or null when the title is not offered it. */
-    val deinterlaceRow: Boolean? get() = deinterlace.takeIf { deinterlaceOffered }
+    val deinterlaceRow: Boolean? get() = deinterlace.takeIf { deinterlaceOffered && !audioOnly }
 
     /** Whether the CC control has a regular track to act on. */
     val ccVisible: Boolean get() = subtitleOptions.isNotEmpty()

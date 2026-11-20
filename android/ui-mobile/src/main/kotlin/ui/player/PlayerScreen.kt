@@ -142,7 +142,7 @@ fun PlayerScreen(
         PlayerGestureLayer(
             player = player,
             onToggleControls = { if (!card.dismissMenu()) controlsShown = !controlsShown },
-            onPinchFraming = viewModel::chooseFraming,
+            onPinchFraming = { if (choices.framingOffered) viewModel.chooseFraming(it) },
             modifier =
                 Modifier
                     .fillMaxSize()
