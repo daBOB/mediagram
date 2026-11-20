@@ -63,6 +63,12 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
                      the bytes to finish_set (--watch) or a background process
   add_show/          walk a series folder, survey what will play badly, hand
                      the episodes to an upload session
+  add_audiobook/     `add-audiobook <file|folder> [--dry-run] [--no-push]`:
+                     one MP3 = one `Kind::Book` set, no remux. Title from the
+                     tag, genre becomes the category under department
+                     `audiobooks`, the embedded cover becomes the artwork
+                     `title-{slug}`. A re-run reports books already held or
+                     still pending; a single non-.mp3 file is refused.
   add_course.rs      walk a course folder and hand it to course::upload
   add_docu/          upload a documentary: one file (a one-item upload
                      session), or a folder that collection.rs hands to
@@ -340,6 +346,25 @@ policy are in [`docs/web-player.md`](web-player.md). UI work runs against
 `bun run preview` (copies of the library and watch state, no Telegram),
 never against the real player. `POST /api/report` sends a viewer's
 broken-video report (§8, Reporting a broken video).
+
+### Audiobooks
+
+The Audiobooks department (web `#/audiobooks`; Android phone, tablet and TV,
+last in the nav after Tutorials) lists `Kind::Book` sets: a row per genre,
+Continue listening, Recently added and All audiobooks; a book with no genre
+sits under "Other". Every surface plays the MP3 as it is: the web player's
+`mp3` direct-play container (`audio/mpeg`), Media3 on Android. The cover shows
+whole on the stage (never cropped, no backdrop, no framing or deinterlace
+controls); the web sets title, cover and seek on the lock screen through
+`navigator.mediaSession`. Cast and together sessions start an audio-only title.
+A book whose category is exactly `Kinderbücher` is visible to every kids
+profile and carries no FSK badge.
+
+Books sit outside a kid's daily limit: they never add to `stats_days`, they
+always open at or past the limit, and the "time left" warning never shows
+for them (a catalog that cannot answer lets a title open). Their title total
+(`stats_titles`) still grows, so Continue and resume work; day hours and
+streaks therefore leave listening out.
 
 ## 8. Playback: the Android app
 

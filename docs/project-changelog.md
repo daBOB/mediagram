@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.192.0 — Audiobooks
+
+**Added**
+
+- **An Audiobooks department** on the web player and on Android phone, tablet and TV, filled by the new `mediagram add-audiobook <file|folder> [--dry-run] [--no-push]`. The title comes from the MP3's tag, the genre becomes the category (a row per genre; no genre sits under "Other") and the embedded cover becomes the poster, shown whole and never cropped. Re-running reports books already held or still pending; a single file that is not an MP3 is refused.
+- **MP3 plays as it is** on every surface: no transcode, no remux. The web shows the cover on the stage and puts title, cover and seek on the lock screen; the Android player draws the plain cover with no framing or deinterlace controls, and cast and together start an audio-only title. Speed, sleep timer and skip buttons are not part of it.
+- **New `book` kind** in the spec (`mlib-spec`): standalone, container `mp3`, keyed by its own title. Older readers keep a kind they do not know.
+- **Kinderbücher is for kids.** A book whose category is exactly `Kinderbücher` is visible to every kids profile and carries no FSK badge.
+
+**Changed**
+
+- **Books are outside the daily limit.** A book never adds to a profile's day total, always opens at or past the limit, and never shows the "time left" warning. The title total still grows, so Continue and resume work. Day hours and streaks therefore leave listening out.
+
 ## 0.191.1 — One S0undTV in funstation's app list
 
 **Fixed** (funstation)

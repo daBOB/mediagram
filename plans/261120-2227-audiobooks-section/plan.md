@@ -37,15 +37,15 @@
 
 | # | Phase | Status |
 |---|-------|--------|
-| 01 | [The `book` kind and its keys](phase-01-book-kind-and-keys.md) | todo |
-| 02 | [`add-audiobook` in the uploader](phase-02-uploader-add-audiobook.md) | todo |
-| 03 | [Books outside the daily limit](phase-03-books-outside-daily-limit.md) | todo |
+| 01 | [The `book` kind and its keys](phase-01-book-kind-and-keys.md) | done |
+| 02 | [`add-audiobook` in the uploader](phase-02-uploader-add-audiobook.md) | done |
+| 03 | [Books outside the daily limit](phase-03-books-outside-daily-limit.md) | done |
 | 03b | [No time-left warning for books](phase-03b-no-time-left-warning-for-books.md) | done |
-| 04 | [Web: Audiobooks department, search, kids](phase-04-web-audiobooks-department.md) | todo |
-| 05 | [Web: native MP3 playback, cover, lock screen](phase-05-web-mp3-playback.md) | todo |
-| 06 | [Android: Audiobooks department on phone and TV](phase-06-android-audiobooks-department.md) | todo |
-| 07 | [Android: cover in the player, cast and together start](phase-07-android-audio-only-player.md) | todo |
-| 08 | [Docs, changelog, version](phase-08-docs-and-version.md) | todo |
+| 04 | [Web: Audiobooks department, search, kids](phase-04-web-audiobooks-department.md) | done |
+| 05 | [Web: native MP3 playback, cover, lock screen](phase-05-web-mp3-playback.md) | done |
+| 06 | [Android: Audiobooks department on phone and TV](phase-06-android-audiobooks-department.md) | done |
+| 07 | [Android: cover in the player, cast and together start](phase-07-android-audio-only-player.md) | done |
+| 08 | [Docs, changelog, version](phase-08-docs-and-version.md) | done |
 | 09 | [Upload the books and update every app](phase-09-upload-and-release.md) | todo |
 
 Order: 01 first (every other phase reads `book`). 02, 03, 04, 06 can run in parallel after 01; 05 after 04; 07 after 06; 08 after all code; 09 last.
@@ -56,3 +56,7 @@ Order: 01 first (every other phase reads `book`). 02, 03, 04, 06 can run in para
 - Web: `cd web && bun test && bun run typecheck && bun run lint`
 - Android: `cd android && ./gradlew :feature:catalog:testDebugUnitTest :core:model:test :core:data:testDebugUnitTest :feature:player:testDebugUnitTest :ui-common:testDebugUnitTest :ui-mobile:testDebugUnitTest :ui-tv:testDebugUnitTest`
 - Full gate before merge: `scripts/check.sh`
+
+## Review
+
+Phases 01-08 are done on `feat/audiobooks` (0.192.0). Still owed (Phase 09): the device walks (tablet, TV, iPhone) and the upload of the books.

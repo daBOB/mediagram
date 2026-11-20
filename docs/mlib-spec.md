@@ -93,6 +93,19 @@ A course with no chapters uses chapter 1. A lesson file is named
 `Course (Year) - c02l02 - Lesson Title`, with `c`/`l` rather than `s`/`e` so
 a course never reads as a television series in a file list.
 
+### Further kinds: `docu` and `book`
+
+`t` also takes `docu` (a standalone documentary or a documentary collection's
+film) and `book`. A **book** is one audiobook, one MP3 file: standalone like a
+movie (title only, no `show`, `s`, `e` or `cid`), `container` `"mp3"`,
+`vcodec` `null`, `alang` `[]`, `dur` in whole seconds (a 26-hour book is
+94137, so the field must not be capped). Its poster and its category key on
+`title_art_key(title)`, the way a standalone documentary's do. A book's
+category (its genre tag) lives under department `audiobooks` in the
+`categories` table of schema v12. A reader that does not know `book` keeps
+the set under its raw kind instead of dropping it, so an older app still lists
+it; none of them can play it as audio.
+
 
 Field order below is the **wire order**: a byte-for-byte reference
 implementation serializes fields in exactly this order, and tooling that
@@ -354,7 +367,7 @@ standalone documentary — the same unit its custom artwork already keys:
 -- for the same reason 'anime_overrides' is: it must survive both a
 -- 'metadata' run and a 'rescan', and neither writes it.
 CREATE TABLE IF NOT EXISTS categories(
-    department TEXT NOT NULL,             -- 'tutorials' or 'documentaries'
+    department TEXT NOT NULL,             -- 'tutorials', 'documentaries' or 'audiobooks'
     item_key TEXT NOT NULL,                -- title_art_key(show ?? title)
     category TEXT,                         -- NULL = cleared, kept as a row
     set_at INTEGER NOT NULL,               -- Unix seconds; decides a merge
