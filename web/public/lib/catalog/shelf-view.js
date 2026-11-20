@@ -60,9 +60,9 @@ function filmMeta(set, mode) {
 }
 
 /** A card for a film, a show or a course. */
-function card({ name, meta, resume, initials, onClick, badges, poster, progress, watched, captions = true }) {
+function card({ name, meta, resume, initials, onClick, badges, poster, progress, watched, square, captions = true }) {
   const button = el("button", "card");
-  const thumb = plate({ poster, name, initials, progress, watched });
+  const thumb = plate({ poster, name, initials, progress, watched, square });
   button.addEventListener("click", onClick);
   if (!captions) {
     button.append(thumb);
@@ -89,12 +89,13 @@ const UPLOAD_HINT = {
   tutorials: ["Upload a course with ", "mediagram add-course <folder>"],
   documentaries: ["Upload one with ", "mediagram add-docu <file|folder>"],
   // Titles file themselves in as anime; there is only a title to mark.
+  audiobooks: ["Upload one with ", "mediagram add-audiobook <file or folder>"],
   anime: ["File one here with ", "mediagram edit <set-id> --anime yes"],
 };
 
 /**
  * What to say when a shelf is empty: the command that would fill it.
- * @param {"movies"|"series"|"tutorials"|"documentaries"|"anime"} section
+ * @param {"movies"|"series"|"tutorials"|"documentaries"|"anime"|"audiobooks"} section
  * @param {{kidsLimit?: number|null, hidden?: string[]}} [options] a kids profile is waiting for ratings
  *   at its own limit, not uploads, so it is told that; a section it is not shown, only that it is empty
  */
@@ -125,6 +126,8 @@ export function movieGrid(movies, onPlay, options = {}) {
         meta: filmMeta(set, mode),
         initials: initialsOf(set.title),
         poster: set.poster ?? null,
+        // A book's cover is square and is the whole picture: shown uncropped.
+        square: set.kind === "book",
         badges: [versionsBadge(set), offlineBadge(set), transcodeBadge(set)],
         progress: watchedFraction(positionOf(set)),
         watched: playedOf(set),

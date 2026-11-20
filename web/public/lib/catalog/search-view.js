@@ -86,7 +86,8 @@ export function renderSearch(main, query, hits, {
   const matchedShows = [...new Set(episodes.map((hit) => hit.show))]
     .map((name) => shows.find((show) => show.name === name)).filter(Boolean);
   const docus = rest.filter((hit) => hit.kind === "docu");
-  const lessons = rest.filter((hit) => !["movie", "ep", "docu"].includes(hit.kind));
+  const books = rest.filter((hit) => hit.kind === "book");
+  const lessons = rest.filter((hit) => !["movie", "ep", "docu", "book"].includes(hit.kind));
   const animeFilms = animeHits.filter((hit) => hit.kind === "movie");
   const animeEpisodes = animeHits.filter((hit) => hit.kind === "ep");
   const matchedAnimeShows = [...new Set(animeEpisodes.map((hit) => hit.show))]
@@ -98,6 +99,7 @@ export function renderSearch(main, query, hits, {
     ["anime", "Anime", animeFilms.length + animeEpisodes.length],
     ["documentaries", "Documentaries", docus.length],
     ["tutorials", "Tutorials", lessons.length],
+    ["audiobooks", "Audiobooks", books.length],
     ["people", "People", people.length],
     ["collections", "Collections", places.length],
   ].filter(([, , count]) => count > 0);
@@ -124,6 +126,7 @@ export function renderSearch(main, query, hits, {
     if (animeEpisodes.length > 0) part("anime", "Anime episodes", rows(animeEpisodes, play));
     if (docus.length > 0) part("documentaries", "Documentaries", rows(docus, play));
     if (lessons.length > 0) part("tutorials", "Lessons", rows(lessons, play));
+    if (books.length > 0) part("audiobooks", "Audiobooks", movieGrid(books, play, { mode: GRID }));
     if (people.length > 0) {
       const faces = el("div", "people");
       faces.append(...people.map((person) => personCard({ ...person, role: countOf(person.titles, "title") })));

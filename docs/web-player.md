@@ -389,6 +389,7 @@ so it fails if this table and `address.js` ever disagree.
 | `#/documentaries/<collection>/<folder>/...` | A documentary collection, folders as `tutorials` above |
 | `#/anime` | Anime department (Japanese animation; hidden from the nav at zero) |
 | `#/anime/<show>` | An anime show's own page, same as `#/series/<show>` |
+| `#/audiobooks` | Audiobooks department (a row per genre; no page of its own per book, a card plays it) |
 | `#/collections` | Collections page (franchises and lists) |
 | `#/collections/tmdb-<id>` | Franchise detail, by TMDB collection id |
 | `#/collections/<list-id>` | A viewer's own list |

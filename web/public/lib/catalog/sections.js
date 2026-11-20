@@ -16,4 +16,5 @@ export const SECTIONS = {
     noun: "documentary", chapterNoun: "chapter",
   },
   tutorials: { label: "Tutorials", empty: "No courses yet.", extent: "course", noun: "lesson", chapterNoun: "chapter" },
+  audiobooks: { label: "Audiobooks", empty: "No audiobooks yet.", extent: "audiobook" },
 };

@@ -7,7 +7,7 @@
  */
 
 /** A department's own front page: the whole shelf, unpaged. */
-export type DepartmentSection = "movies" | "series" | "tutorials" | "documentaries" | "anime";
+export type DepartmentSection = "movies" | "series" | "tutorials" | "documentaries" | "anime" | "audiobooks";
 
 /** A show or course opened by name, with the folder trail (if any) into it. */
 export type ShowSection = "series" | "tutorials" | "documentaries" | "anime";

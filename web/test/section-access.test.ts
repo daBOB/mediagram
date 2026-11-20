@@ -29,6 +29,7 @@ const episode = catalogSet({ setId: "Dark", title: "Dark", kind: "ep", show: "Da
 const documentary = catalogSet({ setId: "Planet", title: "Planet", kind: "docu" });
 const lesson = catalogSet({ setId: "Ownership", title: "Ownership", kind: "tut", show: "Rust" });
 const handout = catalogSet({ setId: "Slides", title: "Slides", kind: "doc", show: "Rust" });
+const audiobook = catalogSet({ setId: "Momo", title: "Momo", kind: "book" });
 const clip = catalogSet({ setId: "Clip", title: "Clip", kind: "clip" });
 
 /** Where `groupDepartments` files a set on its own: the departments it counts it in. */
@@ -37,6 +38,7 @@ function shelvedIn(set: typeof film) {
   const counts: Record<string, number> = {
     movies: library.movies.length, series: library.series.length, anime: countAnime(library.anime),
     documentaries: countDocumentaries(library.documentaries), tutorials: library.tutorials.length,
+    audiobooks: library.audiobooks.length,
   };
   return Object.keys(counts).filter((key) => counts[key]! > 0);
 }
@@ -45,6 +47,7 @@ test("each set is in the section its department shelf files it under", () => {
   const expected: [typeof film, string][] = [
     [film, "movies"], [animeFilm, "anime"], [animeEpisode, "anime"], [episode, "series"],
     [documentary, "documentaries"], [lesson, "tutorials"], [handout, "tutorials"], [clip, "movies"],
+    [audiobook, "audiobooks"],
   ];
   for (const [set, section] of expected) {
     expect(departmentOf(set), set.setId).toBe(section);
@@ -56,6 +59,7 @@ test("a hidden section's sets are left out, and a key this build does not know l
   const all = [film, animeFilm, animeEpisode, episode, documentary, lesson, handout];
   expect(withoutHidden(all, ["anime", "tutorials"]).map((set: typeof film) => set.setId)).toEqual(["Heat", "Dark", "Planet"]);
   expect(withoutHidden(all, ["podcasts"])).toEqual(all);
+  expect(withoutHidden([...all, audiobook], ["audiobooks"])).toEqual(all);
   expect(withoutHidden(all, [])).toEqual(all);
 });
 

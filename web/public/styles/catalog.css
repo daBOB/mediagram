@@ -48,6 +48,8 @@
 .card .badge, .card .has-summary { grid-column: 1; justify-self: start; align-self: flex-start; margin-top: 8px; }
 .card:hover .name { color: var(--accent); }
 .thumb { position: relative; aspect-ratio: 2 / 3; overflow: hidden; display: grid; place-items: center; border-radius: 3px; background: var(--paper-sunk); color: var(--ink-3); font: 500 1.4rem var(--display); box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.55); transition: transform 700ms var(--ease), box-shadow 700ms var(--ease); }
+.thumb.square { aspect-ratio: 1; }
+.thumb.square img { object-fit: contain; }
 .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) { .card:hover .thumb { transform: translateY(-6px); box-shadow: 0 28px 48px -26px rgba(0, 0, 0, 0.7); } }
 .grid.plates .card { grid-template-columns: minmax(0, 1fr); align-content: start; align-items: start; gap: 12px; padding: 0; border: none; }

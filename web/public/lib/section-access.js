@@ -15,12 +15,13 @@ export const SECTION_ACCESS_WORDS = { title: "Sections", hides: "hides" };
 
 /**
  * The section a set sits in, by `groupDepartments`'s rules: anime before
- * anything else, then documentaries, episodes, lessons and documents, and
+ * anything else, then documentaries, audiobooks, episodes, lessons and documents, and
  * films for whatever is left, a kind this build does not know included.
  */
 export function departmentOf(set) {
   if (set.anime) return "anime";
   if (set.kind === "docu") return "documentaries";
+  if (set.kind === "book") return "audiobooks";
   if (set.kind === "ep") return "series";
   if (set.kind === "tut" || isDocument(set)) return "tutorials";
   return "movies";

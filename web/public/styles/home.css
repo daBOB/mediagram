@@ -243,6 +243,7 @@
   background: var(--paper-sunk);
 }
 .resume-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1200ms var(--ease); }
+.resume-art img.cover-whole { object-fit: contain; }
 .resume-card:hover .resume-art img { transform: scale(1.04); }
 .resume-initial { color: var(--ink-3); font: 600 2rem var(--display); }
 /* The progress rule sits on the episode line, as a bar beside it. */

@@ -127,13 +127,17 @@ const ROOT = join(import.meta.dir, "..");
  * Raised 2026-11-13 for `player.js`, by 13, and `transport.js`, by 5, to mount the clip panel, gate
  * saving while it is up and open a title at a given place; the panel is `clip-panel*.js`.
  * Lowered 2026-11-18 for `public/app.js`, by 4, once Continue and My List drew one shared wall.
+ * Raised 2026-11-20 for `public/app.js`, by 2, `public/lib/catalog/shelf-view.js`, by 3, and
+ * `public/lib/catalog/search-view.js`, by 2, for the Audiobooks route and its count, upload hint and
+ * square cover, and its search group; the page itself is `audiobooks-department.js`.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 710,
+  "public/app.js": 712,
   "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
-  "public/lib/catalog/shelf-view.js": 286,
+  "public/lib/catalog/search-view.js": 202,
+  "public/lib/catalog/shelf-view.js": 289,
   "public/lib/library-session.js": 201,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,

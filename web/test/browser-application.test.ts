@@ -206,6 +206,17 @@ test("an older search cannot overwrite a newer search", async () => {
   expect(page()).toContain("“new”");
 });
 
+test("a search finds a book in its own Audiobooks group, not among the lessons", async () => {
+  const momo = { ...film("Momo"), kind: "book", container: "mp3", vcodec: null, acodec: "mp3" };
+  catalog = JSON.stringify([momo]);
+  await start();
+  intercept = (url) => url.startsWith("/api/search?") ? Response.json({ hits: [momo] }) : null;
+  await env.navigate("#/search/momo");
+  expect(page()).toContain("Audiobooks");
+  expect(page()).toContain("Momo");
+  expect(page()).not.toContain("Lessons");
+});
+
 test("returning to a search does not admit its earlier response", async () => {
   // The search result checked below must be a real catalog title: search
   // results are now kept only when they are in this profile's library.

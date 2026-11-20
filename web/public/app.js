@@ -40,6 +40,7 @@ import { describeFilm, filmPage } from "./lib/catalog/film-page.js";
 import { renderSeries } from "./lib/catalog/series-page.js";
 import { renderDocumentariesDept, renderMoviesDept, renderShowsDept } from "./lib/catalog/department-pages.js";
 import { renderAnimeDept } from "./lib/catalog/anime-department.js";
+import { renderAudiobooksDept } from "./lib/catalog/audiobooks-department.js";
 import { countAnime, everyFilm, everyShow, groupDepartments, sectionForShow } from "./lib/departments.js";
 import { renderSettings } from "./lib/catalog/settings-page.js";
 import { renderPerson, titlesByKey, visiblePeople } from "./lib/catalog/cast.js";
@@ -107,7 +108,7 @@ const films = filmSession(state, () => librarySession.current());
 librarySession.onData((change) => {
   ({ library, byId } = librarySession.current());
   const hidden = hiddenSectionsOf(state.profile());
-  for (const section of ["movies", "series", "tutorials"]) document.getElementById(`n-${section}`).textContent = String(library[section].length);
+  for (const section of ["movies", "series", "tutorials", "audiobooks"]) document.getElementById(`n-${section}`).textContent = String(library[section].length);
   document.getElementById("n-documentaries").textContent = String(countDocumentaries(library.documentaries));
   const animeCount = countAnime(library.anime);
   document.getElementById("n-anime").textContent = String(animeCount);
@@ -602,6 +603,7 @@ function drawRoute() {
   if (address.page === "department" && address.section === "movies") return renderMoviesDept(main, deptContext());
   if (address.page === "department" && address.section === "documentaries") return renderDocumentariesDept(main, deptContext());
   if (address.page === "department" && address.section === "anime") return renderAnimeDept(main, deptContext());
+  if (address.page === "department" && address.section === "audiobooks") return renderAudiobooksDept(main, deptContext());
   if (address.page === "department") return renderShowsDept(main, address.section, deptContext());
 
   // address.page === "show"

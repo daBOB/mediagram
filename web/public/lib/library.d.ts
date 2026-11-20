@@ -107,10 +107,12 @@ export interface Library {
   /** Set by `applyCatalog`, from `documentaries.js`; empty before the first catalog load. */
   documentaries: import("./documentaries.js").DocumentaryLibrary;
   /** Set by `applyCatalog`, from `departments.js`; empty before the first catalog load. */
+  audiobooks: CatalogSet[];
+  /** Set by `applyCatalog`, from `departments.js`; empty before the first catalog load. */
   anime: import("./departments.js").AnimeLibrary;
 }
 
-export function groupLibrary(sets: CatalogSet[]): Omit<Library, "documentaries">;
+export function groupLibrary(sets: CatalogSet[]): Omit<Library, "documentaries" | "audiobooks" | "anime">;
 
 /** Sorted comparator every shelf collates its titles through. */
 export function byTitle(a: CatalogSet, b: CatalogSet): number;

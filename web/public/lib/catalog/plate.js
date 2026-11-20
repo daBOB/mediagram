@@ -48,10 +48,10 @@ export function initialsOf(text) {
 
 /**
  * @param {{poster: string|null, name: string, initials: string,
- *          progress?: number|null, watched?: boolean}} options
+ *          progress?: number|null, watched?: boolean, square?: boolean}} options
  */
-export function plate({ poster, name, initials, progress, watched }) {
-  const thumb = el("div", "thumb", poster ? undefined : initials);
+export function plate({ poster, name, initials, progress, watched, square = false }) {
+  const thumb = el("div", square ? "thumb square" : "thumb", poster ? undefined : initials);
 
   if (poster) {
     // The initials stay underneath as the alt text, so a poster that fails to

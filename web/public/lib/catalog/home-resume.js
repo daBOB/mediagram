@@ -37,7 +37,8 @@ function resumeCard(set, caption, play) {
   const art = el("span", "resume-art");
   const key = set.backdrop ?? set.poster;
   if (key) {
-    const image = el("img", set.backdrop ? null : "poster-crop");
+    // A book's cover is whole-picture art: contained, never cropped.
+    const image = el("img", set.kind === "book" ? "cover-whole" : set.backdrop ? null : "poster-crop");
     image.src = artworkUrl(key);
     image.alt = "";
     image.loading = "lazy";

@@ -46,6 +46,11 @@ export function kidsVerdict(set, limit) {
   return age <= limit ? "safe" : "unsafe";
 }
 
+/** The genre a children's audiobook is filed under; a book carries no FSK, so this is its rating. */
+export const KIDS_BOOK_CATEGORY = "Kinderbücher";
+
+const isKidsBook = (set) => set.kind === "book" && set.category === KIDS_BOOK_CATEGORY;
+
 /**
  * The catalog a kid with this limit sees: rated at or under it, or unrated and
  * marked by hand from an age at or under it. Applied once to the whole
@@ -56,6 +61,7 @@ export function kidsVerdict(set, limit) {
  */
 export function forKidsProfile(sets, marks, limit) {
   return sets.filter((set) => {
+    if (isKidsBook(set)) return true;
     const verdict = kidsVerdict(set, limit);
     return verdict === "safe" || (verdict === "unrated" && (marks.get(set.setId) ?? Infinity) <= limit);
   });

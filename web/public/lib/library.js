@@ -278,7 +278,7 @@ export function collections(sets, fallbackName) {
 export function groupLibrary(sets) {
   const episodes = sets.filter((set) => set.kind === "ep");
   const course = sets.filter((set) => set.kind === "tut" || isDocument(set));
-  const rest = sets.filter((set) => !["ep", "tut", "docu"].includes(set.kind) && !isDocument(set));
+  const rest = sets.filter((set) => !["ep", "tut", "docu", "book"].includes(set.kind) && !isDocument(set));
 
   return {
     movies: [...rest].sort(byTitle),

@@ -81,7 +81,8 @@ export function groupDepartments(sets) {
   const anime = sets.filter((set) => set.anime);
   const rest = sets.filter((set) => !set.anime);
   const documentaries = groupDocumentaries(rest.filter((set) => set.kind === "docu"));
+  const audiobooks = rest.filter((set) => set.kind === "book").sort(byTitle);
   const plain = groupLibrary(rest);
   // One card per film: copies of a film share a poster key (see film-versions.js).
-  return { ...plain, movies: groupFilms(plain.movies), documentaries, anime: groupAnime(anime) };
+  return { ...plain, movies: groupFilms(plain.movies), documentaries, audiobooks, anime: groupAnime(anime) };
 }
