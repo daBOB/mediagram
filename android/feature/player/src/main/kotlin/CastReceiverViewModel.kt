@@ -114,7 +114,8 @@ class CastReceiverViewModel @Inject constructor(
         if (!profile.kids) return null
         val marks = repository.snapshotOf(profileId)?.kidsMarks.orEmpty()
         if (forKidsProfile(listOf(media), marks, profile.kidsLimit).isEmpty()) return ageReason(profile.name)
-        if (dailyLimitState(profile.dailyLimit, repository.watchedToday(profileId)).state == DailyLimitState.OUT) return timeReason(profile.name)
+        // Listening to a book is not screen time, so a used-up day does not refuse it.
+        if (!media.isBook && dailyLimitState(profile.dailyLimit, repository.watchedToday(profileId)).state == DailyLimitState.OUT) return timeReason(profile.name)
         return null
     }
 }

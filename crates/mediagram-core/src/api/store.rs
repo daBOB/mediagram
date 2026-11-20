@@ -67,6 +67,19 @@ pub(super) fn open_installed(core: &Core, what: &str) -> Option<Connection> {
     }
 }
 
+/// Whether the installed catalog holds `set_id` as a book. An unknown set, or
+/// no catalog yet, is not one: listening counts toward the day unless the
+/// catalog says it is audio.
+pub(super) fn is_book(core: &Core, set_id: &str) -> bool {
+    let Some(conn) = open_installed(core, "a set's kind") else {
+        return false;
+    };
+    matches!(
+        queries::playable_set(&conn, set_id),
+        Ok(Some(set)) if set.kind == mlib_spec::Kind::Book.as_str()
+    )
+}
+
 mod listing;
 pub(super) use listing::{list_sets, media_set};
 

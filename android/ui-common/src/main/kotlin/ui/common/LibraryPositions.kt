@@ -211,7 +211,7 @@ class LibraryPositions(
         asking = true
         scope.launch {
             try {
-                if (gate.mayOpen()) push(FrameKind.PLAYER, playerPayload(id, run))
+                if (gate.mayOpen(id)) push(FrameKind.PLAYER, playerPayload(id, run))
             } finally {
                 asking = false
             }

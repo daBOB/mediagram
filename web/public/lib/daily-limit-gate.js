@@ -53,8 +53,9 @@ function warnOnce() {
   tell(DAILY_LIMIT_WORDS.warning);
 }
 
-/** Whether a title may open now. Says why, where the viewer is, when it may not. */
-export async function mayOpen() {
+/** Whether a title may open now. Says why, where the viewer is, when it may not. A book always may: listening is not screen time. */
+export async function mayOpen(set) {
+  if (set?.kind === "book") return true;
   const id = state.profileId();
   latest = null;
   if (id === null || state.profile()?.kids !== true) return true;

@@ -65,6 +65,7 @@ fun SetSummary.toMediaSet(): MediaSet {
         anime = anime,
         category = category,
         variant = variant,
+        isBook = kind == "book",
     )
 }
 

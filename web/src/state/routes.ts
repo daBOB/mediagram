@@ -46,6 +46,8 @@ export interface StateRouterOptions {
   state: WatchState;
   /** Whether the catalog will play this set, so state cannot outlive it. */
   isPlayable: (setId: string) => boolean;
+  /** A set's kind, or null for none; absent counts every set as watching. */
+  kindOf?: (setId: string) => string | null;
 }
 
 /**
@@ -55,7 +57,7 @@ export interface StateRouterOptions {
  * module knows about its own paths and nothing else.
  */
 export function createStateRouter(options: StateRouterOptions) {
-  const { state, isPlayable } = options;
+  const { state, isPlayable, kindOf } = options;
 
   return function stateRoute(request: PlayerRequest): PlayerResponse | null {
     const { method, path } = request;
@@ -118,7 +120,9 @@ export function createStateRouter(options: StateRouterOptions) {
       const at = Number(body?.at);
       if (!Number.isFinite(at)) return bodiless(400);
       const runtime = Number(body?.duration);
-      state.setProgress(profileId, setId, at, Number.isFinite(runtime) && runtime > 0 ? runtime : null);
+      // Listening to a book is not screen time, so it stays out of the day a kid's limit reads.
+      const counts = kindOf?.(setId) !== "book";
+      state.setProgress(profileId, setId, at, Number.isFinite(runtime) && runtime > 0 ? runtime : null, counts);
       return leftToday(state, profileId);
     }
 

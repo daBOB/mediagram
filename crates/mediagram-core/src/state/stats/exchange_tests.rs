@@ -157,9 +157,9 @@ fn an_own_row_stamped_past_the_integer_range_still_exports_after_a_write() {
         vec![title("01A", &own, 900.0, 1e19)],
         vec![day(&own, 300.0, 1e19)],
     );
-    db.set_progress_counted(&id, "01A", 10.0, None, "2026-10-03", 1_000)
+    db.set_progress_counted(&id, "01A", 10.0, None, "2026-10-03", true, 1_000)
         .unwrap();
-    db.set_progress_counted(&id, "01A", 20.0, None, "2026-10-03", 11_000)
+    db.set_progress_counted(&id, "01A", 20.0, None, "2026-10-03", true, 11_000)
         .unwrap();
 
     let record = db.with(|conn| export_record(conn, "laptop"));

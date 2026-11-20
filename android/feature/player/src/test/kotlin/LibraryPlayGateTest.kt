@@ -28,15 +28,15 @@ class LibraryPlayGateTest {
         val kid = Profile("k1", "Kid", kids = true, kidsAge = 6, dailyLimit = 30)
         val f = WatchStateFixture(listOf(kid))
         val together = FakeTogetherLive()
-        val gate = LibraryPlayGate(f.repository, together)
+        val gate = LibraryPlayGate(f.repository, FakeCatalogRepository(emptyMap()), together)
 
         f.core.watchedTodayByProfile["k1"] = 600.0
-        assertTrue(gate.mayOpen())
+        assertTrue(gate.mayOpen("s1"))
         assertNull(gate.notice.value)
 
         together.joinOnOpen(7)
         f.core.watchedTodayByProfile["k1"] = 1_800.0
-        assertFalse(gate.mayOpen())
+        assertFalse(gate.mayOpen("s1"))
         assertNull(together.takeJoin())
         assertEquals(DailyLimitWords.OUT, gate.notice.value)
         advanceTimeBy(9_000); runCurrent()

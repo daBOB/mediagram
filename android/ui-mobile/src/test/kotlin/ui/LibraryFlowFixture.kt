@@ -184,7 +184,7 @@ internal class LibraryFlowFixture(
                 // Whether a TV screen is connected, which the same pages read beside it.
                 PresentationViewModel::class.java to PresentationViewModel(PresentationDisplays(RuntimeEnvironment.getApplication())),
                 // The library's daily-limit door, resolved beside the catalog on every draw.
-                LibraryPlayGate::class.java to LibraryPlayGate(stored, together),
+                LibraryPlayGate::class.java to LibraryPlayGate(stored, repository, together),
                 SettingsViewModel::class.java to settings,
                 SystemViewModel::class.java to system,
                 CacheBudgetViewModel::class.java to cache,

@@ -923,12 +923,12 @@ mod viewing_stats_on_two_machines {
         let t0 = profiles::now_ms();
         for (at, secs) in [(0.0, 0), (10.0, 10), (20.0, 20)] {
             laptop
-                .set_progress_counted(&laptop_id, "01A", at, None, "2026-10-03", t0 + secs * 1000)
+                .set_progress_counted(&laptop_id, "01A", at, None, "2026-10-03", true, t0 + secs * 1000)
                 .unwrap();
         }
         for (at, secs) in [(20.0, 30), (25.0, 35)] {
             phone
-                .set_progress_counted(&phone_id, "01A", at, None, "2026-10-03", t0 + secs * 1000)
+                .set_progress_counted(&phone_id, "01A", at, None, "2026-10-03", true, t0 + secs * 1000)
                 .unwrap();
         }
 

@@ -123,6 +123,12 @@ data class MediaSet(
      * `groupFilms` — the index and the watch state stay one row per file.
      */
     val versions: List<MediaSet> = emptyList(),
+    /**
+     * Whether the index files this set as a book (audio to listen to). Carried
+     * apart from [kind] because that enum has no shelf for it yet and shelves
+     * an unrecognised kind with the films; the daily limit needs the truth.
+     */
+    val isBook: Boolean = false,
 )
 
 enum class Kind {

@@ -36,7 +36,7 @@ class CastReceiverViewModelTest {
 
     private val live = FakeTogetherLive()
     private val handle = FakePlayerHandle()
-    private val sets = mapOf("film-1" to fakeMediaSet("film-1", title = "Dune"), "film-2" to fakeMediaSet("film-2", fsk = "16"), "film-3" to fakeMediaSet("film-3", fsk = "6"))
+    private val sets = mapOf("film-1" to fakeMediaSet("film-1", title = "Dune"), "film-2" to fakeMediaSet("film-2", fsk = "16"), "film-3" to fakeMediaSet("film-3", fsk = "6"), "book-1" to fakeMediaSet("book-1", fsk = "6", isBook = true))
 
     @After
     fun tearDown() = Dispatchers.resetMain()
@@ -118,6 +118,14 @@ class CastReceiverViewModelTest {
         receiver(watch)
         hear(request(set = "film-3", profile = "M"))
         assertRefused(model.together.timeReason("Mia"))
+    }
+
+    @Test
+    fun aBookCastPastTheLimitIsNotRefusedForTime() = runTest {
+        val watch = WatchStateFixture(listOf(anna, mia), chosen = "A").apply { core.watchedTodayByProfile["M"] = 30 * 60.0 }
+        val model = receiver(watch)
+        hear(request(set = "book-1", profile = "M"))
+        assertEquals(CastOpen("book-1", replace = false), model.opening.value)
     }
 
     @Test

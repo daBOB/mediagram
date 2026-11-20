@@ -23,18 +23,25 @@ class DailyLimitTest {
 
     @Test
     fun aKidOpensWhileTimeIsLeftAndIsRefusedOnceItIsUsedUp() = runTest {
-        assertTrue(DailyLimitGate(fixture(kid, 1_000.0).repository).mayOpen()) // ok
-        assertTrue(DailyLimitGate(fixture(kid, 1_600.0).repository).mayOpen()) // warn still opens
-        assertFalse(DailyLimitGate(fixture(kid, 1_800.0).repository).mayOpen())
+        assertTrue(DailyLimitGate(fixture(kid, 1_000.0).repository, isBook = { false }).mayOpen("s1")) // ok
+        assertTrue(DailyLimitGate(fixture(kid, 1_600.0).repository, isBook = { false }).mayOpen("s1")) // warn still opens
+        assertFalse(DailyLimitGate(fixture(kid, 1_800.0).repository, isBook = { false }).mayOpen("s1"))
+    }
+
+    @Test
+    fun aBookOpensPastTheLimit() = runTest {
+        val usedUp = fixture(kid, 1_800.0).repository
+        assertTrue(DailyLimitGate(usedUp, isBook = { true }).mayOpen("b1"))
+        assertFalse(DailyLimitGate(usedUp, isBook = { false }).mayOpen("b1"))
     }
 
     @Test
     fun everyoneElseIsNeverAskedAndNeverRefused() = runTest {
         for (profile in listOf(Profile("p1", "Grown-up"), kid.copy(dailyLimit = null))) {
             val f = fixture(profile, 99_999.0)
-            val gate = DailyLimitGate(f.repository)
+            val gate = DailyLimitGate(f.repository, isBook = { false })
             assertFalse(gate.applies())
-            assertTrue(gate.mayOpen())
+            assertTrue(gate.mayOpen("s1"))
             assertTrue(f.core.watchedTodayAsked.isEmpty())
         }
     }
@@ -45,11 +52,11 @@ class DailyLimitTest {
         val broken = object : WatchStateRepository by real {
             override suspend fun watchedToday(profileId: String): Double = error("core down")
         }
-        assertTrue(DailyLimitGate(broken).mayOpen())
+        assertTrue(DailyLimitGate(broken, isBook = { false }).mayOpen("s1"))
     }
 
     private fun warning(scope: TestScope, f: WatchStateFixture, told: MutableList<String>) =
-        DailyLimitWarning(scope, DailyLimitGate(f.repository)) { told += it }
+        DailyLimitWarning(scope, DailyLimitGate(f.repository, isBook = { false })) { told += it }
 
     @Test
     fun theWarningComesAtOpenWhenAlreadyNearTheEndAndOnlyOnce() = runTest {
@@ -115,7 +122,7 @@ class DailyLimitTest {
     private class FixedGate(var applies: Boolean, var open: Boolean) : PlayGate {
         var asked = 0
         override fun applies() = applies
-        override suspend fun mayOpen(): Boolean { asked++; return open }
+        override suspend fun mayOpen(setId: String): Boolean { asked++; return open }
     }
 
     private fun TestScope.refusing(gate: PlayGate, refused: () -> Unit, handle: FakePlayerHandle = FakePlayerHandle()): Pair<UpNextController, PlayerSession> {

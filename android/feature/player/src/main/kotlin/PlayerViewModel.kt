@@ -89,7 +89,11 @@ class PlayerViewModel @Inject constructor(
     val playingAs: StateFlow<Profile?> = _playingAs.asStateFlow()
 
     /** The kid's daily limit: asked before an in-player switch, and the source of the one warning per title. */
-    private val dailyLimit = DailyLimitGate(repository) { playingAs.value ?: repository.chosenProfile.value }
+    private val dailyLimit = DailyLimitGate(
+        repository,
+        isBook = { catalogRepository.mediaSet(it)?.isBook == true },
+        profile = { playingAs.value ?: repository.chosenProfile.value },
+    )
     private val limitWarning = DailyLimitWarning(viewModelScope, dailyLimit, ::tellLimit)
 
     /** The ten-second save ticker and which set it saves against. */

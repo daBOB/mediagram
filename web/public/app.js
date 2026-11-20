@@ -315,7 +315,7 @@ async function openTitle(set, queue, options, request) {
   }
   // Every way to open a title ends here, so the daily limit is asked once, here.
   if (request !== pendingOpen) return true;
-  const mayOpen = await dailyLimit.mayOpen();
+  const mayOpen = await dailyLimit.mayOpen(set);
   if (!mayOpen) takeJoin(); // a refused Join must not stay armed for the next title opened
   if (request !== pendingOpen || !mayOpen) return mayOpen;
 

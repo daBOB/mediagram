@@ -15,13 +15,13 @@ interface PlayGate {
     /** Whether the profile watching has a daily limit at all; everyone else opens without being asked. */
     fun applies(): Boolean
 
-    /** False only when the day's allowance is used up. */
-    suspend fun mayOpen(): Boolean
+    /** False only when the day's allowance is used up; a book is never refused, since listening is not screen time. */
+    suspend fun mayOpen(setId: String): Boolean
 
     /** No limit anywhere: for what is built without a profile. */
     object Open : PlayGate {
         override fun applies() = false
-        override suspend fun mayOpen() = true
+        override suspend fun mayOpen(setId: String) = true
     }
 }
 
@@ -29,10 +29,12 @@ interface PlayGate {
  * The web's `daily-limit-gate.js` over the core: watched-today is the core's
  * own count for this device's date, never added up here. A household rule,
  * not a lock — a core that cannot answer lets the title open. [profile] is
- * who is watching: the chosen profile, or a cast's caster.
+ * who is watching: the chosen profile, or a cast's caster. [isBook] says
+ * whether a set is a book, from the catalog.
  */
 class DailyLimitGate(
     private val repository: WatchStateRepository,
+    private val isBook: suspend (setId: String) -> Boolean,
     private val profile: () -> Profile? = { repository.chosenProfile.value },
 ) : PlayGate {
     override fun applies(): Boolean = profile()?.let { it.kids && it.dailyLimit != null } == true
@@ -45,5 +47,5 @@ class DailyLimitGate(
         return dailyLimitState(limit, watched).state
     }
 
-    override suspend fun mayOpen(): Boolean = standing() != DailyLimitState.OUT
+    override suspend fun mayOpen(setId: String): Boolean = standing() != DailyLimitState.OUT || isBook(setId)
 }

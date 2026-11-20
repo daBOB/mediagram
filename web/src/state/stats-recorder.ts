@@ -94,7 +94,8 @@ const UPSERT_DAY = `INSERT INTO stats_days(profile_id, day, device, seconds, upd
  * Writes where `profileId` is in `setId`, and counts the step since the
  * title's last write into its title row and today's day row, all or none.
  * A refusal (a profile another device deleted) rolls everything back and
- * leaves `ticks` as it was.
+ * leaves `ticks` as it was. `countsToday` false (a book) keeps the step out
+ * of the day row, which is what a kid's daily limit is read from.
  */
 export function writeProgress(
   db: Database,
@@ -104,6 +105,7 @@ export function writeProgress(
   setId: string,
   rawAt: number,
   duration: number | null,
+  countsToday = true,
 ): void {
   const at = Math.max(0, rawAt);
   const now = Date.now();
@@ -117,7 +119,7 @@ export function writeProgress(
     db.query(UPSERT_PROGRESS).run(profileId, setId, at, duration, now);
     db.query(UPSERT_TITLE).run(profileId, setId, device, now, step, againNow(hadProgress, watchedLive) ? now : null);
     // A step that spans midnight counts on the day of the write that ends it.
-    if (step > 0) db.query(UPSERT_DAY).run(profileId, localDay(now), device, step, now);
+    if (step > 0 && countsToday) db.query(UPSERT_DAY).run(profileId, localDay(now), device, step, now);
   })();
   ticks.set(key, { at, wallMs: now });
 }

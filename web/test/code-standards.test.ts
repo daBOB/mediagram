@@ -71,6 +71,8 @@ const ROOT = join(import.meta.dir, "..");
  * for a kid's daily limit (`today`, `setDailyLimit`); and `public/app.js`, by 3, and
  * `public/lib/watch-state.js`, by 7, for the open gate and hearing the count back;
  * `public/app.js` again, by 4, so a refused open drops its pending Join and answers whether it opened.
+ * Raised 2026-11-20 for `src/routes.ts` and `src/state/routes.ts`, by 4 each, so a position
+ * write can tell a book from a film and keep it out of the day a kid's limit reads.
  * Raised 2026-10-09 for `src/index.ts`, by 5, for watch together's hub, its
  * push sink, its recheck timer and its route. Raised the same day for `app.js`,
  * by 2, to hand the library session watch together's share of the event stream.
@@ -150,8 +152,8 @@ const CEILINGS: Record<string, number> = {
   "src/index.ts": 466,
   "src/package/refresh.ts": 272,
   "src/server.ts": 271,
-  "src/routes.ts": 203,
-  "src/state/routes.ts": 213,
+  "src/routes.ts": 207,
+  "src/state/routes.ts": 217,
   "src/state/profiles-manage.ts": 194,
   "src/state/schema.ts": 247,
   "src/state/store.ts": 760,

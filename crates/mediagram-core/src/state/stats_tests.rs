@@ -21,7 +21,7 @@ fn profile(db: &StateDb) -> String {
 
 /// A position write of `01A`, `secs` seconds of wall time after `t0`.
 fn play(db: &StateDb, id: &str, at: f64, t0: i64, secs: i64, day: &str) {
-    db.set_progress_counted(id, "01A", at, Some(5400.0), day, t0 + secs * 1000)
+    db.set_progress_counted(id, "01A", at, Some(5400.0), day, true, t0 + secs * 1000)
         .unwrap();
 }
 
@@ -231,7 +231,7 @@ fn a_position_and_its_watch_time_land_together_or_not_at_all() {
     .unwrap();
 
     assert!(
-        db.set_progress_counted(&id, "01A", 10.0, None, DAY, t0 + 10_000)
+        db.set_progress_counted(&id, "01A", 10.0, None, DAY, true, t0 + 10_000)
             .is_none()
     );
 
@@ -358,4 +358,17 @@ fn a_day_row_stops_at_a_whole_day() {
     play(&db, &id, 10.0, t0, 10, DAY);
 
     assert_eq!(days(&db, &id), vec![(DAY.to_string(), 86_400.0)]);
+}
+
+#[test]
+fn a_book_counts_for_its_title_not_the_day() {
+    let (_dir, db) = db();
+    let id = profile(&db);
+    let t0 = 1_000_000;
+    for (at, secs) in [(0.0, 0), (10.0, 10)] {
+        db.set_progress_counted(&id, "01A", at, None, DAY, false, t0 + secs * 1000)
+            .unwrap();
+    }
+    assert_eq!(title(&db, &id).0, 10.0);
+    assert!(days(&db, &id).iter().all(|(_, seconds)| *seconds == 0.0));
 }

@@ -66,8 +66,10 @@ impl StateDb {
     /// position, this device's title row and its day row commit together or
     /// not at all, so a total never runs ahead of a write that did not land.
     /// `local_day` is the viewer's date, `YYYY-MM-DD`: a step that spans
-    /// midnight counts on the day of the write that ends it. `None` when
-    /// nothing could be written, as for every `with`.
+    /// midnight counts on the day of the write that ends it. `counts_today`
+    /// false leaves the day row alone (the title's total still grows). `None`
+    /// when nothing could be written, as for every `with`.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn set_progress_counted(
         &self,
         profile_id: &str,
@@ -75,6 +77,7 @@ impl StateDb {
         at: f64,
         duration: Option<f64>,
         local_day: &str,
+        counts_today: bool,
         now_ms: i64,
     ) -> Option<()> {
         let at = at.max(0.0);
@@ -91,7 +94,7 @@ impl StateDb {
             rows::set_progress(&tx, profile_id, set_id, at, duration)?;
             let device = sync::device_id(&tx)?;
             add_to_title(&tx, profile_id, set_id, &device, step, again, now_ms)?;
-            if step > 0.0 {
+            if step > 0.0 && counts_today {
                 add_to_day(&tx, profile_id, local_day, &device, step, now_ms)?;
             }
             tx.commit()?;

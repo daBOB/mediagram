@@ -348,7 +348,7 @@ internal class TvAppFixture(
                 TitlePreloadViewModel::class.java to titlePreload,
                 StatsViewModel::class.java to stats,
                 // The library's daily-limit door, resolved beside the catalog on every draw.
-                LibraryPlayGate::class.java to LibraryPlayGate(viewer.repository, together),
+                LibraryPlayGate::class.java to LibraryPlayGate(viewer.repository, repository, together),
                 // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(); every library test reaches it.
                 AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), viewer.repository, achievementsSeen),
                 // The library and the profile picker each listen for casts through it.

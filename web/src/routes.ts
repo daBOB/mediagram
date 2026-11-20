@@ -110,7 +110,11 @@ export function createRouter(options: RouterOptions) {
   // original router and database rather than mixing two catalog versions.
   const catalogRoute = createCatalogRouter(options);
   const stateRoute = options.state
-    ? createStateRouter({ state: options.state, isPlayable: (id) => playableSet(db, id) !== null })
+    ? createStateRouter({
+        state: options.state,
+        isPlayable: (id) => playableSet(db, id) !== null,
+        kindOf: (id) => playableSet(db, id)?.kind ?? null,
+      })
     : null;
   // Read on the first stats request and kept for this router's catalog: a
   // swap builds a new router, and with it a new library.

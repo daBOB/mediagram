@@ -19,7 +19,7 @@ class LibraryPositionsPlayGateTest {
     private class Gate(var applies: Boolean = true, var answer: CompletableDeferred<Boolean> = CompletableDeferred(true)) : PlayGate {
         var asked = 0
         override fun applies() = applies
-        override suspend fun mayOpen(): Boolean { asked++; return answer.await() }
+        override suspend fun mayOpen(setId: String): Boolean { asked++; return answer.await() }
     }
 
     private fun positions(gate: Gate) = LibraryPositions(Slot(""), gate, CoroutineScope(Dispatchers.Unconfined))

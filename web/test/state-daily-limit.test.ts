@@ -3,7 +3,7 @@
  * and the watched-today count the page is told.
  */
 
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -113,5 +113,35 @@ describe("watched today", () => {
     expect(JSON.parse(new TextDecoder().decode(answer.body as Uint8Array))).toEqual({ limitMinutes: 30, watchedSeconds: 900.5 });
     expect(state.today("nobody")).toBeNull();
     expect(state.today(admin.id)).toEqual({ limitMinutes: null, watchedSeconds: 0 });
+  });
+});
+
+describe("listening to a book", () => {
+  const titleSeconds = (path: string, setId: string) => {
+    const raw = new Database(path, { readonly: true });
+    try {
+      return (raw.query("SELECT SUM(seconds) AS s FROM stats_titles WHERE set_id = ?1").get(setId) as { s: number }).s;
+    } finally {
+      raw.close();
+    }
+  };
+
+  test("listening to a book adds nothing to today, a movie adds its time", () => {
+    const { state, path } = store();
+    const { kid } = household(state);
+    const t0 = Date.now();
+    try {
+      for (const [setId, countsToday] of [["book1", false], ["film1", true]] as const) {
+        setSystemTime(t0);
+        state.setProgress(kid.id, setId, 0, null, countsToday);
+        setSystemTime(t0 + 10_000);
+        state.setProgress(kid.id, setId, 10, null, countsToday);
+      }
+    } finally {
+      setSystemTime();
+    }
+    expect(titleSeconds(path, "book1")).toBe(10);
+    expect(titleSeconds(path, "film1")).toBe(10);
+    expect(state.today(kid.id)!.watchedSeconds).toBe(10);
   });
 });

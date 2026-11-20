@@ -212,9 +212,9 @@ export class WatchState {
   }
 
   /** Where this profile is in `setId`, and the watching that adds — see `stats-recorder.ts`. */
-  setProgress(profileId: string, setId: string, at: number, duration: number | null): void {
+  setProgress(profileId: string, setId: string, at: number, duration: number | null, countsToday = true): void {
     const db = this.db;
-    if (db) tolerate(() => writeProgress(db, this.ticks, this.deviceId(), profileId, setId, at, duration));
+    if (db) tolerate(() => writeProgress(db, this.ticks, this.deviceId(), profileId, setId, at, duration, countsToday));
   }
 
   /** This profile's viewing stats and achievements, as of now on this machine's calendar. */

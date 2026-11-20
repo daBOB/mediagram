@@ -191,7 +191,7 @@ class UpNextController(
         if (!limit.applies()) return switchNow(id, gate, run)
         switchJob?.cancel()
         switchJob = scope.launch {
-            if (limit.mayOpen()) switchNow(id, gate, run) else refuse(refused)
+            if (limit.mayOpen(id)) switchNow(id, gate, run) else refuse(refused)
         }
     }
 

@@ -22,6 +22,7 @@ mod achievements;
 mod collections;
 mod households;
 mod profile_roles;
+mod progress;
 mod stats;
 
 /// One profile's everything, in one read. The page asks once and holds it.
@@ -102,25 +103,6 @@ impl Core {
                 .unwrap_or_default()
         })
         .await
-    }
-
-    /// This device's own position write, and the watch time it adds to the
-    /// viewer's stats. `local_day` is today where the viewer is, `YYYY-MM-DD`
-    /// (Kotlin's `LocalDate.now()`) — the day that watch time counts on.
-    pub async fn set_progress(
-        self: Arc<Self>,
-        profile_id: String,
-        set_id: String,
-        at: f64,
-        duration: Option<f64>,
-        local_day: String,
-    ) {
-        self.blocking(move |core| {
-            let now = profiles::now_ms();
-            core.state_db
-                .set_progress_counted(&profile_id, &set_id, at, duration, &local_day, now)
-        })
-        .await;
     }
 
     /// Forgets a position: started again, or watched to the end.
