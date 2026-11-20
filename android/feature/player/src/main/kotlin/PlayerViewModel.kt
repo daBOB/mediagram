@@ -11,6 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import data.CatalogRepository
 import data.ReportChannel
 import data.PlayerPreferences
+import data.orDefault
 import data.TogetherLive
 import data.WatchStateRepository
 import data.WatchSync
@@ -89,9 +90,10 @@ class PlayerViewModel @Inject constructor(
     val playingAs: StateFlow<Profile?> = _playingAs.asStateFlow()
 
     /** The kid's daily limit: asked before an in-player switch, and the source of the one warning per title. */
+    private val isBook: suspend (String) -> Boolean = { catalogRepository.mediaSet(it)?.isBook == true }
     private val dailyLimit = DailyLimitGate(
         repository,
-        isBook = { catalogRepository.mediaSet(it)?.isBook == true },
+        isBook = isBook,
         profile = { playingAs.value ?: repository.chosenProfile.value },
     )
     private val limitWarning = DailyLimitWarning(viewModelScope, dailyLimit, ::tellLimit)
@@ -203,7 +205,12 @@ class PlayerViewModel @Inject constructor(
     private fun tellLimit(words: String) = togetherController.tell(words, DAILY_LIMIT_NOTICE_MS)
 
     /** A title opened: its one warning is due, if little is left. */
-    internal fun limitOpened() = limitWarning.opened()
+    internal fun limitOpened(setId: String) {
+        viewModelScope.launch {
+            // A catalog that cannot answer warns like any title.
+            limitWarning.opened(book = orDefault(false, "whether $setId is a book") { isBook(setId) })
+        }
+    }
 
     /** The run changed for the still-open title (the catalog was not Ready yet when it opened). */
     fun updateRun(setId: String, run: List<String>) = upNextController.updateRun(setId, run)

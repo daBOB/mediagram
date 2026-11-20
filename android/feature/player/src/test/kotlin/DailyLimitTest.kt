@@ -70,7 +70,7 @@ class DailyLimitTest {
         val f = fixture(kid, 1_600.0)
         val warning = warning(this, f, told)
 
-        warning.opened(); runCurrent()
+        warning.opened(book = false); runCurrent()
         warning.tick(); runCurrent()
 
         assertEquals(listOf(DailyLimitWords.WARNING), told)
@@ -82,7 +82,7 @@ class DailyLimitTest {
         val f = fixture(kid, 1_000.0)
         val warning = warning(this, f, told)
 
-        warning.opened(); runCurrent()
+        warning.opened(book = false); runCurrent()
         assertTrue(told.isEmpty())
         f.core.watchedTodayByProfile["k1"] = 1_510.0
         warning.tick(); runCurrent()
@@ -96,17 +96,30 @@ class DailyLimitTest {
         val told = mutableListOf<String>()
         val warning = warning(this, fixture(kid, 1_600.0), told)
 
-        warning.opened(); runCurrent()
-        warning.opened(); runCurrent()
+        warning.opened(book = false); runCurrent()
+        warning.opened(book = false); runCurrent()
 
         assertEquals(2, told.size)
     }
 
     @Test
+    fun aBookIsNeverWarned() = runTest {
+        val told = mutableListOf<String>()
+        val warning = warning(this, fixture(kid, 1_600.0), told)
+
+        warning.opened(book = true); runCurrent()
+        warning.tick(); runCurrent()
+        assertTrue(told.isEmpty())
+
+        warning.opened(book = false); runCurrent()
+        assertEquals(listOf(DailyLimitWords.WARNING), told)
+    }
+
+    @Test
     fun noWarningForSomeoneWithoutALimitOrWithPlentyLeft() = runTest {
         val told = mutableListOf<String>()
-        warning(this, fixture(Profile("p1", "Grown-up"), 99_999.0), told).apply { opened(); tick() }
-        warning(this, fixture(kid, 10.0), told).apply { opened(); tick() }
+        warning(this, fixture(Profile("p1", "Grown-up"), 99_999.0), told).apply { opened(book = false); tick() }
+        warning(this, fixture(kid, 10.0), told).apply { opened(book = false); tick() }
         runCurrent()
         assertTrue(told.isEmpty())
     }

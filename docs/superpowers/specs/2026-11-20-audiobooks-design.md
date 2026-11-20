@@ -195,6 +195,8 @@ screen-locked listening on phone/tablet, (3) a full audiobook player.
   profile's time today (`web/src/state`, `/api/profiles/{id}/today`) leaves
   book positions out (books never add to `stats_days`, on the web server and
   in the Rust core Android uses). Every other kind counts exactly as now.
+- No "time left" warning while a book plays, on either surface (user decision
+  2026-11-20): listening is not screen time.
 
 ### Android phone/tablet and TV (parity with the web)
 

@@ -70,9 +70,14 @@ export async function mayOpen(set) {
   return false;
 }
 
-/** A title has opened: its warning is due again. `settled` is when its own first notes are done (`freshResume`). */
-export function opened(settled) {
-  warned = false;
+/**
+ * A title has opened: its warning is due again, unless it is a book — listening
+ * is not screen time, so a book never warns, and a standing left by the title
+ * before must not reach the viewer through it. `settled` is when its own first
+ * notes are done (`freshResume`).
+ */
+export function opened(settled, set) {
+  warned = set?.kind === "book";
   void Promise.resolve(settled).catch(() => null).then(warnOnce);
 }
 

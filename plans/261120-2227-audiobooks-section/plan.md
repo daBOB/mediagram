@@ -40,6 +40,7 @@
 | 01 | [The `book` kind and its keys](phase-01-book-kind-and-keys.md) | todo |
 | 02 | [`add-audiobook` in the uploader](phase-02-uploader-add-audiobook.md) | todo |
 | 03 | [Books outside the daily limit](phase-03-books-outside-daily-limit.md) | todo |
+| 03b | [No time-left warning for books](phase-03b-no-time-left-warning-for-books.md) | done |
 | 04 | [Web: Audiobooks department, search, kids](phase-04-web-audiobooks-department.md) | todo |
 | 05 | [Web: native MP3 playback, cover, lock screen](phase-05-web-mp3-playback.md) | todo |
 | 06 | [Android: Audiobooks department on phone and TV](phase-06-android-audiobooks-department.md) | todo |

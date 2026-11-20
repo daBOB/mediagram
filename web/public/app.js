@@ -334,7 +334,7 @@ async function openTitle(set, queue, options, request) {
     autoplay,
     freshResume, at, clip, saved,
   });
-  dailyLimit.opened(freshResume);
+  dailyLimit.opened(freshResume, set);
   return true;
 }
 

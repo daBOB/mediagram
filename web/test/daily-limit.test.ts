@@ -48,3 +48,33 @@ test("a book opens at the limit", async () => {
     (globalThis as any).document = realDocument;
   }
 });
+
+test("a book is never warned about time left", async () => {
+  const realFetch = globalThis.fetch;
+  const realDocument = (globalThis as any).document;
+  const told: string[] = [];
+  const status = { textContent: "" };
+  globalThis.fetch = (async () => Response.json({ limitMinutes: 30, watchedSeconds: 1600 })) as unknown as typeof fetch;
+  (globalThis as any).document = {
+    getElementById: (id: string) => (id === "together-note" ? status : id === "player" ? { open: true } : null),
+  };
+  Object.defineProperty(status, "textContent", { configurable: true, get: () => told.at(-1) ?? "", set: (words: string) => { if (words) told.push(words); } });
+  try {
+    const gate = await import("../public/lib/daily-limit-gate.js");
+    const warning = DAILY_LIMIT_WORDS.warning;
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    await gate.mayOpen({ kind: "movie" });
+    await gate.mayOpen({ kind: "book" }); // a book skips the ask; the movie's standing is still held
+    gate.opened(Promise.resolve(), { kind: "book" });
+    await settle();
+    expect(told).toEqual([]);
+
+    gate.opened(Promise.resolve(), { kind: "movie" });
+    await settle();
+    expect(told).toEqual([warning]);
+  } finally {
+    globalThis.fetch = realFetch;
+    (globalThis as any).document = realDocument;
+  }
+});

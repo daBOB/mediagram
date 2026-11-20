@@ -20,9 +20,9 @@ internal class DailyLimitWarning(
 ) {
     private var warned = false
 
-    /** A title opened: its warning is due again. */
-    fun opened() {
-        warned = false
+    /** A title opened: its warning is due again, except for a book, which is not screen time and never warns. */
+    fun opened(book: Boolean) {
+        warned = book
         check()
     }
 
