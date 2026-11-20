@@ -29,6 +29,12 @@ class DailyLimitTest {
     }
 
     @Test
+    fun aCatalogThatCannotAnswerLetsTheTitleOpen() = runTest {
+        val usedUp = fixture(kid, 1_800.0).repository
+        assertTrue(DailyLimitGate(usedUp, isBook = { error("core down") }).mayOpen("s1"))
+    }
+
+    @Test
     fun aBookOpensPastTheLimit() = runTest {
         val usedUp = fixture(kid, 1_800.0).repository
         assertTrue(DailyLimitGate(usedUp, isBook = { true }).mayOpen("b1"))

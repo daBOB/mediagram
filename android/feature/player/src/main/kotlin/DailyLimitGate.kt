@@ -47,5 +47,7 @@ class DailyLimitGate(
         return dailyLimitState(limit, watched).state
     }
 
-    override suspend fun mayOpen(setId: String): Boolean = standing() != DailyLimitState.OUT || isBook(setId)
+    override suspend fun mayOpen(setId: String): Boolean = standing() != DailyLimitState.OUT ||
+            // A catalog that cannot answer lets the title open, like a core that cannot count.
+            orDefault(true, "whether $setId is a book") { isBook(setId) }
 }

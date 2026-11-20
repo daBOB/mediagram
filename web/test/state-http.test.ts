@@ -7,7 +7,7 @@
  * collection, and a form post must not be able to reach any of it.
  */
 
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, setSystemTime, test } from "bun:test";
 import type { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -23,6 +23,7 @@ import { rawRequest } from "./raw-http";
 
 const SET = "01SET0000000000000000009";
 const OTHER = "01SET0000000000000000010";
+const BOOK = "01SET0000000000000000011";
 
 class NoSource implements ByteSource {
   stream(_l: PartLocation[], _s: Step[], _id: string): ReadableStream<Uint8Array> {
@@ -32,12 +33,12 @@ class NoSource implements ByteSource {
 
 function index(): Database {
   const db = emptyIndex();
-  for (const id of [SET, OTHER]) {
+  for (const [id, kind] of [[SET, "movie"], [OTHER, "movie"], [BOOK, "book"]] as const) {
     db.run(
       `INSERT INTO sets(set_id, kind, title, container, duration, total, part_count,
                         status, created_at, spec_version)
-       VALUES (?, 'movie', 'A Film', 'mp4', 2400, 10, 1, 'complete', 1700000000, 3)`,
-      [id],
+       VALUES (?, ?, 'A Film', 'mp4', 2400, 10, 1, 'complete', 1700000000, 3)`,
+      [id, kind],
     );
     db.run(
       `INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, status)
@@ -93,6 +94,24 @@ describe("reading it back", () => {
 });
 
 describe("positions", () => {
+  test("ten seconds of a book add nothing to today, ten of a film do", async () => {
+    const t0 = Date.now();
+    const today = () => state.today(me)!.watchedSeconds;
+    try {
+      for (const [set, adds] of [[BOOK, 0], [SET, 10]] as const) {
+        const before = today();
+        setSystemTime(t0);
+        await send(mine(`/progress/${set}`), "PUT", { at: 0, duration: 2400 });
+        setSystemTime(t0 + 10_000);
+        await send(mine(`/progress/${set}`), "PUT", { at: 10, duration: 2400 });
+        expect(today() - before).toBe(adds);
+        await send(mine(`/progress/${set}`), "DELETE");
+      }
+    } finally {
+      setSystemTime();
+    }
+  });
+
   test("a position round-trips, which is what resuming on another device is", async () => {
     expect((await send(mine(`/progress/${SET}`), "PUT", { at: 2043, duration: 2400 })).status).toBe(204);
 

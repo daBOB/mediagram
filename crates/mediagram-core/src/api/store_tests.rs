@@ -207,3 +207,27 @@ fn a_catalog_installed_from_a_package_is_never_taken_for_the_channels_snapshot()
 
     assert_eq!(installed_from_channel(&core, 100), None);
 }
+
+/// A book is the one kind kept out of a kid's day; everything the catalog
+/// cannot vouch for counts as watching.
+#[test]
+fn only_a_set_the_catalog_files_as_a_book_is_a_book() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    assert!(!is_book(&core, "b1"), "no catalog yet counts");
+
+    let conn = crate::api::test_support::index_at(dir.path());
+    for (id, kind) in [("b1", "book"), ("m1", "movie")] {
+        conn.execute(
+            "INSERT INTO sets(set_id, kind, title, container, total, part_count, status, created_at, spec_version)
+             VALUES (?1, ?2, 'T', 'mp3', 0, 0, 'complete', 0, 1)",
+            rusqlite::params![id, kind],
+        )
+        .unwrap();
+    }
+    drop(conn);
+
+    assert!(is_book(&core, "b1"));
+    assert!(!is_book(&core, "m1"));
+    assert!(!is_book(&core, "unknown"));
+}
