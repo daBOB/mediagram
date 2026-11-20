@@ -58,7 +58,10 @@ fun PlayerViewModel.open(
     // scope skip resetting for [sameTitle], since those really would
     // otherwise flicker and reset for no reload at all.
     _state.value = PlayerUiState.Preparing
-    if (!sameTitle) choicesController.reset()
+    if (!sameTitle) {
+        choicesController.reset()
+        _audioOnly.value = false
+    }
     // A copy of a film held more than once starts where its cut was left, in whichever copy (the catalog's versionPosition).
     val progress = if (cutPosition != null) cutPosition() else repository.snapshot.value.progress.find { it.setId == setId }
     val resumeSeconds = ResumePoint.resumeAt(progress?.let { ProgressPoint(it.at, it.duration) })

@@ -46,9 +46,10 @@ internal fun VideoWithSubtitles(
     barTop: Float?,
     isInPip: Boolean,
     onPictureBottomChanged: (Float) -> Unit,
+    coverPath: String? = null,
 ) {
     val framing = if (isInPip) Framing.FIT else choices.framing
-    Video(player, framing = framing, onWindowBottomChanged = onPictureBottomChanged) {
+    Video(player, framing = framing, onWindowBottomChanged = onPictureBottomChanged, coverPath = coverPath, overlay = {
         SubtitleLayer(
             player = player, cues = cues, barTop = barTop,
             sizePercent = choices.subtitleSizePercent,
@@ -56,5 +57,5 @@ internal fun VideoWithSubtitles(
             offsetMs = choices.subtitleOffsetMs,
             metrics = PhoneSubtitles,
         )
-    }
+    })
 }

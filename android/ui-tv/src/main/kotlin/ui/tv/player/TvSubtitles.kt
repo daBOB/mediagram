@@ -76,8 +76,9 @@ internal fun TvVideoWithSubtitles(
     cues: List<TimedCue>,
     choices: PlayerChoices,
     room: TvCueRoom,
+    coverPath: String? = null,
 ) {
-    Video(player, framing = choices.framing) {
+    Video(player, framing = choices.framing, coverPath = coverPath, overlay = {
         var pictureRight by remember { mutableFloatStateOf(0f) }
         Box(Modifier.matchParentSize().onGloballyPositioned { pictureRight = it.boundsInRoot().right })
         val beside = with(LocalDensity.current) { room.besideLeft?.let { (pictureRight - it).coerceAtLeast(0f).toDp() } ?: 0.dp }
@@ -93,5 +94,5 @@ internal fun TvVideoWithSubtitles(
                 ceiling = room.ceiling,
             )
         }
-    }
+    })
 }

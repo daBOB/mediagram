@@ -37,6 +37,7 @@ import player.together.TogetherButton
 import ui.catalog.CastAskHost
 import ui.common.player.PlayerNavigationEffects
 import ui.common.player.shouldStopOnDispose
+import ui.common.player.stageCoverOf
 
 /**
  * Hosts the shared [PlayerViewModel] behind a `PlayerSurface`, keeping the
@@ -76,6 +77,7 @@ fun PlayerScreen(
     val player by viewModel.player.collectAsStateWithLifecycle()
     val marks by viewModel.marks.collectAsStateWithLifecycle()
     val openSet by viewModel.openSet.collectAsStateWithLifecycle()
+    val audioOnly by viewModel.audioOnly.collectAsStateWithLifecycle()
     val choices by viewModel.choices.collectAsStateWithLifecycle()
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
@@ -153,7 +155,7 @@ fun PlayerScreen(
             player?.let { current ->
                 // What plays here, as it plays: the TV takes it up from there.
                 val playOnTv = playOnTvTool(cast) { Playback(setId, current.playWhenReady, current.currentPosition / 1000.0, current.playbackParameters.speed.toDouble()) }
-                VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
+                VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it }, coverPath = stageCoverOf(audioOnly, openSet?.posterPath))
                 PlayerCardLayer(
                     shown = cardShown,
                     player = current,

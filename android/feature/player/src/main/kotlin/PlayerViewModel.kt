@@ -147,6 +147,11 @@ class PlayerViewModel @Inject constructor(
             },
         )
     val upNext: StateFlow<UpNextUiState> = upNextController.state
+    internal val _audioOnly = MutableStateFlow(false)
+
+    /** The open title has sound and no picture, so the stage shows its cover; false until its tracks have arrived. */
+    val audioOnly: StateFlow<Boolean> = _audioOnly.asStateFlow()
+
     /** Watch together in this player; see `PlayerViewModelTogether.kt`. */
     internal val togetherController = togetherController(togetherLive, relay, catalogRepository, context)
     val together: StateFlow<TogetherUi> = togetherController.ui

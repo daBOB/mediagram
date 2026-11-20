@@ -10,6 +10,7 @@ import player.PlayerViewModel
 import player.controlsMayShow
 import player.titleLine
 import ui.catalog.rememberOpenCastSettings
+import ui.common.player.stageCoverOf
 
 /** The remote's label while this device plays to a wireless display; not in `cast.json`, since the web has no second screen. */
 internal fun playingOn(name: String) = "Playing on $name"
@@ -36,13 +37,14 @@ internal fun PresentingPlayer(
     val report by viewModel.report.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
     val openSet by viewModel.openSet.collectAsStateWithLifecycle()
+    val audioOnly by viewModel.audioOnly.collectAsStateWithLifecycle()
     val choices by viewModel.choices.collectAsStateWithLifecycle()
     val cues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
     val together by viewModel.together.collectAsStateWithLifecycle()
     val openCastScreen = rememberOpenCastSettings()
     player?.let { current ->
-        PresentOnDisplay(name) { VideoWithSubtitles(current, cues, choices, barTop = null, isInPip = false, onPictureBottomChanged = {}) }
+        PresentOnDisplay(name) { VideoWithSubtitles(current, cues, choices, barTop = null, isInPip = false, onPictureBottomChanged = {}, coverPath = stageCoverOf(audioOnly, openSet?.posterPath)) }
     }
     val backdrop = openSet?.let { it.backdropPath ?: it.posterPath }
     RemoteFrame(title = titleLine(openSet), backdrop = backdrop, label = playingOn(name), notice = together.notice, onBack = onBack) { card ->

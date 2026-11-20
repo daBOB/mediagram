@@ -32,6 +32,7 @@ import player.PlayerChoices
 import player.PlayerViewModel
 import player.UpNextPhase
 import player.UpNextUiState
+import ui.common.player.stageCoverOf
 
 /**
  * Where the stage's bands are, in root coordinates, as they last reported
@@ -87,7 +88,8 @@ internal fun BoxScope.TvPlayerStage(
     // column too thin to read.
     val lowest = listOfNotNull(bands.barTop, bands.cardTop).minOrNull()
     val room = TvCueRoom(barTop = lowest.takeIf { shown }, ceiling = bands.topBottom.takeIf { shown }, besideLeft = bands.panelLeft)
-    TvVideoWithSubtitles(player, picture.cues, picture.choices, room)
+    val audioOnly by viewModel.audioOnly.collectAsStateWithLifecycle()
+    TvVideoWithSubtitles(player, picture.cues, picture.choices, room, coverPath = stageCoverOf(audioOnly, set?.posterPath))
     // Everything over the picture is a control that holds still under focus.
     CompositionLocalProvider(LocalFlatControls provides true) {
         if (shown) TvPlayerControlsForViewModel(player, set, focus, viewModel, view, actions, bands, together)

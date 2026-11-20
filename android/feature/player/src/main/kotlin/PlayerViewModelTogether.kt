@@ -3,6 +3,7 @@ package player
 import android.content.Context
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import data.CatalogRepository
 import data.TogetherLive
 import data.isTablet
@@ -63,11 +64,16 @@ internal fun PlayerViewModel.togetherController(
     }
 }
 
-/** Each first frame the app's player renders, told to [controller] while this ViewModel lives: a cast offered playing starts there. */
+/**
+ * What the app's player reports while this ViewModel lives, told to [controller]: each first frame, and a title with no picture.
+ * A cast offered playing starts at the first frame; an MP3 never renders one, so its tracks arriving is its first frame.
+ */
 private fun PlayerViewModel.reportFirstFrames(controller: TogetherController) {
     val listener =
         object : Player.Listener {
             override fun onRenderedFirstFrame() = controller.firstFrame()
+
+            override fun onTracksChanged(tracks: Tracks) = noteTracks(tracks, controller)
         }
     viewModelScope.launch {
         handle.player.collectLatest { player ->
