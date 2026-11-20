@@ -37,6 +37,8 @@ import { mountSubtitlePicker } from "./subtitle-picker.js";
 import { thumbStrip } from "./thumb-strip.js";
 import { playbackFields, playbackMeta, reportPlayback } from "./playback-report.js";
 import { mountTogether } from "./together.js";
+import { artworkUrl } from "../catalog/plate.js";
+import { clearLockScreen, showOnLockScreen } from "./media-session.js";
 import { mountPlayerCast } from "./player-cast.js";
 // One id per tab, for its playback reports as for watch together.
 import { inTogether, screen as viewer } from "../together-now.js";
@@ -204,6 +206,8 @@ function mountPlayer() {
     appliedAudioTrack = null;
     previous?.controller.abort();
     video.removeAttribute("src");
+    video.removeAttribute("poster");
+    clearLockScreen();
     video.load();
   }
 
@@ -417,9 +421,6 @@ function mountPlayer() {
     setRate: (rate) => { video.playbackRate = rate; },
   });
   mountPlayerCast({ button: document.getElementById("cast"), video, filmTime, setId: () => playing?.setId ?? null, close: () => dialog.close() });
-  // Media keys and the picture-in-picture window, through the button's own path rather than straight to the element.
-  for (const action of ["play", "pause"]) navigator.mediaSession?.setActionHandler(action, () => { if (video.paused === (action === "play")) transport.act({ do: "playPause" }); });
-
   /** A manual refusal stays retryable and belongs to this request and source. */
   async function playManually() {
     const operation = source;
@@ -670,6 +671,14 @@ function mountPlayer() {
     void notes.open(set);
     void offerAudioTracks(set, signal);
     now.textContent = titleLine(set);
+    // An audio-only book has no picture, so its cover stands in, shown whole by the stage's `contain`.
+    if (set.kind === "book" && set.poster) video.poster = artworkUrl(set.poster);
+    // Media keys, the picture-in-picture window and the lock screen go through the transport's own paths, not straight to the element.
+    showOnLockScreen(set, video, titleLine(set), {
+      toggle: (action) => { if (video.paused === (action === "play")) transport.act({ do: "playPause" }); },
+      at: filmTime,
+      seekTo: seekFilmTo,
+    });
 
     const warning = noteFor(set);
     note.textContent = warning ?? "";

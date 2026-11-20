@@ -150,9 +150,12 @@ ffmpeg, out as HLS.
 
 | What | Direct play | Converted |
 |---|---|---|
-| Container | `mp4`, `m4v`, `webm` | everything else; Matroska in particular |
+| Container | `mp4`, `m4v`, `webm`, `mp3` | everything else; Matroska in particular |
 | Video | `h264`, `avc`, `avc1`, `vp8`, `vp9`, `av1` | everything else; HEVC unless the browser says it decodes it |
 | Audio | `aac`, `mp4a`, `opus`, `vorbis`, `mp3` | everything else; AC-3 and E-AC-3 in particular |
+
+A file with no video codec, an MP3 audiobook, has no picture to judge, so it
+plays direct whenever its container and audio do.
 
 The lists live in `web/public/lib/playable.js` and a test fails if this table
 stops matching them.

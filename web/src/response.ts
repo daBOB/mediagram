@@ -72,6 +72,8 @@ export function contentType(container: string): string {
       return "video/mp4";
     case "webm":
       return "video/webm";
+    case "mp3":
+      return "audio/mpeg";
     case "avi":
       return "video/x-msvideo";
     case "ts":

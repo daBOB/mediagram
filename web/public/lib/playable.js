@@ -21,7 +21,7 @@
  */
 
 /** Containers a browser will open. Matroska is not one of them. */
-export const CONTAINERS = new Set(["mp4", "m4v", "webm"]);
+export const CONTAINERS = new Set(["mp4", "m4v", "webm", "mp3"]);
 
 /** Video codecs that play essentially everywhere. */
 export const VIDEO = new Set(["h264", "avc", "avc1", "vp8", "vp9", "av1"]);
@@ -115,7 +115,8 @@ export function decidePlayback(profile, link = {}) {
     blocking.container = true;
     reasons.push(container === "mkv" ? "Matroska container" : `${container || "unknown"} container`);
   }
-  const picture = decodable(video, profile, link.decodes);
+  // A file with no video codec has no picture to judge: an audiobook, not an unknown video.
+  const picture = profile.vcodec == null ? "everywhere" : decodable(video, profile, link.decodes);
   if (picture === false) {
     blocking.video = true;
     reasons.push(`${PRETTY[video] ?? (video || "unknown")} video`);

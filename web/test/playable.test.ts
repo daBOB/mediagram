@@ -209,3 +209,16 @@ describe("what the page says while it waits", () => {
     expect(conversionNote("", true)).toBeNull();
   });
 });
+
+describe("an audio-only book", () => {
+  test("an MP3 book plays directly, locally and remotely", () => {
+    const book = { container: "mp3", vcodec: null, acodec: "mp3", total: 30_993_477, duration: 3863 };
+    expect(decidePlayback(book).kind).toBe("direct");
+    expect(decidePlayback(book, { remote: true, maxBitrate: 4e6 }).kind).toBe("direct");
+  });
+
+  test("an unknown video still converts", () => {
+    const decision = decidePlayback(set("mp4", "mpeg2video", "aac"));
+    expect(reasonOf(decision)).toBe("mpeg2video video");
+  });
+});

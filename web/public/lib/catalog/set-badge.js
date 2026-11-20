@@ -79,8 +79,7 @@ export function versionsBadge(set) {
  * is while another has to be converted.
  */
 export function transcodeBadge(set) {
-  // A book is an MP3 that plays as it is on every surface, never converted.
-  if (set.versions || set.kind === "book") return null;
+  if (set.versions) return null;
   const decision = playbackFor(set);
   if (decision.kind === "direct") return null;
 
