@@ -207,7 +207,6 @@ function mountPlayer() {
     previous?.controller.abort();
     video.removeAttribute("src");
     video.removeAttribute("poster");
-    clearLockScreen();
     video.load();
   }
 
@@ -1003,6 +1002,8 @@ function mountPlayer() {
     title.abort();
     title = null;
     stop();
+    // Not in `stop()`: a conversion restarts through it and the title is still the one playing.
+    clearLockScreen();
     stopReporting?.();
     upNext.clear();
     together.clear();

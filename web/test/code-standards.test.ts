@@ -130,7 +130,7 @@ const ROOT = join(import.meta.dir, "..");
  * Raised 2026-11-20 for `public/app.js`, by 2, `public/lib/catalog/shelf-view.js`, by 3, and
  * `public/lib/catalog/search-view.js`, by 2, for the Audiobooks route and its count, upload hint and
  * square cover, and its search group; the page itself is `audiobooks-department.js`.
- * Raised 2026-11-20 for `player.js`, by 9, to show a book's cover on the stage and hand the title to the
+ * Raised 2026-11-20 for `player.js`, by 10, to show a book's cover on the stage and hand the title to the
  * lock screen; the lock screen is `media-session.js`.
  */
 const CEILINGS: Record<string, number> = {
@@ -143,7 +143,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/library-session.js": 201,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 1040,
+  "public/lib/playback/player.js": 1041,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 355,
