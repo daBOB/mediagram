@@ -15,7 +15,7 @@ use std::path::Path;
 use crate::media::streams::{Stream, StreamKind};
 
 /// Containers a browser will open. Matroska is not one of them.
-pub const CONTAINERS: [&str; 3] = ["mp4", "m4v", "webm"];
+pub const CONTAINERS: [&str; 4] = ["mp4", "m4v", "webm", "mp3"];
 
 /// Video codecs that play essentially everywhere.
 pub const VIDEO: [&str; 6] = ["h264", "avc", "avc1", "vp8", "vp9", "av1"];
