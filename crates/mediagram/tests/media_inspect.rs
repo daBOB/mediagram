@@ -12,7 +12,9 @@ use mediagram::media;
 use media::inspect::inspect;
 use media::mp4_atoms::needs_faststart;
 use media::remux::ensure_faststart;
-use support::media::{ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4};
+use support::media::{
+    ffmpeg_required, make_faststart_mp4, make_tagged_mp3, make_trailing_moov_mp4,
+};
 
 #[tokio::test]
 async fn inspect_yields_expected_fixture_metadata() {
@@ -159,4 +161,27 @@ async fn inspect_collects_language_tags_from_multiple_audio_streams() {
     // ffprobe's 3-letter tags are normalized to 2-letter codes by lang_code.
     assert!(info.alang.contains(&"en".to_string()));
     assert!(info.alang.contains(&"de".to_string()));
+}
+
+#[tokio::test]
+async fn an_attached_cover_is_not_the_video() {
+    if !ffmpeg_required("an_attached_cover_is_not_the_video") {
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let file = make_tagged_mp3(
+        dir.path(),
+        "book.mp3",
+        Some("Bibi & Tina"),
+        Some("Kinderbücher"),
+        true,
+    );
+
+    let info = inspect(&file).await.unwrap();
+
+    assert_eq!(info.vcodec, None);
+    assert_eq!(info.quality, None);
+    assert_eq!(info.width, None);
+    assert_eq!(info.acodec.as_deref(), Some("mp3"));
+    assert_eq!(info.container, "mp3");
 }

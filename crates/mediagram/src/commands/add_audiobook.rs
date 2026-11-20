@@ -69,16 +69,27 @@ pub async fn run(cfg: &Config, args: AddAudiobookArgs) -> Result<()> {
     let counts = session
         .upload(items, |title, step| match step {
             Step::Start => println!("uploading {title}"),
-            Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) => println!("  {err:#}"),
-            Step::End(_) => {}
+            Step::End(Outcome::AlreadyHeld) => println!("{title} already uploaded"),
+            Step::End(Outcome::Pending) => println!("{title} pending; run `mediagram resume`"),
+            Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) => {
+                println!("  {title}: {err:#}");
+            }
+            Step::End(Outcome::Uploaded) => {}
         })
         .await;
-    session.end(args.no_push).await?;
-    ensure!(
-        counts.failed + counts.blocked == 0,
-        "{} audiobooks were not uploaded",
-        counts.failed + counts.blocked
+    let failed = counts.failed + counts.blocked;
+    println!(
+        "\n{} uploaded, {} already held, {failed} failed",
+        counts.uploaded, counts.held
     );
+    if counts.pending > 0 {
+        println!(
+            "{} pending; run mediagram resume to finish them",
+            counts.pending
+        );
+    }
+    session.end(args.no_push).await?;
+    ensure!(failed == 0, "{failed} audiobooks were not uploaded");
     Ok(())
 }
 
@@ -105,6 +116,7 @@ async fn record_shelf_and_cover(
 /// `path` itself when it is a file, else every `.mp3` below it, sorted.
 fn mp3_files(path: &Path) -> Result<Vec<PathBuf>> {
     if path.is_file() {
+        ensure!(is_mp3(path), "{} is not an .mp3 file", path.display());
         return Ok(vec![path.to_path_buf()]);
     }
     if !path.is_dir() {
@@ -119,10 +131,7 @@ fn mp3_files(path: &Path) -> Result<Vec<PathBuf>> {
             let entry = entry?.path();
             if entry.is_dir() {
                 pending.push(entry);
-            } else if entry
-                .extension()
-                .is_some_and(|e| e.eq_ignore_ascii_case("mp3"))
-            {
+            } else if is_mp3(&entry) {
                 found.push(entry);
             }
         }
@@ -130,3 +139,12 @@ fn mp3_files(path: &Path) -> Result<Vec<PathBuf>> {
     found.sort();
     Ok(found)
 }
+
+fn is_mp3(path: &Path) -> bool {
+    path.extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("mp3"))
+}
+
+#[cfg(test)]
+#[path = "add_audiobook_tests.rs"]
+mod tests;

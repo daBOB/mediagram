@@ -1,31 +1,7 @@
 use super::*;
-use crate::media::inspect::inspect;
 use crate::test_fakes::media::{ffmpeg_required, make_tagged_mp3};
 
 const TITLE: &str = "Bibi & Tina, Folge 121: Stürmische Weihnachten";
-
-#[tokio::test]
-async fn an_attached_cover_is_not_the_video() {
-    if !ffmpeg_required("an_attached_cover_is_not_the_video") {
-        return;
-    }
-    let dir = tempfile::tempdir().unwrap();
-    let file = make_tagged_mp3(
-        dir.path(),
-        "book.mp3",
-        Some(TITLE),
-        Some("Kinderbücher"),
-        true,
-    );
-
-    let info = inspect(&file).await.unwrap();
-
-    assert_eq!(info.vcodec, None);
-    assert_eq!(info.quality, None);
-    assert_eq!(info.width, None);
-    assert_eq!(info.acodec.as_deref(), Some("mp3"));
-    assert_eq!(info.container, "mp3");
-}
 
 #[tokio::test]
 async fn tags_give_title_genre_and_cover() {
