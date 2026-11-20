@@ -56,3 +56,25 @@ test("a remembered framing this player does not offer opens as Fit", () => {
   expect(env.node("framing").textContent).toBe("Fit");
   expect(markedInMenu(env.node, "framing")).toBe("fit");
 });
+
+test("a book opens with its cover whole whatever framing was remembered, and nothing changes it", () => {
+  const { framing, kept } = mount("fill");
+  framing.recall({ cover: true });
+  expect(env.video.style.objectFit).toBe("contain");
+  expect(env.video.style.aspectRatio).toBe("");
+  expect(env.node("framing").hidden).toBe(true);
+  framing.cycle();
+  framing.cycle();
+  expect(env.video.style.objectFit).toBe("contain");
+  expect(env.video.style.aspectRatio).toBe("");
+  expect(kept).toEqual([]);
+});
+
+test("a film opened after a book gets its remembered framing back", () => {
+  const { framing } = mount("fill");
+  framing.recall({ cover: true });
+  framing.recall({ cover: false });
+  expect(env.video.style.objectFit).toBe("cover");
+  expect(env.node("framing").hidden).toBe(false);
+  expect(markedInMenu(env.node, "framing") ?? "fill").toBe("fill");
+});

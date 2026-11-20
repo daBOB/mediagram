@@ -664,7 +664,7 @@ function mountPlayer() {
     attachSubtitles(set);
     placeSubtitles();
     transport.recallSpeed();
-    transport.recallFraming({ hdr: hdrLabel(set) !== null });
+    transport.recallFraming({ hdr: hdrLabel(set) !== null, cover: set.kind === "book" });
     transport.refresh();
     void thumbs.open(set, signal);
     void notes.open(set);

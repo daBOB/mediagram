@@ -26,6 +26,8 @@ export function mountFramingControl({ video, button, menus, recall, remember,
   let deinterlaceOffered = false;
   /** How the picture sits in the window. Per title, not per player. */
   let framing = DEFAULT_FRAMING;
+  /** A cover is shown whole: no framing may crop it, so none is offered, recalled or remembered. */
+  let whole = false;
 
   /**
    * `fit`/`fill` are left to the stylesheet's own `inset: 0; width: 100%;
@@ -57,6 +59,7 @@ export function mountFramingControl({ video, button, menus, recall, remember,
   }
 
   function choose(name) {
+    if (whole) return;
     framing = name;
     apply();
     remember?.("framing", name);
@@ -83,12 +86,14 @@ export function mountFramingControl({ video, button, menus, recall, remember,
      * was mastered, so it is remembered; one this player does not offer is
      * the default rather than a menu with nothing marked.
      */
-    recall({ hdr = false } = {}) {
-      const asked = recall?.("framing");
+    recall({ hdr = false, cover = false } = {}) {
+      whole = cover;
+      button.hidden = cover;
+      const asked = cover ? null : recall?.("framing");
       framing = framings().some((one) => one.name === asked) ? asked : DEFAULT_FRAMING;
       // The filter is tuned for SDR; an HDR title is neither offered it nor filtered,
       // and the remembered choice is left alone for the show's other episodes.
-      deinterlaceOffered = deinterlace?.supported === true && !hdr;
+      deinterlaceOffered = deinterlace?.supported === true && !hdr && !cover;
       deinterlace?.set(deinterlaceOffered && recall?.("deinterlace") === "on");
       apply();
     },
