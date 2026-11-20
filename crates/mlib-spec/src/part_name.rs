@@ -18,8 +18,8 @@ pub fn base_name(c: &Caption) -> String {
             .and_then(|(s, e)| position_code(c.t, s, e))
             .map(|code| code.to_lowercase());
     let raw = match (c.t, c.show.as_deref()) {
-        // A standalone documentary reads exactly as a movie does.
-        (Kind::Movie, _) | (Kind::Docu, None) => with_year(c.title.as_deref().unwrap_or(&c.set)),
+        // A standalone documentary or an audiobook reads exactly as a movie does.
+        (Kind::Movie | Kind::Book, _) | (Kind::Docu, None) => with_year(c.title.as_deref().unwrap_or(&c.set)),
         (Kind::Ep, show) => {
             let show = with_year(show.unwrap_or(&c.set));
             match (code, c.abs) {

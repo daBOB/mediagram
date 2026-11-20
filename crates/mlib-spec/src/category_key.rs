@@ -16,6 +16,9 @@ pub const TUTORIALS: &str = "tutorials";
 /// Department for a documentary collection or a standalone documentary.
 pub const DOCUMENTARIES: &str = "documentaries";
 
+/// Department for a standalone audiobook.
+pub const AUDIOBOOKS: &str = "audiobooks";
+
 /// The `(department, item_key)` a category on this unit is filed under, or
 /// `None` when `kind` names no unit at all (a film or an episode, or a
 /// spelling no version of the spec defines) or `show`/`title` slugs to
@@ -29,6 +32,7 @@ pub fn category_key(kind: &str, show: Option<&str>, title: Option<&str>) -> Opti
     let department = match kind {
         "tut" | "doc" => TUTORIALS,
         "docu" => DOCUMENTARIES,
+        "book" => AUDIOBOOKS,
         _ => return None,
     };
     let item_key = title_art_key(show.or(title)?)?;

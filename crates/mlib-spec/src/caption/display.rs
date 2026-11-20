@@ -13,8 +13,8 @@ impl Caption {
             .zip(self.e)
             .and_then(|(s, e)| position_code(self.t, s, e));
         match (self.t, self.show.as_deref()) {
-            // A standalone documentary reads exactly as a movie does.
-            (Kind::Movie, _) | (Kind::Docu, None) => match (self.title.as_deref(), self.year) {
+            // A standalone documentary or an audiobook reads exactly as a movie does.
+            (Kind::Movie | Kind::Book, _) | (Kind::Docu, None) => match (self.title.as_deref(), self.year) {
                 (Some(t), Some(y)) => format!("{t} ({y})"),
                 (Some(t), None) => t.to_string(),
                 (None, _) => self.set.clone(),

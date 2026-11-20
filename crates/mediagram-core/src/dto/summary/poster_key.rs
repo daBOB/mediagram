@@ -24,7 +24,7 @@ pub(super) fn poster_key_for(
         debug_assert!(mlib_spec::package::poster_key_is_valid(&key));
         return Some(key);
     }
-    if !matches!(parsed, mlib_spec::Kind::Tut | mlib_spec::Kind::Docu) {
+    if !matches!(parsed, mlib_spec::Kind::Tut | mlib_spec::Kind::Docu | mlib_spec::Kind::Book) {
         return None;
     }
     let name = show.or(title)?;

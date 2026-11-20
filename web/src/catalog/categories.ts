@@ -20,6 +20,8 @@ import { posterKeyFor } from "./posters";
 export const TUTORIALS = "tutorials";
 /** Department for a documentary collection or a standalone documentary. */
 export const DOCUMENTARIES = "documentaries";
+/** Department for a standalone audiobook. */
+export const AUDIOBOOKS = "audiobooks";
 
 /**
  * The `(department, item_key)` a category on this unit is filed under, or
@@ -27,7 +29,8 @@ export const DOCUMENTARIES = "documentaries";
  * `show`/`title` slugs to nothing.
  */
 export function categoryKey(kind: string, show: string | null, title: string | null): [string, string] | null {
-  const department = kind === "tut" || kind === "doc" ? TUTORIALS : kind === "docu" ? DOCUMENTARIES : null;
+  const department =
+    kind === "tut" || kind === "doc" ? TUTORIALS : kind === "docu" ? DOCUMENTARIES : kind === "book" ? AUDIOBOOKS : null;
   if (department === null) return null;
   const itemKey = posterKeyFor(kind, null, show ?? title);
   return itemKey === null ? null : [department, itemKey];

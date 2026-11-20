@@ -30,8 +30,8 @@ pub(super) async fn search_and_resolve(
     let path = match kind {
         Kind::Movie => "/search/movie",
         Kind::Ep => "/search/tv",
-        Kind::Tut | Kind::Doc | Kind::Docu => {
-            bail!("a course has no TMDB entry; courses are described by hand")
+        Kind::Tut | Kind::Doc | Kind::Docu | Kind::Book => {
+            bail!("a course or an audiobook has no TMDB entry; they are described by hand")
         }
     };
 

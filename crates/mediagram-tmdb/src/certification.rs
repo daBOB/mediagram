@@ -27,7 +27,7 @@ pub async fn certification(
     let path = match kind {
         Kind::Movie => format!("/movie/{id}/release_dates"),
         Kind::Ep => format!("/tv/{id}/content_ratings"),
-        Kind::Tut | Kind::Doc | Kind::Docu => bail!("a course has no provider entry"),
+        Kind::Tut | Kind::Doc | Kind::Docu | Kind::Book => bail!("a course or an audiobook has no provider entry"),
     };
     let value = api
         .get_json(&path, &[])

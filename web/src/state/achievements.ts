@@ -11,7 +11,7 @@
 import { binge, counted, DAY_MS, dayTotals, genreArrivals, hours, streak, wholeShow, type Finish, type Rung } from "./achievement-rungs";
 import type { DayStatRow } from "./stats-record";
 
-export type TitleKind = "movie" | "ep" | "tut" | "doc" | "docu";
+export type TitleKind = "movie" | "ep" | "tut" | "doc" | "docu" | "book";
 
 /** One set the library holds, as the rules read it. */
 export interface LibraryTitle {

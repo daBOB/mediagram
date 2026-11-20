@@ -37,6 +37,10 @@ pub enum Kind {
     /// such as "Terra X" (`show` the collection title, `s`/`e` the chapter
     /// and number within it, filed the way a course lesson is).
     Docu,
+    /// An audiobook: one MP3 file, a standalone set like a film with no
+    /// `show`, `s` or `e`. Carries `title`, `container` `mp3` and `acodec`
+    /// `mp3`, and none of `vcodec`, `q` or `hdr` — there is no picture.
+    Book,
 }
 
 /// Episode number: a single episode or an inclusive range for multi-episode files.
@@ -180,7 +184,7 @@ pub fn position_code(kind: Kind, season: u32, ep: Episode) -> Option<String> {
         Kind::Tut => Some(lesson_code(season, ep)),
         Kind::Doc => Some(document_code(season, ep)),
         Kind::Docu => Some(docu_code(season, ep)),
-        Kind::Movie => None,
+        Kind::Movie | Kind::Book => None,
     }
 }
 

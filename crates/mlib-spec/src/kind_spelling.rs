@@ -5,7 +5,14 @@ use crate::caption::Kind;
 
 impl Kind {
     /// Every kind, in the order a reader would list them.
-    pub const ALL: [Kind; 5] = [Kind::Movie, Kind::Ep, Kind::Tut, Kind::Doc, Kind::Docu];
+    pub const ALL: [Kind; 6] = [
+        Kind::Movie,
+        Kind::Ep,
+        Kind::Tut,
+        Kind::Doc,
+        Kind::Docu,
+        Kind::Book,
+    ];
 
     /// The spelling used on the wire and in the index's `kind` column — the
     /// same one serde writes, so a caption and a row can never disagree.
@@ -17,6 +24,7 @@ impl Kind {
             Kind::Tut => "tut",
             Kind::Doc => "doc",
             Kind::Docu => "docu",
+            Kind::Book => "book",
         }
     }
 }

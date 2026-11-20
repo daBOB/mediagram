@@ -67,3 +67,11 @@ fn a_name_that_slugs_to_nothing_is_no_key() {
     assert_eq!(key("docu", None, None, Some("!!!")), None);
     assert_eq!(key("tut", None, None, None), None);
 }
+
+#[test]
+fn a_book_keys_by_its_own_title() {
+    assert_eq!(
+        key("book", None, None, Some("Die unendliche Geschichte")).as_deref(),
+        Some("title-die-unendliche-geschichte")
+    );
+}

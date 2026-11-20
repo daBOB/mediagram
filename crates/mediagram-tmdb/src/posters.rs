@@ -179,8 +179,8 @@ pub fn poster_key(kind: Kind, id: u64) -> String {
 pub fn kind_key(kind: Kind) -> &'static str {
     match kind {
         Kind::Movie => "movie",
-        // A course or a documentary has no provider entry; neither ever
+        // A course, a documentary or an audiobook has no provider entry; neither ever
         // reaches this table.
-        Kind::Ep | Kind::Tut | Kind::Doc | Kind::Docu => "tv",
+        Kind::Ep | Kind::Tut | Kind::Doc | Kind::Docu | Kind::Book => "tv",
     }
 }

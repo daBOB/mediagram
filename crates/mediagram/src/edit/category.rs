@@ -92,12 +92,12 @@ pub fn write(conn: &Connection, planned: &Planned) -> Result<()> {
 }
 
 /// The key a category on `row` is filed under, or why `row` cannot have
-/// one: only a course, a course document or a documentary is a unit a
+/// one: only a course, a course document, a documentary or an audiobook is a unit a
 /// category files.
 fn key_for(row: &SetRow) -> Result<(&'static str, String)> {
-    if !matches!(row.kind, Kind::Tut | Kind::Doc | Kind::Docu) {
+    if !matches!(row.kind, Kind::Tut | Kind::Doc | Kind::Docu | Kind::Book) {
         bail!(
-            "set {} is a {}; categories are for courses and documentaries",
+            "set {} is a {}; categories are for courses, documentaries and audiobooks",
             row.set_id,
             row.kind
         );
@@ -119,6 +119,7 @@ fn unit_label(kind: Kind, has_show: bool) -> &'static str {
         Kind::Tut | Kind::Doc => "the course: every lesson and document in it",
         Kind::Docu if has_show => "the collection: every documentary in it",
         Kind::Docu => "this documentary",
+        Kind::Book => "this audiobook",
         Kind::Movie | Kind::Ep => unreachable!("key_for already refused this kind"),
     }
 }

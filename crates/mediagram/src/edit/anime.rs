@@ -52,7 +52,7 @@ fn target(row: &SetRow) -> Result<(Kind, u64)> {
     };
     match row.kind {
         Kind::Movie | Kind::Ep => Ok((row.kind, tmdb)),
-        Kind::Tut | Kind::Doc | Kind::Docu => {
+        Kind::Tut | Kind::Doc | Kind::Docu | Kind::Book => {
             bail!(
                 "set {} is a {}; only films and series can be anime",
                 row.set_id,

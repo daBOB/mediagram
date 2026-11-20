@@ -175,7 +175,7 @@ fn a_film_is_refused() {
     assert!(
         error
             .to_string()
-            .contains("categories are for courses and documentaries")
+            .contains("categories are for courses, documentaries and audiobooks")
     );
 }
 

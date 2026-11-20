@@ -80,6 +80,10 @@ describe("which sets can have artwork", () => {
     expect(posterKeyFor("docu", null, "Terra X")).toBe("title-terra-x");
   });
 
+  test("a book keys by its own title", () => {
+    expect(posterKeyFor("book", null, "Die unendliche Geschichte")).toBe("title-die-unendliche-geschichte");
+  });
+
   test("a provider id wins over a fallback title when both are given", () => {
     expect(posterKeyFor("movie", 550, "Fight Club")).toBe("tmdb-movie-550");
   });

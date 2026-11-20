@@ -61,5 +61,19 @@
     "show": null,
     "title": "Über Alles",
     "key": ["documentaries", "title-ber-alles"]
+  },
+  {
+    "name": "a book keys by its own title",
+    "kind": "book",
+    "show": null,
+    "title": "Die unendliche Geschichte",
+    "key": ["audiobooks", "title-die-unendliche-geschichte"]
+  },
+  {
+    "name": "a book title loses the letters the slug drops",
+    "kind": "book",
+    "show": null,
+    "title": "Über die Psychologie des Geldes: Zeitlose Lektionen über Reichtum, Gier und Glück",
+    "key": ["audiobooks", "title-ber-die-psychologie-des-geldes-zeitlose-lektionen-ber-reichtum-gier-und-gl-ck"]
   }
 ]

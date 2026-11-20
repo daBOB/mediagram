@@ -20,8 +20,8 @@ pub(super) async fn find_by_external(
     let hit = match kind {
         Kind::Movie => found.movie_results.into_iter().next(),
         Kind::Ep => found.tv_results.into_iter().next(),
-        Kind::Tut | Kind::Doc | Kind::Docu => {
-            bail!("a course has no TMDB entry; courses are described by hand")
+        Kind::Tut | Kind::Doc | Kind::Docu | Kind::Book => {
+            bail!("a course or an audiobook has no TMDB entry; they are described by hand")
         }
     };
     hit.map(|h| h.id)

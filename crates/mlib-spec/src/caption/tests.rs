@@ -72,3 +72,33 @@ fn with_part_keeps_everything_else() {
     assert_eq!(d.part.i, 1);
     assert_eq!(d.show, c.show);
 }
+
+#[test]
+fn book_is_spelled_book() {
+    assert_eq!("book".parse::<Kind>(), Ok(Kind::Book));
+    assert_eq!(Kind::Book.to_string(), "book");
+}
+
+#[test]
+fn a_book_caption_round_trips() {
+    let c = Caption {
+        t: Kind::Book,
+        show: None,
+        s: None,
+        e: None,
+        year: None,
+        ids: ProviderIds::default(),
+        title: Some("Red Rising - Asche zu Asche".into()),
+        container: "mp3".into(),
+        acodec: Some("mp3".into()),
+        vcodec: None,
+        q: None,
+        hdr: None,
+        alang: vec![],
+        dur: Some(94137),
+        ..ep()
+    };
+    let text = crate::caption_codec::to_text(&c, &c.display_name()).unwrap();
+    assert_eq!(crate::caption_codec::parse(&text).unwrap(), c);
+    assert_eq!(c.display_name(), "Red Rising - Asche zu Asche");
+}
