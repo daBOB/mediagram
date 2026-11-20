@@ -18,6 +18,7 @@ import data.WatchSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import model.DailyLimitWords
 import model.MediaSet
@@ -45,7 +46,7 @@ class PlayerViewModel @Inject constructor(
     internal val repository: WatchStateRepository,
     private val recorder: ProgressRecorder,
     private val watchSync: WatchSync,
-    catalogRepository: CatalogRepository,
+    private val catalogRepository: CatalogRepository,
     preferences: PlayerPreferences,
     subtitleTrackSource: SubtitleTrackSource,
     internal val playbackServiceController: PlaybackServiceController = PlaybackServiceController.Noop,
@@ -90,10 +91,9 @@ class PlayerViewModel @Inject constructor(
     val playingAs: StateFlow<Profile?> = _playingAs.asStateFlow()
 
     /** The kid's daily limit: asked before an in-player switch, and the source of the one warning per title. */
-    private val isBook: suspend (String) -> Boolean = { catalogRepository.mediaSet(it)?.isBook == true }
     private val dailyLimit = DailyLimitGate(
         repository,
-        isBook = isBook,
+        isBook = { catalogRepository.mediaSet(it)?.isBook == true },
         profile = { playingAs.value ?: repository.chosenProfile.value },
     )
     private val limitWarning = DailyLimitWarning(viewModelScope, dailyLimit, ::tellLimit)
@@ -204,11 +204,20 @@ class PlayerViewModel @Inject constructor(
     /** Words over the picture, through the pill watch together's notices use; shown even with the controls hidden. */
     private fun tellLimit(words: String) = togetherController.tell(words, DAILY_LIMIT_NOTICE_MS)
 
-    /** A title opened: its one warning is due, if little is left. */
+    /** The lookup of the open title's kind; a newer open cancels it, so a slow answer never lands on the wrong title. */
+    private var limitLookup: Job? = null
+
+    /**
+     * A title opened: its one warning is due, if little is left, and only
+     * once the catalog positively says it is not a book. Until then it is
+     * held back, so a slow or missing answer never warns a book.
+     */
     internal fun limitOpened(setId: String) {
-        viewModelScope.launch {
-            // A catalog that cannot answer warns like any title.
-            limitWarning.opened(book = orDefault(false, "whether $setId is a book") { isBook(setId) })
+        limitWarning.opened(book = true)
+        limitLookup?.cancel()
+        limitLookup = viewModelScope.launch {
+            val set = orDefault(null, "the set $setId") { catalogRepository.mediaSet(setId) }
+            if (set != null && !set.isBook) limitWarning.opened(book = false)
         }
     }
 
