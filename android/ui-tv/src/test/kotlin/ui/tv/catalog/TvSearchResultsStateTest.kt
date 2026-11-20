@@ -153,6 +153,7 @@ class TvSearchResultsStateTest : TvScreenStateTest() {
                 animeEpisodes = emptyList(),
                 documentaries = emptyList(),
                 lessons = listOf(titleRow("l")),
+                audiobooks = emptyList(),
                 people = emptyList(),
                 collections = emptyList(),
                 filters = emptyList(),

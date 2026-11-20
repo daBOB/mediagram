@@ -19,7 +19,7 @@ fun everyFilm(shelves: List<Shelf>): List<MediaSet> =
         .filter {
             when (it.department) {
                 Department.MOVIES, Department.ANIME -> true
-                Department.SERIES, Department.DOCUMENTARIES, Department.TUTORIALS -> false
+                Department.SERIES, Department.DOCUMENTARIES, Department.TUTORIALS, Department.AUDIOBOOKS -> false
             }
         }.flatMap { it.entries }
         .filterIsInstance<Entry.Film>()

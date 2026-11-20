@@ -38,6 +38,9 @@ fun animeLineOf(department: AnimeDepartment): String =
 /** "N documentaries" — already spelled before this file existed; kept here so every department's line lives beside the others. */
 fun documentariesLineOf(department: DocumentariesDepartment): String = spelledCountOf(department.itemCount, Department.DOCUMENTARIES.extent)
 
+/** "N audiobooks" — the web's `countOf(books.length, "audiobook")`. */
+fun audiobooksLineOf(department: AudiobooksDepartment): String = spelledCountOf(department.itemCount, Department.AUDIOBOOKS.extent)
+
 /** "N franchises · M lists", the franchise half dropped while there are none. */
 fun collectionsLineOf(
     franchiseCount: Int,

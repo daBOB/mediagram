@@ -29,4 +29,15 @@ class SectionsTest {
         assertEquals(setOf("anime"), Profile("k", "Mia", kids = true, hiddenSections = listOf("anime")).hiddenFrom)
         assertEquals(emptySet(), Profile("b", "Ben").hiddenFrom)
     }
+
+    /** Hiding Audiobooks hides books: a book is keyed to its own section, never left to fall to Movies. */
+    @Test
+    fun anAudiobookSitsInAudiobooks() {
+        val book = MediaSet(
+            setId = "b", kind = Kind.AUDIOBOOK, title = "Momo", show = null, chapter = null, path = null,
+            season = null, episodeFirst = null, episodeLast = null, year = null, durationSecs = null, posterPath = null, totalBytes = 0,
+        )
+        assertEquals("audiobooks", book.sectionKey())
+        assertEquals(Section("audiobooks", "Audiobooks"), SECTIONS.last())
+    }
 }

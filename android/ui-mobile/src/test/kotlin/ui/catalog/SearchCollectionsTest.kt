@@ -27,6 +27,7 @@ class SearchCollectionsTest : BrowsePageTest() {
         SearchGroups(
             films = emptyList(), matchedShows = emptyList(), episodes = emptyList(), animeFilms = emptyList(),
             matchedAnimeShows = emptyList(), animeEpisodes = emptyList(), documentaries = emptyList(), lessons = emptyList(),
+            audiobooks = emptyList(),
             people = emptyList(),
             collections =
                 listOf(

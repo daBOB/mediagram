@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +44,7 @@ import coil3.compose.AsyncImage
 import designsystem.hoverMotion
 import model.Kind
 import model.episodeLabel
+import ui.common.catalog.artScale
 import ui.common.catalog.rememberRowState
 import java.io.File
 
@@ -98,7 +98,7 @@ private fun ResumeCard(
             AsyncImage(
                 model = File(art),
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = set.artScale,
                 modifier = Modifier.matchParentSize().hoverMotion(source, durationMs = 1200, zoom = 1.04f),
             )
         } else {

@@ -99,6 +99,40 @@ fun documentariesDepartmentOf(
 }
 
 /**
+ * The Audiobooks department's opening page — ported from `renderAudiobooksDept`
+ * (`audiobooks-department.js`). `null` for no books. A book is one file with
+ * no show or course around it, so there are no folder rows, and it has no
+ * backdrop, so the hero has no lead.
+ */
+data class AudiobooksDepartment(
+    val itemCount: Int,
+    /** Books being listened to, newest touch first — a book has no next episode to offer. */
+    val resumeCards: List<SetCard>,
+    val recentlyAdded: List<MediaSet>,
+    /** One row per genre, "Other" last — [categoryRowsOf] over [Entry]. */
+    val categories: List<CategoryRow<Entry>>,
+    /** Every book, in the shelf's own order: by title. */
+    val books: List<MediaSet>,
+)
+
+fun audiobooksDepartmentOf(
+    books: List<MediaSet>,
+    byId: Map<String, MediaSet>,
+    watch: WatchSnapshot,
+    heldIds: Set<String> = emptySet(),
+): AudiobooksDepartment? {
+    if (books.isEmpty()) return null
+    val listening = departmentUnderwayOf(emptyList(), byId, watch) { it.kind == Kind.AUDIOBOOK }.continues
+    return AudiobooksDepartment(
+        itemCount = books.size,
+        resumeCards = resumeCardsOf(listening, emptyList(), watch, heldIds),
+        recentlyAdded = books.sortedByDescending(MediaSet::addedAt).take(DEPARTMENT_ROW),
+        categories = categoryRowsOf(books.map(Entry::Film), ::categoryOf),
+        books = books,
+    )
+}
+
+/**
  * The Series or Tutorials department's opening page — ported from
  * `renderShowsDept`. `null` for an empty shelf.
  *

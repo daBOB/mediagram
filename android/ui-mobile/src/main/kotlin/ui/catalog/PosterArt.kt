@@ -68,6 +68,9 @@ import java.io.File
  * its own, because finishing clears the position that would have drawn one,
  * so without the tick a plate watched to the end would look untouched.
  * Ported from `plate.js`'s own two marks.
+ *
+ * [whole] is a book's square cover: a square plate, the cover contained
+ * rather than cropped — `plate.js`'s `square`.
  */
 @Composable
 internal fun PosterArt(
@@ -76,12 +79,13 @@ internal fun PosterArt(
     modifier: Modifier = Modifier,
     progress: Float? = null,
     watched: Boolean = false,
+    whole: Boolean = false,
 ) {
     // Square, as the web's plate is; in Ambient the cards are rounded (the viewer's choice), as television's are.
     val shape = if (LocalBackdrop.current == Backdrop.AMBIENT) RoundedCornerShape(Radius.card) else RectangleShape
     BoxWithConstraints(
         modifier = modifier
-            .aspectRatio(2f / 3f)
+            .aspectRatio(if (whole) 1f else 2f / 3f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
@@ -93,7 +97,7 @@ internal fun PosterArt(
                 // and it announces the title; saying it again here would
                 // make every plate speak twice.
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = if (whole) ContentScale.Fit else ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
         } else {

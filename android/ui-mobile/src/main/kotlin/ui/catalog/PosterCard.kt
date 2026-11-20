@@ -46,7 +46,8 @@ import ui.ambient.readingLineCard
  * never carries — only a film or a set on Continue or Next up does.
  * [held] draws the same "offline" badge `set-badge.js` draws — a title
  * this device holds in full. [versions] is a film's "2 versions" tag, as
- * `set-badge.js`'s `versionsBadge` draws it, ahead of that one.
+ * `set-badge.js`'s `versionsBadge` draws it, ahead of that one. [whole]
+ * draws a book's square cover uncropped ([PosterArt]).
  */
 @Composable
 internal fun PosterCard(
@@ -60,6 +61,7 @@ internal fun PosterCard(
     watched: Boolean = false,
     held: Boolean = false,
     versions: String? = null,
+    whole: Boolean = false,
 ) {
     val source = remember { MutableInteractionSource() }
     Column(
@@ -76,6 +78,7 @@ internal fun PosterCard(
             modifier = Modifier.hoverMotion(source, durationMs = 700, lift = (-6).dp),
             progress = progress,
             watched = watched,
+            whole = whole,
         )
         HoverTitle(
             text = title,

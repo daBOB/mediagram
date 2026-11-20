@@ -11,7 +11,7 @@ class CatalogTabsTest {
     @Test
     fun theMastheadIsHomeThenEachShelfThenCollections() {
         assertEquals(
-            listOf("Home", "Movies", "Series", "Anime", "Documentaries", "Tutorials", "Collections"),
+            listOf("Home", "Movies", "Series", "Anime", "Documentaries", "Tutorials", "Audiobooks", "Collections"),
             mastheadTabsOf(everyDepartment).map(CatalogTab::label),
         )
     }
@@ -31,7 +31,7 @@ class CatalogTabsTest {
         val tabs = listOf(CatalogTab.Home) + everyDepartment.map { CatalogTab.Dept(it.department) } + KeptKind.entries.map(CatalogTab::Kept)
 
         assertEquals(
-            listOf("home", "movies", "series", "anime", "documentaries", "tutorials", "continue", "watchlist", "collections"),
+            listOf("home", "movies", "series", "anime", "documentaries", "tutorials", "audiobooks", "continue", "watchlist", "collections"),
             tabs.map(CatalogTab::key),
         )
         for (tab in tabs) assertEquals(tab, catalogTabOf(tab.key, everyDepartment))

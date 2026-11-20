@@ -10,6 +10,7 @@ import catalog.spelledCountOf
 import catalog.playedOf
 import catalog.versionsBadgeOf
 import ui.common.catalog.cardProgressOf
+import ui.common.catalog.coverIsWhole
 import data.PortraitRequestLog
 import ui.common.catalog.DESTINATION_ASPECT
 import java.io.File
@@ -52,7 +53,8 @@ internal fun TvSearchCell(
                 TvPlate(
                     title = set.title,
                     posterPath = set.posterPath?.let(::File),
-                    onOpen = { onOpenTitle(set.setId) },
+                    // A book plays at once, as the web's `movieGrid(books, play)`: it has no page to stop at.
+                    onOpen = { if (set.coverIsWhole) onPlay(set.setId) else onOpenTitle(set.setId) },
                     modifier = modifier.focusRequester(requester),
                     // The line a shelf's plate carries, telling two versions of a title apart.
                     caption = factsLine(set.year, set.durationSecs),
@@ -60,6 +62,7 @@ internal fun TvSearchCell(
                     progress = progress,
                     watched = watched,
                     held = entry.row.held,
+                    whole = set.coverIsWhole,
                 )
             } else {
                 TvSearchRow(row = entry.row, progress = progress, watched = watched, onPlay = onPlay, focus = requester)

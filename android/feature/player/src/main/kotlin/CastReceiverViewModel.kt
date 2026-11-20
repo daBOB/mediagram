@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.DailyLimitState
+import model.Kind
 import model.dailyLimitState
 import model.forKidsProfile
 import model.hiddenFrom
@@ -115,7 +116,7 @@ class CastReceiverViewModel @Inject constructor(
         val marks = repository.snapshotOf(profileId)?.kidsMarks.orEmpty()
         if (forKidsProfile(listOf(media), marks, profile.kidsLimit).isEmpty()) return ageReason(profile.name)
         // Listening to a book is not screen time, so a used-up day does not refuse it.
-        if (!media.isBook && dailyLimitState(profile.dailyLimit, repository.watchedToday(profileId)).state == DailyLimitState.OUT) return timeReason(profile.name)
+        if (media.kind != Kind.AUDIOBOOK && dailyLimitState(profile.dailyLimit, repository.watchedToday(profileId)).state == DailyLimitState.OUT) return timeReason(profile.name)
         return null
     }
 }

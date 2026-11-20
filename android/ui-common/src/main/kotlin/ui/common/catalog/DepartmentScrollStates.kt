@@ -15,7 +15,7 @@ import androidx.compose.runtime.remember
  * read whichever one is the active tab's for its own over-hero blend
  * (`ui.common.chrome.HeroListState`). Series, Anime and Tutorials each get their
  * own — switching between those tabs must not share a position — and
- * Series/Anime/Tutorials use a grid, Movies/Documentaries a plain column.
+ * Series/Anime/Tutorials use a grid, Movies/Documentaries/Audiobooks a plain column.
  */
 class DepartmentScrollStates(
     val movies: LazyListState,
@@ -23,6 +23,7 @@ class DepartmentScrollStates(
     val anime: LazyGridState,
     val tutorials: LazyGridState,
     val documentaries: LazyListState,
+    val audiobooks: LazyListState,
 )
 
 @Composable
@@ -32,12 +33,13 @@ fun rememberDepartmentScrollStates(): DepartmentScrollStates {
     val anime = rememberLazyGridState()
     val tutorials = rememberLazyGridState()
     val documentaries = rememberLazyListState()
-    // The five states are each already remembered; the wrapper around them
+    val audiobooks = rememberLazyListState()
+    // The six states are each already remembered; the wrapper around them
     // was not, so a caller that keys its own `remember` on this whole object
     // (the phone's `LibraryBranches`' own `deptScroll`) saw a new instance —
     // and so a changed key — on every recomposition, not only when a state
     // actually changed.
-    return remember(movies, series, anime, tutorials, documentaries) {
-        DepartmentScrollStates(movies, series, anime, tutorials, documentaries)
+    return remember(movies, series, anime, tutorials, documentaries, audiobooks) {
+        DepartmentScrollStates(movies, series, anime, tutorials, documentaries, audiobooks)
     }
 }

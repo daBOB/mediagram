@@ -1,6 +1,6 @@
 package model
 
-/** One of the library's five departments as a profile's access is spelled: its stored [key] and the [label] the control prints. */
+/** One of the library's six departments as a profile's access is spelled: its stored [key] and the [label] the control prints. */
 data class Section(
     val key: String,
     val label: String,
@@ -14,6 +14,7 @@ val SECTIONS: List<Section> =
         Section("anime", "Anime"),
         Section("documentaries", "Documentaries"),
         Section("tutorials", "Tutorials"),
+        Section("audiobooks", "Audiobooks"),
     )
 
 /** The [Section] key this set sits in; anime leaves its kind's department first, as the catalog shelves it. */
@@ -23,6 +24,7 @@ fun MediaSet.sectionKey(): String =
         kind == Kind.DOCUMENTARY -> "documentaries"
         kind == Kind.EPISODE -> "series"
         kind == Kind.TUTORIAL || kind == Kind.DOCUMENT -> "tutorials"
+        kind == Kind.AUDIOBOOK -> "audiobooks"
         else -> "movies"
     }
 

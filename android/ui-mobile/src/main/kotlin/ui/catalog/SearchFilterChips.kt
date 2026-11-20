@@ -75,6 +75,7 @@ private fun filterLabel(filter: SearchFilter): String = when (filter) {
     SearchFilter.ANIME -> "Anime"
     SearchFilter.DOCUMENTARIES -> "Documentaries"
     SearchFilter.TUTORIALS -> "Tutorials"
+    SearchFilter.AUDIOBOOKS -> "Audiobooks"
     SearchFilter.PEOPLE -> "People"
     SearchFilter.COLLECTIONS -> "Collections"
 }

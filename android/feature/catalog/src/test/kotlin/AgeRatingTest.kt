@@ -1,6 +1,7 @@
 package catalog
 
 import model.Kind
+import model.KIDS_BOOK_CATEGORY
 import model.KidsVerdict
 import model.MediaSet
 import model.ageLabelOf
@@ -73,5 +74,18 @@ class AgeRatingTest {
         // A mark on a rated title never counts: "Twelve" marked from 6 stays out at 6.
         val marks = mapOf("FromTwelve" to 12, "FromSix" to 6, "Twelve" to 6)
         assertEquals(listOf("Six", "FromSix"), forKidsProfile(sets, marks, 6).map { it.setId })
+    }
+
+    private fun book(id: String, category: String?) = rated(id, fsk = null, kind = Kind.AUDIOBOOK).copy(category = category)
+
+    /** A book carries no FSK; filed under the children's genre is its rating, the same three books and results as the web's own test. */
+    @Test
+    fun aKinderbuecherBookIsForEveryKid() {
+        val books = listOf(book("K", KIDS_BOOK_CATEGORY), book("S", "Sachbuch"), book("N", null))
+        for (limit in listOf(6, 12)) assertEquals(listOf("K"), forKidsProfile(books, emptyMap(), limit).map { it.setId })
+        // Any other book still follows the hand-mark rule.
+        assertEquals(listOf("K", "S"), forKidsProfile(books, mapOf("S" to 6), 6).map { it.setId })
+        // Only the exact genre name counts.
+        assertEquals(emptyList(), forKidsProfile(listOf(book("X", "kinderbücher")), emptyMap(), 12))
     }
 }

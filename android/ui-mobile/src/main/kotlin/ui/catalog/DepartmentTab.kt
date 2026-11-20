@@ -12,7 +12,7 @@ import uniffi.mediagram_core.TitleInfo
 /**
  * A department pill's own page: Movies, Series and Tutorials on their
  * department screens ([MoviesDepartmentScreen], [ShowsDepartmentScreen]),
- * Anime and Documentaries on theirs, each read from the state's pages.
+ * Anime, Documentaries and Audiobooks on theirs, each read from the state's pages.
  * Chosen by [Shelf.department], so a department the library gains does not
  * compile until it has a page here.
  */
@@ -54,6 +54,7 @@ internal fun DepartmentTab(
         Department.ANIME -> AnimeDepartmentTab(state, columns, onOpenTitle, onOpenCollection, deptScroll.anime, onPlay)
         Department.TUTORIALS -> ShowsDepartmentTab(Department.TUTORIALS, state, columns, onOpenTitle, onOpenCollection, deptScroll.tutorials, onPlay)
         Department.DOCUMENTARIES -> DocumentariesDepartmentTab(state, onOpenCollection, deptScroll.documentaries, onPlay)
+        Department.AUDIOBOOKS -> AudiobooksDepartmentTab(state, columns, deptScroll.audiobooks, onPlay)
     }
 }
 

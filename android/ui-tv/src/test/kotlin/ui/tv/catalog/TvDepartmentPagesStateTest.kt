@@ -5,10 +5,14 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import catalog.Department
@@ -16,11 +20,14 @@ import catalog.Entry
 import catalog.LibraryPages
 import catalog.Shelf
 import catalog.allSetsById
+import catalog.audiobooksDepartmentOf
+import catalog.libraryPagesOf
 import catalog.moviesDepartmentOf
 import catalog.shelvesOf
 import catalog.showsDepartmentOf
 import model.Kind
 import model.MediaSet
+import model.Progress
 import model.WatchSnapshot
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -195,6 +202,51 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         compose.onNodeWithText("All 3 films →").assertIsFocused()
         compose.onNodeWithText("All 3 films →").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(1, opened)
+    }
+
+    /** The Audiobooks page draws the web's rows: hero, Continue listening, a row per genre with Other last, Recently added, every book. */
+    @Test
+    fun theAudiobooksPageDrawsTheWebsRows() {
+        val books =
+            listOf(
+                set("b-a", Kind.AUDIOBOOK, "Apfel", addedAt = 1).copy(category = "Sachbuch"),
+                set("b-b", Kind.AUDIOBOOK, "Birne", addedAt = 2),
+            )
+        val shelves = shelvesOf(books)
+        val watch = WatchSnapshot.Empty.copy(progress = listOf(Progress("b-b", at = 600.0, duration = 36_000.0, updatedAt = 1)))
+
+        show {
+            DepartmentOrShelfWall(
+                shelf = shelves.single { it.department == Department.AUDIOBOOKS },
+                pages = libraryPagesOf(shelves, watch, emptySet(), now = 0),
+                watch = watch,
+                heldIds = emptySet(),
+                deptScroll = rememberDepartmentScrollStates(),
+                onOpenTitle = {},
+                onPlay = {},
+                onOpenCollection = {},
+                onOpenGenre = {},
+                onOpenMoviesPage = {},
+                restoreKey = null,
+            )
+        }
+
+        // The hero sets its title in capitals, over its count line; the page scrolls each row into view, top down.
+        for (heading in listOf("AUDIOBOOKS", "two audiobooks", "Continue listening", "Sachbuch", "Other", "Recently added", "All audiobooks")) {
+            compose.onAllNodes(hasScrollToNodeAction()).onFirst().performScrollToNode(hasText(heading))
+            assert(compose.onAllNodesWithText(heading).fetchSemanticsNodes().isNotEmpty()) { "$heading missing" }
+        }
+    }
+
+    /** A book only "All audiobooks" holds — past Recently added's dozen, with no genre rows — is still where the remote comes back to. */
+    @Test
+    fun aRestoreKeyNamingABookOnlyTheWallHoldsIsFocused() {
+        val books = (0 until 14).map { i -> set("b$i", Kind.AUDIOBOOK, "Book %02d".format(i), addedAt = i.toLong()) }
+        val dept = audiobooksDepartmentOf(books, books.associateBy(MediaSet::setId), WatchSnapshot.Empty)!!
+
+        show { TvAudiobooksDepartmentPage(dept, WatchSnapshot.Empty, onPlay = {}, restoreKey = "b0") }
+
+        compose.onNodeWithText("Book 00").assertIsFocused()
     }
 
     private fun press(key: Key) {

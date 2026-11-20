@@ -21,4 +21,5 @@ enum class Department(
     ANIME("Anime", "title", "episode"),
     DOCUMENTARIES("Documentaries", "documentary", "documentary"),
     TUTORIALS("Tutorials", "course", "lesson"),
+    AUDIOBOOKS("Audiobooks", "audiobook", "audiobook"),
 }

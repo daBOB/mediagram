@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.DailyLimitWords
+import model.Kind
 import javax.inject.Inject
 
 /** How long the library's line stays up: the web's page notice. */
@@ -29,7 +30,7 @@ class LibraryPlayGate @Inject constructor(
     catalog: CatalogRepository,
     private val togetherLive: TogetherLive,
 ) : ViewModel(), PlayGate {
-    private val limit = DailyLimitGate(repository, isBook = { catalog.mediaSet(it)?.isBook == true })
+    private val limit = DailyLimitGate(repository, isBook = { catalog.mediaSet(it)?.kind == Kind.AUDIOBOOK })
 
     private val _notice = MutableStateFlow<String?>(null)
     val notice: StateFlow<String?> = _notice.asStateFlow()

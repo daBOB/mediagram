@@ -11,6 +11,7 @@ import catalog.heldOf
 import catalog.playedOf
 import catalog.versionsBadgeOf
 import ui.common.catalog.cardProgressOf
+import ui.common.catalog.coverIsWhole
 import java.io.File
 import model.Progress
 
@@ -53,6 +54,7 @@ internal fun TvEntryPlate(
                 held = heldOf(entry.set, heldIds),
                 backdropPath = entry.set.backdropPath?.let(::File),
                 inRow = inRow,
+                whole = entry.set.coverIsWhole,
             )
         }
 
@@ -113,5 +115,6 @@ internal fun TvSetPlate(
         held = card.held,
         // A film beside episodes on Continue or My List keeps their meta line's room.
         reserveMeta = true,
+        whole = set.coverIsWhole,
     )
 }

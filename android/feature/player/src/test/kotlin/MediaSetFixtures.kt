@@ -27,7 +27,6 @@ fun fakeMediaSet(
     totalBytes: Long = 0,
     chapter: String? = null,
     path: String? = null,
-    isBook: Boolean = false,
 ): MediaSet = MediaSet(
     setId = setId,
     kind = kind,
@@ -45,5 +44,4 @@ fun fakeMediaSet(
     totalBytes = totalBytes,
     posterKey = posterKey,
     fsk = fsk,
-    isBook = isBook,
 )

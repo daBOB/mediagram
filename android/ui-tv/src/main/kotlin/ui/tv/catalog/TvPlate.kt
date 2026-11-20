@@ -75,6 +75,9 @@ import ui.tv.TvFocus
  * style whose rows are stills ([rowCardsAreLandscape]) it then shows
  * [backdropPath] — or the poster, cropped — at 16:9.
  *
+ * [whole] is a book's square cover: a square plate in any style, the cover
+ * contained rather than cropped — `plate.js`'s `square`.
+ *
  * A `Card`, not a plain `Surface`: tv-material's own focus scale and border
  * are built to sit on a `Card`'s container, and [TvFocus] hands the same
  * four pieces every other card on this surface takes, so this plate's
@@ -95,8 +98,9 @@ fun TvPlate(
     backdropPath: File? = null,
     inRow: Boolean = false,
     reserveMeta: Boolean = false,
+    whole: Boolean = false,
 ) {
-    val landscape = inRow && rowCardsAreLandscape
+    val landscape = inRow && rowCardsAreLandscape && !whole
     val glow = rememberCardGlow(rowArtOf(landscape, posterPath, backdropPath))
     Card(
         onClick = onOpen,
@@ -114,7 +118,8 @@ fun TvPlate(
                 progress = progress,
                 watched = watched,
                 held = held,
-                ratio = if (landscape) StillAspectRatio else PosterAspectRatio,
+                ratio = if (whole) 1f else if (landscape) StillAspectRatio else PosterAspectRatio,
+                whole = whole,
             )
             Text(
                 text = title,
@@ -161,6 +166,7 @@ internal fun TvPlateArt(
     modifier: Modifier = Modifier,
     held: Boolean = false,
     ratio: Float = PosterAspectRatio,
+    whole: Boolean = false,
 ) {
     Box(
         modifier =
@@ -180,7 +186,7 @@ internal fun TvPlateArt(
                 // it announces the title; saying it again here would make
                 // every plate speak twice.
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = if (whole) ContentScale.Fit else ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
         } else {

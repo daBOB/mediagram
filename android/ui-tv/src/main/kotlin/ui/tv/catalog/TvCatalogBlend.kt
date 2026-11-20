@@ -62,6 +62,7 @@ internal fun rememberTvCatalogBlend(
                         Department.ANIME -> deptScroll.anime.firstVisibleItemIndex to deptScroll.anime.firstVisibleItemScrollOffset
                         Department.TUTORIALS -> deptScroll.tutorials.firstVisibleItemIndex to deptScroll.tutorials.firstVisibleItemScrollOffset
                         Department.DOCUMENTARIES -> deptScroll.documentaries.firstVisibleItemIndex to deptScroll.documentaries.firstVisibleItemScrollOffset
+                        Department.AUDIOBOOKS -> deptScroll.audiobooks.firstVisibleItemIndex to deptScroll.audiobooks.firstVisibleItemScrollOffset
                         null -> null
                     }
                 }

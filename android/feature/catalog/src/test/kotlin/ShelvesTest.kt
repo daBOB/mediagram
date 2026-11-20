@@ -197,6 +197,16 @@ class ShelvesTest {
         )
     }
 
+    /** A book is listened to, not watched: it has a shelf of its own, by title, and never joins the films. */
+    @Test
+    fun booksAreNeverFilms() {
+        val shelves = shelvesOf(listOf(film("Alien"), set(Kind.AUDIOBOOK, "Momo"), set(Kind.AUDIOBOOK, "Krabat")))
+
+        assertEquals(listOf(Department.MOVIES, Department.DOCUMENTARIES, Department.AUDIOBOOKS), shelves.map { it.department })
+        assertEquals(listOf("Alien"), shelves.first().entries.map { (it as Entry.Film).set.title })
+        assertEquals(listOf("Krabat", "Momo"), shelves.last().entries.map { (it as Entry.Film).set.title })
+    }
+
     /** An anime title leaves Movies and Series entirely, the same exclusivity Documentaries already has. */
     @Test
     fun anAnimeTitleNeverJoinsMoviesOrSeries() {

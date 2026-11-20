@@ -49,7 +49,7 @@ fun chromeCountsOf(
                 it.department to
                     when (it.department) {
                         Department.DOCUMENTARIES -> documentaryCountOf(it.entries)
-                        Department.MOVIES, Department.SERIES, Department.ANIME, Department.TUTORIALS -> it.entries.size
+                        Department.MOVIES, Department.SERIES, Department.ANIME, Department.TUTORIALS, Department.AUDIOBOOKS -> it.entries.size
                     }
             },
         collections = watch.collections.size,

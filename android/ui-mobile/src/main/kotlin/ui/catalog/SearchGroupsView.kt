@@ -28,6 +28,7 @@ import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
 import ui.common.catalog.DESTINATION_ASPECT
+import ui.common.catalog.coverIsWhole
 
 private val SEARCH_CARD_WIDTH = 120.dp
 
@@ -68,6 +69,7 @@ internal fun SearchGroupsView(
     val animeEpisodes = groups.animeEpisodes.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.ANIME }.orEmpty()
     val documentaries = groups.documentaries.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.DOCUMENTARIES }.orEmpty()
     val lessons = groups.lessons.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.TUTORIALS }.orEmpty()
+    val audiobooks = groups.audiobooks.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.AUDIOBOOKS }.orEmpty()
     val people = groups.people.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.PEOPLE }.orEmpty()
     val collections = groups.collections.takeIf { filter == SearchFilter.ALL || filter == SearchFilter.COLLECTIONS }.orEmpty()
 
@@ -97,6 +99,10 @@ internal fun SearchGroupsView(
             }
             if (lessons.isNotEmpty()) {
                 item(key = "lessons") { RowSection("Lessons", lessons, positions, watchedIds, onPlay) }
+            }
+            if (audiobooks.isNotEmpty()) {
+                // A book plays on a tap, as everywhere else it is a card: there is no page to stop at first.
+                item(key = "audiobooks") { PosterSection("Audiobooks", posterCards(audiobooks, watchedIds, onPlay)) }
             }
             if (people.isNotEmpty()) {
                 item(key = "people") { PeopleSection(people, onOpenPerson) }
@@ -129,6 +135,7 @@ private fun posterCards(rows: List<SearchRow>, watchedIds: Set<String>, onOpenTi
                 watched = playedOf(row.set, watchedIds),
                 held = row.held,
                 versions = versionsBadgeOf(row.set),
+                whole = row.set.coverIsWhole,
                 modifier = Modifier.width(SEARCH_CARD_WIDTH),
                 onClick = { onOpenTitle(row.set.setId) },
             )

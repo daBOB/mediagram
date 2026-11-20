@@ -69,14 +69,15 @@ fun latestOf(
  * only ever walks series, anime and tutorials: a documentary has no "next
  * episode" the way a show or a course does, so its folders never offer one
  * here even though a viewer can still resume one directly through the flat,
- * kind-agnostic Continue list [underwayOf] also returns.
+ * kind-agnostic Continue list [underwayOf] also returns. Audiobooks holds
+ * no collections at all.
  */
 internal fun collectionsForNextUp(shelves: List<Shelf>): List<Entry.Collection> =
     shelves
         .asSequence()
         .filter {
             when (it.department) {
-                Department.DOCUMENTARIES -> false
+                Department.DOCUMENTARIES, Department.AUDIOBOOKS -> false
                 Department.MOVIES, Department.SERIES, Department.ANIME, Department.TUTORIALS -> true
             }
         }.flatMap { it.entries }

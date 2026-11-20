@@ -45,6 +45,7 @@ class TvSearchPeopleCardsStateTest : TvScreenStateTest() {
                 animeEpisodes = emptyList(),
                 documentaries = emptyList(),
                 lessons = emptyList(),
+                audiobooks = emptyList(),
                 people = (0..6).map { person(it.toLong()) },
                 collections = emptyList(),
                 filters = emptyList(),

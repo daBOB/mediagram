@@ -145,7 +145,8 @@ internal fun animeDeptTargetOf(
  * one per folder, standalone) is this page's own [ui.tv.catalog.TvDepartmentRows]
  * strip rather than a wall, so a restore key naming a title in any of those
  * still has to be searched here too, not left to a wall that does not exist
- * on this page.
+ * on this page. [TvAudiobooksDepartmentPage] lands the same way, its own
+ * grid being one more section of stops.
  */
 internal fun documentariesDeptTargetOf(
     sections: List<DeptSection<String>>,

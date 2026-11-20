@@ -48,6 +48,7 @@ import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
 import ui.common.catalog.cardProgressOf
+import ui.common.catalog.coverIsWhole
 import kotlin.random.Random
 
 /**
@@ -167,6 +168,7 @@ internal fun EntryCard(
             watched = playedOf(entry.set, watchedIds),
             held = heldOf(entry.set, heldIds),
             versions = versionsBadgeOf(entry.set),
+            whole = entry.set.coverIsWhole,
             modifier = Modifier,
             onClick = { onOpenTitle(entry.set.setId) },
         )

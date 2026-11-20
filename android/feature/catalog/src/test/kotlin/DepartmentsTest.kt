@@ -236,4 +236,32 @@ class DepartmentsTest {
         val dept = documentariesDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!
         assertTrue(dept.categories.isEmpty())
     }
+
+    /**
+     * The Audiobooks page the web draws: what is being listened to, a row per
+     * genre with the unfiled books under Other, what arrived, then every book
+     * by title.
+     */
+    @Test
+    fun audiobooksPageRows() {
+        fun book(title: String, category: String?, addedAt: Long) =
+            film(title, kind = Kind.AUDIOBOOK, category = category, addedAt = addedAt, durationSecs = 36_000)
+        val shelf = shelvesOf(listOf(book("D", null, 4), book("B", "Sachbuch", 2), book("C", null, 3), book("A", "Sachbuch", 1)))
+            .single { it.department == Department.AUDIOBOOKS }
+        val books = shelf.entries.map { (it as Entry.Film).set }
+        val watch = WatchSnapshot.Empty.copy(progress = listOf(Progress("D", at = 600.0, duration = 36_000.0, updatedAt = 1)))
+
+        val dept = audiobooksDepartmentOf(books, books.associateBy(MediaSet::setId), watch)!!
+
+        assertEquals(4, dept.itemCount)
+        assertEquals(listOf("Sachbuch" to listOf("A", "B"), "Other" to listOf("C", "D")), dept.categories.map { it.title to it.units.map(::keyOf) })
+        assertEquals(listOf("D"), dept.resumeCards.map { it.set.setId })
+        assertEquals(listOf("D", "C", "B", "A"), dept.recentlyAdded.map(MediaSet::setId))
+        assertEquals(listOf("A", "B", "C", "D"), dept.books.map(MediaSet::setId))
+    }
+
+    @Test
+    fun noBooksMeansNoAudiobooksPage() {
+        assertNull(audiobooksDepartmentOf(emptyList(), emptyMap(), WatchSnapshot.Empty))
+    }
 }

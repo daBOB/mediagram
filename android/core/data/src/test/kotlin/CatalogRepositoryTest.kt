@@ -94,6 +94,15 @@ class CatalogRepositoryTest {
             assertEquals(Kind.DOCUMENT, repo.sets().single().kind)
         }
 
+    /** A book is shelved as an audiobook, never with the films an unknown kind falls back to. */
+    @Test
+    fun aBookIsAnAudiobook() =
+        runTest {
+            val core = FakeCore(sets = listOf(setSummary(kind = "book")))
+            val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+            assertEquals(Kind.AUDIOBOOK, repo.sets().single().kind)
+        }
+
     /**
      * The index may carry a kind this build has never heard of. It is shown
      * on the film shelf rather than dropped: the wrong shelf is something a

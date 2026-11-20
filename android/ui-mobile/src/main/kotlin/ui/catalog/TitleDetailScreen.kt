@@ -37,6 +37,7 @@ import model.WatchSnapshot
 import model.clockTime
 import playback.FilmPreloadState
 import ui.common.catalog.TitlePreloadUi
+import ui.common.catalog.coverIsWhole
 import ui.common.catalog.rememberTitleCredits
 import ui.common.catalog.togetherJoinOf
 import uniffi.mediagram_core.TitleInfo
@@ -174,7 +175,7 @@ private fun FilmOverviewTab(
     onOpenFranchise: (Long) -> Unit,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-        PosterArt(posterPath = set.posterPath, title = set.title, modifier = Modifier.width(POSTER_WIDTH))
+        PosterArt(posterPath = set.posterPath, title = set.title, modifier = Modifier.width(POSTER_WIDTH), whole = set.coverIsWhole)
         FactSheet(factRows(filmOverviewFacts(set, info, franchise), onOpenGenre, onOpenFranchise))
     }
 }

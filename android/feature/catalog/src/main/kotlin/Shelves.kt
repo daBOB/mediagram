@@ -20,7 +20,7 @@ private val COLLECTED = setOf(Kind.EPISODE, Kind.TUTORIAL, Kind.DOCUMENT)
  * Documentaries is always present, even holding nothing — the web never
  * hides a department, and this is the one shelf a library can genuinely
  * have none of, so the one whose own empty state a viewer can actually
- * reach. The other four drop out instead: a library with no films, no
+ * reach. The other five drop out instead: a library with no films, no
  * anime, or no courses reads as one that has not been pointed at either
  * yet, which an empty department page would say far more quietly than
  * simply not offering the tab.
@@ -43,9 +43,9 @@ fun shelvesOf(sets: List<MediaSet>): List<Shelf> {
     val course = rest.filter { it.kind == Kind.TUTORIAL || it.kind == Kind.DOCUMENT }
     // Everything else, which is films and any kind this build has never
     // heard of. Placing an unknown kind beats hiding it: the wrong shelf is
-    // something a viewer can report, an absence is not. Documentaries has
-    // its own shelf below, so it is the one recognised kind excluded here.
-    val films = rest.filter { it.kind !in COLLECTED && it.kind != Kind.DOCUMENTARY }
+    // something a viewer can report, an absence is not. Documentaries and
+    // Audiobooks (a card per book, by title) have their own shelves below.
+    val films = rest.filter { it.kind !in COLLECTED && it.kind != Kind.DOCUMENTARY && it.kind != Kind.AUDIOBOOK }
     val documentaries = groupDocumentaries(rest.filter { it.kind == Kind.DOCUMENTARY })
     val animeLibrary = groupAnime(anime)
 
@@ -59,6 +59,8 @@ fun shelvesOf(sets: List<MediaSet>): List<Shelf> {
             .takeIf { it.entries.isNotEmpty() },
         Shelf(Department.DOCUMENTARIES, documentaries.collections + documentaries.singles.map(Entry::Film)),
         Shelf(Department.TUTORIALS, collections(course, CollectionKind.COURSE, UNKNOWN_COURSE))
+            .takeIf { it.entries.isNotEmpty() },
+        Shelf(Department.AUDIOBOOKS, rest.filter { it.kind == Kind.AUDIOBOOK }.sortedWith(compareBy(NATURAL) { it.title }).map(Entry::Film))
             .takeIf { it.entries.isNotEmpty() },
     )
 }

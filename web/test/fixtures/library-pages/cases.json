@@ -43,7 +43,8 @@
         "series": ["Alpha", "Beta"],
         "anime": { "shows": ["Gamma"], "films": ["gamma-film"] },
         "documentaries": { "collections": ["Delta"], "singles": ["doc-single"] },
-        "tutorials": ["Epsilon"]
+        "tutorials": ["Epsilon"],
+        "audiobooks": []
       },
       "home": {
         "continues": ["delta-1", "gamma-film", "beta-2", "m5"],
@@ -73,7 +74,54 @@
         "series": { "continues": ["beta-2"], "nextUp": [{ "setId": "beta-1", "resume": true }, { "setId": "alpha-2", "resume": false }] },
         "anime": { "continues": ["gamma-film"], "nextUp": [{ "setId": "gamma-1", "resume": true }] },
         "documentaries": { "continues": ["delta-1"], "nextUp": [] },
-        "tutorials": { "continues": [], "nextUp": [{ "setId": "epsilon-2", "resume": false }] }
+        "tutorials": { "continues": [], "nextUp": [{ "setId": "epsilon-2", "resume": false }] },
+        "audiobooks": { "continues": [], "nextUp": [] }
+      }
+    }
+  },
+  {
+    "name": "a book being listened to resumes on Home and its own page, and never sits with the films",
+    "now": 1763164800000,
+    "editorsChoice": null,
+    "sets": [
+      { "setId": "m1", "kind": "movie", "title": "Film 1", "addedAt": 1762387200000, "poster": "p-m1" },
+      { "setId": "b-zebra", "kind": "book", "title": "Zebra", "addedAt": 1762900000000, "poster": "p-bz" },
+      { "setId": "b-apple", "kind": "book", "title": "Apple", "addedAt": 1762800000000, "poster": "p-ba" }
+    ],
+    "progress": [
+      { "setId": "b-zebra", "at": 600, "duration": 36000, "updatedAt": 100 }
+    ],
+    "watched": {},
+    "expect": {
+      "departments": {
+        "movies": ["m1"],
+        "series": [],
+        "anime": { "shows": [], "films": [] },
+        "documentaries": { "collections": [], "singles": [] },
+        "tutorials": [],
+        "audiobooks": ["b-apple", "b-zebra"]
+      },
+      "home": {
+        "continues": ["b-zebra"],
+        "nextUp": [],
+        "latestMovies": ["m1"],
+        "latestSeries": [],
+        "latestCourses": [],
+        "latestDocumentaries": [],
+        "totals": { "continues": 1, "nextUp": 0, "latestMovies": 1, "latestSeries": 0, "latestCourses": 0, "latestDocumentaries": 0 }
+      },
+      "editorial": {
+        "cover": [],
+        "features": [{ "kind": "new", "setId": "m1" }],
+        "quote": null,
+        "thisMonth": []
+      },
+      "underway": {
+        "series": { "continues": [], "nextUp": [] },
+        "anime": { "continues": [], "nextUp": [] },
+        "documentaries": { "continues": [], "nextUp": [] },
+        "tutorials": { "continues": [], "nextUp": [] },
+        "audiobooks": { "continues": ["b-zebra"], "nextUp": [] }
       }
     }
   }

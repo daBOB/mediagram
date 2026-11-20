@@ -12,8 +12,8 @@ import uniffi.mediagram_core.SubtitleTrack
  * A kind this does not recognise is shelved with the films rather than
  * dropped. A viewer who notices something in the wrong place can act on
  * it; a title that silently vanishes looks like a failed upload, and the
- * library holds four kinds today against a parser that may learn a
- * fifth before this app is rebuilt.
+ * library holds six kinds today against a parser that may learn a
+ * seventh before this app is rebuilt.
  */
 fun SetSummary.toMediaSet(): MediaSet {
     val shelf =
@@ -22,6 +22,7 @@ fun SetSummary.toMediaSet(): MediaSet {
             "tut" -> Kind.TUTORIAL
             "doc" -> Kind.DOCUMENT
             "docu" -> Kind.DOCUMENTARY
+            "book" -> Kind.AUDIOBOOK
             else -> Kind.MOVIE
         }
     return MediaSet(
@@ -65,7 +66,6 @@ fun SetSummary.toMediaSet(): MediaSet {
         anime = anime,
         category = category,
         variant = variant,
-        isBook = kind == "book",
     )
 }
 

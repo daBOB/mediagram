@@ -52,6 +52,7 @@ interface Case {
       anime: { shows: string[]; films: string[] };
       documentaries: { collections: string[]; singles: string[] };
       tutorials: string[];
+      audiobooks: string[];
     };
     home: Underway & {
       latestMovies: string[];
@@ -66,7 +67,7 @@ interface Case {
       quote: string | null;
       thisMonth: string[];
     };
-    underway: Record<"series" | "anime" | "documentaries" | "tutorials", Underway>;
+    underway: Record<"series" | "anime" | "documentaries" | "tutorials" | "audiobooks", Underway>;
   };
 }
 
@@ -105,6 +106,7 @@ describe("the shared library-pages fixture", () => {
         anime: { shows: names(library.anime.collections), films: ids(library.anime.singles) },
         documentaries: { collections: names(library.documentaries.collections), singles: ids(library.documentaries.singles) },
         tutorials: names(library.tutorials),
+        audiobooks: ids(library.audiobooks),
       }).toEqual(one.expect.departments);
 
       const shelves = homeShelves({ library, ...watch });
@@ -138,6 +140,7 @@ describe("the shared library-pages fixture", () => {
         anime: underwayOf(departmentUnderway({ collections: library.anime.collections, keep: (set) => set.anime, ...watch })),
         documentaries: underwayOf(departmentUnderway({ collections: [], keep: (set) => set.kind === "docu", ...watch })),
         tutorials: underwayOf(departmentUnderway({ collections: library.tutorials, keep: (set) => set.kind === "tut" && !set.anime, ...watch })),
+        audiobooks: underwayOf(departmentUnderway({ collections: [], keep: (set) => set.kind === "book", ...watch })),
       }).toEqual(one.expect.underway);
     });
   }

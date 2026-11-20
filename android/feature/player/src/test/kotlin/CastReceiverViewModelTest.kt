@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import model.HOME_HOUSEHOLD
+import model.Kind
 import model.Households
 import model.Profile
 import model.together.CastWords
@@ -36,7 +37,7 @@ class CastReceiverViewModelTest {
 
     private val live = FakeTogetherLive()
     private val handle = FakePlayerHandle()
-    private val sets = mapOf("film-1" to fakeMediaSet("film-1", title = "Dune"), "film-2" to fakeMediaSet("film-2", fsk = "16"), "film-3" to fakeMediaSet("film-3", fsk = "6"), "book-1" to fakeMediaSet("book-1", fsk = "6", isBook = true))
+    private val sets = mapOf("film-1" to fakeMediaSet("film-1", title = "Dune"), "film-2" to fakeMediaSet("film-2", fsk = "16"), "film-3" to fakeMediaSet("film-3", fsk = "6"), "book-1" to fakeMediaSet("book-1", kind = Kind.AUDIOBOOK, fsk = "6"))
 
     @After
     fun tearDown() = Dispatchers.resetMain()

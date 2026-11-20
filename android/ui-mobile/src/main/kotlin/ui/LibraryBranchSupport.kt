@@ -93,6 +93,7 @@ internal fun rememberActiveHeroState(
                 Department.ANIME -> deptScroll.anime.asHeroListState()
                 Department.TUTORIALS -> deptScroll.tutorials.asHeroListState()
                 Department.DOCUMENTARIES -> deptScroll.documentaries.asHeroListState()
+                Department.AUDIOBOOKS -> deptScroll.audiobooks.asHeroListState()
                 null -> null
             }
         }

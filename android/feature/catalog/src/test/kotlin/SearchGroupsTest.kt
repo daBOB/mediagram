@@ -74,6 +74,20 @@ class SearchGroupsTest {
         assertEquals(listOf(SearchFilter.DOCUMENTARIES to 1), groups.filters)
     }
 
+    /** A book is found under its own Audiobooks group, after Tutorials, never among the films an unknown kind would join. */
+    @Test
+    fun booksGroupAsAudiobooks() {
+        val book = film("momo").copy(kind = Kind.AUDIOBOOK)
+        val state = readyState(listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("momo-film")))), Shelf(Department.AUDIOBOOKS, listOf(Entry.Film(book)))))
+        val hits = listOf(SearchHit("momo", "title", null), SearchHit("momo-film", "title", null))
+
+        val groups = searchGroupsOf("momo", state, hits, emptyList(), emptyList(), emptyList())
+
+        assertEquals(listOf("momo"), groups.audiobooks.map { it.set.setId })
+        assertEquals(listOf("momo-film"), groups.films.map { it.set.setId })
+        assertEquals(listOf(SearchFilter.ALL to 2, SearchFilter.MOVIES to 1, SearchFilter.AUDIOBOOKS to 1), groups.filters)
+    }
+
     @Test
     fun peopleAreFilteredToWhatThisProfileCanSeeAndCounted() {
         val state = readyState(listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f1").copy(posterKey = "tmdb-movie-1"))))))

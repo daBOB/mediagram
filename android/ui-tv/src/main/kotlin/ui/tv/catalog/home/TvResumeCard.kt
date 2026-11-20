@@ -23,7 +23,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -48,6 +47,7 @@ import ui.tv.TvFocus
 import ui.tv.catalog.DisplaySemiBold
 import ui.tv.catalog.TvOfflineBadge
 import ui.tv.rememberStableRequester
+import ui.common.catalog.artScale
 
 /** The card itself, for a test to measure its caption against. */
 internal const val TvResumeCardTag = "tv-resume-card"
@@ -99,7 +99,7 @@ internal fun TvResumeCard(
     ) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(ResumeCardAspect)) {
             if (art != null) {
-                AsyncImage(model = File(art), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                AsyncImage(model = File(art), contentDescription = null, contentScale = set.artScale, modifier = Modifier.matchParentSize())
             } else {
                 Text(text = initialsOf(name), style = ResumeInitial, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.Center))
             }

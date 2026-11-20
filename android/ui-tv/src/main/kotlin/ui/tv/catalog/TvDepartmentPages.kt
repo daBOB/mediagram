@@ -42,7 +42,7 @@ internal fun TvMoviesPage(
 /**
  * A shelf as its own department front page, when it has one built —
  * Movies gets [TvMoviesDepartmentPage], Series and Tutorials get
- * [TvShowsDepartmentPage], Anime and Documentaries theirs, chosen by
+ * [TvShowsDepartmentPage], Anime, Documentaries and Audiobooks theirs, chosen by
  * [Shelf.department] and read from [pages]. A department without a page —
  * an empty shelf — falls back to the plain wall, the same "nothing to show"
  * this surface already draws for every other empty state: a department is a
@@ -98,6 +98,10 @@ internal fun DepartmentOrShelfWall(
         }
         Department.TUTORIALS -> pages.tutorials?.let { dept ->
             TvShowsDepartmentPage(shelf.department, dept, watch, onOpenTitle, onOpenCollection, onPlay, restoreKey, heldIds, deptScroll.tutorials)
+            return
+        }
+        Department.AUDIOBOOKS -> pages.audiobooks?.let { dept ->
+            TvAudiobooksDepartmentPage(dept, watch, onPlay, restoreKey, heldIds, deptScroll.audiobooks)
             return
         }
     }

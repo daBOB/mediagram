@@ -57,7 +57,8 @@ class LibraryPagesFixtureTest {
             val expect = obj.getValue("expect").jsonObject
 
             val departments = expect.getValue("departments").jsonObject
-            fun entriesOf(department: Department) = shelves.single { it.department == department }.entries
+            // A department with nothing in it has no shelf; the fixture says so with an empty list.
+            fun entriesOf(department: Department) = shelves.singleOrNull { it.department == department }?.entries.orEmpty()
             fun namesOf(department: Department) = entriesOf(department).filterIsInstance<Entry.Collection>().map { it.name }
             fun filmIdsOf(department: Department) = entriesOf(department).filterIsInstance<Entry.Film>().map { it.set.setId }
             assertEquals(departments.strings("movies"), filmIdsOf(Department.MOVIES), "case: $name (movies)")
@@ -71,6 +72,7 @@ class LibraryPagesFixtureTest {
                 "case: $name (documentaries)",
             )
             assertEquals(departments.strings("tutorials"), namesOf(Department.TUTORIALS), "case: $name (tutorials)")
+            assertEquals(departments.strings("audiobooks"), filmIdsOf(Department.AUDIOBOOKS), "case: $name (audiobooks)")
 
             val home = expect.getValue("home").jsonObject
             val totals = home.getValue("totals").jsonObject
@@ -112,6 +114,7 @@ class LibraryPagesFixtureTest {
             assertStrip(underway.getValue("anime").jsonObject, pages.anime?.resumeCards.orEmpty(), "case: $name (anime strip)")
             assertStrip(underway.getValue("documentaries").jsonObject, pages.documentaries?.resumeCards.orEmpty(), "case: $name (documentaries strip)")
             assertStrip(underway.getValue("tutorials").jsonObject, pages.tutorials?.resumeCards.orEmpty(), "case: $name (tutorials strip)")
+            assertStrip(underway.getValue("audiobooks").jsonObject, pages.audiobooks?.resumeCards.orEmpty(), "case: $name (audiobooks strip)")
         }
     }
 
@@ -137,7 +140,7 @@ private fun JsonObject.strings(key: String): List<String> = getValue(key).jsonAr
 
 private fun JsonObject.optional(key: String): JsonElement? = get(key)?.takeUnless { it is JsonNull }
 
-/** One fixture set, in the web's own kinds ("movie", "ep", "tut", "docu"). */
+/** One fixture set, in the web's own kinds ("movie", "ep", "tut", "docu", "book"). */
 private fun JsonObject.toMediaSet(): MediaSet =
     MediaSet(
         setId = string("setId"),
@@ -147,6 +150,7 @@ private fun JsonObject.toMediaSet(): MediaSet =
                 "ep" -> Kind.EPISODE
                 "tut" -> Kind.TUTORIAL
                 "docu" -> Kind.DOCUMENTARY
+                "book" -> Kind.AUDIOBOOK
                 else -> error("unknown kind $kind")
             },
         title = string("title"),

@@ -23,6 +23,7 @@ data class LibraryPages(
     val anime: AnimeDepartment?,
     val documentaries: DocumentariesDepartment?,
     val tutorials: ShowsDepartment?,
+    val audiobooks: AudiobooksDepartment?,
     /** Continue's wall: every title with a position worth resuming, newest first. */
     val continueWall: List<MediaSet>,
     /** My List's wall, newest added first. */
@@ -41,7 +42,8 @@ data class LibraryPages(
             Department.TUTORIALS -> tutorials?.lead?.let { firstItemOf(it.divisions) }?.backdropPath
             Department.ANIME -> anime?.lead?.backdropPath
             Department.DOCUMENTARIES -> documentaries?.lead?.backdropPath
-            null -> null
+            // A book has no backdrop: its hero leads with nothing, as the web's `lead: null`.
+            Department.AUDIOBOOKS, null -> null
         }
 
     companion object {
@@ -105,6 +107,7 @@ fun libraryPagesOf(
                 heldIds,
             ),
         tutorials = showsDepartmentOf(Kind.TUTORIAL, collectionsOf(Department.TUTORIALS), byId, continuing, heldIds),
+        audiobooks = audiobooksDepartmentOf(filmsOf(Department.AUDIOBOOKS), byId, continuing, heldIds),
         continueWall = continueWall(shelves, watch),
         watchlistWall = watchlistWall(shelves, watch),
     )

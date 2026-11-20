@@ -153,6 +153,8 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
         switch("Tutorials").assertIsFocused()
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
+        switch("Audiobooks").assertIsFocused()
+        press(Key.DirectionDown)
         switch("Done").assertIsFocused()
         press(Key.DirectionCenter)
         assertEquals(listOf("sections b [tutorials]"), calls)

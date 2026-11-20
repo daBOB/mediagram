@@ -12,6 +12,7 @@ import designsystem.Spacing
 import java.io.File
 import model.MediaSet
 import uniffi.mediagram_core.TitleInfo
+import ui.common.catalog.coverIsWhole
 
 /**
  * A film's Overview tab — `film-page.js#overview`: the poster beside the
@@ -29,7 +30,10 @@ internal fun TvFilmOverview(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
         set.posterPath?.let { poster ->
-            TvPlateArt(posterPath = File(poster), title = set.title, progress = null, watched = false, modifier = Modifier.width(PosterWidth))
+            TvPlateArt(
+                posterPath = File(poster), title = set.title, progress = null, watched = false, modifier = Modifier.width(PosterWidth),
+                ratio = if (set.coverIsWhole) 1f else PosterAspectRatio, whole = set.coverIsWhole,
+            )
         }
         TvFactSheet(filmOverviewFacts(set, info, franchise), onOpenGenre = onOpenGenre, onOpenFranchise = onOpenFranchise, restoreKey = restoreKey)
     }

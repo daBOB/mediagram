@@ -14,6 +14,7 @@ import catalog.extentOf
 import catalog.factsLine
 import catalog.keyOf
 import designsystem.Spacing
+import ui.common.catalog.coverIsWhole
 import ui.common.catalog.rememberRowState
 
 private val DEPT_CARD_WIDTH = 140.dp
@@ -23,7 +24,8 @@ private val DEPT_CARD_WIDTH = 140.dp
  * opens like [ShowsDepartmentScreen]'s own `CollectionRow`, a standalone
  * documentary plays like [DocumentariesDepartmentScreen]'s own
  * `DocumentaryRow`. A category mixes the two side by side, since it files a
- * folder and a single the same way.
+ * folder and a single the same way. The Audiobooks page draws its rows with
+ * it too: every unit there is a book, which plays and shows its whole cover.
  */
 @Composable
 internal fun DocumentaryUnitRow(
@@ -54,6 +56,7 @@ internal fun DocumentaryUnitRow(
                         title = entry.set.title,
                         caption = factsLine(entry.set.year, entry.set.durationSecs),
                         watched = entry.set.setId in watchedIds,
+                        whole = entry.set.coverIsWhole,
                         modifier = Modifier.width(DEPT_CARD_WIDTH),
                         onClick = { onPlay(entry.set.setId) },
                     )

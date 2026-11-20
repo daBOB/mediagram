@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import catalog.SetCard
 import catalog.versionsBadgeOf
 import model.episodeLabel
+import ui.common.catalog.coverIsWhole
 
 /**
  * A card for a raw set — a film, an episode or a lesson — as Continue and
@@ -29,6 +30,7 @@ internal fun SetPlate(
         watched = card.watched,
         held = card.held,
         versions = versionsBadgeOf(set),
+        whole = set.coverIsWhole,
         modifier = modifier,
         onClick = onClick,
     )

@@ -95,6 +95,7 @@ internal fun labelFor(filter: SearchFilter): String =
         SearchFilter.ANIME -> "Anime"
         SearchFilter.DOCUMENTARIES -> "Documentaries"
         SearchFilter.TUTORIALS -> "Tutorials"
+        SearchFilter.AUDIOBOOKS -> "Audiobooks"
         SearchFilter.PEOPLE -> "People"
         SearchFilter.COLLECTIONS -> "Collections"
     }
@@ -104,7 +105,7 @@ internal fun labelFor(filter: SearchFilter): String =
  * under its own headings (`search-view.js`'s `part` calls: Movies, as its
  * chip says, and Lessons under the Tutorials chip) and in its own layout
  * for each ([SearchLayout]) — films, matched shows,
- * episodes, documentaries, lessons, people, collections — with
+ * episodes, documentaries, lessons, audiobooks, people, collections — with
  * [SearchFilter.ALL] showing every one that has something in it and every
  * other filter narrowing to its own single kind (also only when it has
  * something — a filter with a count of zero is never offered as a chip in
@@ -136,6 +137,9 @@ internal fun sectionsFor(groups: SearchGroups, filter: SearchFilter): List<Searc
         }
         if (wants(SearchFilter.TUTORIALS) && groups.lessons.isNotEmpty()) {
             add(SearchSection("Lessons", groups.lessons.map(SearchEntry::Title)))
+        }
+        if (wants(SearchFilter.AUDIOBOOKS) && groups.audiobooks.isNotEmpty()) {
+            add(SearchSection("Audiobooks", groups.audiobooks.map(SearchEntry::Title), SearchLayout.POSTERS))
         }
         if (wants(SearchFilter.PEOPLE) && groups.people.isNotEmpty()) {
             add(SearchSection("People", groups.people.map(SearchEntry::Person), SearchLayout.PEOPLE))

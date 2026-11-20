@@ -41,11 +41,15 @@ fun MediaSet.kidsVerdict(limit: Int): KidsVerdict = kidsVerdictOf(fsk, limit)
 
 private val AGE = Regex("""\d{1,2}""")
 
+/** The genre a children's audiobook is filed under; a book carries no FSK, so this is its rating. */
+const val KIDS_BOOK_CATEGORY = "Kinderbücher"
+
 /**
  * What a kid with [limit] sees — the web player's `forKidsProfile(sets,
- * marks, limit)`: rated at or under the limit, or unrated and marked from an
- * age at or under it. [marks] maps a set id to the age its mark is for kids
- * from. Applied once to the whole catalog, so every shelf agrees.
+ * marks, limit)`: a children's book, or rated at or under the limit, or
+ * unrated and marked from an age at or under it. [marks] maps a set id to
+ * the age its mark is for kids from. Applied once to the whole catalog, so
+ * every shelf agrees.
  */
 fun forKidsProfile(
     sets: List<MediaSet>,
@@ -53,6 +57,7 @@ fun forKidsProfile(
     limit: Int,
 ): List<MediaSet> =
     sets.filter {
+        if (it.kind == Kind.AUDIOBOOK && it.category == KIDS_BOOK_CATEGORY) return@filter true
         when (it.kidsVerdict(limit)) {
             KidsVerdict.SAFE -> true
             KidsVerdict.UNSAFE -> false

@@ -31,8 +31,9 @@ fun locationOf(set: MediaSet): String? = when (set.kind) {
 
     // A documentary says its year, the same as a film — nothing about
     // where it sits in its own folder is worth a search hit's one line,
-    // the same choice the web's own `locationOf` already makes.
-    Kind.MOVIE, Kind.DOCUMENTARY -> set.year?.takeIf { it > 0 }?.toString()
+    // the same choice the web's own `locationOf` already makes. A book
+    // is its own card, never a row, but says the same if it ever is one.
+    Kind.MOVIE, Kind.DOCUMENTARY, Kind.AUDIOBOOK -> set.year?.takeIf { it > 0 }?.toString()
 }
 
 /**

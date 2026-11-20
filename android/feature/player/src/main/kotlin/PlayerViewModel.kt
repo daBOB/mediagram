@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import model.DailyLimitWords
+import model.Kind
 import model.MediaSet
 import model.Profile
 import model.ReportFacts
@@ -93,7 +94,7 @@ class PlayerViewModel @Inject constructor(
     /** The kid's daily limit: asked before an in-player switch, and the source of the one warning per title. */
     private val dailyLimit = DailyLimitGate(
         repository,
-        isBook = { catalogRepository.mediaSet(it)?.isBook == true },
+        isBook = { catalogRepository.mediaSet(it)?.kind == Kind.AUDIOBOOK },
         profile = { playingAs.value ?: repository.chosenProfile.value },
     )
     private val limitWarning = DailyLimitWarning(viewModelScope, dailyLimit, ::tellLimit)
@@ -217,7 +218,7 @@ class PlayerViewModel @Inject constructor(
         limitLookup?.cancel()
         limitLookup = viewModelScope.launch {
             val set = orDefault(null, "the set $setId") { catalogRepository.mediaSet(setId) }
-            if (set != null && !set.isBook) limitWarning.opened(book = false)
+            if (set != null && set.kind != Kind.AUDIOBOOK) limitWarning.opened(book = false)
         }
     }
 
