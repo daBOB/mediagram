@@ -10,8 +10,10 @@ import { spritePlan } from "../../public/lib/sprite-plan.js";
 // Posters, season posters, backdrops, portraits and title-slug artwork share
 // this path; `posterKeyIsValid` is the real gate on the shape of the key, so
 // the capture here only needs to keep the path free of anything a file name
-// or a SQL parameter should never see.
-const POSTER_PATH = /^\/api\/posters\/([a-z0-9-]{1,80})\.jpg$/;
+// or a SQL parameter should never see. A title-slug key is as long as its
+// title (audiobook titles run past 190), so the bound is a file name's 255
+// bytes less `.jpg`, not a guess at how long a name gets.
+const POSTER_PATH = /^\/api\/posters\/([a-z0-9-]{1,251})\.jpg$/;
 const THUMBS_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/thumbs\.jpg$/;
 
 /** Image types `mediagram artwork` may have written into the table. */

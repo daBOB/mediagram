@@ -279,6 +279,21 @@ describe("custom artwork, from the `artwork` table", () => {
     expect(await new Response(image.body).text()).toBe("the course poster");
   });
 
+  test("a title longer than 80 characters still serves its poster", async () => {
+    const db = emptyIndex();
+    const title = "Hör auf zu glauben, was du denkst: Der einfache Weg für Ruhe im Kopf | Selbstzweifel und Selbstsabotage beenden";
+    titledSet(db, "01SET0000000000000000036", "tut", title);
+    const key = "title-h-r-auf-zu-glauben-was-du-denkst-der-einfache-weg-f-r-ruhe-im-kopf-selbstzweifel-und-selbstsabotage-beenden";
+    withArtwork(db, key, "image/jpeg", "the cover");
+    const route = createRouter({ db, source: NO_BYTES, posters: new PosterStore(null) });
+
+    const [set] = JSON.parse(await new Response((await route(get("/api/sets"))).body).text());
+    expect(set.poster).toBe(key);
+    const image = await route(get(`/api/posters/${key}.jpg`));
+    expect(image.status).toBe(200);
+    expect(await new Response(image.body).text()).toBe("the cover");
+  });
+
   test("every lesson of a collection shares the one key its collection name gives", async () => {
     const db = emptyIndex();
     titledSet(db, "01SET0000000000000000031", "docu", "Episode 1", "Terra X");
