@@ -46,7 +46,7 @@
 | 06 | [Android: Audiobooks department on phone and TV](phase-06-android-audiobooks-department.md) | done |
 | 07 | [Android: cover in the player, cast and together start](phase-07-android-audio-only-player.md) | done |
 | 08 | [Docs, changelog, version](phase-08-docs-and-version.md) | done |
-| 09 | [Upload the books and update every app](phase-09-upload-and-release.md) | todo |
+| 09 | [Upload the books and update every app](phase-09-upload-and-release.md) | partly done 2026-11-21: Android 0.192.0 msg 52505, 118 books uploaded, index msg 52677, web here serves them, main pushed, bytefortress on 0.192.0; owed: funstation (offline), tablet/TV/iPhone walks |
 
 Order: 01 first (every other phase reads `book`). 02, 03, 04, 06 can run in parallel after 01; 05 after 04; 07 after 06; 08 after all code; 09 last.
 
