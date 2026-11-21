@@ -10,6 +10,7 @@ import catalog.CatalogViewModel
 import catalog.CollectionKind
 import catalog.MenuScreen
 import catalog.firstItemOf
+import catalog.mayPinEditorsChoice
 import model.Kind
 import ui.catalog.CollectionScreen
 import ui.catalog.TitleDetailScreen
@@ -49,7 +50,7 @@ internal fun TitleFrame(
             onOpenGenre = at::openGenre,
             editorsChoice = resolved.watch.editorsChoice,
             onToggleEditorsChoice =
-                if (kidsProfile) {
+                if (!mayPinEditorsChoice(title.kind, kidsProfile)) {
                     null
                 } else {
                     { catalogViewModel.toggleEditorsChoice(title.setId) }

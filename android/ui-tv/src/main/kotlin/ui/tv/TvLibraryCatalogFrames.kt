@@ -10,6 +10,7 @@ import catalog.Entry
 import catalog.MenuScreen
 import catalog.firstItemOf
 import catalog.listedOf
+import catalog.mayPinEditorsChoice
 import catalog.playedOf
 import catalog.versionRowsOf
 import catalog.seriesResumeFor
@@ -86,7 +87,7 @@ internal fun TvTitleFrame(
             },
             editorsChoice = watch.editorsChoice,
             onToggleEditorsChoice =
-                if (kidsProfile) {
+                if (!mayPinEditorsChoice(set.kind, kidsProfile)) {
                     null
                 } else {
                     { catalogViewModel.toggleEditorsChoice(set.setId) }

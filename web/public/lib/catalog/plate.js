@@ -82,12 +82,14 @@ export function plate({ poster, name, initials, progress, watched, square = fals
 
 /**
  * The plate for one catalog row, with its own artwork and its own place.
- * @param {Pick<import("../library.js").CatalogSet, "setId"|"title"|"show"|"poster">} set
+ * @param {Pick<import("../library.js").CatalogSet, "setId"|"title"|"show"|"poster"|"kind">} set
  */
 export function plateOf(set) {
   const name = set.title ?? set.show ?? set.setId;
   return plate({
     poster: set.poster ?? null,
+    // A book's square cover is the whole picture: shown uncropped.
+    square: set.kind === "book",
     name,
     initials: initialsOf(set.title ?? set.show),
     progress: watchedFraction(positionOf(set)),

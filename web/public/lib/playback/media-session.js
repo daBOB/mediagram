@@ -30,14 +30,25 @@ export function showOnLockScreen(set, video, titleLine, drive = {}) {
   if (typeof MediaMetadata !== "undefined") {
     session.metadata = new MediaMetadata({
       title: titleLine,
-      artwork: set.poster ? [{ src: artworkUrl(set.poster), type: "image/jpeg" }] : [],
+      artwork: set.poster ? [{ src: artworkUrl(set.poster) }] : [],
     });
   }
-  session.setActionHandler("play", () => toggle("play"));
-  session.setActionHandler("pause", () => toggle("pause"));
-  session.setActionHandler("seekbackward", (details) => seekTo(Math.max(0, at() - (details?.seekOffset ?? SKIP))));
-  session.setActionHandler("seekforward", (details) => seekTo(at() + (details?.seekOffset ?? SKIP)));
-  session.setActionHandler("seekto", (details) => seekTo(details.seekTime));
+  const handlers = {
+    play: () => toggle("play"),
+    pause: () => toggle("pause"),
+    seekbackward: (details) => seekTo(Math.max(0, at() - (details?.seekOffset ?? SKIP))),
+    seekforward: (details) => seekTo(at() + (details?.seekOffset ?? SKIP)),
+    seekto: (details) => seekTo(details.seekTime),
+  };
+  for (const [action, handler] of Object.entries(handlers)) {
+    // This runs for every title, and a browser that lacks one action throws
+    // for it; the others must still be set and the title must still open.
+    try {
+      session.setActionHandler(action, handler);
+    } catch {
+      // not offered here
+    }
+  }
 }
 
 /** Takes the title off the lock screen; the next open puts its own up. */

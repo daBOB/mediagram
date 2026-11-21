@@ -175,7 +175,7 @@ export function setGrid(sets, onPlay, options = {}) {
         .filter(Boolean)
         .join(" · "),
       initials: initialsOf(set.title ?? set.show),
-      poster: set.poster ?? null,
+      poster: set.poster ?? null, square: set.kind === "book", // a book's cover is shown whole
       badges: [versionsBadge(set), offlineBadge(set), transcodeBadge(set)],
       progress: watchedFraction(positionOf(set)),
       // Empty for a title never started, so a watchlist of things not yet

@@ -53,3 +53,16 @@ test("without a media session both are no-ops", () => {
   expect(() => showOnLockScreen({} as never, {} as never, "x")).not.toThrow();
   expect(() => clearLockScreen()).not.toThrow();
 });
+
+test("a browser that rejects one action does not stop the title opening or the other actions", () => {
+  const rejecting = {
+    metadata: undefined as unknown,
+    setActionHandler(action: string, handler: (d?: unknown) => void) {
+      if (action === "seekto") throw new TypeError("unsupported action");
+      handlers.set(action, handler);
+    },
+  };
+  Object.assign(globalThis, { navigator: { mediaSession: rejecting } });
+  expect(() => showOnLockScreen({ poster: null } as never, { currentTime: 0 } as never, "x")).not.toThrow();
+  expect([...handlers.keys()].sort()).toEqual(["pause", "play", "seekbackward", "seekforward"]);
+});

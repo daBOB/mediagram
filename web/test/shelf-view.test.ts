@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { collectionGrid, emptyState, movieGrid, setGrid } from "../public/lib/catalog/shelf-view.js";
+import { plateOf } from "../public/lib/catalog/plate.js";
 import { SECTIONS } from "../public/lib/catalog/sections.js";
 import { GRID, LIST } from "../public/lib/catalog/shelf-mode.js";
 
@@ -41,6 +42,44 @@ describe.each(grids)("%s shelf layout", (_name, render) => {
     expect(render().className).toBe("grid");
     expect(render({}).className).toBe("grid");
     expect(render({ mode: LIST }).className).toBe("grid");
+  });
+});
+
+describe("a book's cover", () => {
+  type Node = { className: string; children: Node[] };
+  const thumbs = (root: Node): Node[] =>
+    [root, ...root.children.flatMap((child) => (child && typeof child === "object" ? thumbs(child) : []))]
+      .filter((node) => node.className?.startsWith("thumb"));
+
+  // A card touches more of the element API than the shelf tests' stub offers.
+  const fullStub = () => {
+    const make = (): Node => {
+      const node = { className: "", textContent: "", children: [] as Node[], style: {}, dataset: {} } as Node & Record<string, unknown>;
+      node.append = (...items: Node[]) => void node.children.push(...items);
+      for (const name of ["addEventListener", "setAttribute", "remove"]) node[name] = () => {};
+      node.classList = { add() {}, toggle() {}, remove() {} };
+      return node;
+    };
+    Object.defineProperty(globalThis, "document", { configurable: true, value: { createElement: make, createTextNode: make } });
+  };
+
+  test("is drawn whole on a watch-state shelf, where a film's poster is not", () => {
+    fullStub();
+    const set = (kind: string) => ({ setId: kind, title: kind, kind, poster: "p" }) as never;
+    const grid = setGrid([set("book"), set("movie")], () => {}) as unknown as Node;
+    expect(thumbs(grid).map((node) => node.className)).toEqual(["thumb square", "thumb"]);
+  });
+});
+
+describe("a book's cover on a viewer's own list", () => {
+  test("is drawn whole there too", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: { createElement: () => ({ className: "", children: [], append() {}, setAttribute() {} }) },
+    });
+    const book = plateOf({ setId: "b", title: "B", kind: "book", poster: null } as never);
+    const film = plateOf({ setId: "f", title: "F", kind: "movie", poster: null } as never);
+    expect([book.className, film.className]).toEqual(["thumb square", "thumb"]);
   });
 });
 
