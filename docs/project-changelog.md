@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.193.0 — Audiobook inbox
+
+**Added**
+
+- **`add-audiobook` takes several files or folders and `--delete-source`**: each MP3 is deleted once every part of it is in the channel. A file whose title is already an uploaded book is kept, since a title alone never proves it is the same recording.
+
+**Fixed**
+
+- **Long audiobook titles show their cover on the web.** The poster route capped a key at 80 characters, so 40 of the 118 books got a 404 for a cover the library held.
+
 ## 0.192.0 — Audiobooks
 
 **Added**

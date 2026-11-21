@@ -63,7 +63,8 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
                      the bytes to finish_set (--watch) or a background process
   add_show/          walk a series folder, survey what will play badly, hand
                      the episodes to an upload session
-  add_audiobook.rs   `add-audiobook <file|folder> [--dry-run] [--no-push]`:
+  add_audiobook.rs   `add-audiobook <file|folder>... [--dry-run] [--no-push]
+                     [--delete-source]`:
                      one MP3 = one `Kind::Book` set, no remux. Title from the
                      tag, genre becomes the category under department
                      `audiobooks`, the embedded cover becomes the artwork

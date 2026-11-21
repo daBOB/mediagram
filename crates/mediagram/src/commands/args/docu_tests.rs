@@ -110,3 +110,17 @@ fn each_command_requires_what_it_acts_on() {
     assert!(parse::<AddDocuArgs>(&[]).is_err_and(missing));
     assert!(parse::<ArtworkArgs>(&[]).is_err_and(missing));
 }
+
+/// The audiobook inbox hands over only the files that have settled, so one
+/// run takes several paths; a bare run deletes nothing.
+#[test]
+fn audiobooks_take_several_paths_and_delete_only_when_asked() {
+    let args: AddAudiobookArgs = parse(&["a.mp3", "HB"]).unwrap();
+    assert_eq!(args.paths, [PathBuf::from("a.mp3"), PathBuf::from("HB")]);
+    assert!(!args.delete_source);
+
+    let args: AddAudiobookArgs = parse(&["a.mp3", "--delete-source"]).unwrap();
+    assert!(args.delete_source);
+
+    assert!(parse::<AddAudiobookArgs>(&[]).is_err());
+}

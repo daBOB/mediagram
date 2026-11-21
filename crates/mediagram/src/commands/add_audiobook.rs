@@ -1,8 +1,9 @@
-//! `mediagram add-audiobook`: upload one MP3 audiobook, or every MP3 under a
-//! folder, each as its own set with its embedded cover and genre.
+//! `mediagram add-audiobook`: upload MP3 audiobooks, given as files or as
+//! folders of them, each as its own set with its embedded cover and genre.
 //!
-//! The file is never remuxed or transcoded and never deleted: an MP3 is
-//! already what every player reads, and the source is the person's own copy.
+//! The file is never remuxed or transcoded: an MP3 is already what every
+//! player reads. It is deleted only with `--delete-source`, once its upload
+//! is complete.
 
 use std::path::{Path, PathBuf};
 
@@ -20,12 +21,11 @@ use crate::upload::session::link::TelegramLink;
 use crate::upload::session::{Item, Outcome, Session, Set, Step};
 
 pub async fn run(cfg: &Config, args: AddAudiobookArgs) -> Result<()> {
-    let files = mp3_files(&args.path)?;
-    ensure!(
-        !files.is_empty(),
-        "no .mp3 files under {}",
-        args.path.display()
-    );
+    let mut files = Vec::new();
+    for path in &args.paths {
+        files.extend(mp3_files(path)?);
+    }
+    ensure!(!files.is_empty(), "no .mp3 files in the paths given");
     let mut books = Vec::with_capacity(files.len());
     for file in files {
         let tags = audiobook_tags::read(&file)
@@ -63,12 +63,15 @@ pub async fn run(cfg: &Config, args: AddAudiobookArgs) -> Result<()> {
             standalone_title: Some(tags.title.clone()),
             ..NewSet::default()
         }),
-        delete_source: None,
+        delete_source: args.delete_source.then(|| file.clone()),
     });
     let mut session = Session::new(cfg, TelegramLink::new(cfg))?;
     let counts = session
         .upload(items, |title, step| match step {
             Step::Start => println!("uploading {title}"),
+            Step::End(Outcome::AlreadyHeld) if args.delete_source => {
+                println!("{title} already uploaded; file kept")
+            }
             Step::End(Outcome::AlreadyHeld) => println!("{title} already uploaded"),
             Step::End(Outcome::Pending) => println!("{title} pending; run `mediagram resume`"),
             Step::End(Outcome::Failed(err) | Outcome::Blocked(err)) => {

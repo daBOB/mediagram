@@ -69,14 +69,20 @@ pub struct AddDocuArgs {
 /// Arguments for `mediagram add-audiobook`.
 #[derive(Args, Debug, Clone)]
 pub struct AddAudiobookArgs {
-    /// One .mp3, or a folder walked recursively for every .mp3 in it
-    pub path: PathBuf,
+    /// .mp3 files, or folders walked recursively for every .mp3 in them
+    #[arg(required = true)]
+    pub paths: Vec<PathBuf>,
     /// Print each book's title, genre and cover, and upload nothing
     #[arg(long)]
     pub dry_run: bool,
     /// Do not push the index after the upload completes
     #[arg(long)]
     pub no_push: bool,
+    /// Delete each file once every part of it is in the channel. A file whose
+    /// title is already an uploaded book is kept: matching by title alone
+    /// never proves it is the same recording
+    #[arg(long)]
+    pub delete_source: bool,
 }
 
 /// Arguments for `mediagram artwork`.
