@@ -228,6 +228,9 @@ kwriteconfig6 --file kscreenlockerrc --group Daemon --key LockOnResume false
 # No password: nobody can type one with a TV remote, and a lock screen can still come up
 # by hand. PAM's nullok lets OK through it; SSH refuses empty passwords by default.
 sudo passwd -d "$ME" >/dev/null
+# Without a login password the wallet can never unlock itself, so a program asking it for
+# a secret (Chromium does when it starts) would leave a password dialog on the TV.
+kwriteconfig6 --file kwalletrc --group Wallet --key Enabled false
 systemctl --user try-restart plasma-powerdevil 2>/dev/null || true
 # The CachyOS welcome window would cover the TV interface after every boot.
 rm -f ~/.config/autostart/cachyos-hello.desktop

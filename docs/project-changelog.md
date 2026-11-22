@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.193.1 — No wallet dialog on funstation
+
+**Fixed**
+
+- **funstation no longer shows a KDE Wallet password dialog.** The account has no login password, so the wallet could never unlock itself, and a program asking it for a secret left a dialog on the TV that a remote cannot answer. The setup script now switches the wallet off; Wi-Fi keeps working because its key is stored by the system.
+
 ## 0.193.0 — Audiobook inbox
 
 **Added**
