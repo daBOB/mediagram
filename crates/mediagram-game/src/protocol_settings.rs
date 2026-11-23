@@ -17,6 +17,8 @@ pub enum GameKind {
     Schwimmen,
     /// Durak (throw-in) on the card table.
     Durak,
+    /// Tiến Lên (Thirteen) on the card table.
+    TienLen,
     /// Kopfnuss, the quiz where players play tricks on each other's phones.
     Kopfnuss,
     /// Grand Allee, the hotel game for two to eight.

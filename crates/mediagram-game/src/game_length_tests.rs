@@ -63,5 +63,5 @@ fn grenzfall_keeps_its_easy_middle_hard_shape_at_every_length() {
 fn the_lobby_offers_a_length_for_the_games_with_a_count() {
     use crate::protocol::GameKind::*;
     let unsized_games: Vec<_> = CATALOGUE.iter().filter(|g| !g.sized).map(|g| g.kind).collect();
-    assert_eq!(unsized_games, [Race, Fluechtig, MauMau, Schwimmen, Durak], "played to their end");
+    assert_eq!(unsized_games, [Race, Fluechtig, MauMau, Schwimmen, Durak, TienLen], "played to their end");
 }

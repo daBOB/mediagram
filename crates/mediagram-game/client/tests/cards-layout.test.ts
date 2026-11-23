@@ -4,6 +4,7 @@ import { RANKS, SUITS } from "../src/ui/card-face";
 import { BACK_CELL, COLS, ROWS, cellOf, worthCell } from "../src/tv/cards/cards-print";
 import { DISCARD_AT, fanCard, pileAt, seatSpot, yawFacing } from "../src/tv/cards/cards-layout";
 import { pairCard } from "../src/tv/cards/cards-durak";
+import { ROW_W, rowCard } from "../src/tv/cards/cards-tienlen";
 import { textsFor } from "../src/tv/cards/cards-texts";
 
 test("Durak pre-draws its banner, trump note and seat tags", () => {
@@ -84,4 +85,24 @@ test("a Schwimmen reveal needs no new texture: loss markers are pre-drawn and va
 test("every Mau-Mau draw banner is pre-drawn, from no card to a stack of eight", () => {
   const t = textsFor("Mau-Mau");
   for (const m of [" zieht keine Karte", " zieht eine Karte", " zieht 2 Karten", " zieht 8 Karten"]) expect(t.banner).toContain(m);
+});
+
+test("the table pre-draws what Tiến Lên says", () => {
+  const t = textsFor("Tiến Lên");
+  for (const b of [" spielt aus", " passt", " legt eine Bombe!", " ist fertig – Platz 2"]) expect(t.banner).toContain(b);
+  for (const n of ["Einzelkarte", "Paar", "Drilling", "Vierling", "Straße", "Doppelstraße"]) expect(t.note).toContain(n);
+  for (const m of ["Passt", "Platz 1", "Platz 3"]) expect(t.marker).toContain(m);
+});
+
+test("a Tiến Lên play lies side by side round the middle: seven cards clear, thirteen within the row", () => {
+  expect(rowCard(0, 1).x).toBe(0);
+  expect(rowCard(1, 7).x - rowCard(0, 7).x).toBeGreaterThan(1.25);
+  const run = Array.from({ length: 13 }, (_, i) => rowCard(i, 13));
+  expect(run[0].x).toBeCloseTo(-run[12].x);
+  expect(run[12].x - run[0].x + 1.25).toBeLessThanOrEqual(ROW_W + 1e-9);
+  for (let i = 1; i < 13; i++) {
+    expect(run[i].y).toBeGreaterThan(run[i - 1].y);
+    // the corner index of the card below stays free
+    expect(run[i].x - run[i - 1].x).toBeGreaterThan(0.5);
+  }
 });

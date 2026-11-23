@@ -66,7 +66,7 @@ test("a game for exactly so many players says that number once", () => {
 });
 
 test("a game not playable yet asks for its art by its shelf key", () => {
-  expect(gameArtUrl("tien-len", "poster")).toBe("/game-art/poster-tien-len.webp");
+  expect(gameArtUrl("euchre", "poster")).toBe("/game-art/poster-euchre.webp");
   expect(gameArtUrl("grand_allee", "backdrop")).toBe("/game-art/backdrop-grand-allee.webp");
 });
 

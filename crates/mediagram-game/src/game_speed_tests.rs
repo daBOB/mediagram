@@ -76,5 +76,5 @@ fn relaxed_doubles_every_clock_and_speedrun_halves_it() {
 fn the_lobby_offers_a_tempo_for_the_games_with_a_clock() {
     let untimed: Vec<GameKind> = CATALOGUE.iter().filter(|g| !g.timed).map(|g| g.kind).collect();
     use GameKind::*;
-    assert_eq!(untimed, [Race, Fluechtig, MauMau, Schwimmen, Durak], "turn-based: nobody races a clock");
+    assert_eq!(untimed, [Race, Fluechtig, MauMau, Schwimmen, Durak, TienLen], "turn-based: nobody races a clock");
 }

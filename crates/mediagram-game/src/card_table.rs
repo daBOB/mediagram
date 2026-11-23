@@ -7,8 +7,8 @@ use crate::cards::Card;
 use crate::protocol::{ButtonNeeds, CardsBanner, CardsEvent, CardsEventKind, DeskButton, PlayerId, Ranking, ServerTime};
 use crate::room_seats::Player;
 
-/// The TV plays each event once, by id; six covers one Durak refill dealing to every seat.
-const EVENTS_KEPT: usize = 6;
+/// The TV plays each event once, by id; thirteen covers the longest play of Tiến Lên, a card an event.
+const EVENTS_KEPT: usize = 13;
 
 pub(crate) struct CardTable {
     ids: Vec<PlayerId>,

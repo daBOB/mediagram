@@ -41,6 +41,7 @@ const PLAYABLE: Record<GameKind, { blurb: string; group: ShelfGroup }> = {
   mau_mau: { group: "full", blurb: "Farbe oder Wert bedienen: Sieben zieht zwei, Acht setzt aus, der Bube wünscht – und wer die vorletzte Karte legt, ruft „Mau!“." },
   schwimmen: { group: "full", blurb: "Drei Karten auf der Hand, drei in der Mitte: tauschen, klopfen, 31 sammeln. Wer am schwächsten bleibt, verliert ein Leben." },
   durak: { group: "full", blurb: "Angreifen, verteidigen, dazulegen. Wer am Ende noch Karten hält, ist der Durak." },
+  tien_len: { group: "full", blurb: "Der vietnamesische Klassiker: Paare, Drillinge und Straßen höher legen als die anderen. Wer zuerst alle Karten los ist, gewinnt." },
 };
 
 /** The games in the works and the ones planned, in the order the shelf shows them within their half. */
@@ -59,7 +60,6 @@ export const UPCOMING: readonly ShelfItem[] = [
   { key: "sprechstunde", name: "Sprechstunde", min: 3, max: 6, group: "full", badge: "soon", blurb: "Ehrliche Fragen über dich und die anderen, durch sechs Lebensabschnitte: Wie gut kennt ihr euch wirklich?" },
   { key: "nachtwache", name: "Nachtwache", min: 2, max: 6, group: "full", badge: "soon", blurb: "Ein unheimlicher Wächter im Fernseher treibt euch an: Sammelt eure Schlüssel, bevor die Stunde um ist – sonst gewinnt er." },
   { key: "herz", name: "Herz", min: 4, max: 4, group: "full", badge: "soon", blurb: "Stiche vermeiden – vor allem Herzen und die Pik-Dame. Wenige Punkte gewinnen; wer alles einsammelt, dreht den Spieß um." },
-  { key: "tien-len", name: "Tiến Lên", min: 2, max: 4, group: "full", badge: "soon", blurb: "Der vietnamesische Klassiker: Paare, Drillinge und Straßen höher legen als die anderen. Wer zuerst alle Karten los ist, gewinnt." },
   { key: "euchre", name: "Euchre", min: 4, max: 4, group: "full", badge: "soon", blurb: "Zwei gegen zwei: Trumpf wählen, die Buben stechen am höchsten. Drei von fünf Stichen bringen Punkte." },
   { key: "pikett", name: "Pikett", min: 2, max: 2, group: "full", badge: "soon", blurb: "Das alte französische Duell zu zweit: Blätter melden, Stiche machen, Punkte sammeln." },
   { key: "schafkopf", name: "Schafkopf", min: 4, max: 4, group: "full", badge: "soon", blurb: "Der bayerische Klassiker zu viert: Ober und Unter sind Trumpf, Spieler und Partner gegen die anderen zwei." },
