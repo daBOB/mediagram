@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.193.2 — The search box keeps its spaces
+
+**Fixed**
+
+- **The web player's search box no longer eats a space.** Pausing for a moment after a word and its space, then typing the next word, ran the two together ("star", a pause, "trek" gave "startrek"): each pause puts the query in the address trimmed, and the page then wrote that trimmed text back over the box. The box is now left as typed while it already says the query, which also keeps the caret in place when a query is edited in the middle.
+
 ## 0.193.1 — No wallet dialog on funstation
 
 **Fixed**

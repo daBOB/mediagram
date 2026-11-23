@@ -206,6 +206,29 @@ test("an older search cannot overwrite a newer search", async () => {
   expect(page()).toContain("“new”");
 });
 
+test("a pause after a space leaves the space in the search box", async () => {
+  // The address carries the query trimmed, and drawing it used to write that
+  // back over the box: "star ", a pause, "trek" came out as "startrek".
+  await start();
+  intercept = (url) => url.startsWith("/api/search?") ? Response.json({ hits: [] }) : null;
+  const box = env.node("search");
+  box.value = "star ";
+  box.fire("input");
+  env.advance(200);
+  expect(env.location.hash).toBe("#/search/star");
+  await env.navigate(env.location.hash);
+  expect(box.value).toBe("star ");
+});
+
+test("a search arrived at by its address still fills the box", async () => {
+  await start();
+  intercept = (url) => url.startsWith("/api/search?") ? Response.json({ hits: [] }) : null;
+  const box = env.node("search");
+  box.value = "star ";
+  await env.navigate("#/search/trek");
+  expect(box.value).toBe("trek");
+});
+
 test("a search finds a book in its own Audiobooks group, not among the lessons", async () => {
   const momo = { ...film("Momo"), kind: "book", container: "mp3", vcodec: null, acodec: "mp3" };
   catalog = JSON.stringify([momo]);

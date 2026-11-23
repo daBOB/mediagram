@@ -13,6 +13,7 @@
 import { el } from "./lib/dom.js";
 import { countOf } from "./lib/format.js";
 import { renderSearch } from "./lib/catalog/search-view.js";
+import { searchWhileTyping, showQuery } from "./lib/search-box.js";
 import { countDocumentaries } from "./lib/documentaries.js";
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
@@ -563,7 +564,7 @@ function drawRoute() {
   main.textContent = "";
   refreshShelfCounts();
   if (address.page === "search") {
-    searchBox.value = address.query;
+    showQuery(searchBox, address.query);
     void viewSearch(address.query, generation);
     return;
   }
@@ -615,26 +616,7 @@ function drawRoute() {
   );
 }
 
-/**
- * Typing searches, with a pause.
- *
- * The hash carries the query so a result list can be linked and the back
- * button leaves it, but writing the hash on every keystroke would fill the
- * history with half-typed words — so the address is replaced while typing and
- * only pushed when the typing stops.
- */
-let typing = null;
-searchBox.addEventListener("input", () => {
-  clearTimeout(typing);
-  typing = setTimeout(() => {
-    const query = searchBox.value.trim();
-    if (query === "") {
-      go({ page: "department", section: "movies" });
-      return;
-    }
-    go({ page: "search", query });
-  }, 200);
-});
+searchWhileTyping(searchBox);
 
 /**
  * Turns the page when the viewer goes somewhere, and only then.

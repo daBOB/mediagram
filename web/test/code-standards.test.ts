@@ -132,9 +132,11 @@ const ROOT = join(import.meta.dir, "..");
  * square cover, and its search group; the page itself is `audiobooks-department.js`.
  * Raised 2026-11-20 for `player.js`, by 10, to show a book's cover on the stage and hand the title to the
  * lock screen; the lock screen is `media-session.js`.
+ * Lowered 2026-11-23 for `public/app.js`, by 18, once the search box's typing and what the address
+ * writes back into it moved to `search-box.js`.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 712,
+  "public/app.js": 694,
   "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
