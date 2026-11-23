@@ -29,6 +29,12 @@ const LIBRARIES_FILE: &str = "libraries.json";
 /// Kotlin inside `CoreError::NotFound`, so every refusal shares this one text.
 pub(in crate::api) const NO_LONGER_STORED: &str = "this device no longer has that library stored";
 
+/// What a stored map that will not parse says. It reaches the screen as it
+/// is, so it names the way out that works: listing the libraries again, in
+/// Settings, replaces the file ([`read_to_relist`]). Starting over would too,
+/// but it signs the device out to do it.
+const DAMAGED: &str = "the stored list of libraries is damaged; choose the library again in Settings";
+
 /// What one handle stands for. Private to this crate by construction: it is
 /// only ever read back out of the file below, and only ever to build a
 /// [`PeerRef`] for a request.
@@ -64,19 +70,47 @@ pub(in crate::api) fn path(core: &Core) -> PathBuf {
 /// map: folding the two together would silently orphan the handle already
 /// chosen and send a working device back to the picker with no explanation.
 pub(in crate::api) fn read(path: &Path) -> Result<Handles, CoreError> {
-    let text = match std::fs::read_to_string(path) {
-        Ok(text) => text,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(Handles::new()),
-        Err(err) => return Err(CoreError::io("reading the stored libraries")(err)),
+    match stored(path)? {
+        Some(bytes) => serde_json::from_slice(&bytes).map_err(CoreError::io(DAMAGED)),
+        None => Ok(Handles::new()),
+    }
+}
+
+/// What [`read`] returns, for a listing: a file that will not parse counts
+/// as nothing stored.
+///
+/// Every entry came from Telegram's own list, and a listing is about to ask
+/// for all of them again, so it can replace a damaged map where every other
+/// request can only refuse it. The handles are minted anew, which leaves the
+/// library this device follows to be chosen again: the way out [`DAMAGED`]
+/// names, and one that keeps the device signed in.
+pub(in crate::api) fn read_to_relist(path: &Path) -> Result<Handles, CoreError> {
+    let Some(bytes) = stored(path)? else {
+        return Ok(Handles::new());
     };
-    serde_json::from_str(&text).map_err(CoreError::io(
-        "the stored list of libraries is corrupt; starting over clears it",
-    ))
+    Ok(serde_json::from_slice(&bytes).unwrap_or_else(|err| {
+        tracing::warn!(%err, "the stored libraries did not parse; listing them afresh");
+        Handles::new()
+    }))
+}
+
+/// The file as it is stored, or `None` on a first run.
+fn stored(path: &Path) -> Result<Option<Vec<u8>>, CoreError> {
+    match std::fs::read(path) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(CoreError::io("reading the stored libraries")(err)),
+    }
 }
 
 /// Writes the map owner-only, through a temporary file renamed over the old
 /// one, so a process killed mid-write leaves the previous map intact rather
 /// than a half-written one that would not parse.
+///
+/// The temporary file is flushed to storage before it takes the name. A
+/// rename can outlast a power cut that the bytes behind it did not, and what
+/// is left then is an empty or zeroed file under the name every channel
+/// request reads: a TV box switched off at the wall after a look at Settings.
 pub(in crate::api) fn write(path: &Path, handles: &Handles) -> Result<(), CoreError> {
     const RECORDING: &str = "recording the chosen library";
     let text = serde_json::to_string(handles).map_err(CoreError::io(RECORDING))?;
@@ -93,6 +127,7 @@ pub(in crate::api) fn write(path: &Path, handles: &Handles) -> Result<(), CoreEr
         .map_err(CoreError::io(RECORDING))?;
     file.write_all(text.as_bytes())
         .map_err(CoreError::io(RECORDING))?;
+    file.sync_all().map_err(CoreError::io(RECORDING))?;
     drop(file);
     std::fs::rename(&staged, path).map_err(CoreError::io(RECORDING))
 }

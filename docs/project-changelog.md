@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.193.3 — A damaged list of libraries no longer needs a sign-out
+
+**Fixed**
+
+- **The Android app's stored list of libraries survives a power cut.** The file was replaced without being flushed to storage first, and it is rewritten every time Settings is opened, so a device switched off at the wall soon after could be left with an empty file under that name. Every channel request reads it: nothing played, the catalog stopped refreshing and the app could not update itself ("last update failed: the stored list of libraries is corrupt; starting over clears it"). It is now on storage before it takes the name.
+- **A list that is damaged anyway is replaced instead of refused.** Listing the libraries (opening Settings does it) rebuilds the file from Telegram, and the message now says to choose the library again in Settings. Starting over, which signs the device out, is no longer the only way back.
+
+**Known limit**
+
+- A device already in this state cannot fetch this release from the channel: its update check fails on the same file. It needs this build installed by hand, or a start over on the build it has.
+
 ## 0.193.2 — The search box keeps its spaces
 
 **Fixed**

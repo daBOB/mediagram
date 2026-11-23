@@ -50,7 +50,7 @@ async fn list_libraries_with(
     mut dialogs: impl Responses<Item = Dialog>,
 ) -> Result<Vec<LibraryChoice>, CoreError> {
     let file = library::path(core);
-    let mut handles = library::read(&file)?;
+    let mut handles = library::read_to_relist(&file)?;
     let mut choices = Vec::new();
 
     while let Some(dialog) = checked_for(

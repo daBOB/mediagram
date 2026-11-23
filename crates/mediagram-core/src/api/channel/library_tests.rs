@@ -111,6 +111,51 @@ fn a_corrupt_map_is_refused_rather_than_read_as_empty() {
     assert!(read(&file).is_err());
 }
 
+/// What a damaged file looks like after a power cut: nothing at all, zeros
+/// where the text should be, or bytes that are not text. A listing reads all
+/// of them as nothing stored, because it is about to ask Telegram for every
+/// entry again; anything else it cannot read is still an error.
+#[test]
+fn a_listing_starts_afresh_from_a_map_that_will_not_parse() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join(LIBRARIES_FILE);
+    for damaged in [&b""[..], &[0u8; 64][..], &[0xff, 0xfe, 0x00][..], &b"{\"half\":"[..]] {
+        std::fs::write(&file, damaged).unwrap();
+        assert!(read(&file).is_err(), "{damaged:?} read as a map");
+        assert!(read_to_relist(&file).unwrap().is_empty(), "{damaged:?}");
+    }
+    assert!(read_to_relist(&dir.path().join("absent.json")).unwrap().is_empty());
+    assert!(read_to_relist(dir.path()).is_err(), "a directory is not a damaged map");
+}
+
+/// The sentence reaches the screen as it is, so it has to name a way out
+/// that works. It once said starting over, which signs the device out, when
+/// listing the libraries again is enough.
+#[test]
+fn a_corrupt_map_says_to_choose_the_library_again_not_to_start_over() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join(LIBRARIES_FILE);
+    std::fs::write(&file, b"not json").unwrap();
+    let said = read(&file).unwrap_err().to_string();
+    assert!(said.contains("choose the library again"), "{said}");
+    assert!(!said.contains("starting over"), "{said}");
+}
+
+/// A stored map has to survive the power going: the bytes are on storage
+/// before the file takes the name every channel request reads.
+#[test]
+fn a_written_map_reads_back_and_leaves_no_staging_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join(LIBRARIES_FILE);
+    let mut handles = Handles::new();
+    let handle = register_or_refresh_library(&mut handles, entry(-1_001_234_567_890));
+
+    write(&file, &handles).unwrap();
+
+    assert_eq!(read(&file).unwrap()[&handle], entry(-1_001_234_567_890));
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+}
+
 /// This file names every channel the account can see. It sits beside the
 /// auth key and is protected the same way.
 #[test]
