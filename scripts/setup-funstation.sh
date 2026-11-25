@@ -431,6 +431,37 @@ Categories=AudioVideo;Audio;Player;
 EOF
 kwriteconfig6 --file ~/.local/share/applications/waydroid.app.symfonik.music.player.desktop \
   --group "Desktop Entry" --key NoDisplay true
+if waydroid status | grep -q 'Session:.*RUNNING'; then
+  # WayDroid's Android runs in GMT whatever this machine's zone is, so every clock in it,
+  # the home screen's first, was an hour or two off the wall.
+  sudo waydroid shell -- cmd alarm set-timezone "$(timedatectl show -p Timezone --value)"
+  # saTV (github.com/kcmaker10/satv), the home screen the user chose for Android: the
+  # Android TV tile opens it. It only announces its own updates, so every run installs the
+  # newest release when that is not the one put here, checked against the release's sums.
+  rel=$(curl -fsSL https://api.github.com/repos/kcmaker10/satv/releases/latest || echo '{}')
+  tag=$(jq -r '.tag_name // empty' <<<"$rel")
+  if [ -n "$tag" ] && { [ "$(cat ~/.local/state/funstation-satv 2>/dev/null)" != "$tag" ] ||
+    ! sudo waydroid shell -- pm path dev.satv.launcher >/dev/null 2>&1; }; then
+    tmp=~/.local/share/waydroid/data/local/tmp/satv.apk
+    sudo curl -fsSL -o "$tmp" "$(jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url' <<<"$rel")"
+    sum=$(curl -fsSL "$(jq -r '.assets[] | select(.name == "SHA256SUMS.txt") | .browser_download_url' <<<"$rel")" |
+      awk '/\.apk\r?$/ { print $1 }' || true) # the sums file has CRLF line ends
+    if echo "$sum  $tmp" | sudo sha256sum -c --quiet &&
+      sudo waydroid shell -- pm install -r /data/local/tmp/satv.apk; then
+      mkdir -p ~/.local/state
+      echo "$tag" >~/.local/state/funstation-satv
+    else
+      echo "saTV $tag did not match its release's checksum or did not install."
+    fi
+    sudo rm -f "$tmp"
+  fi
+  if sudo waydroid shell -- pm path dev.satv.launcher >/dev/null 2>&1; then
+    # Its Continue Watching row is what the players report through their media sessions,
+    # mediagram's among them, and Android shows those only to a notification listener.
+    sudo waydroid shell -- cmd notification allow_listener dev.satv.launcher/dev.satv.launcher.MediaListener
+    sudo waydroid shell -- cmd package set-home-activity dev.satv.launcher/.MainActivity >/dev/null
+  fi
+fi
 # Bigscreen reads its tiles from Plasma's app cache, which missed the rewritten files and
 # kept running the tiles' old commands. Rebuilt inside the session, so it is the session
 # locale's cache and not one for this shell's.

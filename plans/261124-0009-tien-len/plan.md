@@ -64,7 +64,7 @@ Calls of mine (not confirmed by the user):
       in headless Chrome), screenshots in `reports/screens/`
 - [x] Version 0.196.0, changelog, architecture doc
 - [x] Code review findings worked in (see Results)
-- [ ] Commit, merge into `main` (waits for the user's word)
+- [x] Commit, merge into `main` (user: "yes looks good", then "commit and merge")
 - [ ] A game on the funstation with real phones
 
 ## Results

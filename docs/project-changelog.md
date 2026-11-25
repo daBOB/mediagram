@@ -21,6 +21,23 @@ to `main`. Full phase-by-phase detail lives in
 
 - The TV no longer draws the deck's shadow when no deck lies on the card table, as in Durak once the deck is drawn out.
 
+## 0.194.0 — funstation's Android opens on saTV
+
+**Added**
+
+- **saTV is Android's home screen on funstation.** The setup script installs the newest release of [saTV](https://github.com/kcmaker10/satv), checked against the checksums the release carries, and makes it Android's home, so the Android TV tile opens it. saTV only announces its own updates, so running the script again is what installs a newer one. The LineageOS launcher stays installed underneath.
+- **What plays in mediagram on funstation lands on saTV's Continue Watching row.** saTV fills that row from what each player reports through its media session, which mediagram already does for the lock screen; the script gives saTV the notification access Android demands for reading it. A title shows up once it has played for two minutes and leaves at 95 %.
+
+**Fixed**
+
+- **Android on funstation keeps the machine's time zone.** It ran in GMT, so every clock in it was an hour behind in winter.
+
+**Known limits**
+
+- This is funstation only, and on purpose: the row belongs to a launcher, and the TV box and the web player have none of ours to fill.
+- saTV 1.0.0 offers an app no way to hand it a list or a link. So the row holds only what played on funstation since saTV arrived, not the Continue list the other devices share, and OK on a card opens mediagram rather than the title.
+- saTV looks its artwork up on TMDB by the English or original title, so a title the library holds under its German name keeps the poster mediagram reported.
+
 ## 0.193.3 — A damaged list of libraries no longer needs a sign-out
 
 **Fixed**
