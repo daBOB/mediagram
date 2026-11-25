@@ -4,8 +4,8 @@ import model.FranchiseInfo
 import model.ListOfSets
 import model.MediaSet
 
-/** One franchise the library holds: at least two of its films, kept. */
-data class Franchise(val id: Long, val name: String, val films: List<MediaSet>, val art: String?)
+/** One franchise the library holds: at least two of its films, kept, in the order [order] names. */
+data class Franchise(val id: Long, val name: String, val films: List<MediaSet>, val art: String?, val order: String = "In release order")
 
 /**
  * The franchises the library holds, largest first; each with its films in
@@ -13,7 +13,7 @@ data class Franchise(val id: Long, val name: String, val films: List<MediaSet>, 
  * from `franchisesIn` in the web's `collections-page.js`.
  *
  * A franchise needs two held films to count: one film is a title, not a
- * collection.
+ * collection. The MCU is one of them, in story order ([mcuIn]).
  */
 fun franchisesIn(movies: List<MediaSet>): List<Franchise> {
     val byId = LinkedHashMap<Long, MutableList<MediaSet>>()
@@ -22,7 +22,7 @@ fun franchisesIn(movies: List<MediaSet>): List<Franchise> {
         byId.getOrPut(id) { mutableListOf() }.add(film)
     }
 
-    return byId.entries
+    val tmdb = byId.entries
         .filter { it.value.size >= 2 }
         .map { (id, films) ->
             val released = films.sortedBy { it.year ?: Int.MAX_VALUE }
@@ -32,6 +32,7 @@ fun franchisesIn(movies: List<MediaSet>): List<Franchise> {
                     .maxByOrNull { it.popularity ?: 0.0 }
             Franchise(id, films.first().collectionName ?: "", released, lead?.backdropPath ?: lead?.posterPath)
         }
+    return (tmdb + listOfNotNull(mcuIn(movies)))
         .sortedWith(compareByDescending<Franchise> { it.films.size }.thenBy { it.name })
 }
 
