@@ -10,6 +10,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { transcodeArgs, type TranscodeRequest } from "../src/transcode/args";
+import { TONE_MAP_TO_SDR } from "../src/transcode/picture-filters";
 
 const base: TranscodeRequest = {
   input: "http://127.0.0.1:8770/api/sets/01SET/stream",
@@ -214,6 +215,29 @@ describe("the picture size", () => {
       gpuDecode: true,
     }), "-vf");
     expect(vf).toBe(`format=nv12|p010|vaapi,hwupload,scale_vaapi=${FIT.slice("scale=".length)}:format=nv12`);
+  });
+});
+
+describe("HDR to SDR", () => {
+  // HDR10 encoded as it is plays washed out, Dolby Vision profile 5 purple and green.
+  const FIT = "scale=w='min(iw,3840)':h='min(ih,2160)':force_original_aspect_ratio=decrease:force_divisible_by=2";
+  const VAAPI = { kind: "vaapi", name: "h264_vaapi", device: "/dev/dri/renderD128" } as const;
+
+  test("the picture is tone mapped before it is fitted", () => {
+    expect(valueOf(argsFor({ toneMap: true }), "-vf")).toBe(`${TONE_MAP_TO_SDR},${FIT}`);
+  });
+
+  test("with VAAPI it is decoded on the CPU, tone mapped, then uploaded to the encoder", () => {
+    const args = argsFor({ encoder: VAAPI, gpuDecode: true, toneMap: true });
+    expect(args).not.toContain("-hwaccel");
+    expect(valueOf(args, "-vaapi_device")).toBe("/dev/dri/renderD128");
+    expect(valueOf(args, "-vf")).toBe(`${TONE_MAP_TO_SDR},${FIT},format=nv12,hwupload`);
+  });
+
+  test("a copied picture is never tone mapped", () => {
+    const args = argsFor({ encoder: VAAPI, toneMap: true, copyVideo: true });
+    expect(args).not.toContain("-vf");
+    expect(valueOf(args, "-c:v")).toBe("copy");
   });
 });
 

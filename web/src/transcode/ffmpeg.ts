@@ -65,6 +65,7 @@ export class FfmpegRunner implements Runner {
       copyVideo: spec.copyVideo,
       hevcCopy: spec.hevcCopy,
       gpuDecode: spec.gpuDecode,
+      toneMap: spec.toneMap,
       pacedReads: this.options.pacedReads,
       segmentSeconds: this.options.segmentSeconds,
       // Left to ffmpeg: it reads the real rate from the source, and

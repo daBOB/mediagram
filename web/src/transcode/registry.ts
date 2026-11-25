@@ -49,6 +49,11 @@ export interface SessionSpec {
    * always agree on it.
    */
   gpuDecode?: boolean;
+  /**
+   * The title is HDR and is mapped to SDR while encoding (`TONE_MAP_TO_SDR`).
+   * Left out of the identity for the same reason as `gpuDecode`.
+   */
+  toneMap?: boolean;
 }
 
 /** A running transcode, however it is actually run. */

@@ -8,6 +8,7 @@
  */
 
 import { READ_BURST_SECONDS, READ_RATE } from "./args";
+import { TONE_MAP_TO_SDR } from "./picture-filters";
 
 /** The catalog's `hdr` column; null means the title is SDR. */
 export type ClipHdr = "SDR" | "HDR10" | "HLG" | "DV" | null;
@@ -62,8 +63,7 @@ const TONE_MAP_HDR =
  * libplacebo applies the dynamic metadata. It scales as well, so only the
  * final fit follows.
  */
-const TONE_MAP_DV =
-  "libplacebo=tonemapping=bt.2390:colorspace=bt709:color_primaries=bt709:color_trc=bt709:range=tv:format=yuv420p";
+const TONE_MAP_DV = TONE_MAP_TO_SDR;
 
 function videoFilter(hdr: ClipHdr): string[] {
   if (hdr === "HDR10" || hdr === "HLG") return [SQUARE_PIXELS, FIT_1080P, TONE_MAP_HDR];

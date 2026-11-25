@@ -251,7 +251,11 @@ Why those three are where the line falls:
   and only SDR at 1080p or below is negotiated, because the probe asks about
   8-bit Main at level 4 and says nothing about HDR, Dolby Vision or 2160p. The server accepts only codec names on
   `NEGOTIABLE` in `playable.js`, so a request cannot talk it into copying
-  anything else.
+  anything else. An HDR10, HLG or Dolby Vision picture that is re-encoded is
+  tone mapped to SDR on the way (libplacebo, `picture-filters.ts`): H.264 for
+  a browser is SDR, and without it HDR10 plays washed out and Dolby Vision
+  without an HDR10 base purple and green. It needs ffmpeg with libplacebo and
+  a working Vulkan device on the player's machine.
 - **AC-3 and E-AC-3.** Broadcast and disc audio, licensed per decoder, and
   shipped by essentially no browser. A film with AC-3 is converted for its
   soundtrack alone even when its video would have played.

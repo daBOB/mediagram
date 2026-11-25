@@ -8,6 +8,7 @@
  * bitrate cap saturates the uplink. None of these announce themselves.
  */
 
+import { FIT_UHD, TONE_MAP_TO_SDR } from "./picture-filters";
 import { vaapiFilter, vaapiInputArgs } from "./vaapi-decode";
 /** Which encoder to use, and what it needs to work. */
 export type Encoder =
@@ -49,6 +50,8 @@ export interface TranscodeRequest {
   pacedReads?: boolean;
   /** Decode on the GPU too, with a VAAPI encoder. See `vaapi-decode.ts`. */
   gpuDecode?: boolean;
+  /** The source is HDR10, HLG or Dolby Vision: map it to SDR while encoding. See `TONE_MAP_TO_SDR`. */
+  toneMap?: boolean;
 }
 
 /**
@@ -71,28 +74,22 @@ export const READ_RATE = 2;
 /** Full speed for this long first — covers ffmpeg's own start-up and every seek's restart. */
 export const READ_BURST_SECONDS = 30;
 
-/**
- * The `scale` options that bring a picture larger than UHD down to fit inside
- * it, keeping its shape; anything already smaller passes through untouched.
- *
- * Screen recordings arrive at sizes like 4784x2464. VAAPI refuses to encode
- * anything over 4096 wide, and a frame that size is past every H.264 level,
- * so a browser could refuse it even from libx264. The quotes keep the commas
- * in `min()` from being read as the next filter in the chain.
- */
-const FIT_UHD = "w='min(iw,3840)':h='min(ih,2160)':force_original_aspect_ratio=decrease:force_divisible_by=2";
-
 export function transcodeArgs(request: TranscodeRequest): string[] {
   const fps = request.frameRate ?? ASSUMED_FRAME_RATE;
   // Frames, not seconds. This is the line the plan got wrong.
   const gop = Math.round(fps * request.segmentSeconds);
 
   const args: string[] = ["-hide_banner", "-loglevel", "error", "-y"];
+  // A copy is never encoded, so it is never tone mapped either.
+  const toneMap = request.toneMap === true && request.copyVideo !== true;
+  // Decoded on the CPU when tone mapping: libplacebo takes frames in memory,
+  // with the Dolby Vision metadata on them. 4K Dolby Vision ran at 3x real time.
+  const gpuDecode = request.gpuDecode === true && !toneMap;
 
   // The device has to exist before the input that will be uploaded to it —
   // and is pointless for a copy, which never reaches the GPU.
   if (request.encoder.kind === "vaapi" && request.copyVideo !== true) {
-    args.push(...vaapiInputArgs(request.encoder.device, request.gpuDecode === true));
+    args.push(...vaapiInputArgs(request.encoder.device, gpuDecode));
   }
 
   if (request.seekSeconds > 0) {
@@ -149,7 +146,8 @@ export function transcodeArgs(request: TranscodeRequest): string[] {
     if (request.hevcCopy === true) args.push("-tag:v", "hvc1");
   } else {
     // Fitted before the encoder, which refuses anything over 4096 wide.
-    args.push("-vf", request.encoder.kind === "vaapi" ? vaapiFilter(FIT_UHD, request.gpuDecode === true) : `scale=${FIT_UHD}`);
+    const fit = request.encoder.kind === "vaapi" ? vaapiFilter(FIT_UHD, gpuDecode) : `scale=${FIT_UHD}`;
+    args.push("-vf", toneMap ? `${TONE_MAP_TO_SDR},${fit}` : fit);
     args.push(
       "-c:v",
       request.encoder.name,

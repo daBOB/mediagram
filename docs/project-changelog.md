@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.195.1 — HDR films in their own colours on the web
+
+**Fixed**
+
+- **HDR films no longer play in the wrong colours in the web player.** A browser cannot show these films' pictures as they are, so the player converts them as you watch, and that conversion never mapped HDR to the ordinary range a browser shows. HDR10 films came out grey and washed out (432 in the library), and Dolby Vision films without an HDR10 base came out purple and green (37, Captain Marvel among them). The conversion now tone-maps both on the GPU with libplacebo, the chain scene clips already used for Dolby Vision, decoding on the CPU so the Dolby Vision metadata reaches it. A 4K Dolby Vision film converts at about three times real time on the player's machine. Pictures carried across untouched, which the browser shows itself, are unchanged.
+
 ## 0.195.0 — the Marvel films in story order
 
 **Added**
