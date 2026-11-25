@@ -73,7 +73,7 @@ export function CardsDesk({ desk, conn }: { desk: CardDesk; conn: Connection }) 
           </button>
         ))}
       </div>
-      <div className="desk-hand" role="group" aria-label="Deine Karten">
+      <div className="desk-hand" data-several={several} role="group" aria-label="Deine Karten">
         {chunks(desk.hand.map((h, i) => ({ h, i })), Math.ceil(desk.hand.length / Math.ceil(desk.hand.length / PER_ROW))).map((row, r) => (
           <div className="desk-row" key={r} style={{ "--n": row.length } as React.CSSProperties}>
             {row.map(({ h, i }) => (

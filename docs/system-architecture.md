@@ -981,8 +981,8 @@ AirPlay code.
 ### Game night
 
 The TV box hosts party games for phones on the same network: a buzzer quiz, a
-poster-guessing game, two board games (Heimlauf, Grand Allee) and three card games
-(Mau-Mau, Schwimmen, Durak). It is a feature of the TV only, and it is the one
+poster-guessing game, two board games (Heimlauf, Grand Allee) and four card games
+(Mau-Mau, Schwimmen, Durak, Tiến Lên). It is a feature of the TV only, and it is the one
 place the box serves something rather than only fetching. Since Spieltisch
 ([below](#spieltisch-the-games-own-app)) the games are an app of their own: the
 media app's Games row only opens `com.mediagram.spieltisch`, and says "Spieltisch
@@ -1122,8 +1122,8 @@ source is still written here. The music is normalised to
 -18 LUFS and Opus 56 kbps (2.6 MB in all, embedded with the client in each
 ABI's core library).
 
-**Card games share one table.** Mau-Mau (2–8), Schwimmen (2–8) and Durak
-(2–6) are traditional games and keep their names; one `GameKind` each, so the
+**Card games share one table.** Mau-Mau (2–8), Schwimmen (2–8), Durak
+(2–6) and Tiến Lên (2–4) are traditional games and keep their names; one `GameKind` each, so the
 lobby lists them beside the board games. `cards.rs` holds a French-suited pack
 of 52 and every game deals a subset by lowest rank (`deck_from`: 7 → 32, 6 →
 36). The hand is hidden information, and the `Game` trait already keeps it so:
@@ -1133,7 +1133,7 @@ carries one (Schwimmen's reveal is the only public moment). Phones stay thin:
 buttons that say whether they need a hand card, several, or a hand card plus a
 table card — answered with `Action::Cards { button, hand, table }`; nothing on
 the phone knows the rules. The TV gets `TvScene::Cards` (seats with card counts,
-open cards and a marker, centre piles, deck, trump, note, banner, the last four
+open cards and a marker, centre piles, deck, trump, note, banner, the last thirteen
 events with server times). Where the rules would let the table read a hand — a
 Durak player asked to throw in only when a rank fits, a Mau-Mau turn pausing
 only when the drawn card fits — every player gets the same prompt with the
@@ -1143,6 +1143,13 @@ table (`tv/cards/`) reuses Heimlauf's lacquered table, music and settings; the
 52 faces and the back are one canvas atlas drawn at load, and every banner,
 note and seat text is pre-drawn (`cards-texts.ts`), so no texture is made
 mid-game. Rules and decisions per game: `plans/261107-0207-card-games-and-bauherr/`.
+Tiến Lên (`tienlen*.rs`, rules from pagat.com, `plans/261124-0009-tien-len/`) is
+the first game where several hand cards make one play: the phone sorts the hand
+by the game's own order (three low, two high) and the TV lays the play to beat
+side by side (`cards-tienlen.ts`). A two on the table asks everyone again who
+passed and holds cards enough for a bomb, whether or not they hold one: the
+card count is open, the hand is not. A play laid when nobody is left to answer
+it lies on show for `settle_ms` before the table is cleared, as Durak's does.
 
 **Grand Allee, the hotel game.** An own game in the hotel-building family
 (plots, a permit die, entrances, guests paying per night): own name, ten hotels,

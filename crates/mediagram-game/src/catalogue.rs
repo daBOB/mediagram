@@ -47,6 +47,7 @@ pub const CATALOGUE: &[GameEntry] = &[
     GameEntry::of(GameKind::MauMau),
     GameEntry::of(GameKind::Schwimmen),
     GameEntry::of(GameKind::Durak),
+    GameEntry::of(GameKind::TienLen),
 ];
 
 /// Everything the room knows of one game: what the lobby shows, what keeps it from starting, how it starts.
@@ -116,6 +117,7 @@ pub(crate) const fn entry(kind: GameKind) -> CatalogueEntry {
         GameKind::MauMau => crate::maumau::ENTRY,
         GameKind::Schwimmen => crate::schwimmen_config::ENTRY,
         GameKind::Durak => crate::durak::ENTRY,
+        GameKind::TienLen => crate::tienlen::ENTRY,
     }
 }
 

@@ -179,6 +179,12 @@
   z-index: 1;
 }
 
+/* where several cards are picked, a picked one stays under its right neighbour: on top it would hide the next card to pick */
+.desk-hand[data-several="true"] .pcard.is-picked {
+  transform: translateY(-1.15rem);
+  z-index: auto;
+}
+
 .pcard.is-off {
   filter: brightness(0.72);
 }

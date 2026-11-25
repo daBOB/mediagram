@@ -1,7 +1,7 @@
 // Every text a card game can put on the table's banner, note or seat tags, by
 // game name, so the HUD draws them all at load. They mirror what the host
-// sends (maumau.rs, maumau_views.rs); a text not listed still shows, drawn at
-// first use.
+// sends (maumau.rs, maumau_views.rs, tienlen_moves.rs, tienlen_views.rs); a
+// text not listed still shows, drawn at first use.
 
 import { SUIT_NAME, SUIT_SYMBOL, SUITS } from "../../ui/card-face";
 
@@ -68,6 +68,12 @@ const DURAK: GameTexts = {
   marker: ["Angreifer", "Verteidiger", "Raus", "Durak"],
 };
 
-const TEXTS: Record<string, GameTexts> = { "Mau-Mau": MAU_MAU, Schwimmen: SCHWIMMEN, Durak: DURAK };
+const TIEN_LEN: GameTexts = {
+  banner: [" ist dran", " spielt aus", " passt", " legt eine Bombe!", " ist fertig – Platz 1", " ist fertig – Platz 2", " gewinnt!"],
+  note: ["Einzelkarte", "Paar", "Drilling", "Vierling", "Straße", "Doppelstraße"],
+  marker: ["Passt", "Platz 1", "Platz 2", "Platz 3"],
+};
+
+const TEXTS: Record<string, GameTexts> = { "Mau-Mau": MAU_MAU, Schwimmen: SCHWIMMEN, Durak: DURAK, "Tiến Lên": TIEN_LEN };
 
 export const textsFor = (game: string): GameTexts => (TEXTS[game] ?? { banner: [" ist dran", " gewinnt!"], note: [], marker: [] });

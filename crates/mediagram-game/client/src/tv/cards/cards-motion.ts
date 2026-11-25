@@ -8,6 +8,7 @@ import type { CardsScene } from "../../protocol/CardsScene";
 import { RANKS, SUITS } from "../../ui/card-face";
 import { TRUMP_AT, isDurak, pairCard } from "./cards-durak";
 import type { CardsHud } from "./cards-hud";
+import { isTienLen, rowCard } from "./cards-tienlen";
 import { worthCell } from "./cards-print";
 import {
   DECK_AT, LAYER, TABLE_Y, WISH_AT, fanCard, openCard, pileAt, pileCard, yawFacing, type Placed, type Spot,
@@ -81,15 +82,16 @@ export class CardsMotion {
 
     // discards, the one still flying in left out until it lands
     const landing = (c: { suit: string; rank: string }) => flights.some((fl) => fl.ev.kind.kind === "play" && seedOf(fl.ev.kind.card) === seedOf(c));
-    // Durak lays attack/defence pairs in a grid; the other games stack each pile in a row
-    const pairs = isDurak(scene.game);
+    // Durak lays attack/defence pairs in a grid and Tiến Lên its one play side by side; the other games stack each pile in a row
+    const pairs = isDurak(scene.game), row = isTienLen(scene.game);
     const placeOf = (pi: number, i: number, c: { suit: string; rank: string }) =>
-      pairs ? pairCard(pi, i) : pileCard(pileAt(pi, scene.piles.length), seedOf(c), i);
+      pairs ? pairCard(pi, i) : row ? rowCard(i, scene.piles[pi].cards.length) : pileCard(pileAt(pi, scene.piles.length), seedOf(c), i);
     if (scene.trump) cards.put(scene.trump, TRUMP_AT);
     scene.piles.forEach((pile, pi) => {
       pile.cards.forEach((c, i) => {
         const last = i === pile.cards.length - 1;
-        if (last && landing(c)) return;
+        // every card of a play laid side by side flies in, not only the top one
+        if ((last || row) && landing(c)) return;
         cards.put(c, placeOf(pi, i, c));
       });
     });
@@ -100,7 +102,10 @@ export class CardsMotion {
       const card = fl.ev.kind.card, pi = scene.piles[fl.ev.kind.pile] ? fl.ev.kind.pile : 0, pile = scene.piles[pi];
       if (!pile) continue;
       const from: Placed = { x: spot.x, z: spot.z, yaw: yawFacing(spot.dx, spot.dz), y: TABLE_Y + 0.1 };
-      cards.put(card, between(from, placeOf(pi, pile.cards.length - 1, card), fl.f), Math.sin(fl.f * Math.PI) * LIFT);
+      // a card laid side by side flies to its own place; one beaten while still in the air has none left
+      const slot = row ? pile.cards.findIndex((c) => seedOf(c) === seedOf(card)) : pile.cards.length - 1;
+      if (slot < 0) continue;
+      cards.put(card, between(from, placeOf(pi, slot, card), fl.f), Math.sin(fl.f * Math.PI) * LIFT);
     }
     cards.end();
 
@@ -128,8 +133,8 @@ export class CardsMotion {
     const spots = [DECK_AT, ...scene.piles.map((_, i) => pileAt(i, scene.piles.length))];
     blobs.slice(n).forEach((b, k) => {
       const at = spots[k];
-      // Durak's pairs lie in a grid, so its piles get no patch
-      b.visible = !!at && (k === 0 || !isDurak(scene.game));
+      // an empty deck casts no shadow; Durak's grid and Tiến Lên's row get no patch either
+      b.visible = !!at && (k === 0 ? scene.deck > 0 || !!scene.trump : !isDurak(scene.game) && !isTienLen(scene.game));
       if (!at) return;
       b.position.set(at.x + 0.08, TABLE_Y + 0.004, at.z + 0.1);
       b.scale.set(2.3, 1, 2.9);

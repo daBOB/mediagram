@@ -20,13 +20,13 @@ fn seats_follow_joining_order() {
 }
 
 #[test]
-fn the_ring_keeps_the_newest_six_events_with_rising_ids() {
+fn the_ring_keeps_the_newest_thirteen_events_with_rising_ids() {
     let mut t = table();
-    for k in 0..8 {
+    for k in 0..15 {
         t.event(f64::from(k), ANA, CardsEventKind::Draw { count: 1 });
     }
     let ids: Vec<u32> = t.events().iter().map(|e| e.id).collect();
-    assert_eq!(ids, [2, 3, 4, 5, 6, 7]);
+    assert_eq!(ids, (2..15).collect::<Vec<u32>>());
     assert_eq!(t.events()[0].at, 2.0);
 }
 

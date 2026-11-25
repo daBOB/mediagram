@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## Spieltisch 0.196.0 — Tiến Lên, the seventeenth game
+
+**Added**
+
+- **Tiến Lên** (Thirteen) is playable on the card table, for two to four players. Everyone is dealt 13 cards; whoever holds the lowest card leads, and that card must be in the first play. A play is a single card, a pair, a triple, four of a kind, a run of three or more ranks, or a run of three or more pairs. The next player lays a higher play of the same kind and length or passes, and a pass locks them out until the table is cleared. Twos are the highest cards and fall only to bombs: four of a kind or three pairs in a row beat one two, four pairs a pair of twos, five pairs three twos. A two on the table calls back everyone who passed and still holds cards enough for a bomb, to bomb it or pass again. Players go out as their hands empty, and the last one holding cards loses. Rules as on pagat.com, with the calls made listed in `plans/261124-0009-tien-len/plan.md`.
+- On the TV the play to beat lies side by side across the middle, lowest card on the left, and each of its cards flies in on its own. A play laid when nobody is left to answer it stays on show for two seconds before the table is cleared. The phone sorts the hand lowest first, so pairs and runs sit together, and several cards are picked before "Legen".
+
+**Changed**
+
+- On the phone, where several cards can be picked, a picked card stays in its place in the stack. It used to rise above its right neighbour and hide it.
+- The card table keeps its last thirteen card movements for the TV, up from six, so the longest play of Tiến Lên, a run of all thirteen ranks, is animated whole.
+
+**Fixed**
+
+- The TV no longer draws the deck's shadow when no deck lies on the card table, as in Durak once the deck is drawn out.
+
 ## 0.194.0 — funstation's Android opens on saTV
 
 **Added**
