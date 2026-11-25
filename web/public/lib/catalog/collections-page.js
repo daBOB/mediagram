@@ -1,8 +1,9 @@
 /**
  * Collections as destinations: the film franchises the library holds (from
- * TMDB's `belongs_to_collection`, schema v9) and the viewer's own lists,
- * both as large cards — then, for a franchise, a page that introduces it
- * and lays its films out in release order.
+ * TMDB's `belongs_to_collection`, schema v9, plus the MCU from `mcu.js`) and
+ * the viewer's own lists, both as large cards — then, for a franchise, a page
+ * that introduces it and lays its films out in its order: release order, or
+ * the MCU's story order.
  *
  * A franchise needs two held films to count: one film is a title, not a
  * collection. The introduction is TMDB's own overview of the collection
@@ -19,11 +20,13 @@ import { GRID } from "./shelf-mode.js";
 import { newListButton } from "./collections-view.js";
 import { revealWithin } from "../reveal.js";
 import { href } from "../address.js";
+import { mcuIn } from "./mcu.js";
 
 /**
  * The franchises with at least two films held, largest first; each with its
- * films in release order and the most popular one's backdrop.
- * @returns {{ id: number, name: string, films: any[], art: string|null }[]}
+ * films in release order and the most popular one's backdrop. The MCU is one
+ * of them, in story order (`mcu.js`).
+ * @returns {{ id: number, name: string, order: string, films: any[], art: string|null }[]}
  */
 export function franchisesIn(movies) {
   const byId = new Map();
@@ -32,13 +35,15 @@ export function franchisesIn(movies) {
     if (!byId.has(film.collectionId)) byId.set(film.collectionId, { id: film.collectionId, name: film.collectionName ?? "", films: [] });
     byId.get(film.collectionId).films.push(film);
   }
-  return [...byId.values()]
+  const tmdb = [...byId.values()]
     .filter((franchise) => franchise.films.length >= 2)
     .map((franchise) => {
       const films = [...franchise.films].sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));
       const lead = [...films].filter((f) => f.backdrop || f.poster).sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))[0];
-      return { ...franchise, films, art: lead?.backdrop ?? lead?.poster ?? null };
-    })
+      return { ...franchise, order: "In release order", films, art: lead?.backdrop ?? lead?.poster ?? null };
+    });
+  const mcu = mcuIn(movies);
+  return (mcu ? [...tmdb, mcu] : tmdb)
     .sort((a, b) => b.films.length - a.films.length || a.name.localeCompare(b.name));
 }
 
@@ -93,8 +98,8 @@ export function renderCollectionsPage(main, { library, lists, setsFor }) {
 /** TMDB's franchise overviews, once fetched: a redraw draws them at once. */
 let overviews = null;
 
-/** One franchise: its introduction, then its films in release order. */
-export function renderFranchise(main, id, { library, openFilm }, stillHere) {
+/** One franchise: its introduction, then its films in order, playable as one run. */
+export function renderFranchise(main, id, { library, openFilm, play }, stillHere) {
   const franchise = franchisesIn(everyFilm(library)).find((f) => String(f.id) === String(id));
   if (!franchise) {
     main.append(el("p", "error", "That collection is not in the library."));
@@ -112,7 +117,12 @@ export function renderFranchise(main, id, { library, openFilm }, stillHere) {
   });
   hero.classList.add("franchise-hero");
   main.append(hero);
-  main.append(deptRow("In release order", movieGrid(franchise.films, openFilm, { mode: GRID })));
+  // The list page's own "Play all": the films play on in the page's order.
+  const controls = el("div", "list-controls");
+  const all = el("button", "quiet play-all", "Play all");
+  all.addEventListener("click", () => play(franchise.films[0], franchise.films));
+  controls.append(all);
+  main.append(controls, deptRow(franchise.order, movieGrid(franchise.films, openFilm, { mode: GRID })));
   revealWithin(main);
   const introduce = (all) => {
     const overview = all.find((f) => f.id === franchise.id)?.overview;

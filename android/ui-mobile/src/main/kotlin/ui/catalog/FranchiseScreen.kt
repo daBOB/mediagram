@@ -19,8 +19,8 @@ import model.WatchSnapshot
 /**
  * One franchise's own page — a Compose port of
  * `collections-page.js#renderFranchise`: a hero carrying its introduction
- * (TMDB's overview, when the index carries one) and its films in release
- * order beneath.
+ * (TMDB's overview, when the index carries one) and its films beneath, in
+ * the order its heading names (`Franchise.order`).
  */
 @Composable
 internal fun FranchiseScreen(
@@ -56,7 +56,7 @@ internal fun FranchiseScreen(
                 overview = page.overview,
             )
         }
-        item(key = "heading", span = { GridItemSpan(maxLineSpan) }) { DeptRowHeading(title = "In release order") }
+        item(key = "heading", span = { GridItemSpan(maxLineSpan) }) { DeptRowHeading(title = franchise.order) }
         itemsIndexed(items = franchise.films, key = { _, set -> set.setId }) { index, set ->
             Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
                 EntryCard(Entry.Film(set), positions, watchedIds, onOpenTitle, {})

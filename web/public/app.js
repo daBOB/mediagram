@@ -589,7 +589,7 @@ function drawRoute() {
   if (address.page === "system") return viewSystem();
   if (address.page === "continue") return viewContinue();
   if (address.page === "watchlist") return viewWatchlist();
-  if (address.page === "franchise") return renderFranchise(main, address.id, { library, openFilm }, () => generation === routeGeneration);
+  if (address.page === "franchise") return renderFranchise(main, address.id, { library, openFilm, play }, () => generation === routeGeneration);
   if (address.page === "list") {
     const list = state.collections().find((entry) => entry.id === address.id);
     return renderList(main, list, list ? films.setsFor(list.items) : [], {

@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.195.0 — the Marvel films in story order
+
+**Added**
+
+- **Collections has a Marvel Cinematic Universe card** on the web, the phone and the TV. It holds every MCU film in the library in story order, after Marvel's own Disney+ timeline (Captain America: The First Avenger, Captain Marvel, Iron Man, …, Thunderbolts*, The Fantastic Four: First Steps, Spider-Man: Brand New Day), not in release order, and its page says so: "In story order". TMDB has no collection for the MCU, only one per hero, so the order is kept by TMDB id in `web/public/lib/catalog/mcu.js`; the Android port's copy is held to it by a test. A film added to the library joins the card on its own when its id is on the list; Avengers: Doomsday is not on it yet.
+- A film held in more than one version is on the card once. Avengers: Endgame is its Encore cut, so playing through the collection plays the Encore.
+- On the web, every franchise page has "Play all", as a list page does: the films play on in the page's order.
+
 ## Spieltisch 0.196.0 — Tiến Lên, the seventeenth game
 
 **Added**

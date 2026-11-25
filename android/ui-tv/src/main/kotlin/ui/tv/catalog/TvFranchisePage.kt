@@ -22,8 +22,8 @@ import ui.tv.rememberStableRequester
  * One franchise's own page — the television twin of the web's
  * `collections-page.js#renderFranchise`: a hero naming it, how many films
  * and the years they span, its lead's art, and TMDB's own introduction to it
- * (when there is one) inside the hero's copy; then its films in release
- * order, under that heading, as a plain wall.
+ * (when there is one) inside the hero's copy; then its films in
+ * [Franchise.order][catalog.Franchise.order], under that heading, as a plain wall.
  *
  * Opened fresh with an introduction, the remote rests on the introduction
  * itself, so the page shows from its top the way the web's does: TMDB's
@@ -90,7 +90,7 @@ internal fun TvFranchisePage(
                 )
             },
             // `deptRow`'s `.row-head h2` on the web (`collections-page.js:115`), not a shelf's `.shelf-sub`.
-            headings = mapOf(0 to "In release order"),
+            headings = mapOf(0 to franchise.order),
             headingStyle = RowHead,
             plate = { set, modifier, onOpen ->
                 val stop = modifier.focusRequester(rememberStableRequester(firstFilm.takeIf { set.setId == franchise.films.first().setId }))
