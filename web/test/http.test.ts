@@ -687,6 +687,20 @@ describe("releasing a transcode", () => {
     }
   });
 
+  test("an HDR title is tone mapped while encoding, and an SDR one is not", async () => {
+    const hdr = index();
+    hdr.run("UPDATE sets SET hdr = 'DV' WHERE set_id = ?", [SET]);
+    for (const [db, expected] of [[index(), false], [hdr, true]] as const) {
+      const { specs, server } = await recordingServer(SESSION, db);
+      try {
+        await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`, START);
+        expect(specs[0]?.toneMap).toBe(expected);
+      } finally {
+        await server.close();
+      }
+    }
+  });
+
   test("a codec the policy does not know is not negotiated", async () => {
     const { specs, server } = await recordingServer(SESSION);
     try {
@@ -846,7 +860,7 @@ describe("the search route", () => {
 });
 
 /** A player whose transcodes are recorded rather than run: what each was asked to be. */
-async function recordingServer(session: string) {
+async function recordingServer(session: string, db: Database = index()) {
   const specs: SessionSpec[] = [];
   const hls = fakeHls({
     begin: async (spec: SessionSpec) => {
@@ -854,6 +868,6 @@ async function recordingServer(session: string) {
       return `/hls/${session}/index.m3u8`;
     },
   });
-  const server = await startServer({ db: index(), source: new FakeSource(), hls });
+  const server = await startServer({ db, source: new FakeSource(), hls });
   return { specs, server };
 }

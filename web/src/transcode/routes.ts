@@ -145,6 +145,8 @@ export async function beginTranscode(
       copyVideo,
       hevcCopy,
       gpuDecode: gpuDecodes(profile.vcodec),
+      // The index says `SDR`, `HDR10`, `HLG` or `DV`; null or empty is SDR.
+      toneMap: (profile.hdr || "SDR").toUpperCase() !== "SDR",
     });
   } catch (error) {
     console.warn(`transcode: ${setId} did not start: ${failureMessage(error)}`);
