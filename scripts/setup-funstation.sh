@@ -56,7 +56,7 @@ chmod 600 ~/.ssh/authorized_keys
 grep -qF "$DEV_KEY" ~/.ssh/authorized_keys || echo "$DEV_KEY" >>~/.ssh/authorized_keys
 
 step "packages (and the rest of the system up to date)"
-sudo pacman -Syu --needed --noconfirm plasma-bigscreen plasma-keyboard waydroid chromium git rustup bun ffmpeg swayidle avahi jq
+sudo pacman -Syu --needed --noconfirm plasma-bigscreen plasma-keyboard waydroid chromium git rustup bun ffmpeg swayidle avahi jq imagemagick
 
 step "announced on the network as $(hostname).local"
 # avahi alone answers for this host: systemd-resolved's own responder made avahi lose the name and rename itself funstation-2.local.
@@ -80,7 +80,8 @@ step "Plasma Bigscreen with funstation's fixes: Wi-Fi details, Back in dialogs"
 BIGSCREEN_PKG="$REPO/scripts/funstation/plasma-bigscreen"
 bigscreen_installed="$(pacman -Q plasma-bigscreen | cut -d' ' -f2)"
 bigscreen_pinned="$(sed -n 's/^pkgver=//p' "$BIGSCREEN_PKG/PKGBUILD")"
-if pacman -Qi plasma-bigscreen | grep -q '^Description.*funstation build'; then
+# C locale: a German pacman says Beschreibung, so the build would be redone on every run.
+if LC_ALL=C pacman -Qi plasma-bigscreen | grep -q '^Description.*funstation build'; then
   echo "already the funstation build ($bigscreen_installed)"
 elif [ "${bigscreen_installed%-*}" != "$bigscreen_pinned" ]; then
   echo "WARNING: plasma-bigscreen $bigscreen_installed is not $bigscreen_pinned: move the PKGBUILD" \
@@ -346,11 +347,15 @@ EOF
 # finds when it rewrites its tiles, so this holds even before the tile first exists.
 kwriteconfig6 --file ~/.local/share/applications/waydroid.com.google.android.tv.remote.service.desktop \
   --group "Desktop Entry" --key NoDisplay true
+# Whether Android has the app. By its output: `waydroid shell` exits 0 whatever the command
+# did, so a test on `pm path` alone took every app as installed and skipped it.
+# grep reads to the end, not -q: under pipefail a pipe it closed early fails the test.
+android_has() { sudo waydroid shell -- pm path "$1" 2>/dev/null | grep '^package:' >/dev/null; }
 # SmartTube (YouTube for the TV), from its GitHub releases. After this it updates itself.
 # It installs as the x86 build: the universal APK has no x86_64 libraries, so Android
 # picks arm64 and runs it translated. --abi stays with the package, so its updates do too.
 if waydroid status | grep -q 'Session:.*RUNNING'; then
-  if ! sudo waydroid shell -- pm path org.smarttube.stable >/dev/null 2>&1; then
+  if ! android_has org.smarttube.stable; then
     url=$(curl -fsSL https://api.github.com/repos/yuliskov/SmartTube/releases/latest |
       jq -r '.assets[] | select(.name | endswith("_x86.apk")) | .browser_download_url')
     tmp=~/.local/share/waydroid/data/local/tmp/smarttube.apk
@@ -377,7 +382,7 @@ kwriteconfig6 --file ~/.local/share/applications/waydroid.org.smarttube.stable.d
 # the v-tagged stable line stopped at 1.5.10 in 2024, and Play Protect blocks that one as
 # built for an old Android. The beta release keeps only its newest few builds, by number.
 if waydroid status | grep -q 'Session:.*RUNNING'; then
-  if ! sudo waydroid shell -- pm path com.s0und.s0undtv >/dev/null 2>&1; then
+  if ! android_has com.s0und.s0undtv; then
     url=$(curl -fsSL https://api.github.com/repos/S0und/S0undTV/releases/tags/beta |
       jq -r '[.assets[] | select(.name | test("^beta_[0-9]+\\.apk$"))]
         | max_by(.name | ltrimstr("beta_") | rtrimstr(".apk") | tonumber) | .browser_download_url')
@@ -443,7 +448,7 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
   rel=$(curl -fsSL https://api.github.com/repos/kcmaker10/satv/releases/latest || echo '{}')
   tag=$(jq -r '.tag_name // empty' <<<"$rel")
   if [ -n "$tag" ] && { [ "$(cat ~/.local/state/funstation-satv 2>/dev/null)" != "$tag" ] ||
-    ! sudo waydroid shell -- pm path dev.satv.launcher >/dev/null 2>&1; }; then
+    ! android_has dev.satv.launcher; }; then
     tmp=~/.local/share/waydroid/data/local/tmp/satv.apk
     sudo curl -fsSL -o "$tmp" "$(jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url' <<<"$rel")"
     sum=$(curl -fsSL "$(jq -r '.assets[] | select(.name == "SHA256SUMS.txt") | .browser_download_url' <<<"$rel")" |
@@ -457,7 +462,7 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
     fi
     sudo rm -f "$tmp"
   fi
-  if sudo waydroid shell -- pm path dev.satv.launcher >/dev/null 2>&1; then
+  if android_has dev.satv.launcher; then
     # Its Continue Watching row is what the players report through their media sessions,
     # mediagram's among them, and Android shows those only to a notification listener.
     sudo waydroid shell -- cmd notification allow_listener dev.satv.launcher/dev.satv.launcher.MediaListener
@@ -541,13 +546,24 @@ EOF
 systemctl --user daemon-reload 2>/dev/null || true
 systemctl --user enable funstation-remote-battery.service
 
-step "Bluetooth on the USB stick only"
+step "Bluetooth on the USB stick, when there is one"
 # The remote and controllers pair on a USB Bluetooth stick (the user's choice). With the
 # built-in Realtek radio on as well, a pairing could land on either and be lost with it.
-# shortcut: keyed to this machine's Realtek part (0bda:c821); another radio stays on.
-sudo tee /etc/udev/rules.d/80-funstation-builtin-bluetooth-off.rules >/dev/null <<'EOF'
+# Without a stick the built-in radio is the only one, and blocking it left no Bluetooth.
+# shortcut: keyed to the Realtek part (0bda:c821); a stick plugged in later needs a re-run.
+BUILTIN_BT_OFF=/etc/udev/rules.d/80-funstation-builtin-bluetooth-off.rules
+stick=
+for hci in /sys/class/bluetooth/hci*; do
+  [ -e "$hci/device/../idVendor" ] || continue
+  [ "$(cat "$hci/device/../idVendor"):$(cat "$hci/device/../idProduct")" = 0bda:c821 ] || stick=1
+done
+if [ -n "$stick" ]; then
+  sudo tee "$BUILTIN_BT_OFF" >/dev/null <<'EOF'
 ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="c821", ATTR{authorized}="0"
 EOF
+else
+  sudo rm -f "$BUILTIN_BT_OFF"
+fi
 sudo udevadm control --reload
 # The Chromecast remote's OK sends Select, which Bigscreen ignores outside its lock screen;
 # it waits for Enter. Android's key map takes Enter as OK too, so OK works in both.
