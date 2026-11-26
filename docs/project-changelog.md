@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.195.3 — the funstation setup on a fresh machine
+
+**Fixed**
+
+- **The setup script installs ImageMagick itself.** It draws the Android TV tile's logo with it, and a fresh CachyOS has none, so the script stopped there on the second funstation.
+- **The setup script installs SmartTube and S0undTV again.** It asked Android whether each was there through `waydroid shell`, which reports success whatever the command found, so it took both as installed and skipped them; the second funstation got neither. It now reads Android's answer instead.
+- **A funstation without a Bluetooth stick keeps its Bluetooth.** The script switched off the built-in radio so pairings land on the USB stick; on a machine without one that left no Bluetooth at all, and the remote could not pair. It now does so only when another Bluetooth controller is present.
+- **The patched Plasma Bigscreen is no longer rebuilt on every run on a German system.** The script recognised its own build by pacman's "Description" line, which a German pacman calls "Beschreibung"; it now asks pacman in English.
+
 ## 0.195.2 — SSH reaches a new funstation
 
 **Fixed**
