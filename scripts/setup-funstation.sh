@@ -48,6 +48,8 @@ sudo mv "$SUDOERS.new" "$SUDOERS"
 
 step "ssh from the dev machine"
 sudo systemctl enable --now sshd
+# CachyOS ships ufw dropping every port, 22 too: a fresh install was unreachable over SSH.
+sudo ufw allow 22/tcp comment "ssh from the dev machine"
 install -d -m 700 ~/.ssh
 touch ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys

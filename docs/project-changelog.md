@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.195.2 — SSH reaches a new funstation
+
+**Fixed**
+
+- **A freshly set-up funstation can be maintained over SSH.** CachyOS ships its firewall dropping every port, SSH's too, so the setup script switched SSH on but the dev machine still timed out on a new install. The script now opens port 22; logins stay key-only, since the account has no password.
+
 ## 0.195.1 — HDR films in their own colours on the web
 
 **Fixed**
