@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.195.4 — funstation's Bigscreen fixes on Plasma 6.8.3
+
+**Fixed**
+
+- **funstation keeps its Wi-Fi details and Back in dialogs on Plasma Bigscreen 6.8.3.** CachyOS moved to 6.8.3 while the patched build was pinned to 6.8.2, so the setup script kept the stock shell without the two fixes. The build now follows 6.8.3 with Arch's checksum; the patch applies unchanged.
+
 ## 0.195.3 — the funstation setup on a fresh machine
 
 **Fixed**

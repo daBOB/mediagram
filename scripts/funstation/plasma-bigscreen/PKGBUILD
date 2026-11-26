@@ -3,7 +3,7 @@
 # it tells this build from the stock one.
 
 pkgname=plasma-bigscreen
-pkgver=6.8.2
+pkgver=6.8.3
 # Sorts above every rebuild of the same upstream release (1.1, 1.2, ...), so -Syu keeps
 # it; the setup script passes the stock package's release so a real rebuild (2) is followed.
 pkgrel=${FUNSTATION_PKGREL:-1.90}
@@ -22,7 +22,7 @@ groups=(plasma)
 # The tarball checksum is Arch's, which Arch checked against KDE's signature.
 source=(https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz
         wifi-details-and-back.patch)
-sha256sums=('f770c879c1d884e0f35963f933210ee70f150122d8b4d1bf29ed1224b429a88a'
+sha256sums=('11d1c1c2e613013af049ccce9f5e4a2c238d91052e33bef3ec613708f4cfbec7'
             SKIP)
 
 prepare() {
