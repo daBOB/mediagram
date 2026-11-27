@@ -442,25 +442,25 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
   # WayDroid's Android runs in GMT whatever this machine's zone is, so every clock in it,
   # the home screen's first, was an hour or two off the wall.
   sudo waydroid shell -- cmd alarm set-timezone "$(timedatectl show -p Timezone --value)"
-  # saTV, the home screen the user chose for Android, in our build (github.com/daBOB/satv-funstation, GPL-3,
-  # from github.com/kcmaker10/satv): Home also shows mediagram's Continue and My List of whoever is watching
-  # and Spieltisch's games, which only an app signed with the mediagram release key may read. Every run
-  # installs its newest release when that is not the one put here, checked against the release's sums.
+  # saTV, the home screen the user chose for Android, in our build (daBOB/satv-funstation, GPL-3, from
+  # github.com/kcmaker10/satv): Home also shows mediagram's Continue and My List of whoever is watching and
+  # Spieltisch's games, which only an app signed with the mediagram release key may read. Its repo is private,
+  # so the dev machine copies each new build here, from the satv-funstation checkout:
+  #   ssh <funstation> mkdir -p .local/share/funstation &&
+  #     scp app/build/outputs/apk/release/app-release.apk <funstation>:.local/share/funstation/satv.apk
+  # and every run installs it when it is not the one installed last.
   SATV=com.mediagram.satv
-  rel=$(curl -fsSL https://api.github.com/repos/daBOB/satv-funstation/releases/latest || echo '{}')
-  tag=$(jq -r '.tag_name // empty' <<<"$rel")
-  if [ -n "$tag" ] && { [ "$(cat ~/.local/state/funstation-satv 2>/dev/null)" != "$tag" ] || ! android_has "$SATV"; }; then
+  apk=~/.local/share/funstation/satv.apk
+  sum=$(sha256sum "$apk" 2>/dev/null | cut -d' ' -f1 || true)
+  if [ -n "$sum" ] && { [ "$(cat ~/.local/state/funstation-satv 2>/dev/null)" != "$sum" ] || ! android_has "$SATV"; }; then
     tmp=~/.local/share/waydroid/data/local/tmp/satv.apk
-    sudo curl -fsSL -o "$tmp" "$(jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url' <<<"$rel")"
-    sum=$(curl -fsSL "$(jq -r '.assets[] | select(.name == "SHA256SUMS.txt") | .browser_download_url' <<<"$rel")" |
-      awk '/\.apk\r?$/ { print $1 }' || true)
+    sudo cp "$apk" "$tmp"
     # pm's own answer: `waydroid shell` exits 0 whatever it said.
-    if echo "$sum  $tmp" | sudo sha256sum -c --quiet &&
-      sudo waydroid shell -- pm install -r /data/local/tmp/satv.apk 2>&1 | grep '^Success' >/dev/null; then
+    if sudo waydroid shell -- pm install -r /data/local/tmp/satv.apk 2>&1 | grep '^Success' >/dev/null; then
       mkdir -p ~/.local/state
-      echo "$tag" >~/.local/state/funstation-satv
+      echo "$sum" >~/.local/state/funstation-satv
     else
-      echo "saTV $tag did not match its release's checksum or did not install."
+      echo "saTV from $apk did not install."
     fi
     sudo rm -f "$tmp"
   fi
