@@ -476,6 +476,29 @@ systemd-run --user --wait --quiet kbuildsycoca6 >/dev/null 2>&1 || true
 systemctl --user daemon-reload 2>/dev/null || true
 systemctl --user enable android-tv-session.service
 
+step "power-on lands in Android TV: its full window comes to the front once Android has booted"
+# Bigscreen shows only the seconds Android takes to boot; then Android TV (saTV) is in front,
+# as if the box were an Android TV.
+cat >~/.config/systemd/user/funstation-android-front.service <<'EOF'
+[Unit]
+Description=Android TV in front after login, once it has booted
+PartOf=graphical-session.target
+After=graphical-session.target android-tv-session.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+# Android's window shows once Android has booted, or it stays black; `waydroid shell` exits 0
+# whatever getprop answered, so the answer itself is what is waited for.
+ExecStartPre=/bin/sh -c 'until sudo -n waydroid shell -- getprop sys.boot_completed 2>/dev/null | grep -q 1; do sleep 2; done'
+ExecStart=%h/.local/bin/funstation-android
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+systemctl --user daemon-reload 2>/dev/null || true
+systemctl --user enable funstation-android-front.service
+
 step "after an hour without input the screen goes dark and Android sleeps"
 # HDMI off alone left the CPU near 20 W, because Android kept drawing; with Android's
 # display asleep too it drew 2.4 W. Android keeps running, and any key wakes both in
