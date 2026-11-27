@@ -489,6 +489,17 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
     # Android shows those only to a notification listener.
     sudo waydroid shell -- cmd notification allow_listener "$SATV/dev.satv.launcher.MediaListener"
     sudo waydroid shell -- cmd package set-home-activity "$SATV/dev.satv.launcher.MainActivity" >/dev/null
+    # Its Home button helper, an accessibility service that watches only the Home key: off, Home says "Home
+    # button helper is off" all the time. Secure settings let saTV switch it back on itself after an update.
+    helper="$SATV/dev.satv.launcher.HomeButtonService"
+    a11y=$(sudo waydroid shell -- settings get secure enabled_accessibility_services 2>/dev/null | tr -d '\r')
+    case "$a11y" in
+      *"$helper"*) ;;
+      null | "") sudo waydroid shell -- settings put secure enabled_accessibility_services "$helper" ;;
+      *) sudo waydroid shell -- settings put secure enabled_accessibility_services "$a11y:$helper" ;;
+    esac
+    sudo waydroid shell -- settings put secure accessibility_enabled 1
+    sudo waydroid shell -- pm grant "$SATV" android.permission.WRITE_SECURE_SETTINGS
   fi
 fi
 # Bigscreen reads its tiles from Plasma's app cache, which missed the rewritten files and
