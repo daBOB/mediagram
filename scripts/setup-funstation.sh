@@ -475,7 +475,14 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
       sudo cp -r "$apps/dev.satv.launcher/shared_prefs/." "$apps/$SATV/shared_prefs/"
       sudo chown -R "$owner" "$apps/$SATV/shared_prefs"
     fi
-    sudo waydroid shell -- pm uninstall dev.satv.launcher >/dev/null
+    # Only once ours has started and stays running: a home screen that cannot start, with the official one
+    # gone, would leave the TV with no Home at power-on.
+    if sudo waydroid shell -- am start -W -n "$SATV/dev.satv.launcher.MainActivity" 2>&1 | grep 'Status: ok' >/dev/null &&
+      sleep 5 && [ -n "$(sudo waydroid shell -- pidof "$SATV" 2>/dev/null | tr -d '[:space:]')" ]; then
+      sudo waydroid shell -- pm uninstall dev.satv.launcher >/dev/null
+    else
+      echo "Our saTV did not start; the official one stays as Home."
+    fi
   fi
   if android_has "$SATV"; then
     # Its Watched on this TV cards are what other players report through their media sessions, and
@@ -505,7 +512,7 @@ Type=oneshot
 TimeoutStartSec=300
 # Android's window shows once Android has booted, or it stays black; `waydroid shell` exits 0
 # whatever getprop answered, so the answer itself is what is waited for.
-ExecStartPre=/bin/sh -c 'until sudo -n waydroid shell -- getprop sys.boot_completed 2>/dev/null | grep -q 1; do sleep 2; done'
+ExecStartPre=/bin/sh -c 'until sudo -n waydroid shell -- getprop sys.boot_completed 2>/dev/null | tr -d "\\r" | grep -qx 1; do sleep 2; done'
 ExecStart=%h/.local/bin/funstation-android
 
 [Install]

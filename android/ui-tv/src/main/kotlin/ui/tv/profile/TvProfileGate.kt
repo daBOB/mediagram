@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import homerows.PickForHome
+import homerows.PickGate
+import homerows.PickStep
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,17 +80,23 @@ internal fun TvProfileGate(
     val pickPin by viewModel.pin.collectAsStateWithLifecycle()
 
     val chosen = state as? ProfileUiState.Chosen
-    // The home screen's profile button: Who's watching, and the remote back to the home screen once
-    // someone is chosen there (or "Stay as I am"); the library is not shown in between.
+    // The home screen's profile button: Who's watching over whoever is chosen, and the remote back to the
+    // home screen once someone is chosen there (or "Stay as I am"); the library is not shown in between.
     val forHome = remember { PickForHome() }
-    LaunchedEffect(pickForHome) {
-        if (!pickForHome) return@LaunchedEffect
-        forHome.start()
-        if (viewModel.state.value is ProfileUiState.Chosen) viewModel.reopen()
-    }
-    LaunchedEffect(state) {
-        val settled = state is ProfileUiState.Picking || state is ProfileUiState.Chosen
-        if (settled && forHome.over(picking = state is ProfileUiState.Picking)) onPickForHomeDone()
+    LaunchedEffect(pickForHome) { if (pickForHome) forHome.start() }
+    // Keyed on the ask too: on a running app the state may already be Chosen and never change.
+    LaunchedEffect(state, pickForHome) {
+        val gate =
+            when (state) {
+                is ProfileUiState.Picking -> PickGate.Picking
+                is ProfileUiState.Chosen -> PickGate.Chosen
+                else -> PickGate.Loading
+            }
+        when (forHome.next(gate)) {
+            PickStep.Reopen -> viewModel.reopen()
+            PickStep.Done -> onPickForHomeDone()
+            PickStep.Wait -> Unit
+        }
     }
     // The owner's part opens at once only for the owner chosen here: over a picker shown again it is anybody's, as on the web.
     LaunchedEffect(owner, chosen?.profile?.id) { owner.watching(chosen?.profile?.id) }

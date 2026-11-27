@@ -71,7 +71,8 @@ class MainActivity : ComponentActivity() {
         // already pinned, and the default would draw full chrome inside
         // that window until the next mode change told it otherwise.
         isInPip = isInPictureInPictureMode
-        homeLaunch = homeLaunchOf(intent?.action, intent?.getStringExtra(EXTRA_SET_ID))
+        // Only on a fresh start: a restore after process death carries the old intent, whose ask was done.
+        if (savedInstanceState == null) homeLaunch = homeLaunchOf(intent?.action, intent?.getStringExtra(EXTRA_SET_ID))
 
         setContent {
             if (onTelevision) {

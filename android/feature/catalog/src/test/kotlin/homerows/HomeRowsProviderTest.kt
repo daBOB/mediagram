@@ -104,6 +104,24 @@ class HomeRowsProviderTest {
     }
 
     @Test
+    fun whoIsWatchingDoesNotReadTheLibrary() {
+        val provider = provider()
+        val before = core.listSetsCalls
+        provider.query(uri("person"), null, null, null, null)!!.close()
+        assertEquals(before, core.listSetsCalls, "the person is the chosen profile, not the library")
+    }
+
+    @Test
+    fun picturesRightAfterTheRowsReuseThem() {
+        val provider = provider()
+        provider.query(uri("continue"), null, null, null, null)!!.close()
+        val before = core.listSetsCalls
+        provider.openFile(uri("image/m2/poster"), "r").close()
+        runCatching { provider.openFile(uri("image/m2/still"), "r").close() }
+        assertEquals(before, core.listSetsCalls, "a card's pictures follow its row: no second read of the library")
+    }
+
+    @Test
     fun writesAreRefused() {
         assertFailsWith<UnsupportedOperationException> { provider().insert(uri("continue"), null) }
     }

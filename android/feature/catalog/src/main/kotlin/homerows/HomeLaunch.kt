@@ -61,28 +61,50 @@ fun HomeLaunch.targetIn(shelves: List<Shelf>): LaunchTarget? {
     }
 }
 
+/** What Who's watching's gate shows, as a pick made for the home screen reads it. */
+enum class PickGate { Loading, Picking, Chosen }
+
+/** What that pick does next: nothing yet, open the picker over the person chosen, or hand the remote back. */
+enum class PickStep { Wait, Reopen, Done }
+
 /**
- * Who's watching opened for the home screen: over once the picker has shown and a person is chosen
- * again (a new one, or "Stay as I am"), so the remote goes back to the home screen then and only then.
+ * Who's watching opened for the home screen. The gate starts from Loading whenever it is collected
+ * again, so "someone is chosen" is only known once it says Chosen: then the picker is opened over
+ * them, once. The pick is over when someone is chosen after the picker showed (a new person, or
+ * "Stay as I am"), and only then does the remote go back to the home screen.
  */
 class PickForHome {
     private var active = false
     private var sawPicker = false
+    private var reopened = false
 
     fun start() {
         active = true
         sawPicker = false
+        reopened = false
     }
 
-    /** Fed every gate state; `true` exactly once, when the pick is over. */
-    fun over(picking: Boolean): Boolean {
-        if (!active) return false
-        if (picking) {
-            sawPicker = true
-            return false
+    /** Fed every gate state; [PickStep.Done] exactly once, when the pick is over. */
+    fun next(gate: PickGate): PickStep {
+        if (!active) return PickStep.Wait
+        return when (gate) {
+            PickGate.Loading -> PickStep.Wait
+            PickGate.Picking -> {
+                sawPicker = true
+                PickStep.Wait
+            }
+            PickGate.Chosen ->
+                when {
+                    sawPicker -> {
+                        active = false
+                        PickStep.Done
+                    }
+                    reopened -> PickStep.Wait
+                    else -> {
+                        reopened = true
+                        PickStep.Reopen
+                    }
+                }
         }
-        if (!sawPicker) return false
-        active = false
-        return true
     }
 }

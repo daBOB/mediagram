@@ -51,12 +51,14 @@ class HomeRowsProvider : ContentProvider() {
     ): Cursor? {
         guard()
         runCatching { changes().start() }
+        if (uri.pathSegments == listOf("person")) {
+            val person = runBlocking { runCatching { source().person() } }.getOrNull()
+            return MatrixCursor(arrayOf(ID, NAME, KIDS)).apply {
+                person?.let { addRow(arrayOf<Any>(it.id, it.name, if (it.kids) 1 else 0)) }
+            }
+        }
         val rows = runBlocking { runCatching { source().rows() } }.getOrDefault(HomeRows.None)
         return when (uri.pathSegments) {
-            listOf("person") ->
-                MatrixCursor(arrayOf(ID, NAME, KIDS)).apply {
-                    rows.person?.let { addRow(arrayOf<Any>(it.id, it.name, if (it.kids) 1 else 0)) }
-                }
             listOf("continue") ->
                 MatrixCursor(CONTINUE_COLUMNS).apply {
                     rows.continuing.forEach {
