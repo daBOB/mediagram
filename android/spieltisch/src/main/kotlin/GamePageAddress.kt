@@ -14,7 +14,8 @@ fun gamePageAddress(
     val query =
         listOfNotNull(
             "films=0".takeIf { filmsUnavailable },
-            game?.let { "game=${URLEncoder.encode(it, Charsets.UTF_8)}" },
+            // The charset-name form: the Charset overload needs API 33 and Spieltisch runs from 24.
+            game?.let { "game=${URLEncoder.encode(it, "UTF-8")}" },
         ).joinToString("&")
     return if (query.isEmpty()) tvUrl else "$tvUrl?$query"
 }
