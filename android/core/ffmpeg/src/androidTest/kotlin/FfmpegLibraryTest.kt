@@ -28,6 +28,14 @@ class FfmpegLibraryTest {
         assertTrue(FfmpegLibrary.supportsFormat(MimeTypes.AUDIO_TRUEHD))
     }
 
+    /** WayDroid's Android, on the funstation, has an AC-3 decoder but none for E-AC-3: such films played silently. */
+    @Test
+    fun itDecodesDolbyDigitalAndDolbyDigitalPlus() {
+        assertTrue(FfmpegLibrary.supportsFormat(MimeTypes.AUDIO_AC3))
+        assertTrue(FfmpegLibrary.supportsFormat(MimeTypes.AUDIO_E_AC3))
+        assertTrue(FfmpegLibrary.supportsFormat(MimeTypes.AUDIO_E_AC3_JOC))
+    }
+
     /** The build enables only what the device may lack; AAC stays with the platform. */
     @Test
     fun itCarriesNothingElse() {
