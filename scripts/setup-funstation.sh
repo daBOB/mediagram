@@ -703,6 +703,17 @@ with zipfile.ZipFile("bootanimation.zip", "w", zipfile.ZIP_STORED) as z:
 sudo install -Dm644 "$BOOTANIM/bootanimation.zip" /var/lib/waydroid/overlay/system/product/media/bootanimation.zip
 rm -rf "$BOOTANIM"
 
+step "a chime and a voice say the Fun-Station is ready once Bigscreen is up"
+# Session autostart runs as the splash picture gives way to Bigscreen's home screen.
+install -Dm644 "$REPO/scripts/funstation/fun-station-ready.ogg" ~/.local/share/sounds/fun-station-ready.ogg
+cat >~/.config/autostart/funstation-ready-sound.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=Fun-Station ready sound
+Exec=pw-play $HOME/.local/share/sounds/fun-station-ready.ogg
+NoDisplay=true
+EOF
+
 # Last, because the switch drops the wired link and any SSH session running over it.
 step "Android TV on the home network, so phones can join its game night"
 # Behind WayDroid's own NAT bridge only this machine reaches Android: a phone can't open
