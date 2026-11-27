@@ -22,4 +22,6 @@ dependencies {
     // runtime's JsonElement parser. Mirrors core:data's ResumePointFixtureTest.
     testImplementation(libs.findLibrary("kotlinx.serialization").get())
     testImplementation(project(":core:testing"))
+    // HomeRowsProvider's tests need real cursors, files and permission checks.
+    testImplementation(libs.findLibrary("robolectric").get())
 }

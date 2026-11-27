@@ -519,7 +519,8 @@ private fun WatchedRow.toModel(): Watched = Watched(setId, finishedAt)
 
 private fun ListRow.toModel(): ListOfSets = ListOfSets(id, name, items)
 
-private fun StateSnapshot.toModel(): WatchSnapshot =
+/** A profile's snapshot as the core answers it, in the model every surface reads; the TV home rows read it too. */
+fun StateSnapshot.toModel(): WatchSnapshot =
     WatchSnapshot(
         progress = progress.map { it.toModel() },
         watched = watched.map { it.toModel() },
