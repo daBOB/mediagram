@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.197.1 — Dolby Digital Plus films have sound on the funstation
+
+Media app 0.197.1; Spieltisch stays at 0.197.0.
+
+**Fixed**
+
+- **E-AC-3 (Dolby Digital Plus) films played silently on the funstation.** WayDroid's Android has an AC-3 decoder but none for E-AC-3, and the app's FFmpeg decoders covered only DTS and TrueHD, so the player left the audio track unselected. `scripts/build-android-ffmpeg.sh` now also enables `ac3` and `eac3`; FFmpeg still comes after the device's own decoders, so it only takes formats the device can't decode.
+- **A new funstation no longer shows "Home button helper is off".** `scripts/setup-funstation.sh` switches on saTV's Home button accessibility service and grants it `WRITE_SECURE_SETTINGS`.
+
 ## 0.197.0 — the funstation's Android TV Home shows mediagram and Spieltisch
 
 Media app and Spieltisch both 0.197.0.
