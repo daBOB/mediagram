@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.196.0 — the funstation says when it is ready
+
+**Added**
+
+- **A chime and a calm voice announce the funstation once Bigscreen is up.** "All systems online. The Fun-Station is ready." plays when the session's autostart runs, as the splash picture gives way to the home screen. The clip (`scripts/funstation/fun-station-ready.ogg`, 4.7 s) is a holographic chime that ducks under ElevenLabs' Daniel voice; the setup script installs it with a Plasma autostart entry that plays it through `pw-play`.
+
 ## 0.195.4 — funstation's Bigscreen fixes on Plasma 6.8.3
 
 **Fixed**
