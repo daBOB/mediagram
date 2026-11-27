@@ -131,6 +131,7 @@ mod protocol_letztes_wort;
 pub use game::{ActionError, Game, GameCtx, GameFactory, ViewCtx};
 pub use host::{Host, HostConfig, start_game_night};
 pub use articles::{Article, ArticleList, MAX_CENTS, article_photo_url};
+pub use catalogue::{CATALOGUE, GameEntry};
 pub use image_files::ImageLookup;
 pub use poster::PosterGame;
 pub use poster_config::{PosterConfig, poster_ready};

@@ -11,8 +11,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import homerows.HomeLaunch
+import homerows.targetIn
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -85,6 +88,8 @@ internal fun TvLibrary(
     profile: TvChosenProfile,
     onStartOver: () -> Unit = {},
     onSignedOut: () -> Unit = {},
+    launch: HomeLaunch? = null,
+    onLaunchHandled: () -> Unit = {},
 ) {
     val catalogViewModel: CatalogViewModel = hiltViewModel()
     val catalogState by catalogViewModel.state.collectAsStateWithLifecycle()
@@ -116,6 +121,18 @@ internal fun TvLibrary(
     val ask = rememberVersionAsk(catalogState) { setId, run -> at.openPlayer(setId, run) }
     val ready = catalogState as? CatalogUiState.Ready
     val shelves = ready?.shelves.orEmpty()
+    // The TV home screen's ask, once the shelves are here: the title's page, and the player over it for a
+    // resume, so Back lands on the page; the player's own door keeps a kid's used-up day. A title this
+    // person's shelves do not hold opens nothing.
+    LaunchedEffect(launch, ready != null) {
+        if (launch == null || ready == null) return@LaunchedEffect
+        launch.targetIn(shelves)?.let { target ->
+            at.toCatalog()
+            at.openTitle(target.setId)
+            if (target.play) at.openPlayer(target.setId)
+        }
+        onLaunchHandled()
+    }
     val heldIds = ready?.heldIds.orEmpty()
     // Built once per shelves change, from shelves rather than a per-frame
     // fetch: every screen below that needs "every film"/"every show" reads

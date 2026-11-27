@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Connection } from "../net";
+import type { GameKind } from "../protocol/GameKind";
 import type { TvScene } from "../protocol/TvScene";
 import type { TvView } from "../protocol/TvView";
 import { gameLine, seatsLine } from "../ui/lobby";
@@ -9,6 +10,7 @@ import { ShelfBackdrop } from "./lobby/ShelfBackdrop";
 import { ShelfRow } from "./lobby/ShelfRow";
 import { ShelfTabs } from "./lobby/ShelfTabs";
 import { TablePanel } from "./lobby/TablePanel";
+import { initialPick } from "./lobby/initial-pick";
 import { useShelfPick } from "./lobby/use-shelf-pick";
 import { TvSettingsPanel } from "./settings/TvSettingsPanel";
 import "./lobby/tv-shelf.css";
@@ -17,6 +19,9 @@ type Lobby = Extract<TvScene, { kind: "lobby" }>;
 
 // The box's app adds `?films=0` when the media app did not answer this night.
 const filmsAway = new URLSearchParams(location.search).get("films") === "0";
+
+// The TV home screen's `?game=` is taken once per page load: after a game the room keeps its own pick.
+let addressPickTaken = false;
 
 /**
  * The night's home screen: the games as a poster row over the focused one's backdrop, and the
@@ -30,6 +35,13 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
   const { games, settings } = scene;
   const items = useMemo(() => shelfItems(games), [games]);
   const { focus, setFocus, heard, start } = useShelfPick(settings, conn);
+  useEffect(() => {
+    if (addressPickTaken) return;
+    addressPickTaken = true;
+    const kind = initialPick(location.search, items.flatMap((i) => (i.game ? [i.game.kind] : [])));
+    if (kind) setFocus(kind as GameKind);
+    // Once, on the first lobby of this page.
+  }, []);
   // The key of a not-yet-playable game while one is focused. Any change of the room's pick, ours or
   // a phone's, brings the row back to it.
   const [browsing, setBrowsing] = useState<string | null>(null);

@@ -442,31 +442,53 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
   # WayDroid's Android runs in GMT whatever this machine's zone is, so every clock in it,
   # the home screen's first, was an hour or two off the wall.
   sudo waydroid shell -- cmd alarm set-timezone "$(timedatectl show -p Timezone --value)"
-  # saTV (github.com/kcmaker10/satv), the home screen the user chose for Android: the
-  # Android TV tile opens it. It only announces its own updates, so every run installs the
-  # newest release when that is not the one put here, checked against the release's sums.
-  rel=$(curl -fsSL https://api.github.com/repos/kcmaker10/satv/releases/latest || echo '{}')
-  tag=$(jq -r '.tag_name // empty' <<<"$rel")
-  if [ -n "$tag" ] && { [ "$(cat ~/.local/state/funstation-satv 2>/dev/null)" != "$tag" ] ||
-    ! android_has dev.satv.launcher; }; then
+  # saTV, the home screen the user chose for Android, in our build (daBOB/satv-funstation, GPL-3, from
+  # github.com/kcmaker10/satv): Home also shows mediagram's Continue and My List of whoever is watching and
+  # Spieltisch's games, which only an app signed with the mediagram release key may read. Its repo is private,
+  # so the dev machine copies each new build here, from the satv-funstation checkout:
+  #   ssh <funstation> mkdir -p .local/share/funstation &&
+  #     scp app/build/outputs/apk/release/app-release.apk <funstation>:.local/share/funstation/satv.apk
+  # and every run installs it when it is not the one installed last.
+  SATV=com.mediagram.satv
+  apk=~/.local/share/funstation/satv.apk
+  sum=$(sha256sum "$apk" 2>/dev/null | cut -d' ' -f1 || true)
+  if [ -n "$sum" ] && { [ "$(cat ~/.local/state/funstation-satv 2>/dev/null)" != "$sum" ] || ! android_has "$SATV"; }; then
     tmp=~/.local/share/waydroid/data/local/tmp/satv.apk
-    sudo curl -fsSL -o "$tmp" "$(jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url' <<<"$rel")"
-    sum=$(curl -fsSL "$(jq -r '.assets[] | select(.name == "SHA256SUMS.txt") | .browser_download_url' <<<"$rel")" |
-      awk '/\.apk\r?$/ { print $1 }' || true) # the sums file has CRLF line ends
-    if echo "$sum  $tmp" | sudo sha256sum -c --quiet &&
-      sudo waydroid shell -- pm install -r /data/local/tmp/satv.apk; then
+    sudo cp "$apk" "$tmp"
+    # pm's own answer: `waydroid shell` exits 0 whatever it said.
+    if sudo waydroid shell -- pm install -r /data/local/tmp/satv.apk 2>&1 | grep '^Success' >/dev/null; then
       mkdir -p ~/.local/state
-      echo "$tag" >~/.local/state/funstation-satv
+      echo "$sum" >~/.local/state/funstation-satv
     else
-      echo "saTV $tag did not match its release's checksum or did not install."
+      echo "saTV from $apk did not install."
     fi
     sudo rm -f "$tmp"
   fi
-  if android_has dev.satv.launcher; then
-    # Its Continue Watching row is what the players report through their media sessions,
-    # mediagram's among them, and Android shows those only to a notification listener.
-    sudo waydroid shell -- cmd notification allow_listener dev.satv.launcher/dev.satv.launcher.MediaListener
-    sudo waydroid shell -- cmd package set-home-activity dev.satv.launcher/.MainActivity >/dev/null
+  # The official saTV goes, once ours is in: its settings (pinned apps and their order, theme, weather, a TMDB
+  # key typed in on the TV) are carried over first, while ours has none of its own yet.
+  apps=~/.local/share/waydroid/data/data
+  if android_has "$SATV" && android_has dev.satv.launcher; then
+    if [ -z "$(sudo ls -A "$apps/$SATV/shared_prefs" 2>/dev/null)" ] && sudo test -d "$apps/dev.satv.launcher/shared_prefs"; then
+      sudo waydroid shell -- am force-stop "$SATV"
+      owner=$(sudo stat -c %u:%g "$apps/$SATV")
+      sudo mkdir -p "$apps/$SATV/shared_prefs"
+      sudo cp -r "$apps/dev.satv.launcher/shared_prefs/." "$apps/$SATV/shared_prefs/"
+      sudo chown -R "$owner" "$apps/$SATV/shared_prefs"
+    fi
+    # Only once ours has started and stays running: a home screen that cannot start, with the official one
+    # gone, would leave the TV with no Home at power-on.
+    if sudo waydroid shell -- am start -W -n "$SATV/dev.satv.launcher.MainActivity" 2>&1 | grep 'Status: ok' >/dev/null &&
+      sleep 5 && [ -n "$(sudo waydroid shell -- pidof "$SATV" 2>/dev/null | tr -d '[:space:]')" ]; then
+      sudo waydroid shell -- pm uninstall dev.satv.launcher >/dev/null
+    else
+      echo "Our saTV did not start; the official one stays as Home."
+    fi
+  fi
+  if android_has "$SATV"; then
+    # Its Watched on this TV cards are what other players report through their media sessions, and
+    # Android shows those only to a notification listener.
+    sudo waydroid shell -- cmd notification allow_listener "$SATV/dev.satv.launcher.MediaListener"
+    sudo waydroid shell -- cmd package set-home-activity "$SATV/dev.satv.launcher.MainActivity" >/dev/null
   fi
 fi
 # Bigscreen reads its tiles from Plasma's app cache, which missed the rewritten files and
@@ -475,6 +497,29 @@ fi
 systemd-run --user --wait --quiet kbuildsycoca6 >/dev/null 2>&1 || true
 systemctl --user daemon-reload 2>/dev/null || true
 systemctl --user enable android-tv-session.service
+
+step "power-on lands in Android TV: its full window comes to the front once Android has booted"
+# Bigscreen shows only the seconds Android takes to boot; then Android TV (saTV) is in front,
+# as if the box were an Android TV.
+cat >~/.config/systemd/user/funstation-android-front.service <<'EOF'
+[Unit]
+Description=Android TV in front after login, once it has booted
+PartOf=graphical-session.target
+After=graphical-session.target android-tv-session.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+# Android's window shows once Android has booted, or it stays black; `waydroid shell` exits 0
+# whatever getprop answered, so the answer itself is what is waited for.
+ExecStartPre=/bin/sh -c 'until sudo -n waydroid shell -- getprop sys.boot_completed 2>/dev/null | tr -d "\\r" | grep -qx 1; do sleep 2; done'
+ExecStart=%h/.local/bin/funstation-android
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+systemctl --user daemon-reload 2>/dev/null || true
+systemctl --user enable funstation-android-front.service
 
 step "after an hour without input the screen goes dark and Android sleeps"
 # HDMI off alone left the CPU near 20 W, because Android kept drawing; with Android's

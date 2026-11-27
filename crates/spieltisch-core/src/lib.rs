@@ -4,6 +4,8 @@ uniffi::setup_scaffolding!();
 
 mod media_images;
 mod night;
+mod shelf;
 
 pub use media_images::{MediaImageKind, MediaImages};
 pub use night::{NightError, NightUrls, SpieltischConfig, night_back, start_night, stop_night};
+pub use shelf::{ShelfGame, playable_games};

@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.197.0 — the funstation's Android TV Home shows mediagram and Spieltisch
+
+Media app and Spieltisch both 0.197.0.
+
+**Added**
+
+- **Home rows for the funstation's saTV launcher.** Our saTV build (private repo `daBOB/satv-funstation`, from saTV 1.0.5, GPL-3) shows mediagram's Continue (a card resumes the title) and My List (a card opens it) for whoever is watching, and Spieltisch's games (a card opens the lobby with that game picked). The media app serves the rows through a read-only provider (`com.mediagram.android.home`), Spieltisch its games and posters (`com.mediagram.spieltisch.games`); both are guarded by a signature permission, so only an app signed with the mediagram key can read them. A kid's rows come from the same filter as their library.
+- **Who's watching on Home is mediagram's person.** saTV's profile button opens mediagram's picker and returns to Home after the choice; other apps' watch history is kept per mediagram person.
+- **The lobby takes a game from its address** (`?game=`), picked once when the page loads.
+- **Power-on lands in Android TV.** The setup script brings Android to the front once it has booted, so Bigscreen shows only while Android starts.
+
+**Changed**
+
+- **The setup script installs our saTV from a copy the dev machine puts on the funstation** (`~/.local/share/funstation/satv.apk`) whenever it differs from the one installed last, carries over the official saTV's settings, and removes the official one only once ours has started. Trakt and saTV's other trackers and its self-update are off in our build.
+
 ## 0.196.0 — the funstation says when it is ready
 
 **Added**

@@ -1,5 +1,6 @@
 package com.mediagram.android
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
@@ -14,6 +15,9 @@ import androidx.compose.runtime.setValue
 import dagger.hilt.android.AndroidEntryPoint
 import data.WatchSync
 import data.isTelevision
+import homerows.EXTRA_SET_ID
+import homerows.HomeLaunch
+import homerows.homeLaunchOf
 import ui.player.LocalIsInPictureInPicture
 import ui.MobileApp
 import ui.tv.TvApp
@@ -44,6 +48,9 @@ class MainActivity : ComponentActivity() {
     // system resizes the window, not a frame later.
     private var isInPip by mutableStateOf(false)
 
+    // What the TV home screen asked for (resume, open, Who's watching), until the library has done it.
+    private var homeLaunch by mutableStateOf<HomeLaunch?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Before the first frame, and before Hilt: the bars take their icon
         // colour from this configuration's night mode, which on API 31+ is
@@ -64,16 +71,24 @@ class MainActivity : ComponentActivity() {
         // already pinned, and the default would draw full chrome inside
         // that window until the next mode change told it otherwise.
         isInPip = isInPictureInPictureMode
+        // Only on a fresh start: a restore after process death carries the old intent, whose ask was done.
+        if (savedInstanceState == null) homeLaunch = homeLaunchOf(intent?.action, intent?.getStringExtra(EXTRA_SET_ID))
 
         setContent {
             if (onTelevision) {
-                TvApp()
+                // A pick asked for by the home screen ends by going back to it, leaving this app running.
+                TvApp(homeLaunch, onLaunchHandled = { homeLaunch = null }, onPickedForHome = { moveTaskToBack(true) })
             } else {
                 CompositionLocalProvider(LocalIsInPictureInPicture provides isInPip) {
                     MobileApp()
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        homeLaunchOf(intent.action, intent.getStringExtra(EXTRA_SET_ID))?.let { homeLaunch = it }
     }
 
     override fun onStart() {

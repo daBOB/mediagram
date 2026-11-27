@@ -25,6 +25,12 @@
         android:protectionLevel="signature" />
     <uses-permission android:name="com.mediagram.android.permission.GAME_NIGHT" />
 
+    <!-- The TV home screen (our saTV build) reads this app's games through SpieltischGamesProvider.
+         Declared in all three apps, so it exists whichever is installed first; signature-only. -->
+    <permission
+        android:name="com.mediagram.android.permission.HOME_ROWS"
+        android:protectionLevel="signature" />
+
     <!-- Android 11+ hides other apps' providers unless asked for. -->
     <queries>
         <provider android:authorities="com.mediagram.android.games" />
@@ -38,6 +44,13 @@
         android:label="Spieltisch"
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@android:style/Theme.Material.NoActionBar">
+
+        <!-- The games for the TV home screen's Spieltisch row; read-only. -->
+        <provider
+            android:name=".SpieltischGamesProvider"
+            android:authorities="com.mediagram.spieltisch.games"
+            android:exported="true"
+            android:permission="com.mediagram.android.permission.HOME_ROWS" />
 
         <!-- Recreating the activity would end the night (it stops when the screen stops), so a keyboard
              or gamepad connecting, or a locale, theme or display change, is handled in place instead. -->

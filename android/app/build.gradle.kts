@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.mediagram.android"
-        versionName = "0.196.0"
+        versionName = "0.197.0"
         versionCode = versionCodeOf(versionName!!)
         // Only a release build updates itself; debug and benchmark builds are installed by adb.
         resValue("bool", "self_update", "false")
@@ -102,6 +102,8 @@ dependencies {
     implementation(project(":feature:player"))
     // The manifest declares its GameNightProvider, which Spieltisch reads the game night from.
     implementation(project(":feature:games"))
+    // MainActivity reads the TV home screen's launches (homerows.HomeLaunch); the manifest names its provider.
+    implementation(project(":feature:catalog"))
     // Binds the shared playback singletons in di/SharedPlaybackModule.kt.
     implementation(project(":core:playback"))
     // PlayerHandle.player is a media3 Player; isPlaying is read in di/UpdateModule.kt.
