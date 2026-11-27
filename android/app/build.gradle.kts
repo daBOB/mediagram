@@ -102,6 +102,8 @@ dependencies {
     implementation(project(":feature:player"))
     // The manifest declares its GameNightProvider, which Spieltisch reads the game night from.
     implementation(project(":feature:games"))
+    // MainActivity reads the TV home screen's launches (homerows.HomeLaunch); the manifest names its provider.
+    implementation(project(":feature:catalog"))
     // Binds the shared playback singletons in di/SharedPlaybackModule.kt.
     implementation(project(":core:playback"))
     // PlayerHandle.player is a media3 Player; isPlaying is read in di/UpdateModule.kt.

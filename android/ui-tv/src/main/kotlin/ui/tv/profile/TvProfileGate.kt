@@ -3,6 +3,7 @@ package ui.tv.profile
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import homerows.PickForHome
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,7 +63,11 @@ data class TvChosenProfile(
  * this device lists nobody for the cast to play as.
  */
 @Composable
-internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
+internal fun TvProfileGate(
+    pickForHome: Boolean = false,
+    onPickForHomeDone: () -> Unit = {},
+    content: @Composable (TvChosenProfile) -> Unit,
+) {
     val viewModel: ProfileViewModel = hiltViewModel()
     val manage: ManageProfilesViewModel = hiltViewModel()
     val join: JoinHouseholdViewModel = hiltViewModel()
@@ -73,6 +78,18 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val pickPin by viewModel.pin.collectAsStateWithLifecycle()
 
     val chosen = state as? ProfileUiState.Chosen
+    // The home screen's profile button: Who's watching, and the remote back to the home screen once
+    // someone is chosen there (or "Stay as I am"); the library is not shown in between.
+    val forHome = remember { PickForHome() }
+    LaunchedEffect(pickForHome) {
+        if (!pickForHome) return@LaunchedEffect
+        forHome.start()
+        if (viewModel.state.value is ProfileUiState.Chosen) viewModel.reopen()
+    }
+    LaunchedEffect(state) {
+        val settled = state is ProfileUiState.Picking || state is ProfileUiState.Chosen
+        if (settled && forHome.over(picking = state is ProfileUiState.Picking)) onPickForHomeDone()
+    }
     // The owner's part opens at once only for the owner chosen here: over a picker shown again it is anybody's, as on the web.
     LaunchedEffect(owner, chosen?.profile?.id) { owner.watching(chosen?.profile?.id) }
     ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)

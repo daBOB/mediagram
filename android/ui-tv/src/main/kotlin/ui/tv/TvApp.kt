@@ -19,6 +19,7 @@ import androidx.tv.material3.SurfaceDefaults
 import designsystem.CountdownStart
 import designsystem.LocalCountdownStart
 import designsystem.Overscan
+import homerows.HomeLaunch
 import setup.AppearanceViewModel
 import setup.SetupUiState
 import setup.SetupViewModel
@@ -45,8 +46,17 @@ import ui.tv.setup.TvSetupStep
  * decides whose shelves come next, and [TvLibrary] is what those shelves
  * and everything they open are.
  */
+/**
+ * [launch] is what the TV home screen asked for (a title to resume or open, or Who's watching),
+ * cleared through [onLaunchHandled]; [onPickedForHome] hands the remote back to the home screen
+ * once a pick it asked for is over.
+ */
 @Composable
-fun TvApp() {
+fun TvApp(
+    launch: HomeLaunch? = null,
+    onLaunchHandled: () -> Unit = {},
+    onPickedForHome: () -> Unit = {},
+) {
     val appearanceViewModel: AppearanceViewModel = hiltViewModel()
     val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
     TvTheme(accent = appearance.accent, backdrop = appearance.backdrop, style = appearance.style) {
@@ -55,7 +65,7 @@ fun TvApp() {
 
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setupViewModel.recheck() }
 
-        TvShell { TvColdStart { TvStep(setupState, setupViewModel) } }
+        TvShell { TvColdStart { TvStep(setupState, setupViewModel, launch, onLaunchHandled, onPickedForHome) } }
     }
 }
 
@@ -74,10 +84,26 @@ internal fun TvColdStart(content: @Composable () -> Unit) {
 private fun TvStep(
     setupState: SetupUiState,
     setupViewModel: SetupViewModel,
+    launch: HomeLaunch?,
+    onLaunchHandled: () -> Unit,
+    onPickedForHome: () -> Unit,
 ) {
     if (setupState is SetupUiState.Ready) {
-        TvProfileGate { profile ->
-            TvLibrary(profile, onStartOver = setupViewModel::startOver, onSignedOut = setupViewModel::recheck)
+        val pick = launch == HomeLaunch.PickProfile
+        TvProfileGate(
+            pickForHome = pick,
+            onPickForHomeDone = {
+                onLaunchHandled()
+                onPickedForHome()
+            },
+        ) { profile ->
+            TvLibrary(
+                profile,
+                onStartOver = setupViewModel::startOver,
+                onSignedOut = setupViewModel::recheck,
+                launch = launch.takeUnless { pick },
+                onLaunchHandled = onLaunchHandled,
+            )
         }
     } else {
         TvSetupStep(state = setupState, viewModel = setupViewModel)
