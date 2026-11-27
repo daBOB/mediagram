@@ -4,12 +4,15 @@
 #
 # Why it exists: Media3 does not publish decoder_ffmpeg to Maven, and many
 # devices (Google TV boxes especially) have no DTS or TrueHD decoder, so those
-# films played silently. FFmpeg decodes them to PCM instead.
+# films played silently. FFmpeg decodes them to PCM instead. The funstation's
+# WayDroid Android has no E-AC-3 decoder either (only AC-3), so Dolby Digital
+# Plus films were silent there too.
 #
 # What it builds, following Media3 1.10.1's libraries/decoder_ffmpeg README
 # and build_ffmpeg.sh (same configure options, same FFmpeg 6.0 line):
 #   - FFmpeg as static libavcodec/libswresample/libavutil, with only the
-#     decoders DTS and TrueHD need: dca (DTS, DTS-HD core), truehd and mlp;
+#     decoders DTS, TrueHD and Dolby Digital (Plus) need: dca (DTS, DTS-HD
+#     core), truehd, mlp, ac3 and eac3 (E-AC-3, and the core of E-AC-3 JOC);
 #   - Media3's JNI wrapper, android/core/ffmpeg/src/main/jni/ffmpeg_jni.cc,
 #     linked against them into one shared library, 16 KB page aligned.
 #
@@ -21,7 +24,7 @@ set -euo pipefail
 
 FFMPEG_VERSION="6.0.1"
 FFMPEG_SHA256="9b16b8731d78e596b4be0d720428ca42df642bb2d78342881ff7f5bc29fc9623"
-ENABLED_DECODERS="dca truehd mlp"
+ENABLED_DECODERS="dca truehd mlp ac3 eac3"
 ABIS="arm64-v8a armeabi-v7a x86_64 x86"
 # Must not exceed the app's minSdk.
 API=24

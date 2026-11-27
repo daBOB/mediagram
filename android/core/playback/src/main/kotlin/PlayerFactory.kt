@@ -151,7 +151,8 @@ suspend fun buildPlayer(
 /**
  * The device's own decoders first, FFmpeg (core:ffmpeg) behind them.
  *
- * Many devices — Google TV boxes above all — have no DTS or TrueHD decoder,
+ * Many devices — Google TV boxes above all — have no DTS or TrueHD decoder
+ * (WayDroid on the funstation has no E-AC-3 one either),
  * and a track no renderer can take is simply left unselected: the film plays
  * with no sound and no message. `ON` appends `FfmpegAudioRenderer` after
  * `MediaCodecAudioRenderer`, and the track selector takes the first renderer
