@@ -708,6 +708,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_spieltisch_core_checksum_func_stop_night(
     ): Int
+    external fun uniffi_spieltisch_core_checksum_func_playable_games(
+    ): Int
     external fun uniffi_spieltisch_core_checksum_method_mediaimages_fetch(
     ): Int
     external fun ffi_spieltisch_core_uniffi_contract_version(
@@ -743,6 +745,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_spieltisch_core_fn_func_stop_night(
     ): Long
+    external fun uniffi_spieltisch_core_fn_func_playable_games(uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
     external fun ffi_spieltisch_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun ffi_spieltisch_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus,
@@ -869,6 +873,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_spieltisch_core_checksum_func_stop_night() and 0xFFFF) != 3223) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_spieltisch_core_checksum_func_playable_games() and 0xFFFF) != 16085) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_spieltisch_core_checksum_method_mediaimages_fetch() and 0xFFFF) != 36532) {
@@ -1560,6 +1567,47 @@ public object FfiConverterTypeNightUrls: FfiConverterRustBuffer<NightUrls> {
 
 
 /**
+ * One game a room can start: [kind] as the lobby's `?game=` and the wire spell it, [name] as players read it.
+ */
+data class ShelfGame (
+    var `kind`: kotlin.String
+    ,
+    var `name`: kotlin.String
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeShelfGame: FfiConverterRustBuffer<ShelfGame> {
+    override fun read(buf: ByteBuffer): ShelfGame {
+        return ShelfGame(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: ShelfGame) = (
+            FfiConverterString.allocationSize(value.`kind`) +
+            FfiConverterString.allocationSize(value.`name`)
+    )
+
+    override fun write(value: ShelfGame, buf: ByteBuffer) {
+            FfiConverterString.write(value.`kind`, buf)
+            FfiConverterString.write(value.`name`, buf)
+    }
+}
+
+
+
+/**
  * How a night is set up; the media app decides the kids lock and the titles, and the core only applies them.
  */
 data class SpieltischConfig (
@@ -1748,6 +1796,34 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 
 
 
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeShelfGame: FfiConverterRustBuffer<List<ShelfGame>> {
+    override fun read(buf: ByteBuffer): List<ShelfGame> {
+        val len = buf.getInt()
+        return List<ShelfGame>(len) {
+            FfiConverterTypeShelfGame.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<ShelfGame>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeShelfGame.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<ShelfGame>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeShelfGame.write(it, buf)
+        }
+    }
+}
+
+
+
+
 
 
 
@@ -1808,5 +1884,18 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
         UniffiNullRustCallStatusErrorHandler,
     )
     }
+
+        /**
+         * Every game a room can start, in the order the lobby lists them.
+         */ fun `playableGames`(): List<ShelfGame> {
+            return FfiConverterSequenceTypeShelfGame.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_spieltisch_core_fn_func_playable_games(
+
+        _status)
+}
+    )
+    }
+
 
 

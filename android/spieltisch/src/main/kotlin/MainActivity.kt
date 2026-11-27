@@ -49,6 +49,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun showNight() {
-        setContent { SpieltischTheme { TvGamesFrame(model, leave = ::finish) } }
+        // A card on the TV home screen opens the night on its game. Leaving ends this activity, so a later
+        // card always arrives in a new one.
+        val game = intent?.getStringExtra(SpieltischGamesProvider.EXTRA_GAME)
+        setContent { SpieltischTheme { TvGamesFrame(model, leave = ::finish, game = game) } }
     }
 }

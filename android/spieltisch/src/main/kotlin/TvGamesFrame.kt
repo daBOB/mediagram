@@ -42,11 +42,13 @@ import kotlinx.coroutines.launch
  * Game night as one full-screen frame: the host's TV page, which is the games shelf and the lobby in
  * one, opens as soon as the host runs. Back goes to the page first (its settings panel), then steps a
  * running game back to that page; on it, Back asks once and a second Back within [LEAVE_WINDOW_MS]
- * leaves through [leave], which stops the host and drops every phone at the table.
+ * leaves through [leave], which stops the host and drops every phone at the table. [game] is the game the
+ * TV home screen opened Spieltisch on, which the lobby picks once.
  */
 @Composable
 internal fun TvGamesFrame(
     model: GameNightViewModel,
+    game: String? = null,
     leave: () -> Unit,
 ) {
     val state by model.state.collectAsState()
@@ -112,7 +114,7 @@ internal fun TvGamesFrame(
         // The page says so when the media app has not answered: its film games then have nothing to show.
         is GameNightUi.Ready ->
             Box(Modifier.fillMaxSize()) {
-                GamePage(if (filmsUnavailable) "${ui.tvUrl}?films=0" else ui.tvUrl) { page = it }
+                GamePage(gamePageAddress(ui.tvUrl, filmsUnavailable, game)) { page = it }
                 if (leaving) LeaveHint(Modifier.align(Alignment.BottomCenter))
             }
     }
