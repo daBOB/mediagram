@@ -442,19 +442,21 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
   # WayDroid's Android runs in GMT whatever this machine's zone is, so every clock in it,
   # the home screen's first, was an hour or two off the wall.
   sudo waydroid shell -- cmd alarm set-timezone "$(timedatectl show -p Timezone --value)"
-  # saTV (github.com/kcmaker10/satv), the home screen the user chose for Android: the
-  # Android TV tile opens it. It only announces its own updates, so every run installs the
-  # newest release when that is not the one put here, checked against the release's sums.
-  rel=$(curl -fsSL https://api.github.com/repos/kcmaker10/satv/releases/latest || echo '{}')
+  # saTV, the home screen the user chose for Android, in our build (github.com/daBOB/satv-funstation, GPL-3,
+  # from github.com/kcmaker10/satv): Home also shows mediagram's Continue and My List of whoever is watching
+  # and Spieltisch's games, which only an app signed with the mediagram release key may read. Every run
+  # installs its newest release when that is not the one put here, checked against the release's sums.
+  SATV=com.mediagram.satv
+  rel=$(curl -fsSL https://api.github.com/repos/daBOB/satv-funstation/releases/latest || echo '{}')
   tag=$(jq -r '.tag_name // empty' <<<"$rel")
-  if [ -n "$tag" ] && { [ "$(cat ~/.local/state/funstation-satv 2>/dev/null)" != "$tag" ] ||
-    ! android_has dev.satv.launcher; }; then
+  if [ -n "$tag" ] && { [ "$(cat ~/.local/state/funstation-satv 2>/dev/null)" != "$tag" ] || ! android_has "$SATV"; }; then
     tmp=~/.local/share/waydroid/data/local/tmp/satv.apk
     sudo curl -fsSL -o "$tmp" "$(jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url' <<<"$rel")"
     sum=$(curl -fsSL "$(jq -r '.assets[] | select(.name == "SHA256SUMS.txt") | .browser_download_url' <<<"$rel")" |
-      awk '/\.apk\r?$/ { print $1 }' || true) # the sums file has CRLF line ends
+      awk '/\.apk\r?$/ { print $1 }' || true)
+    # pm's own answer: `waydroid shell` exits 0 whatever it said.
     if echo "$sum  $tmp" | sudo sha256sum -c --quiet &&
-      sudo waydroid shell -- pm install -r /data/local/tmp/satv.apk; then
+      sudo waydroid shell -- pm install -r /data/local/tmp/satv.apk 2>&1 | grep '^Success' >/dev/null; then
       mkdir -p ~/.local/state
       echo "$tag" >~/.local/state/funstation-satv
     else
@@ -462,11 +464,24 @@ if waydroid status | grep -q 'Session:.*RUNNING'; then
     fi
     sudo rm -f "$tmp"
   fi
-  if android_has dev.satv.launcher; then
-    # Its Continue Watching row is what the players report through their media sessions,
-    # mediagram's among them, and Android shows those only to a notification listener.
-    sudo waydroid shell -- cmd notification allow_listener dev.satv.launcher/dev.satv.launcher.MediaListener
-    sudo waydroid shell -- cmd package set-home-activity dev.satv.launcher/.MainActivity >/dev/null
+  # The official saTV goes, once ours is in: its settings (pinned apps and their order, theme, weather, a TMDB
+  # key typed in on the TV) are carried over first, while ours has none of its own yet.
+  apps=~/.local/share/waydroid/data/data
+  if android_has "$SATV" && android_has dev.satv.launcher; then
+    if [ -z "$(sudo ls -A "$apps/$SATV/shared_prefs" 2>/dev/null)" ] && sudo test -d "$apps/dev.satv.launcher/shared_prefs"; then
+      sudo waydroid shell -- am force-stop "$SATV"
+      owner=$(sudo stat -c %u:%g "$apps/$SATV")
+      sudo mkdir -p "$apps/$SATV/shared_prefs"
+      sudo cp -r "$apps/dev.satv.launcher/shared_prefs/." "$apps/$SATV/shared_prefs/"
+      sudo chown -R "$owner" "$apps/$SATV/shared_prefs"
+    fi
+    sudo waydroid shell -- pm uninstall dev.satv.launcher >/dev/null
+  fi
+  if android_has "$SATV"; then
+    # Its Watched on this TV cards are what other players report through their media sessions, and
+    # Android shows those only to a notification listener.
+    sudo waydroid shell -- cmd notification allow_listener "$SATV/dev.satv.launcher.MediaListener"
+    sudo waydroid shell -- cmd package set-home-activity "$SATV/dev.satv.launcher.MainActivity" >/dev/null
   fi
 fi
 # Bigscreen reads its tiles from Plasma's app cache, which missed the rewritten files and
